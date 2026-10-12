@@ -245,6 +245,14 @@ export function Wallet({ token }: { token: string }) {
   }, [path, token]);
   useEffect(load, [load]);
 
+  // "Add to Home Screen" should open this wallet, not the shop app. The API server swaps the manifest link in the
+  // page it serves; when the website is served elsewhere (Vercel), swap it here.
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    const own = `/api/public/wallet/${encodeURIComponent(token)}/manifest`;
+    if (link && !link.href.endsWith(own)) link.href = own;
+  }, [token]);
+
   // While a reward code is open, check every few seconds whether the shop has used it.
   const open = data?.redeemCode && !data.redeemCode.usedAt && secondsLeft(data.redeemCode.expiresAt) > 0;
   useEffect(() => {

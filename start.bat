@@ -1,5 +1,5 @@
 @echo off
-rem Double-click to run Loyalty Points on http://localhost:4000
+rem Double-click to run Habiturn on http://localhost:4000
 cd /d "%~dp0"
 if not exist node_modules (
   echo Installing packages, first run only...

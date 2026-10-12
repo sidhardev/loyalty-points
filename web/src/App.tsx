@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Download, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { enableTranslation } from './i18n';
-import { AuthPage } from './pages/Auth';
+import { AdminApp } from './pages/Admin';
+import { AuthPage, ResetPassword } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
@@ -154,6 +155,9 @@ function ShopApp() {
 }
 
 function Route() {
+  if (location.pathname === '/admin') return <AdminApp />;
+  const reset = location.pathname.match(/^\/reset\/([^/]+)/)?.[1];
+  if (reset) return <ResetPassword token={decodeURIComponent(reset)} />;
   const [, kind, id] = location.pathname.match(/^\/(w|join|c)\/([^/]+)/) ?? [];
   if (kind || location.pathname === '/login') enableTranslation(); // customer pages can switch to Hindi
   if (location.pathname === '/login') return <CustomerLogin />;

@@ -1,0 +1,12 @@
+{
+	servers {
+		# Requests arrive through Vercel, which puts the visitor's IP in X-Forwarded-For.
+		# Pass it on, so the app's per-visitor limits see real visitors (with TRUST_PROXY=2).
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:4000
+}

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "nest build",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "create-admin": "node --no-warnings scripts/create-admin.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.2.7",

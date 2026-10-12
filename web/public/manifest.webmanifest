@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Loyalty Points",
-  "short_name": "Loyalty",
-  "description": "Give customers points on every bill and bring them back with rewards.",
+  "name": "Habiturn",
+  "short_name": "Habiturn",
+  "description": "From first visit to “the usual”. Turn walk-ins into regulars.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

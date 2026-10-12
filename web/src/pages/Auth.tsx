@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, BarChart3, Coins, Gift, MessageCircle } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
 import { ErrorText, Logo, useAction } from '../ui';
@@ -34,10 +34,10 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
     <main className="auth">
       <section className="auth-hero">
         <span className="brand">
-          <Logo /> <span>Loyalty Points</span>
+          <Logo /> <span>Habiturn</span>
         </span>
-        <h1>Bring your customers back.</h1>
-        <p>A simple loyalty program for your shop — points, rewards and reminders, without any app for your customers.</p>
+        <h1>From first visit to “the usual”.</h1>
+        <p>Habiturn turns walk-ins into regulars — points, rewards and reminders for your shop, with nothing for your customers to install.</p>
         <ul>
           {FEATURES.map(({ icon: Icon, text }) => (
             <li key={text}>
@@ -100,6 +100,76 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
           </p>
         </form>
       </div>
+    </main>
+  );
+}
+
+/** /reset/<token> — a one-time link from support to choose a new password. */
+export function ResetPassword({ token }: { token: string }) {
+  const [shop, setShop] = useState<{ shop: string; email: string } | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [form, setForm] = useState({ password: '', again: '' });
+  const { busy, error, setError, run } = useAction();
+  const path = `auth/reset/${encodeURIComponent(token)}`;
+
+  useEffect(() => {
+    api<{ shop: string; email: string }>(path).then(setShop, (err) => setLoadError((err as Error).message));
+  }, [path]);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (form.password !== form.again) return setError("The passwords don't match");
+    void run(async () => {
+      const { token: session } = await api<{ token: string }>(path, 'POST', { password: form.password });
+      setToken(session);
+      location.replace('/');
+    });
+  };
+
+  return (
+    <main className="public">
+      <form className="card auth-card" onSubmit={submit}>
+        <span className="brand">
+          <Logo /> <span>Habiturn</span>
+        </span>
+        {loadError ? (
+          <>
+            <h2 style={{ fontSize: 22 }}>Link not working</h2>
+            <ErrorText text={loadError} />
+            <a className="btn" href="/">
+              Go to log in
+            </a>
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 style={{ fontSize: 22 }}>Choose a new password</h2>
+              <p className="muted small">{shop ? `${shop.shop} · ${shop.email}` : 'Checking the link…'}</p>
+            </div>
+            <label>
+              New password
+              <input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                placeholder="At least 8 characters"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+                autoFocus
+              />
+            </label>
+            <label>
+              Type it again
+              <input type="password" autoComplete="new-password" value={form.again} onChange={(e) => setForm({ ...form, again: e.target.value })} required />
+            </label>
+            <ErrorText text={error} />
+            <button className="btn btn-primary btn-lg" disabled={busy || !shop}>
+              {busy ? 'Saving…' : 'Save and log in'}
+            </button>
+          </>
+        )}
+      </form>
     </main>
   );
 }

@@ -79,38 +79,8 @@ export class LoyaltyController {
       today,
       birthdays: soon,
       recent: this.transactions(merchantId, undefined, 12),
-      comeback: { current: this.comeback(m, 0), previous: this.comeback(m, 30) },
+      comeback: { current: this.loyalty.comeback(m, 0), previous: this.loyalty.comeback(m, 30) },
     };
-  }
-
-  /**
-   * What returning customers brought in over 30 days, ending `daysAgo` days ago. A return visit is
-   * any purchase after a customer's first; "won back" is a return after the shop's inactive period.
-   */
-  private comeback(m: { id: number; inactive_days: number }, daysAgo: number) {
-    const range = { m: m.id, from: `-${daysAgo + 30} days`, to: `-${daysAgo} days`, gap: m.inactive_days };
-    const visits = this.db.sql
-      .prepare(
-        `WITH v AS (
-           SELECT customer_id, amount, created_at,
-                  LAG(created_at) OVER (PARTITION BY customer_id ORDER BY created_at, id) AS prev
-           FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
-         )
-         SELECT COUNT(DISTINCT CASE WHEN prev IS NOT NULL THEN customer_id END) AS customers,
-                COALESCE(SUM(prev IS NOT NULL), 0) AS visits,
-                COALESCE(SUM(CASE WHEN prev IS NOT NULL THEN amount END), 0) AS sales,
-                COUNT(DISTINCT CASE WHEN julianday(created_at) - julianday(prev) >= :gap THEN customer_id END) AS wonBack,
-                COALESCE(SUM(amount), 0) AS allSales
-         FROM v WHERE created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
-      )
-      .get(range) as { customers: number; visits: number; sales: number; wonBack: number; allSales: number };
-    const { rewards } = this.db.sql
-      .prepare(
-        `SELECT COUNT(*) AS rewards FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0
-           AND created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
-      )
-      .get({ m: m.id, from: range.from, to: range.to }) as { rewards: number };
-    return { ...visits, rewards };
   }
 
   // ---- bill QR ----

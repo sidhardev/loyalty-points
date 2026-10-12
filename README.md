@@ -27,6 +27,22 @@ A simple loyalty program for small shops: give customers points on every bill an
 - **Win-back** – list of customers who haven't visited in N days, each with a ready "we miss you" WhatsApp message
 - **Insights** – visits per day (new vs returning), top customers, repeat rate, sales and average bill
 
+## Superadmin
+
+`/admin` is the platform owner's panel: every shop's health (active / sleeping / new / never started / paused), a
+"needs a call" list of shops that went quiet, and per-shop numbers (customers, bills, sales, how much returning
+customers spent). Support actions: a one-time password reset link (24 hours), pausing a shop (no logins, joins or
+bill QRs — customer wallets still open) and notes. Every admin action is in the admin log. Admins see counts and
+totals only, never customers' names or phone numbers.
+
+Admins are created only on the server — never from the website:
+
+```sh
+npm run create-admin -w server -- you@example.com
+```
+
+It asks for the password (hidden, at least 12 characters). Run it again to set a new password.
+
 ## Run it
 
 Needs Node.js 22.16 or newer.
@@ -47,6 +63,9 @@ npm run dev
 ```
 
 Also open http://localhost:4000 — the website dev server forwards `/api` to the API on port 4001.
+
+**Putting it online:** see [DEPLOY.md](DEPLOY.md) (VPS with Docker + automatic HTTPS, or Railway). The database is copied
+to `data/backups` once a day (last 14 kept). Behind a proxy, set `TRUST_PROXY=1`.
 
 Set `JWT_SECRET` in production (otherwise one is generated into `server/data/`), and optionally `PORT` and `DB_FILE`. Back up `server/data/` — it is the whole database.
 

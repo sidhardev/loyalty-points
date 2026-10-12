@@ -2,7 +2,7 @@
   "name": "loyalty-points",
   "private": true,
   "version": "0.1.0",
-  "description": "Simple loyalty points app for small shops: NestJS API + React website, SQLite storage.",
+  "description": "Habiturn — From first visit to 'the usual'. Loyalty for small shops: NestJS API + React website, SQLite storage.",
   "engines": {
     "node": ">=22.16"
   },

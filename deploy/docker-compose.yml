@@ -1,0 +1,32 @@
+# On a VPS: the app plus Caddy, which gets and renews the HTTPS certificate for the domain by itself.
+# Run from this folder:  docker compose up -d --build
+services:
+  app:
+    build: ..
+    restart: unless-stopped
+    environment:
+      # Proxies in front of the app: 1 = Caddy only; 2 = Vercel + Caddy (website on Vercel, API here)
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    env_file: .env # JWT_SECRET, and DOMAIN / TRUST_PROXY (see DEPLOY.md)
+    volumes:
+      - ./data:/app/server/data # database, daily backups (data/backups) and nothing else
+
+  caddy:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:-habiturn.sidhar.me}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -19,9 +19,13 @@ export type MerchantRow = {
   inactive_days: number;
   max_visits_per_day: number;
   large_bill: number;
+  created_at: string;
+  last_seen_at: string | null;
+  suspended_at: string | null;
+  suspended_reason: string | null;
 };
 
-export type Actor = 'shop' | 'customer';
+export type Actor = 'shop' | 'customer' | 'admin';
 type RewardRow = { id: number; name: string; points_cost: number };
 
 /** How long a reward code from the wallet can be used at the counter. */
@@ -340,6 +344,7 @@ export class LoyaltyService {
     if (!claim) throw new NotFoundException('This bill QR is not valid');
     if (claim.customer_id || claim.result) throw new ConflictException('These points have already been claimed');
     if (claim.expires_at < new Date().toISOString()) throw new BadRequestException('This bill QR has expired — ask the shop to show a new one');
+    if (this.merchant(claim.merchant_id).suspended_at) throw new NotFoundException("This shop isn't giving points right now");
     return claim;
   }
 
@@ -474,6 +479,36 @@ export class LoyaltyService {
       this.log(merchantId, 'shop', 'undo', `Undid ${label} (${tx.points > 0 ? '−' : '+'}${Math.abs(tx.points)} points)`, customer);
       return this.view(this.merchant(merchantId), this.customer(merchantId, customer.id));
     });
+  }
+
+  /**
+   * What returning customers brought in over 30 days, ending `daysAgo` days ago. A return visit is
+   * any purchase after a customer's first; "won back" is a return after the shop's inactive period.
+   */
+  comeback(m: { id: number; inactive_days: number }, daysAgo: number) {
+    const range = { m: m.id, from: `-${daysAgo + 30} days`, to: `-${daysAgo} days`, gap: m.inactive_days };
+    const visits = this.db.sql
+      .prepare(
+        `WITH v AS (
+           SELECT customer_id, amount, created_at,
+                  LAG(created_at) OVER (PARTITION BY customer_id ORDER BY created_at, id) AS prev
+           FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+         )
+         SELECT COUNT(DISTINCT CASE WHEN prev IS NOT NULL THEN customer_id END) AS customers,
+                COALESCE(SUM(prev IS NOT NULL), 0) AS visits,
+                COALESCE(SUM(CASE WHEN prev IS NOT NULL THEN amount END), 0) AS sales,
+                COUNT(DISTINCT CASE WHEN julianday(created_at) - julianday(prev) >= :gap THEN customer_id END) AS wonBack,
+                COALESCE(SUM(amount), 0) AS allSales
+         FROM v WHERE created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
+      )
+      .get(range) as { customers: number; visits: number; sales: number; wonBack: number; allSales: number };
+    const { rewards } = this.db.sql
+      .prepare(
+        `SELECT COUNT(*) AS rewards FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0
+           AND created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
+      )
+      .get({ m: m.id, from: range.from, to: range.to }) as { rewards: number };
+    return { ...visits, rewards };
   }
 
   /** Writes one entry and moves the customer's balance (and lifetime points, for earning). */

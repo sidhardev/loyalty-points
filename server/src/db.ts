@@ -1,13 +1,17 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
 // One SQLite file (Node's built-in driver). Each shop only ever sees rows with its own merchant_id.
 // The schema is upgraded step by step (PRAGMA user_version), so existing data is kept.
 
 const FILE = process.env.DB_FILE || 'data/loyalty.db';
+
+// A copy of the database is made once a day into BACKUP_DIR (default: data/backups); the last 14 are kept.
+const BACKUP_DIR = process.env.BACKUP_DIR || join(dirname(FILE), 'backups');
+const KEEP_BACKUPS = 14;
 
 export const randomToken = (bytes = 12) => randomBytes(bytes).toString('base64url');
 
@@ -140,6 +144,42 @@ const MIGRATIONS: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+
+  // 6: superadmin — platform owners (created from the server's terminal), shop suspension, support notes,
+  // one-time password reset links, and a log of every admin action.
+  `
+  ALTER TABLE merchants ADD COLUMN last_seen_at TEXT;
+  ALTER TABLE merchants ADD COLUMN suspended_at TEXT;
+  ALTER TABLE merchants ADD COLUMN suspended_reason TEXT;
+  CREATE TABLE admins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE admin_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    admin_id INTEGER NOT NULL REFERENCES admins(id),
+    note TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE admin_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id INTEGER NOT NULL REFERENCES admins(id),
+    merchant_id INTEGER,
+    action TEXT NOT NULL,
+    detail TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE password_resets (
+    token_hash TEXT PRIMARY KEY, -- sha256 of the token in the link; the token itself is never stored
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 const INDEXES = `
@@ -156,12 +196,33 @@ CREATE INDEX IF NOT EXISTS idx_tx_customer ON transactions (customer_id, created
 @Injectable()
 export class Db implements OnModuleDestroy {
   readonly sql: DatabaseSync;
+  private backupTimer: NodeJS.Timeout;
 
   constructor() {
     mkdirSync(dirname(FILE), { recursive: true });
     this.sql = new DatabaseSync(FILE);
     this.sql.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
     this.migrate();
+    this.backup();
+    this.backupTimer = setInterval(() => this.backup(), 6 * 3_600_000);
+    this.backupTimer.unref();
+  }
+
+  /** Today's backup, if there isn't one yet: a consistent copy even while the app is running. */
+  backup() {
+    try {
+      mkdirSync(BACKUP_DIR, { recursive: true });
+      const file = join(BACKUP_DIR, `loyalty-${new Date().toISOString().slice(0, 10)}.db`);
+      if (existsSync(file)) return;
+      this.sql.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+      const old = readdirSync(BACKUP_DIR)
+        .filter((f) => /^loyalty-\d{4}-\d{2}-\d{2}\.db$/.test(f))
+        .sort()
+        .slice(0, -KEEP_BACKUPS);
+      for (const f of old) unlinkSync(join(BACKUP_DIR, f));
+    } catch (error) {
+      console.error('Database backup failed:', error);
+    }
   }
 
   private migrate() {
@@ -200,6 +261,7 @@ export class Db implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
+    clearInterval(this.backupTimer);
     this.sql.close();
   }
 }

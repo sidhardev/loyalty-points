@@ -180,6 +180,7 @@ export class PublicController {
   private shop(code: string) {
     const m = this.db.sql.prepare('SELECT * FROM merchants WHERE join_code = ?').get(code) as MerchantRow | undefined;
     if (!m) throw new NotFoundException('This QR code is not valid');
+    if (m.suspended_at) throw new NotFoundException("This shop isn't taking new members right now");
     return m;
   }
 

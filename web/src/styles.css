@@ -1,4 +1,4 @@
-/* Loyalty Points — design tokens, then components, then pages. Mobile first. */
+/* Habiturn — design tokens, then components, then pages. Mobile first. */
 
 :root,
 :root[data-theme='light'] {
@@ -2461,3 +2461,270 @@ button.row-item:hover {
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* ---------------------------------------------------------------- superadmin */
+
+.admin {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.admin-bar .brand {
+  margin-right: 8px;
+}
+
+.admin-bar nav {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.admin-bar nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.admin-bar nav a.active {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.admin-page {
+  display: grid;
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr); /* wide tables scroll inside their card, not the page */
+  gap: 18px;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  animation: page-in 0.35s var(--ease);
+}
+
+@media (max-width: 700px) {
+  .admin-email,
+  .admin-bar nav a span,
+  .admin-bar .brand span {
+    display: none;
+  }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.status-active {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.status-sleeping {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.status-new {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.status-never {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.status-paused {
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+
+.seg-scroll {
+  display: flex;
+  max-width: 100%;
+  overflow-x: auto;
+  justify-self: start;
+}
+
+.seg-scroll button {
+  white-space: nowrap;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.admin-table td:first-child {
+  display: grid;
+  white-space: normal;
+}
+
+.admin-table td:first-child a {
+  color: var(--ink);
+}
+
+.admin-table tbody tr {
+  cursor: pointer;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 90px;
+  padding-top: 6px;
+}
+
+.bars span {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--brand-fill);
+}
+
+.bars span.zero {
+  background: var(--surface-3);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-weight: 650;
+}
+
+.support-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.support-action > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+}
+
+.support-action .btn {
+  flex: none;
+}
+
+.support-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.support-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.copy-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.copy-box code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.notes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notes li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.notes p {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+}
+

@@ -7,6 +7,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
+import { AdminController, AdminGuard } from './admin';
 import { AuthController, AuthGuard } from './auth';
 import { Db } from './db';
 import { LoyaltyController } from './loyalty.controller';
@@ -26,16 +27,18 @@ function jwtSecret() {
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController],
-  providers: [Db, AuthGuard, LoyaltyService],
+  controllers: [AuthController, LoyaltyController, PublicController, AdminController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService],
 })
 class AppModule {}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  // Behind a local tunnel or proxy (ngrok, nginx), take the visitor's IP from X-Forwarded-For,
-  // so per-IP limits apply to each visitor rather than to the proxy.
-  app.set('trust proxy', 'loopback');
+  // Behind a local tunnel or proxy (ngrok, nginx, Caddy), take the visitor's IP from X-Forwarded-For,
+  // so per-IP limits apply to each visitor rather than to the proxy. TRUST_PROXY sets which proxies to
+  // believe: a hop count ("1" behind one proxy, e.g. Caddy in Docker or Railway) or Express names like "loopback".
+  const trust = process.env.TRUST_PROXY ?? 'loopback';
+  app.set('trust proxy', /^\d+$/.test(trust) ? Number(trust) : trust);
 
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');
@@ -52,7 +55,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 4000;
   await app.listen(port);
-  console.log(`Loyalty Points running on http://localhost:${port}`);
+  console.log(`Habiturn running on http://localhost:${port}`);
 }
 
 void bootstrap();

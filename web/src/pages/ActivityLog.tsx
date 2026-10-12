@@ -21,7 +21,7 @@ import { EmptyState, SkeletonRows } from '../ui';
 
 type Entry = {
   id: number;
-  actor: 'shop' | 'customer';
+  actor: 'shop' | 'customer' | 'admin';
   action: string;
   detail: string;
   customer_id: number | null;
@@ -38,6 +38,7 @@ const ICONS: Record<string, LucideIcon> = {
   edit_customer: Pencil,
   reset_pin: KeyRound,
   pin: KeyRound,
+  password: KeyRound,
   redeem: Gift,
   reward: Gift,
   settings: SettingsIcon,
@@ -103,7 +104,9 @@ export function ActivityLog() {
                       <span className="log-detail">{e.detail}</span>
                       <span>{when(e.created_at)}</span>
                     </div>
-                    <span className={`badge ${e.actor === 'customer' ? 'badge-plus' : ''}`}>{e.actor === 'customer' ? 'Customer' : 'Shop'}</span>
+                    <span className={`badge ${e.actor === 'customer' ? 'badge-plus' : ''}`}>
+                      {e.actor === 'customer' ? 'Customer' : e.actor === 'admin' ? 'Support' : 'Shop'}
+                    </span>
                   </div>
                 </li>
               );
