@@ -65,7 +65,33 @@ export class LoyaltyController {
     return { totals, today, birthdays: soon, recent: this.transactions(merchantId, undefined, 12) };
   }
 
+  // ---- bill QR ----
+
+  @Post('claims')
+  createClaim(@MerchantId() merchantId: number, @Body() body: { amount?: number }) {
+    return this.loyalty.createClaim(merchantId, body?.amount);
+  }
+
+  @Get('claims/:code')
+  claimStatus(@MerchantId() merchantId: number, @Param('code') code: string) {
+    return this.loyalty.claimStatus(merchantId, code);
+  }
+
+  @Delete('claims/:code')
+  cancelClaim(@MerchantId() merchantId: number, @Param('code') code: string) {
+    this.loyalty.cancelClaim(merchantId, code);
+    return { ok: true };
+  }
+
   // ---- customers ----
+
+  /** A scanned member card (or wallet link QR) → that customer. */
+  @Get('customers/scan')
+  scan(@MerchantId() merchantId: number, @Query('code') code = '') {
+    const c = this.loyalty.byScan(merchantId, code);
+    if (!c) throw new NotFoundException('This QR is not a member card of your shop');
+    return this.loyalty.view(this.loyalty.merchant(merchantId), c);
+  }
 
   /** `filter=inactive` lists customers who haven't visited for the shop's inactive period. */
   @Get('customers')

@@ -933,6 +933,9 @@ button.row-item:hover {
 }
 
 .sheet-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 19px;
 }
 
@@ -1169,6 +1172,227 @@ button.row-item:hover {
 .callout > div {
   flex: 1;
   min-width: 0;
+}
+
+.give-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.give-modes button {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.give-modes button:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.give-modes svg {
+  margin-bottom: 6px;
+  color: var(--brand-ink);
+}
+
+.give-modes span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* QR codes shown on screen to be scanned: always dark on white, whatever the theme. */
+.bill-qr {
+  justify-self: center;
+  width: min(100%, 300px);
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line);
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.bill-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.bill-qr.expired {
+  opacity: 0.35;
+  filter: blur(3px);
+}
+
+.waiting {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brand-fill);
+  animation: pulse 1.4s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--brand-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+.scanner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  width: min(100%, 340px);
+  justify-self: center;
+  border-radius: 18px;
+  background: #000;
+}
+
+.scanner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-frame {
+  position: absolute;
+  inset: 18%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+
+.scanner-error {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--surface-2);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- install the app */
+
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px 12px 14px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+}
+
+.install-banner-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+}
+
+.install-banner > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.install-banner > div span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.install-banner .btn {
+  flex: none;
+}
+
+.install-banner .icon-btn {
+  flex: none;
+  margin-left: -4px;
+}
+
+.install-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.install-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.45;
+}
+
+.install-step-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.inline-icon {
+  vertical-align: -2px;
 }
 
 /* ---------------------------------------------------------------- dashboard */

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, Download, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { AuthPage } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
@@ -7,12 +7,12 @@ import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { GivePointsHost } from './pages/GivePoints';
 import { Insights } from './pages/Insights';
-import { CustomerLogin, Join, Wallet } from './pages/Public';
+import { Claim, CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
 import { Settings } from './pages/Settings';
-import { ConfirmHost, Logo, Toaster, confirmDialog, openGivePoints, useTheme } from './ui';
+import { ConfirmHost, Logo, Toaster, confirmDialog, InstallButton, openGivePoints, useTheme } from './ui';
 
-// Customer pages use real paths (/w/<token>, /join/<code>, /login) so their links are clean to share.
+// Customer pages use real paths (/w/<token>, /join/<code>, /c/<bill code>, /login) so their links are clean to share.
 // The shop's own screens are picked from the URL hash (#/customers/3), so no router library is needed.
 
 function useHash() {
@@ -59,6 +59,9 @@ function Shell({ merchant, children, onLogout }: { merchant: Merchant; children:
           </a>
         ))}
         <div className="side-foot">
+          <InstallButton className="side-link">
+            <Download size={19} /> Install app
+          </InstallButton>
           <button className="side-link" onClick={theme.toggle}>
             <theme.Icon size={19} /> {theme.theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
@@ -72,6 +75,9 @@ function Shell({ merchant, children, onLogout }: { merchant: Merchant; children:
         <a href="#/" className="brand">
           <Logo /> <span>{merchant.name}</span>
         </a>
+        <InstallButton className="btn btn-soft btn-sm">
+          <Download size={16} /> Install
+        </InstallButton>
         <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
           <theme.Icon size={20} />
         </button>
@@ -146,8 +152,9 @@ function ShopApp() {
 
 function Route() {
   if (location.pathname === '/login') return <CustomerLogin />;
-  const [, kind, id] = location.pathname.match(/^\/(w|join)\/([^/]+)/) ?? [];
+  const [, kind, id] = location.pathname.match(/^\/(w|join|c)\/([^/]+)/) ?? [];
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
+  if (kind === 'c') return <Claim code={decodeURIComponent(id)} />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;
   return <ShopApp />;
 }

@@ -101,12 +101,27 @@ const MIGRATIONS: string[] = [
     locked_until TEXT
   );
   `,
+
+  // 4: bill QR codes the customer scans to claim points, and a member-card code the shop scans.
+  `
+  CREATE TABLE claims (
+    code TEXT PRIMARY KEY,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    amount REAL NOT NULL,
+    expires_at TEXT NOT NULL,
+    customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+    result TEXT, -- JSON of the earn result, for the shop's screen
+    claimed_at TEXT
+  );
+  ALTER TABLE customers ADD COLUMN card_code TEXT;
+  `,
 ];
 
 const INDEXES = `
 CREATE INDEX IF NOT EXISTS idx_customers_merchant ON customers (merchant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_wallet ON customers (wallet_token);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_join ON merchants (join_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_card ON customers (card_code);
 CREATE INDEX IF NOT EXISTS idx_tx_merchant ON transactions (merchant_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tx_customer ON transactions (customer_id, created_at);
 `;
@@ -133,6 +148,9 @@ export class Db implements OnModuleDestroy {
     // Rows from before wallet links / join codes existed get theirs here.
     for (const { id } of this.sql.prepare('SELECT id FROM customers WHERE wallet_token IS NULL').all() as { id: number }[]) {
       this.sql.prepare('UPDATE customers SET wallet_token = ? WHERE id = ?').run(randomToken(), id);
+    }
+    for (const { id } of this.sql.prepare('SELECT id FROM customers WHERE card_code IS NULL').all() as { id: number }[]) {
+      this.sql.prepare('UPDATE customers SET card_code = ? WHERE id = ?').run(randomToken(9), id);
     }
     for (const { id } of this.sql.prepare('SELECT id FROM merchants WHERE join_code IS NULL').all() as { id: number }[]) {
       this.sql.prepare('UPDATE merchants SET join_code = ? WHERE id = ?').run(randomToken(6), id);

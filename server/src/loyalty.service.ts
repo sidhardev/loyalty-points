@@ -31,8 +31,14 @@ export type CustomerRow = {
   last_visit: string | null;
   wallet_token: string;
   pin_hash: string | null;
+  card_code: string;
   created_at: string;
 };
+
+type ClaimRow = { code: string; merchant_id: number; amount: number; expires_at: string; customer_id: number | null; result: string | null };
+
+/** How long a bill QR can be scanned. */
+const CLAIM_MINUTES = 3;
 
 type TxRow = { id: number; customer_id: number; type: string; points: number; amount: number | null; note: string | null; reversal_of: number | null; reversed: number };
 
@@ -42,6 +48,7 @@ const PHONE = /^\+?[0-9]{7,15}$/;
 const BIRTHDAY = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
 
 export const cleanPhone = (phone: unknown) => String(phone ?? '').replace(/[\s()-]/g, '');
+export const last10 = (phone: unknown) => String(phone ?? '').replace(/\D/g, '').slice(-10);
 
 const PIN = /^[0-9]{4}$/;
 
@@ -89,6 +96,24 @@ export class LoyaltyService {
       .get(merchantId, phone) as CustomerRow | undefined;
   }
 
+  /** Same number written differently (+91, spaces) still finds the customer. */
+  byLast10(merchantId: number, phone: string) {
+    return this.db.sql
+      .prepare("SELECT * FROM customers WHERE merchant_id = ? AND substr(replace(replace(phone, '+', ''), ' ', ''), -10) = ?")
+      .get(merchantId, last10(phone)) as CustomerRow | undefined;
+  }
+
+  /** Customer from a scanned member card, or from a scanned wallet link (/w/<token>). */
+  byScan(merchantId: number, scanned: string) {
+    const text = String(scanned ?? '').trim();
+    const code = text.match(/^lp-card:(.+)$/)?.[1];
+    const token = text.match(/\/w\/([^/?#]+)/)?.[1];
+    if (!code && !token) return undefined;
+    return this.db.sql
+      .prepare(`SELECT * FROM customers WHERE merchant_id = ? AND ${code ? 'card_code' : 'wallet_token'} = ?`)
+      .get(merchantId, code ?? decodeURIComponent(token!)) as CustomerRow | undefined;
+  }
+
   /** Gold once lifetime points reach the shop's threshold; Gold earns with a multiplier. */
   tier(m: MerchantRow, c: Pick<CustomerRow, 'lifetime_points'>) {
     const gold = c.lifetime_points >= m.gold_threshold;
@@ -133,8 +158,8 @@ export class LoyaltyService {
     return this.db.transaction(() => {
       if (this.byPhone(merchantId, phone)) throw new ConflictException('A customer with this phone number already exists');
       const { lastInsertRowid } = this.db.sql
-        .prepare('INSERT INTO customers (merchant_id, name, phone, birthday, wallet_token, pin_hash) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(merchantId, name, phone, birthday, randomToken(), pinHash);
+        .prepare('INSERT INTO customers (merchant_id, name, phone, birthday, wallet_token, pin_hash, card_code) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(merchantId, name, phone, birthday, randomToken(), pinHash, randomToken(9));
       const id = Number(lastInsertRowid);
       const m = this.merchant(merchantId);
       const bonuses: Bonus[] = [];
@@ -188,6 +213,92 @@ export class LoyaltyService {
       const after = this.customer(merchantId, customer.id);
       return { points, bonuses, isNew, customer: this.view(m, after), tierUp: tier.name !== this.tier(m, after).name };
     });
+  }
+
+  // ---- bill QR: the shop enters the amount, the customer scans and claims the points ----
+
+  createClaim(merchantId: number, amountInput: unknown) {
+    const amount = Number(amountInput);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) throw new BadRequestException('Enter the bill amount');
+    const code = randomToken(9);
+    const expiresAt = new Date(Date.now() + CLAIM_MINUTES * 60_000).toISOString();
+    this.db.sql.prepare('DELETE FROM claims WHERE expires_at < ? AND customer_id IS NULL').run(new Date().toISOString());
+    this.db.sql.prepare('INSERT INTO claims (code, merchant_id, amount, expires_at) VALUES (?, ?, ?, ?)').run(code, merchantId, amount, expiresAt);
+    return { code, amount, expiresAt };
+  }
+
+  /** For the shop's screen while it waits: still waiting, claimed (with the earn result), or expired. */
+  claimStatus(merchantId: number, code: string) {
+    const claim = this.db.sql.prepare('SELECT * FROM claims WHERE code = ? AND merchant_id = ?').get(code, merchantId) as ClaimRow | undefined;
+    if (!claim) throw new NotFoundException('Bill QR not found');
+    if (claim.result) return { status: 'claimed' as const, result: JSON.parse(claim.result) };
+    return { status: claim.expires_at < new Date().toISOString() ? ('expired' as const) : ('waiting' as const) };
+  }
+
+  cancelClaim(merchantId: number, code: string) {
+    this.db.sql.prepare('DELETE FROM claims WHERE code = ? AND merchant_id = ? AND customer_id IS NULL').run(code, merchantId);
+  }
+
+  /** What the customer sees before claiming. */
+  claimInfo(code: string) {
+    const claim = this.openClaim(code);
+    const m = this.merchant(claim.merchant_id);
+    return {
+      shopId: m.id,
+      shop: m.name,
+      amount: claim.amount,
+      points: Math.floor((claim.amount / 100) * m.points_per_100),
+      welcomeBonus: m.welcome_bonus,
+      expiresAt: claim.expires_at,
+    };
+  }
+
+  /**
+   * The customer claims a bill QR, by the wallet link saved on their phone or by phone number.
+   * New numbers need a name and become members. Only a saved wallet link (or joining just now)
+   * shows them their balance and wallet — typing someone else's number adds points but reveals nothing.
+   */
+  claim(code: string, input: { walletToken?: unknown; phone?: unknown; name?: unknown }) {
+    return this.db.transaction(() => {
+      const claim = this.openClaim(code);
+      const m = this.merchant(claim.merchant_id);
+      let customer = input.walletToken
+        ? (this.db.sql.prepare('SELECT * FROM customers WHERE wallet_token = ? AND merchant_id = ?').get(String(input.walletToken), m.id) as
+            | CustomerRow
+            | undefined)
+        : undefined;
+      const trusted = Boolean(customer);
+      if (!customer) {
+        if (!PHONE.test(cleanPhone(input.phone))) throw new BadRequestException('Enter a valid phone number');
+        customer = this.byLast10(m.id, cleanPhone(input.phone));
+        if (!customer && !String(input.name ?? '').trim()) return { needName: true as const };
+      }
+
+      const result = this.earn(m.id, { phone: customer?.phone ?? input.phone, amount: claim.amount, name: input.name });
+      this.db.sql
+        .prepare("UPDATE claims SET customer_id = ?, result = ?, claimed_at = datetime('now') WHERE code = ?")
+        .run(result.customer.id, JSON.stringify(result), code);
+
+      const show = trusted || result.isNew;
+      return {
+        shop: m.name,
+        points: result.points,
+        bonuses: result.bonuses,
+        isNew: result.isNew,
+        tierUp: show && result.tierUp,
+        name: show ? result.customer.name : null,
+        balance: show ? result.customer.points : null,
+        walletToken: show ? result.customer.walletToken : null,
+      };
+    });
+  }
+
+  private openClaim(code: string) {
+    const claim = this.db.sql.prepare('SELECT * FROM claims WHERE code = ?').get(code) as ClaimRow | undefined;
+    if (!claim) throw new NotFoundException('This bill QR is not valid');
+    if (claim.customer_id || claim.result) throw new ConflictException('These points have already been claimed');
+    if (claim.expires_at < new Date().toISOString()) throw new BadRequestException('This bill QR has expired — ask the shop to show a new one');
+    return claim;
   }
 
   redeem(merchantId: number, customerId: number, rewardId: number) {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Activity as ActivityIcon, Cake, ChevronRight, Coins, Gift, IndianRupee, Plus, Users, UserX } from 'lucide-react';
 import { api, birthdayLabel, num, rupees, walletUrl, whatsapp, type Customer, type Merchant, type Transaction } from '../api';
-import { Activity, Avatar, EmptyState, Skeleton, SkeletonRows, openGivePoints, useDataVersion } from '../ui';
+import { Activity, Avatar, EmptyState, InstallBanner, Skeleton, SkeletonRows, openGivePoints, useDataVersion } from '../ui';
 
 type DashboardData = {
   totals: { customers: number; issued: number; redeemed: number; redemptions: number; sales: number; inactive: number };
@@ -42,11 +42,13 @@ export function Dashboard({ merchant }: { merchant: Merchant }) {
         </div>
       </header>
 
+      <InstallBanner id="shop" title="Install the app on this phone" text="Opens in one tap from your home screen." />
+
       <section className="hero-cta">
         <div className="hero-cta-top">
           <div>
             <h2>Customer at the counter?</h2>
-            <p>Give points in seconds — by phone number or name.</p>
+            <p>Give points in seconds — show a bill QR, scan their card, or type their number.</p>
           </div>
           <button className="btn btn-lg" onClick={() => openGivePoints()}>
             <Plus size={20} /> Give points

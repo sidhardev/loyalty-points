@@ -4,10 +4,14 @@ import {
   CheckCircle2,
   Coins,
   Crown,
+  Download,
   Gift,
   Info,
   Moon,
+  MoreVertical,
+  Share,
   SlidersHorizontal,
+  Smartphone,
   Sparkles,
   Star,
   Sun,
@@ -47,6 +51,170 @@ export function useGivePointsRequests(onOpen: (phone: string) => void) {
     addEventListener(OPEN_GIVE, handler);
     return () => removeEventListener(OPEN_GIVE, handler);
   }, [onOpen]);
+}
+
+// ---------------------------------------------------------------- install as an app (PWA)
+
+type InstallPrompt = Event & { prompt: () => Promise<void> };
+let installPrompt: InstallPrompt | null = null;
+const INSTALL_CHANGED = 'lp-install-changed';
+
+// Chrome/Edge/Android offer installing once the page qualifies; keep the offer for our own button.
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e as InstallPrompt;
+  dispatchEvent(new Event(INSTALL_CHANGED));
+});
+addEventListener('appinstalled', () => {
+  installPrompt = null;
+  dispatchEvent(new Event(INSTALL_CHANGED));
+});
+
+const standalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /android/i.test(navigator.userAgent);
+
+/** `installed`: already running as the installed app. `install()`: the browser's own prompt when it offers one. */
+export function useInstall() {
+  const [canPrompt, setCanPrompt] = useState(Boolean(installPrompt));
+  const [installed, setInstalled] = useState(standalone);
+  useEffect(() => {
+    const update = () => {
+      setCanPrompt(Boolean(installPrompt));
+      setInstalled(standalone());
+    };
+    const done = () => setInstalled(true);
+    addEventListener(INSTALL_CHANGED, update);
+    addEventListener('appinstalled', done);
+    return () => {
+      removeEventListener(INSTALL_CHANGED, update);
+      removeEventListener('appinstalled', done);
+    };
+  }, []);
+  const install = async () => {
+    const prompt = installPrompt;
+    if (!prompt) return false;
+    await prompt.prompt();
+    installPrompt = null;
+    setCanPrompt(false);
+    return true;
+  };
+  return { canPrompt, installed, install };
+}
+
+/** Steps for browsers that don't offer a one-tap install (iPhone, or before Chrome is ready to offer it). */
+function InstallHelpSheet({ onClose }: { onClose: () => void }) {
+  const steps = isIos
+    ? [
+        <>
+          Tap the <Share size={15} className="inline-icon" /> <strong>Share</strong> button in the browser bar.
+        </>,
+        <>
+          Scroll down and tap <strong>Add to Home Screen</strong>.
+        </>,
+        <>
+          Tap <strong>Add</strong>.
+        </>,
+      ]
+    : isAndroid
+      ? [
+          <>
+            Tap the <MoreVertical size={15} className="inline-icon" /> <strong>menu</strong> at the top right of the browser.
+          </>,
+          <>
+            Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+          </>,
+          <>
+            Tap <strong>Install</strong>.
+          </>,
+        ]
+      : [
+          <>
+            Click the <Download size={15} className="inline-icon" /> <strong>install icon</strong> at the right end of the address bar.
+          </>,
+          <>
+            Or open the browser menu and choose <strong>Install</strong> / <strong>Apps → Install this site</strong>.
+          </>,
+        ];
+  return (
+    <Sheet title="Install the app" onClose={onClose}>
+      <div style={{ display: 'grid', gap: 14 }}>
+        <ol className="install-steps">
+          {steps.map((step, i) => (
+            <li key={i}>
+              <span className="install-step-num">{i + 1}</span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="muted small" style={{ margin: 0 }}>
+          It then opens from your home screen like any other app.
+        </p>
+        <button className="btn btn-primary btn-lg" onClick={onClose}>
+          Got it
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Installs straight away when the browser allows it, otherwise shows the steps. Hidden once installed. */
+export function InstallButton({ className = 'btn btn-primary', children }: { className?: string; children?: ReactNode }) {
+  const { installed, install } = useInstall();
+  const [help, setHelp] = useState(false);
+  if (installed) return null;
+  const onClick = async () => {
+    if (!(await install())) setHelp(true);
+  };
+  return (
+    <>
+      <button className={className} onClick={() => void onClick()}>
+        {children ?? (
+          <>
+            <Download size={18} /> Install app
+          </>
+        )}
+      </button>
+      {help && <InstallHelpSheet onClose={() => setHelp(false)} />}
+    </>
+  );
+}
+
+/** Card asking people to install, until they install or close it. `id` keeps the "closed" choice per place. */
+export function InstallBanner({ id, title, text }: { id: string; title: string; text: string }) {
+  const { installed } = useInstall();
+  const key = `lp_install_hidden_${id}`;
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (installed || hidden) return null;
+  const hide = () => {
+    setHidden(true);
+    try {
+      localStorage.setItem(key, '1');
+    } catch {
+      // Hidden for this visit only.
+    }
+  };
+  return (
+    <section className="install-banner">
+      <span className="install-banner-icon" aria-hidden>
+        <Smartphone size={22} />
+      </span>
+      <div>
+        <strong>{title}</strong>
+        <span>{text}</span>
+      </div>
+      <InstallButton className="btn btn-primary btn-sm">Install</InstallButton>
+      <button className="icon-btn" onClick={hide} aria-label="Not now">
+        <X size={18} />
+      </button>
+    </section>
+  );
 }
 
 // ---------------------------------------------------------------- toasts

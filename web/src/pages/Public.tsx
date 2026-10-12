@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Crown, Gift, History, KeyRound, LogIn, Phone } from 'lucide-react';
+import QRCode from 'qrcode';
+import { Check, Crown, Download, Gift, History, KeyRound, LogIn, Phone, QrCode } from 'lucide-react';
 
-import { api, num, type Bonus, type Reward, type Tier, type Transaction } from '../api';
-import { Activity, BirthdayInput, EmptyState, ErrorText, Logo, PinInput, Skeleton, toast, useAction } from '../ui';
+import { api, forgetWallet, num, rememberWallet, savedWallets, type Bonus, type Reward, type Tier, type Transaction } from '../api';
+import { Activity, BirthdayInput, EmptyState, ErrorText, InstallBanner, InstallButton, Logo, PinInput, Sheet, Skeleton, toast, useAction } from '../ui';
 
 // Pages customers open on their phone, without an account.
 
 type WalletData = {
   hasPin: boolean;
-  shop: { name: string; pointsPer100: number; goldThreshold: number; goldMultiplier: number };
+  cardCode: string;
+  shop: { id: number; name: string; pointsPer100: number; goldThreshold: number; goldMultiplier: number };
   customer: { name: string; points: number; lifetimePoints: number; tier: Tier; since: string };
   rewards: Reward[];
   history: Transaction[];
@@ -105,18 +107,46 @@ function PinCard({ token, hasPin, onSaved }: { token: string; hasPin: boolean; o
   );
 }
 
+/** Big QR the shop scans at the counter to find this customer without typing their number. */
+function MyCardSheet({ shop, name, cardCode, onClose }: { shop: string; name: string; cardCode: string; onClose: () => void }) {
+  const [qr, setQr] = useState('');
+  useEffect(() => {
+    QRCode.toDataURL(`lp-card:${cardCode}`, { width: 560, margin: 1, color: { dark: '#141416' } }).then(setQr);
+  }, [cardCode]);
+  return (
+    <Sheet title="My card" onClose={onClose}>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <div className="bill-qr">{qr && <img src={qr} alt="Your member card QR code" />}</div>
+        <p className="center" style={{ margin: 0 }}>
+          <strong>{name}</strong>
+          <span className="muted"> · {shop}</span>
+        </p>
+        <p className="muted small center" style={{ margin: 0 }}>
+          Show this at the counter — the shop scans it to add your points.
+        </p>
+      </div>
+    </Sheet>
+  );
+}
+
 /** /w/<token> — a customer's points, rewards and history at one shop. */
 export function Wallet({ token }: { token: string }) {
   const [data, setData] = useState<WalletData | null>(null);
   const [error, setError] = useState('');
+  const [showCard, setShowCard] = useState(false);
 
   const load = useCallback(() => {
     api<WalletData>(`public/wallet/${encodeURIComponent(token)}`)
       .then((d) => {
         setData(d);
         document.title = `${d.shop.name} · My points`;
+        rememberWallet({ token, shopId: d.shop.id, shop: d.shop.name, name: d.customer.name });
       })
-      .catch((err) => setError((err as Error).message));
+      .catch((err) => {
+        const message = (err as Error).message;
+        if (message.includes('not valid')) forgetWallet(token);
+        setError(message);
+      });
   }, [token]);
   useEffect(load, [load]);
 
@@ -163,6 +193,13 @@ export function Wallet({ token }: { token: string }) {
           )}
         </div>
       </MemberCard>
+
+      <button className="btn btn-primary btn-lg btn-block" onClick={() => setShowCard(true)}>
+        <QrCode size={19} /> My card
+      </button>
+      {showCard && <MyCardSheet shop={shop.name} name={customer.name} cardCode={data.cardCode} onClose={() => setShowCard(false)} />}
+
+      <InstallBanner id="wallet" title="Add your card to your home screen" text="See your points and show your card in one tap." />
 
       {ready.length > 0 && (
         <div className="callout">
@@ -218,6 +255,9 @@ export function Wallet({ token }: { token: string }) {
         {history.length ? <Activity items={history} showCustomer={false} /> : <p className="muted small">No activity yet.</p>}
       </section>
 
+      <InstallButton className="btn btn-ghost btn-block">
+        <Download size={18} /> Add to home screen
+      </InstallButton>
       <PinCard token={token} hasPin={data.hasPin} onSaved={load} />
     </main>
   );
@@ -316,7 +356,171 @@ export function Join({ code }: { code: string }) {
   );
 }
 
-type LoginResult = { wallets: { token: string; shop: string; name: string; points: number }[] };
+type ClaimInfo = { shopId: number; shop: string; amount: number; points: number; welcomeBonus: number };
+type Claimed = {
+  shop: string;
+  points: number;
+  bonuses: Bonus[];
+  isNew: boolean;
+  tierUp: boolean;
+  name: string | null; // name, balance and wallet only when it's provably them (saved wallet, or just joined)
+  balance: number | null;
+  walletToken: string | null;
+};
+
+/** /c/<code> — the bill QR the shop shows. One tap with a saved card, otherwise the phone number (and name, if new). */
+export function Claim({ code }: { code: string }) {
+  const [info, setInfo] = useState<ClaimInfo | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [done, setDone] = useState<Claimed | null>(null);
+  const [form, setForm] = useState({ phone: '', name: '' });
+  const [needName, setNeedName] = useState(false);
+  const [usePhone, setUsePhone] = useState(false);
+  const { busy, error, run } = useAction();
+  const path = `public/claim/${encodeURIComponent(code)}`;
+
+  useEffect(() => {
+    api<ClaimInfo>(path)
+      .then((i) => {
+        setInfo(i);
+        document.title = `Points from ${i.shop}`;
+      })
+      .catch((err) => setLoadError((err as Error).message));
+  }, [path]);
+
+  const saved = info && !usePhone ? savedWallets().find((w) => w.shopId === info.shopId) : undefined;
+
+  const claim = (body: { walletToken?: string; phone?: string; name?: string }) =>
+    void run(async () => {
+      try {
+        const r = await api<Claimed | { needName: true }>(path, 'POST', body);
+        if ('needName' in r) return setNeedName(true);
+        if (r.walletToken && r.name) rememberWallet({ token: r.walletToken, shopId: info!.shopId, shop: r.shop, name: r.name });
+        setDone(r);
+      } catch (err) {
+        if (body.walletToken) setUsePhone(true); // that saved card no longer works here
+        throw err;
+      }
+    });
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    claim({ phone: form.phone, name: needName ? form.name : undefined });
+  };
+
+  if (loadError) {
+    return (
+      <main className="public">
+        <section className="card">
+          <EmptyState icon={QrCode} title="Can't add these points" text={loadError} />
+        </section>
+      </main>
+    );
+  }
+  if (!info) {
+    return (
+      <main className="public">
+        <Skeleton h={180} />
+      </main>
+    );
+  }
+
+  if (done) {
+    const total = done.points + done.bonuses.reduce((a, b) => a + b.points, 0);
+    return (
+      <main className="public">
+        <section className="card success">
+          <span className="success-burst">
+            <Check size={34} strokeWidth={3} />
+          </span>
+          <span className="success-points tabular">+{num(total)}</span>
+          <span className="muted">
+            points from <strong style={{ color: 'var(--ink)' }}>{done.shop}</strong>
+            {done.balance !== null && <> · balance {num(done.balance)}</>}
+          </span>
+          {done.bonuses.length > 0 && (
+            <span className="small muted">includes {done.bonuses.map((b) => `${num(b.points)} ${b.label.toLowerCase()}`).join(' + ')}</span>
+          )}
+        </section>
+        {done.tierUp && (
+          <div className="callout">
+            <Crown size={20} />
+            <div>
+              <strong>You're now a ★ Gold member!</strong>
+              <div className="small muted">You'll earn extra points on every bill.</div>
+            </div>
+          </div>
+        )}
+        {done.walletToken ? (
+          <a className="btn btn-primary btn-lg btn-block" href={`/w/${done.walletToken}`}>
+            <Gift size={18} /> {done.isNew ? 'See my card and rewards' : 'Open my card'}
+          </a>
+        ) : (
+          <p className="muted small center">
+            Added to the account for this number. <a href="/login">Log in</a> with your PIN to see your balance.
+          </p>
+        )}
+      </main>
+    );
+  }
+
+  return (
+    <main className="public">
+      <MemberCard shop={info.shop} name={`₹${num(info.amount)} bill`} points={info.points}>
+        <div className="member-foot">
+          <span>waiting for you — tap below to add them</span>
+        </div>
+      </MemberCard>
+
+      {saved ? (
+        <section className="card" style={{ display: 'grid', gap: 12 }}>
+          <button className="btn btn-primary btn-lg" disabled={busy} onClick={() => claim({ walletToken: saved.token })}>
+            {busy ? 'Adding…' : `Add to my card · ${saved.name}`}
+          </button>
+          <ErrorText text={error} />
+          <button className="link small" onClick={() => setUsePhone(true)}>
+            Not {saved.name}? Use a phone number
+          </button>
+        </section>
+      ) : (
+        <form className="card" onSubmit={submit}>
+          <label>
+            Your phone number
+            <span className="input-icon">
+              <Phone size={18} />
+              <input
+                value={form.phone}
+                inputMode="tel"
+                autoComplete="tel"
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="98765 43210"
+                required
+                autoFocus={!needName}
+              />
+            </span>
+          </label>
+          {needName && (
+            <>
+              <p className="alert alert-ok small" style={{ margin: 0 }}>
+                Welcome! You're new here{info.welcomeBonus > 0 ? ` — you also get ${num(info.welcomeBonus)} bonus points` : ''}. What's your name?
+              </p>
+              <label>
+                Your name
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" required autoFocus />
+              </label>
+            </>
+          )}
+          <ErrorText text={error} />
+          <button className="btn btn-primary btn-lg" disabled={busy}>
+            {busy ? 'Adding…' : `Get ${num(info.points)} points`}
+          </button>
+        </form>
+      )}
+    </main>
+  );
+}
+
+type LoginResult ={ wallets: { token: string; shop: string; name: string; points: number }[] };
 
 /** /login — customers check their points with phone number + PIN. */
 export function CustomerLogin() {

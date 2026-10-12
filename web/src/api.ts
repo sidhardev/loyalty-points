@@ -93,6 +93,35 @@ export const birthdayLabel = (mmdd: string) => `${Number(mmdd.slice(3))} ${MONTH
 
 export const walletUrl = (token: string) => `${location.origin}/w/${token}`;
 export const joinUrl = (code: string) => `${location.origin}/join/${code}`;
+export const claimUrl = (code: string) => `${location.origin}/c/${code}`;
+
+// Wallets opened on this phone, so a bill QR can be claimed with one tap.
+export type SavedWallet = { token: string; shopId: number; shop: string; name: string };
+const WALLETS = 'lp_wallets';
+
+export function savedWallets(): SavedWallet[] {
+  try {
+    return JSON.parse(localStorage.getItem(WALLETS) || '[]') as SavedWallet[];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberWallet(w: SavedWallet) {
+  try {
+    localStorage.setItem(WALLETS, JSON.stringify([w, ...savedWallets().filter((x) => x.token !== w.token)].slice(0, 20)));
+  } catch {
+    // Without storage the customer just types their number next time.
+  }
+}
+
+export function forgetWallet(token: string) {
+  try {
+    localStorage.setItem(WALLETS, JSON.stringify(savedWallets().filter((x) => x.token !== token)));
+  } catch {
+    // Nothing saved to forget.
+  }
+}
 
 /** wa.me link with the message filled in; 10-digit numbers are treated as Indian (+91). */
 export function whatsapp(phone: string, text: string) {

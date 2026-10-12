@@ -40,10 +40,13 @@ async function bootstrap() {
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');
   if (existsSync(web)) {
-    app.useStaticAssets(web);
+    app.useStaticAssets(web, { index: false });
+    const page = readFileSync(join(web, 'index.html'), 'utf8');
     app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.method === 'GET' && !req.path.startsWith('/api')) return res.sendFile(join(web, 'index.html'));
-      next();
+      if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+      // A wallet's "Add to Home Screen" should open that wallet, so it gets its own manifest.
+      const wallet = req.path.match(/^\/w\/([\w-]+)/)?.[1];
+      res.type('html').send(wallet ? page.replace('/manifest.webmanifest', `/api/public/wallet/${wallet}/manifest`) : page);
     });
   }
 

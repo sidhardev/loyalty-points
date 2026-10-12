@@ -10,28 +10,32 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
-import { LoyaltyService, hashPin, pinMatches, type CustomerRow, type MerchantRow } from './loyalty.service';
+import { LoyaltyService, hashPin, last10, pinMatches, type CustomerRow, type MerchantRow } from './loyalty.service';
 
 // Pages customers open without a shop account:
 //  - /w/<token>: their wallet (the random token in the link is what identifies them)
 //  - /join/<code>: the shop's counter QR code, to sign up themselves
 //  - /login: phone + 4-digit PIN, which opens their wallet(s)
+//  - /c/<code>: a bill QR the shop shows; scanning it adds the bill's points
 
 const JOINS_PER_HOUR = 20;
+const CLAIMS_PER_HOUR = 60;
 const LOGINS_PER_HOUR = 30; // per IP
 const MAX_PIN_FAILURES = 5; // per phone, then locked
 const LOCK_MINUTES = 15;
 
-const last10 = (phone: unknown) => String(phone ?? '').replace(/\D/g, '').slice(-10);
 
 @Controller('api/public')
 export class PublicController {
   private joins = new Map<string, number[]>();
   private logins = new Map<string, number[]>();
+  private claims = new Map<string, number[]>();
 
   constructor(
     private readonly db: Db,
@@ -56,11 +60,35 @@ export class PublicController {
     const view = this.loyalty.view(m, c);
     return {
       hasPin: view.hasPin,
-      shop: { name: m.name, pointsPer100: m.points_per_100, goldThreshold: m.gold_threshold, goldMultiplier: m.gold_multiplier },
+      cardCode: c.card_code,
+      shop: { id: m.id, name: m.name, pointsPer100: m.points_per_100, goldThreshold: m.gold_threshold, goldMultiplier: m.gold_multiplier },
       customer: { name: view.name, points: view.points, lifetimePoints: view.lifetimePoints, tier: view.tier, since: view.createdAt },
       rewards,
       history,
     };
+  }
+
+  /** Web app manifest for one wallet, so "Add to Home Screen" opens this wallet rather than the shop app. */
+  @Get('wallet/:token/manifest')
+  manifest(@Param('token') token: string, @Res({ passthrough: true }) res: Response) {
+    const c = this.db.sql.prepare('SELECT merchant_id FROM customers WHERE wallet_token = ?').get(token) as { merchant_id: number } | undefined;
+    if (!c) throw new NotFoundException('This link is not valid');
+    const shop = this.loyalty.merchant(c.merchant_id).name;
+    const start = `/w/${encodeURIComponent(token)}`;
+    res.type('application/manifest+json');
+    return { ...APP_MANIFEST, id: start, name: `${shop} rewards`, short_name: shop.slice(0, 12), start_url: start, scope: '/' };
+  }
+
+  @Get('claim/:code')
+  claimInfo(@Param('code') code: string) {
+    return this.loyalty.claimInfo(code);
+  }
+
+  @Post('claim/:code')
+  @HttpCode(200)
+  claim(@Param('code') code: string, @Body() body: { walletToken?: string; phone?: string; name?: string }, @Req() req: Request) {
+    this.limit(this.claims, req.ip ?? 'unknown', CLAIMS_PER_HOUR, 'Too many attempts, try again later');
+    return this.loyalty.claim(code, body ?? {});
   }
 
   @Get('join/:code')

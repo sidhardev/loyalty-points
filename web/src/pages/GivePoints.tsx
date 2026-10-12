@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, Check, Crown, Gift, MessageCircle, Search, UserPlus } from 'lucide-react';
-import { api, num, walletUrl, whatsapp, type Bonus, type Customer, type Merchant, type Reward } from '../api';
+import QRCode from 'qrcode';
+import { ArrowLeft, Check, Crown, Gift, MessageCircle, QrCode, RefreshCw, ScanLine, Search, UserPlus } from 'lucide-react';
+import { api, claimUrl, num, walletUrl, whatsapp, type Bonus, type Customer, type Merchant, type Reward } from '../api';
+import { QrScanner } from '../scanner';
 import {
   Avatar,
   BirthdayInput,
@@ -16,9 +18,11 @@ import {
 
 // The counter flow: find the customer (or add them), enter the bill, done — with WhatsApp and redeem
 // right on the success screen. Opened from the + button anywhere in the app.
+// Two no-typing shortcuts: show a bill QR the customer scans, or scan the member card on their phone.
 
 type Earned = { points: number; bonuses: Bonus[]; isNew: boolean; customer: Customer; tierUp: boolean };
 type Picked = { customer: Customer } | { newPhone: string };
+type Mode = 'find' | 'scan' | 'bill';
 
 const QUICK = [100, 200, 500, 1000];
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -35,7 +39,9 @@ export const earnedMessage = (shop: string, r: Earned) =>
     .filter(Boolean)
     .join('\n');
 
-function FindStep({ onPick }: { onPick: (p: Picked) => void }) {
+const touch = matchMedia('(pointer: coarse)').matches;
+
+function FindStep({ onPick, onMode }: { onPick: (p: Picked) => void; onMode: (m: Mode) => void }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Customer[]>([]);
   const [searched, setSearched] = useState('');
@@ -69,6 +75,19 @@ function FindStep({ onPick }: { onPick: (p: Picked) => void }) {
 
   return (
     <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
+      <div className="give-modes">
+        <button type="button" onClick={() => onMode('bill')}>
+          <QrCode size={22} />
+          <strong>Bill QR</strong>
+          <span>Customer scans it</span>
+        </button>
+        <button type="button" onClick={() => onMode('scan')}>
+          <ScanLine size={22} />
+          <strong>Scan card</strong>
+          <span>Their member QR</span>
+        </button>
+      </div>
+      <span className="or">or find by phone</span>
       <div className="input-icon">
         <Search size={18} />
         <input
@@ -76,7 +95,7 @@ function FindStep({ onPick }: { onPick: (p: Picked) => void }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Customer phone or name"
           inputMode="search"
-          autoFocus
+          autoFocus={!touch}
           aria-label="Customer phone or name"
         />
       </div>
@@ -111,6 +130,170 @@ function FindStep({ onPick }: { onPick: (p: Picked) => void }) {
         <p className="muted small center">No match. Type their full phone number to add them.</p>
       )}
       {query.trim().length < 2 && <p className="muted small center">Search by phone number or name.</p>}
+    </form>
+  );
+}
+
+/** Scan the member card QR on the customer's phone (or their wallet link QR). */
+function ScanStep({ onPick }: { onPick: (p: Picked) => void }) {
+  const [attempt, setAttempt] = useState(0);
+  const [error, setError] = useState('');
+  const onScan = (text: string) =>
+    api<Customer>(`customers/scan?code=${encodeURIComponent(text)}`)
+      .then((customer) => onPick({ customer }))
+      .catch((err) => setError((err as Error).message));
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <QrScanner key={attempt} onScan={onScan} />
+      {error ? (
+        <>
+          <ErrorText text={error} />
+          <button
+            className="btn btn-soft"
+            onClick={() => {
+              setError('');
+              setAttempt((a) => a + 1);
+            }}
+          >
+            <RefreshCw size={17} /> Scan again
+          </button>
+        </>
+      ) : (
+        <p className="muted small center">Ask the customer to open their points page and tap “My card”.</p>
+      )}
+    </div>
+  );
+}
+
+type Claim = { code: string; expiresAt: string; amount: number; qr: string };
+
+/** The shop types the bill; the customer scans the QR with their phone and the points land in their wallet. */
+function BillStep({ merchant, onDone }: { merchant: Merchant; onDone: (r: Earned) => void }) {
+  const [amount, setAmount] = useState('');
+  const [claim, setClaim] = useState<Claim | null>(null);
+  const [left, setLeft] = useState(0);
+  const { busy, error, run } = useAction();
+  const open = useRef<string | null>(null); // shown but unclaimed, so it's cancelled if the sheet closes
+  const pointsFor = (bill: number) => Math.floor((bill / 100) * merchant.pointsPer100);
+
+  const cancel = () => {
+    if (open.current) void api(`claims/${open.current}`, 'DELETE').catch(() => {});
+    open.current = null;
+  };
+  useEffect(() => cancel, []);
+
+  const show = (e?: FormEvent) => {
+    e?.preventDefault();
+    void run(async () => {
+      cancel();
+      const c = await api<Omit<Claim, 'qr'>>('claims', 'POST', { amount: Number(amount) });
+      const qr = await QRCode.toDataURL(claimUrl(c.code), { width: 560, margin: 1, color: { dark: '#141416' } });
+      open.current = c.code;
+      setLeft(Math.round((Date.parse(c.expiresAt) - Date.now()) / 1000));
+      setClaim({ ...c, qr });
+    });
+  };
+
+  // Count down, and check every second whether the customer has scanned it.
+  useEffect(() => {
+    if (!claim) return;
+    let alive = true;
+    const tick = async () => {
+      setLeft(Math.max(0, Math.round((Date.parse(claim.expiresAt) - Date.now()) / 1000)));
+      const s = await api<{ status: 'waiting' | 'claimed' | 'expired'; result?: Earned }>(`claims/${claim.code}`).catch(() => null);
+      if (alive && s?.status === 'claimed' && s.result) {
+        alive = false;
+        open.current = null;
+        dataChanged();
+        onDone(s.result);
+      }
+    };
+    const timer = setInterval(tick, 1000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [claim, onDone]);
+
+  if (claim) {
+    const expired = left <= 0;
+    return (
+      <div style={{ display: 'grid', gap: 14 }}>
+        <div className={`bill-qr ${expired ? 'expired' : ''}`}>
+          <img src={claim.qr} alt="Bill QR code for the customer to scan" />
+        </div>
+        <div className="center" style={{ display: 'grid', gap: 4 }}>
+          <strong className="tabular" style={{ fontSize: 20 }}>
+            ₹{num(claim.amount)} · +{num(pointsFor(claim.amount))} points
+          </strong>
+          {expired ? (
+            <span className="muted small">This QR has expired.</span>
+          ) : (
+            <span className="waiting">
+              <span className="pulse" aria-hidden /> Waiting for the customer to scan · {Math.floor(left / 60)}:
+              {String(left % 60).padStart(2, '0')}
+            </span>
+          )}
+        </div>
+        <ErrorText text={error} />
+        {expired && (
+          <button className="btn btn-primary btn-lg" disabled={busy} onClick={() => show()}>
+            <RefreshCw size={18} /> Show a new QR
+          </button>
+        )}
+        <button
+          className="btn btn-ghost"
+          onClick={() => {
+            cancel();
+            setClaim(null);
+          }}
+        >
+          Change amount
+        </button>
+        {location.hostname === 'localhost' && (
+          <p className="alert alert-error small">
+            This QR points to localhost, which customers' phones can't open. Open the app from its public (https) address.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={show} style={{ display: 'grid', gap: 14 }}>
+      <label>
+        Bill amount
+        <span className="amount-input">
+          <span>₹</span>
+          <input
+            type="number"
+            min="1"
+            step="any"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0"
+            required
+            autoFocus
+          />
+        </span>
+      </label>
+      <div className="quick-amounts">
+        {QUICK.map((q) => (
+          <button type="button" key={q} onClick={() => setAmount(String(q))}>
+            ₹{num(q)}
+          </button>
+        ))}
+      </div>
+      <p className="muted small">
+        The customer scans it with their phone camera and gets the points — new customers join on the spot. Gold members get their extra
+        points automatically.
+      </p>
+      <ErrorText text={error} />
+      <button className="btn btn-primary btn-lg btn-block" disabled={busy || !amount}>
+        <QrCode size={18} /> Show QR for {num(pointsFor(Number(amount) || 0))} points
+      </button>
     </form>
   );
 }
@@ -341,16 +524,23 @@ function DoneStep({
 /** Mounted once in the shell; opens whenever openGivePoints() is called. */
 export function GivePointsHost({ merchant }: { merchant: Merchant }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>('find');
   const [picked, setPicked] = useState<Picked | null>(null);
   const [result, setResult] = useState<Earned | null>(null);
 
   const reset = () => {
+    setMode('find');
     setPicked(null);
     setResult(null);
+  };
+  const pick = (p: Picked) => {
+    setMode('find');
+    setPicked(p);
   };
 
   const onOpen = useCallback((phone: string) => {
     setResult(null);
+    setMode('find');
     setOpen(true);
     if (!phone) return setPicked(null);
     api<Customer[]>(`customers?q=${encodeURIComponent(phone)}`).then((r) => {
@@ -366,14 +556,25 @@ export function GivePointsHost({ merchant }: { merchant: Merchant }) {
     reset();
   };
 
+  const back = (
+    <button className="icon-btn" onClick={() => setMode('find')} aria-label="Back">
+      <ArrowLeft size={18} />
+    </button>
+  );
+  const title = result ? 'Points added' : mode === 'bill' ? <>{back} Bill QR</> : mode === 'scan' ? <>{back} Scan member card</> : 'Give points';
+
   return (
-    <Sheet title={result ? 'Points added' : 'Give points'} onClose={close}>
+    <Sheet title={title} onClose={close}>
       {result ? (
         <DoneStep merchant={merchant} result={result} onMore={reset} onClose={close} />
       ) : picked ? (
         <AmountStep merchant={merchant} picked={picked} onBack={() => setPicked(null)} onDone={setResult} />
+      ) : mode === 'bill' ? (
+        <BillStep merchant={merchant} onDone={setResult} />
+      ) : mode === 'scan' ? (
+        <ScanStep onPick={pick} />
       ) : (
-        <FindStep onPick={setPicked} />
+        <FindStep onPick={pick} onMode={setMode} />
       )}
     </Sheet>
   );
