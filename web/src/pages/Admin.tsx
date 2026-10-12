@@ -135,7 +135,7 @@ function AdminLogin({ onIn }: { onIn: (email: string) => void }) {
         </span>
         <div>
           <h2 style={{ fontSize: 22 }}>Admin log in</h2>
-          <p className="muted small">For the people who run Habiturn. Shops log in at the main page.</p>
+          <p className="muted small">For the people who run Habiturn. Shops log in at /app.</p>
         </div>
         <label>
           Email

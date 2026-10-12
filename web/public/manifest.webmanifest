@@ -3,7 +3,7 @@
   "name": "Habiturn",
   "short_name": "Habiturn",
   "description": "From first visit to “the usual”. Turn walk-ins into regulars.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4f8f6",

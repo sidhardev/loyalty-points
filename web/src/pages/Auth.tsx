@@ -11,7 +11,7 @@ const FEATURES = [
 ];
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' ? 'signup' : 'login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const { busy, error, setError, run } = useAction();
 
@@ -122,7 +122,7 @@ export function ResetPassword({ token }: { token: string }) {
     void run(async () => {
       const { token: session } = await api<{ token: string }>(path, 'POST', { password: form.password });
       setToken(session);
-      location.replace('/');
+      location.replace('/app');
     });
   };
 
@@ -136,7 +136,7 @@ export function ResetPassword({ token }: { token: string }) {
           <>
             <h2 style={{ fontSize: 22 }}>Link not working</h2>
             <ErrorText text={loadError} />
-            <a className="btn" href="/">
+            <a className="btn" href="/app">
               Go to log in
             </a>
           </>

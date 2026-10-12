@@ -10,12 +10,14 @@ import { Dashboard } from './pages/Dashboard';
 import { GivePointsHost } from './pages/GivePoints';
 import { ActivityLog } from './pages/ActivityLog';
 import { Insights } from './pages/Insights';
+import { Landing } from './pages/Landing';
 import { Claim, CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
 import { Settings } from './pages/Settings';
 import { ConfirmHost, Logo, Toaster, confirmDialog, InstallButton, openGivePoints, useTheme } from './ui';
 
-// Customer pages use real paths (/w/<token>, /join/<code>, /c/<bill code>, /login) so their links are clean to share.
+// Real paths: / (homepage), /app (the shop app), /admin, and customer pages (/w/<token>, /join/<code>, /c/<bill code>,
+// /login) so their links are clean to share.
 // The shop's own screens are picked from the URL hash (#/customers/3), so no router library is needed.
 
 function useHash() {
@@ -164,7 +166,13 @@ function Route() {
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
   if (kind === 'c') return <Claim code={decodeURIComponent(id)} />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;
-  return <ShopApp />;
+  if (location.pathname === '/app' || location.pathname.startsWith('/app/')) return <ShopApp />;
+  // The shop app used to live at "/": send old bookmarks like /#/customers to /app.
+  if (location.hash.startsWith('#/')) {
+    location.replace(`/app${location.hash}`);
+    return null;
+  }
+  return <Landing />;
 }
 
 export function App() {
