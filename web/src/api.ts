@@ -11,6 +11,8 @@ export type Merchant = {
   goldThreshold: number;
   goldMultiplier: number;
   inactiveDays: number;
+  maxVisitsPerDay: number; // per customer in 24 hours, 0 = no limit
+  largeBill: number; // bills above this ask to confirm, 0 = off
 };
 
 export type Tier = { name: 'Gold' | 'Member'; multiplier: number; toGold: number };
@@ -76,6 +78,22 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   }
   return data as T;
 }
+
+/** Saves a file the API makes (CSV exports), sending the login token with the request. */
+export async function download(path: string, filename: string) {
+  const res = await fetch(`/api/${path}`, { headers: { authorization: `Bearer ${getToken()}` } });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** About how much more someone has to spend to earn `points`, rounded up to ₹10. */
+export const spendFor = (points: number, pointsPer100: number, multiplier = 1) =>
+  points <= 0 ? 0 : Math.ceil((points * 100) / (pointsPer100 * multiplier) / 10) * 10;
 
 export const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 export const num = (n: number) => n.toLocaleString('en-IN');

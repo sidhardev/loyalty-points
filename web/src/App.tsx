@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Download, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
+import { enableTranslation } from './i18n';
 import { AuthPage } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { GivePointsHost } from './pages/GivePoints';
+import { ActivityLog } from './pages/ActivityLog';
 import { Insights } from './pages/Insights';
 import { Claim, CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
@@ -140,6 +142,7 @@ function ShopApp() {
   else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} />;
   else if (hash.startsWith('/rewards')) page = <Rewards />;
   else if (hash.startsWith('/insights')) page = <Insights />;
+  else if (hash.startsWith('/activity')) page = <ActivityLog />;
   else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} />;
   else page = <Dashboard merchant={merchant} />;
 
@@ -151,8 +154,9 @@ function ShopApp() {
 }
 
 function Route() {
-  if (location.pathname === '/login') return <CustomerLogin />;
   const [, kind, id] = location.pathname.match(/^\/(w|join|c)\/([^/]+)/) ?? [];
+  if (kind || location.pathname === '/login') enableTranslation(); // customer pages can switch to Hindi
+  if (location.pathname === '/login') return <CustomerLogin />;
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
   if (kind === 'c') return <Claim code={decodeURIComponent(id)} />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;

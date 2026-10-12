@@ -1,14 +1,98 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Activity as ActivityIcon, Cake, ChevronRight, Coins, Gift, IndianRupee, Plus, Users, UserX } from 'lucide-react';
+import { Activity as ActivityIcon, Cake, ChevronRight, Coins, Gift, IndianRupee, Plus, Repeat, TrendingDown, TrendingUp, Users, UserX } from 'lucide-react';
 import { api, birthdayLabel, num, rupees, walletUrl, whatsapp, type Customer, type Merchant, type Transaction } from '../api';
 import { Activity, Avatar, EmptyState, InstallBanner, Skeleton, SkeletonRows, openGivePoints, useDataVersion } from '../ui';
+
+type Comeback = { customers: number; visits: number; sales: number; wonBack: number; allSales: number; rewards: number };
 
 type DashboardData = {
   totals: { customers: number; issued: number; redeemed: number; redemptions: number; sales: number; inactive: number };
   today: { visits: number; points: number; sales: number };
   birthdays: (Customer & { daysUntilBirthday: number })[];
   recent: Transaction[];
+  comeback: { current: Comeback; previous: Comeback };
 };
+
+/**
+ * The answer to "is this working?": how much customers who came back spent in the last 30 days,
+ * compared with the 30 days before.
+ */
+function ComebackCard({ data, merchant }: { data: DashboardData['comeback'] | undefined; merchant: Merchant }) {
+  if (!data) {
+    return (
+      <section className="comeback">
+        <Skeleton h={22} w="50%" />
+        <Skeleton h={44} w="40%" />
+        <Skeleton h={16} w="70%" />
+      </section>
+    );
+  }
+  const { current: now, previous: before } = data;
+
+  if (!now.visits) {
+    return (
+      <section className="comeback">
+        <div className="comeback-head">
+          <h2>
+            <Repeat size={18} /> Customers who came back
+          </h2>
+          <span>Last 30 days</span>
+        </div>
+        <p className="comeback-empty">
+          When customers return, you'll see here how much they spend. Give points on every bill — and try a{' '}
+          <a href="#/settings">welcome bonus</a> or a <a href="#/customers?filter=inactive">"we miss you" message</a> to bring them back.
+        </p>
+      </section>
+    );
+  }
+
+  const change = before.sales > 0 ? Math.round(((now.sales - before.sales) / before.sales) * 100) : null;
+  const share = now.allSales > 0 ? Math.round((now.sales / now.allSales) * 100) : 0;
+  const Trend = change !== null && change < 0 ? TrendingDown : TrendingUp;
+
+  return (
+    <section className="comeback">
+      <div className="comeback-head">
+        <h2>
+          <Repeat size={18} /> Customers who came back
+        </h2>
+        <span>Last 30 days</span>
+      </div>
+      <div className="comeback-main">
+        <strong className="tabular">{rupees(now.sales)}</strong>
+        <span>
+          spent by <b>{num(now.customers)}</b> returning customer{now.customers === 1 ? '' : 's'} on <b>{num(now.visits)}</b> repeat visit
+          {now.visits === 1 ? '' : 's'}
+        </span>
+      </div>
+      {change !== null ? (
+        <span className={`trend ${change < 0 ? 'down' : 'up'}`}>
+          <Trend size={15} /> {change >= 0 ? '+' : ''}
+          {num(change)}% vs the 30 days before ({rupees(before.sales)})
+        </span>
+      ) : (
+        <span className="trend up">
+          <TrendingUp size={15} /> Your first month of returning customers
+        </span>
+      )}
+      <div className="comeback-facts">
+        <div>
+          <strong className="tabular">{share}%</strong>
+          <span>of sales</span>
+        </div>
+        <a href="#/customers?filter=inactive">
+          <strong className="tabular">{num(now.wonBack)}</strong>
+          <span>back after {merchant.inactiveDays}+ days</span>
+        </a>
+        <div>
+          <strong className="tabular">{num(now.rewards)}</strong>
+          <span>reward{now.rewards === 1 ? '' : 's'} given</span>
+        </div>
+      </div>
+      <p className="comeback-note">A return visit is any bill after a customer's first one.</p>
+    </section>
+  );
+}
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -69,6 +153,8 @@ export function Dashboard({ merchant }: { merchant: Merchant }) {
           </div>
         </div>
       </section>
+
+      <ComebackCard data={data?.comeback} merchant={merchant} />
 
       <section className="stats">
         {stats.map(({ icon: Icon, label, value, sub }) => (

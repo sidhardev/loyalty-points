@@ -18,7 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Db, randomToken } from './db';
-import type { MerchantRow } from './loyalty.service';
+import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with email + password and get a token the website sends with every request.
 
@@ -46,6 +46,8 @@ export const publicMerchant = (m: MerchantRow) => ({
   goldThreshold: m.gold_threshold,
   goldMultiplier: m.gold_multiplier,
   inactiveDays: m.inactive_days,
+  maxVisitsPerDay: m.max_visits_per_day,
+  largeBill: m.large_bill,
 });
 
 type Settings = {
@@ -56,6 +58,8 @@ type Settings = {
   goldThreshold?: number;
   goldMultiplier?: number;
   inactiveDays?: number;
+  maxVisitsPerDay?: number;
+  largeBill?: number;
 };
 
 function wholeNumber(value: unknown, label: string, min: number, max: number) {
@@ -93,6 +97,7 @@ export class AuthController {
   constructor(
     private readonly db: Db,
     private readonly jwt: JwtService,
+    private readonly loyalty: LoyaltyService,
   ) {}
 
   @Post('auth/signup')
@@ -141,14 +146,33 @@ export class AuthController {
     const birthday = wholeNumber(b.birthdayBonus ?? m.birthday_bonus, 'Birthday bonus', 0, 100_000);
     const threshold = wholeNumber(b.goldThreshold ?? m.gold_threshold, 'Gold tier points', 1, 10_000_000);
     const inactive = wholeNumber(b.inactiveDays ?? m.inactive_days, 'Inactive days', 7, 365);
+    const maxVisits = wholeNumber(b.maxVisitsPerDay ?? m.max_visits_per_day, 'Visits per day', 0, 50);
+    const largeBill = wholeNumber(b.largeBill ?? m.large_bill, 'Large bill amount', 0, 10_000_000);
     const multiplier = Number(b.goldMultiplier ?? m.gold_multiplier);
     if (!(multiplier >= 1 && multiplier <= 5)) throw new BadRequestException('Gold multiplier must be between 1 and 5');
     this.db.sql
       .prepare(
         `UPDATE merchants SET name = ?, points_per_100 = ?, welcome_bonus = ?, birthday_bonus = ?,
-         gold_threshold = ?, gold_multiplier = ?, inactive_days = ? WHERE id = ?`,
+         gold_threshold = ?, gold_multiplier = ?, inactive_days = ?, max_visits_per_day = ?, large_bill = ? WHERE id = ?`,
       )
-      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, m.id);
+      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, maxVisits, largeBill, m.id);
+
+    const changed = (
+      [
+        ['shop name', m.name, name.slice(0, 80)],
+        ['points per ₹100', m.points_per_100, rate],
+        ['welcome bonus', m.welcome_bonus, welcome],
+        ['birthday bonus', m.birthday_bonus, birthday],
+        ['Gold after', m.gold_threshold, threshold],
+        ['Gold ×', m.gold_multiplier, multiplier],
+        ['inactive days', m.inactive_days, inactive],
+        ['visits per day', m.max_visits_per_day, maxVisits],
+        ['large bill check ₹', m.large_bill, largeBill],
+      ] as const
+    ).filter(([, before, after]) => before !== after);
+    if (changed.length) {
+      this.loyalty.log(m.id, 'shop', 'settings', changed.map(([label, before, after]) => `${label} ${before} → ${after}`).join(', '));
+    }
     return publicMerchant(this.find(m.id));
   }
 

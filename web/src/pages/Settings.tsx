@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import QRCode from 'qrcode';
-import { Bell, Coins, Crown, Download, ExternalLink, Gift, Printer, QrCode, Store } from 'lucide-react';
-import { api, joinUrl, num, type Merchant } from '../api';
+import { Bell, ChevronRight, Coins, Crown, Database, Download, ExternalLink, FileSpreadsheet, Gift, Printer, QrCode, ScrollText, ShieldCheck, Store } from 'lucide-react';
+import { api, download, joinUrl, num, rupees, type Merchant } from '../api';
 import { ErrorText, toast, useAction } from '../ui';
 
 /** Printable counter poster: customers scan it to join and see their points. */
@@ -54,6 +54,51 @@ function JoinQr({ merchant }: { merchant: Merchant }) {
   );
 }
 
+/** Activity log and spreadsheet downloads. */
+function YourData({ merchant }: { merchant: Merchant }) {
+  const [busy, setBusy] = useState('');
+  const save = async (path: string, file: string) => {
+    setBusy(path);
+    try {
+      await download(path, file);
+      toast('Downloaded');
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    } finally {
+      setBusy('');
+    }
+  };
+  const date = new Date().toISOString().slice(0, 10);
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <Database size={18} /> Your data
+        </h2>
+      </div>
+      <a className="row-item link-row" href="#/activity">
+        <ScrollText size={19} />
+        <span className="row-main">
+          <strong>Activity log</strong>
+          <span>Undos, adjustments, deletes, blocked and large bills{merchant.largeBill ? ` (above ${rupees(merchant.largeBill)})` : ''}</span>
+        </span>
+        <ChevronRight size={18} />
+      </a>
+      <p className="muted small" style={{ margin: 0 }}>
+        Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.
+      </p>
+      <div className="actions">
+        <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/customers.csv', `customers-${date}.csv`)}>
+          <FileSpreadsheet size={17} /> {busy === 'export/customers.csv' ? 'Preparing…' : 'Customers'}
+        </button>
+        <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/transactions.csv', `points-history-${date}.csv`)}>
+          <FileSpreadsheet size={17} /> {busy === 'export/transactions.csv' ? 'Preparing…' : 'Points history'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (m: Merchant) => void }) {
   const [form, setForm] = useState({
     name: merchant.name,
@@ -63,6 +108,8 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
     goldThreshold: String(merchant.goldThreshold),
     goldMultiplier: String(merchant.goldMultiplier),
     inactiveDays: String(merchant.inactiveDays),
+    maxVisitsPerDay: String(merchant.maxVisitsPerDay),
+    largeBill: String(merchant.largeBill),
   });
   const { busy, error, run } = useAction();
 
@@ -80,6 +127,8 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
           goldThreshold: Number(form.goldThreshold),
           goldMultiplier: Number(form.goldMultiplier),
           inactiveDays: Number(form.inactiveDays),
+          maxVisitsPerDay: Number(form.maxVisitsPerDay),
+          largeBill: Number(form.largeBill),
         }),
       );
       toast('Settings saved');
@@ -167,12 +216,33 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
             </label>
           </div>
 
+          <div className="settings-section">
+            <h3>
+              <ShieldCheck size={17} /> Safety
+            </h3>
+            <div className="form-row">
+              <label>
+                Visits per customer in 24 hours
+                <input type="number" min="0" max="50" step="1" value={form.maxVisitsPerDay} onChange={set('maxVisitsPerDay')} required />
+                <span className="hint">More are blocked and logged. 0 = no limit.</span>
+              </label>
+              <label>
+                Double-check bills above ₹
+                <input type="number" min="0" step="1" value={form.largeBill} onChange={set('largeBill')} required />
+                <span className="hint">Asks “are you sure?” and logs it. 0 = off.</span>
+              </label>
+            </div>
+          </div>
+
           <ErrorText text={error} />
           <button className="btn btn-primary btn-lg" disabled={busy}>
             {busy ? 'Saving…' : 'Save settings'}
           </button>
         </form>
-        <JoinQr merchant={merchant} />
+        <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+          <JoinQr merchant={merchant} />
+          <YourData merchant={merchant} />
+        </div>
       </div>
     </>
   );

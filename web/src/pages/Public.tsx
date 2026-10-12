@@ -1,11 +1,29 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import QRCode from 'qrcode';
-import { Check, Crown, Download, Gift, History, KeyRound, LogIn, Phone, QrCode } from 'lucide-react';
+import { Check, Crown, Download, Gift, History, KeyRound, LogIn, Phone, QrCode, Ticket } from 'lucide-react';
 
-import { api, forgetWallet, num, rememberWallet, savedWallets, type Bonus, type Reward, type Tier, type Transaction } from '../api';
-import { Activity, BirthdayInput, EmptyState, ErrorText, InstallBanner, InstallButton, Logo, PinInput, Sheet, Skeleton, toast, useAction } from '../ui';
+import { api, forgetWallet, num, rememberWallet, rupees, savedWallets, spendFor, type Bonus, type Reward, type Tier, type Transaction } from '../api';
+import { LangToggle, t, useLang } from '../i18n';
+import {
+  Activity,
+  BirthdayInput,
+  EmptyState,
+  ErrorText,
+  InstallBanner,
+  InstallButton,
+  Logo,
+  PinInput,
+  Sheet,
+  Skeleton,
+  confetti,
+  confirmDialog,
+  toast,
+  useAction,
+} from '../ui';
 
-// Pages customers open on their phone, without an account.
+// Pages customers open on their phone, without an account. Every text goes through t() for English / Hindi.
+
+type RedeemCode = { code: string; expiresAt: string; usedAt: string | null; reward: Reward };
 
 type WalletData = {
   hasPin: boolean;
@@ -14,7 +32,20 @@ type WalletData = {
   customer: { name: string; points: number; lifetimePoints: number; tier: Tier; since: string };
   rewards: Reward[];
   history: Transaction[];
+  redeemCode: RedeemCode | null;
 };
+
+/** Page frame for customer pages, with the language switch on top. */
+function PublicPage({ children }: { children: ReactNode }) {
+  return (
+    <main className="public">
+      <div className="public-top">
+        <LangToggle />
+      </div>
+      {children}
+    </main>
+  );
+}
 
 function MemberCard({
   shop,
@@ -37,13 +68,13 @@ function MemberCard({
         <span className="member-shop">
           <Logo /> <span>{shop}</span>
         </span>
-        {badge && <span className="member-tier">{gold ? '★ GOLD' : 'MEMBER'}</span>}
+        {badge && <span className="member-tier">{gold ? t('★ GOLD') : t('MEMBER')}</span>}
       </div>
       <span className="member-name">{name}</span>
       {points !== undefined && (
         <>
           <strong className="member-points">{num(points)}</strong>
-          <span>points</span>
+          <span>{t('points')}</span>
         </>
       )}
       {children}
@@ -60,10 +91,10 @@ function PinCard({ token, hasPin, onSaved }: { token: string; hasPin: boolean; o
 
   const save = (e: FormEvent) => {
     e.preventDefault();
-    if (pin !== confirmPin) return setError("The PINs don't match");
+    if (pin !== confirmPin) return setError(t("The PINs don't match"));
     void run(async () => {
       await api(`public/wallet/${encodeURIComponent(token)}/pin`, 'POST', { pin });
-      toast('PIN saved — you can log in with it anytime');
+      toast(t('PIN saved — you can log in with it anytime'));
       setOpen(false);
       setPin('');
       setConfirmPin('');
@@ -72,11 +103,14 @@ function PinCard({ token, hasPin, onSaved }: { token: string; hasPin: boolean; o
   };
 
   if (!open) {
+    const [before, after = ''] = t('Log in anytime at {link}').split('{link}');
     return (
       <p className="muted small center">
-        Log in anytime at <a href="/login">{location.host}/login</a> ·{' '}
+        {before}
+        <a href="/login">{location.host}/login</a>
+        {after} ·{' '}
         <button className="link small" onClick={() => setOpen(true)}>
-          Change PIN
+          {t('Change PIN')}
         </button>
       </p>
     );
@@ -85,23 +119,23 @@ function PinCard({ token, hasPin, onSaved }: { token: string; hasPin: boolean; o
     <form className="card" onSubmit={save}>
       <div className="card-head">
         <h2>
-          <KeyRound size={18} /> {hasPin ? 'Change your PIN' : 'Set a PIN'}
+          <KeyRound size={18} /> {hasPin ? t('Change your PIN') : t('Set a PIN')}
         </h2>
       </div>
-      <p className="muted small">With a 4-digit PIN you can check your points from any phone at {location.host}/login.</p>
+      <p className="muted small">{t('With a 4-digit PIN you can check your points from any phone at {host}.', { host: `${location.host}/login` })}</p>
       <div className="form-row pin-row">
         <label>
-          New PIN
+          {t('New PIN')}
           <PinInput value={pin} onChange={setPin} />
         </label>
         <label>
-          Repeat PIN
+          {t('Repeat PIN')}
           <PinInput value={confirmPin} onChange={setConfirmPin} />
         </label>
       </div>
       <ErrorText text={error} />
       <button className="btn btn-primary" disabled={busy || pin.length !== 4 || confirmPin.length !== 4}>
-        Save PIN
+        {t('Save PIN')}
       </button>
     </form>
   );
@@ -114,101 +148,198 @@ function MyCardSheet({ shop, name, cardCode, onClose }: { shop: string; name: st
     QRCode.toDataURL(`lp-card:${cardCode}`, { width: 560, margin: 1, color: { dark: '#141416' } }).then(setQr);
   }, [cardCode]);
   return (
-    <Sheet title="My card" onClose={onClose}>
+    <Sheet title={t('My card')} onClose={onClose}>
       <div style={{ display: 'grid', gap: 12 }}>
-        <div className="bill-qr">{qr && <img src={qr} alt="Your member card QR code" />}</div>
+        <div className="bill-qr">{qr && <img src={qr} alt={t('Your member card QR code')} />}</div>
         <p className="center" style={{ margin: 0 }}>
           <strong>{name}</strong>
           <span className="muted"> · {shop}</span>
         </p>
         <p className="muted small center" style={{ margin: 0 }}>
-          Show this at the counter — the shop scans it to add your points.
+          {t('Show this at the counter — the shop scans it to add your points.')}
         </p>
       </div>
     </Sheet>
   );
 }
 
+const secondsLeft = (iso: string) => Math.max(0, Math.round((Date.parse(iso) - Date.now()) / 1000));
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+/** The 4-digit code the customer shows at the counter; the shop types it to give the reward. */
+function RedeemCodeCard({ code, onExpired }: { code: RedeemCode; onExpired: () => void }) {
+  const [left, setLeft] = useState(() => secondsLeft(code.expiresAt));
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const s = secondsLeft(code.expiresAt);
+      setLeft(s);
+      if (!s) onExpired();
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [code.expiresAt, onExpired]);
+
+  return (
+    <section className="redeem-code" aria-live="polite">
+      <span className="small">{t('Your code for {reward}', { reward: code.reward.name })}</span>
+      <strong className="redeem-digits tabular" aria-label={code.code.split('').join(' ')}>
+        {code.code}
+      </strong>
+      <span className="small">{t('Show this code at the counter · {time} left', { time: clock(left) })}</span>
+      <span className="waiting">
+        <span className="pulse" aria-hidden /> {t('Waiting for the shop…')}
+      </span>
+    </section>
+  );
+}
+
+// Celebrations already shown on this phone, so confetti only fires for something new.
+const celebratedKey = (token: string) => `lp_celebrated_${token}`;
+function takeNewCelebrations(token: string, keys: string[]) {
+  let seen: string[] = [];
+  try {
+    seen = JSON.parse(localStorage.getItem(celebratedKey(token)) || '[]') as string[];
+  } catch {
+    // Without storage every visit may celebrate again, which is harmless.
+  }
+  const fresh = keys.filter((k) => !seen.includes(k));
+  if (fresh.length) {
+    try {
+      localStorage.setItem(celebratedKey(token), JSON.stringify([...seen, ...fresh].slice(-100)));
+    } catch {
+      // See above.
+    }
+  }
+  return fresh;
+}
+
 /** /w/<token> — a customer's points, rewards and history at one shop. */
 export function Wallet({ token }: { token: string }) {
+  useLang(); // re-render in the chosen language
   const [data, setData] = useState<WalletData | null>(null);
   const [error, setError] = useState('');
   const [showCard, setShowCard] = useState(false);
+  const { busy, error: actionError, run } = useAction();
+  const path = `public/wallet/${encodeURIComponent(token)}`;
 
   const load = useCallback(() => {
-    api<WalletData>(`public/wallet/${encodeURIComponent(token)}`)
+    api<WalletData>(path)
       .then((d) => {
         setData(d);
-        document.title = `${d.shop.name} · My points`;
+        document.title = t('{shop} · My points', { shop: d.shop.name });
         rememberWallet({ token, shopId: d.shop.id, shop: d.shop.name, name: d.customer.name });
+        const moments = [
+          // Ready again after each time it's redeemed, so it celebrates once per round.
+          ...d.rewards
+            .filter((r) => r.points_cost <= d.customer.points)
+            .map((r) => `ready:${r.id}:${d.history.filter((h) => h.type === 'redeem' && h.note === r.name).length}`),
+          ...(d.customer.tier.name === 'Gold' ? ['gold'] : []),
+          ...(d.redeemCode?.usedAt ? [`used:${d.redeemCode.code}:${d.redeemCode.usedAt}`] : []),
+        ];
+        if (takeNewCelebrations(token, moments).length) confetti();
       })
       .catch((err) => {
         const message = (err as Error).message;
         if (message.includes('not valid')) forgetWallet(token);
         setError(message);
       });
-  }, [token]);
+  }, [path, token]);
   useEffect(load, [load]);
+
+  // While a reward code is open, check every few seconds whether the shop has used it.
+  const open = data?.redeemCode && !data.redeemCode.usedAt && secondsLeft(data.redeemCode.expiresAt) > 0;
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(load, 4000);
+    return () => clearInterval(timer);
+  }, [open, load]);
 
   if (error) {
     return (
-      <main className="public">
+      <PublicPage>
         <section className="card">
-          <EmptyState icon={Gift} title="This link doesn't work" text={error} action={<a className="btn" href="/login">Log in with your PIN</a>} />
+          <EmptyState icon={Gift} title={t("This link doesn't work")} text={error} action={<a className="btn" href="/login">{t('Log in with your PIN')}</a>} />
         </section>
-      </main>
+      </PublicPage>
     );
   }
   if (!data) {
     return (
-      <main className="public">
+      <PublicPage>
         <Skeleton h={220} />
         <Skeleton h={160} />
-      </main>
+      </PublicPage>
     );
   }
 
-  const { shop, customer, rewards, history } = data;
+  const { shop, customer, rewards, history, redeemCode } = data;
   const gold = customer.tier.name === 'Gold';
   const goldPct = Math.min(100, (customer.lifetimePoints / shop.goldThreshold) * 100);
   const ready = rewards.filter((r) => r.points_cost <= customer.points);
+  const next = rewards.find((r) => r.points_cost > customer.points);
+  const spend = (points: number) => rupees(spendFor(points, shop.pointsPer100, customer.tier.multiplier));
+  const justUsed = redeemCode?.usedAt ? redeemCode : null;
+
+  const getReward = async (r: Reward) => {
+    const ok = await confirmDialog({
+      title: t('Get {reward} for {n} points?', { reward: r.name, n: num(r.points_cost) }),
+      body: t("You'll get a 4-digit code to show at the counter. Points are only used when the shop confirms."),
+      confirm: t('Get code'),
+      cancel: t('Cancel'),
+    });
+    if (!ok) return;
+    void run(async () => {
+      await api(`${path}/redeem`, 'POST', { rewardId: r.id });
+      load();
+      scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  };
 
   return (
-    <main className="public">
-      <MemberCard shop={shop.name} name={`Hi ${customer.name}`} points={customer.points} gold={gold} badge>
+    <PublicPage>
+      <MemberCard shop={shop.name} name={t('Hi {name}', { name: customer.name })} points={customer.points} gold={gold} badge>
         <div className="member-foot">
+          {next && <span className="member-next">{t('Shop for {amount} more → {reward}', { amount: spend(next.points_cost - customer.points), reward: next.name })}</span>}
           {gold ? (
             <span>
-              <Crown size={13} /> Gold member — you earn ×{shop.goldMultiplier} points
+              <Crown size={13} /> {t('Gold member — you earn ×{x} points', { x: shop.goldMultiplier })}
             </span>
           ) : (
             <>
               <div className="meter">
                 <span style={{ width: `${goldPct}%` }} />
               </div>
-              <span>
-                {num(customer.tier.toGold)} more points to ★ Gold (×{shop.goldMultiplier} points)
-              </span>
+              <span>{t('{n} more points to ★ Gold (×{x} points)', { n: num(customer.tier.toGold), x: shop.goldMultiplier })}</span>
             </>
           )}
         </div>
       </MemberCard>
 
+      {open && redeemCode && <RedeemCodeCard code={redeemCode} onExpired={load} />}
+      {justUsed && (
+        <div className="callout callout-ok">
+          <Check size={20} />
+          <div>
+            <strong>{t('Enjoy your {reward}! 🎉', { reward: justUsed.reward.name })}</strong>
+            <div className="small muted">
+              {t('{n} points used · new balance {balance}', { n: num(justUsed.reward.points_cost), balance: num(customer.points) })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <button className="btn btn-primary btn-lg btn-block" onClick={() => setShowCard(true)}>
-        <QrCode size={19} /> My card
+        <QrCode size={19} /> {t('My card')}
       </button>
       {showCard && <MyCardSheet shop={shop.name} name={customer.name} cardCode={data.cardCode} onClose={() => setShowCard(false)} />}
 
-      <InstallBanner id="wallet" title="Add your card to your home screen" text="See your points and show your card in one tap." />
+      <InstallBanner id="wallet" title={t('Add your card to your home screen')} text={t('See your points and show your card in one tap.')} />
 
-      {ready.length > 0 && (
+      {ready.length > 0 && !open && (
         <div className="callout">
           <Gift size={20} />
           <div>
-            <strong>
-              You can get {ready.length === 1 ? ready[0].name : `${ready.length} rewards`} now!
-            </strong>
-            <div className="small muted">Just ask at the counter.</div>
+            <strong>{t('You can get {reward} now!', { reward: ready.length === 1 ? ready[0].name : t('{n} rewards', { n: ready.length }) })}</strong>
+            <div className="small muted">{t('Tap “Get it” and show the code at the counter.')}</div>
           </div>
         </div>
       )}
@@ -216,10 +347,11 @@ export function Wallet({ token }: { token: string }) {
       <section className="card">
         <div className="card-head">
           <h2>
-            <Gift size={18} /> Rewards
+            <Gift size={18} /> {t('Rewards')}
           </h2>
-          <span className="muted small">{shop.pointsPer100} pts per ₹100</span>
+          <span className="muted small">{t('{n} pts per ₹100', { n: shop.pointsPer100 })}</span>
         </div>
+        <ErrorText text={actionError} />
         {rewards.length ? (
           <div>
             {rewards.map((r) => {
@@ -230,9 +362,18 @@ export function Wallet({ token }: { token: string }) {
                   <div className="reward-row-head">
                     <span>
                       <strong>{r.name}</strong>
-                      <span className="muted small"> · {num(r.points_cost)} pts</span>
+                      <span className="muted small">
+                        {' '}
+                        · {num(r.points_cost)} {t('pts')}
+                      </span>
                     </span>
-                    <span className={can ? 'ready' : 'muted small'}>{can ? 'Ready ✓' : `${num(r.points_cost - customer.points)} to go`}</span>
+                    {can ? (
+                      <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => void getReward(r)}>
+                        <Ticket size={15} /> {t('Get it')}
+                      </button>
+                    ) : (
+                      <span className="muted small">{t('{amount} more shopping', { amount: spend(r.points_cost - customer.points) })}</span>
+                    )}
                   </div>
                   <div className="meter">
                     <span style={{ width: `${pct}%` }} />
@@ -242,29 +383,30 @@ export function Wallet({ token }: { token: string }) {
             })}
           </div>
         ) : (
-          <p className="muted small">Rewards coming soon.</p>
+          <p className="muted small">{t('Rewards coming soon.')}</p>
         )}
       </section>
 
       <section className="card">
         <div className="card-head">
           <h2>
-            <History size={18} /> History
+            <History size={18} /> {t('History')}
           </h2>
         </div>
-        {history.length ? <Activity items={history} showCustomer={false} /> : <p className="muted small">No activity yet.</p>}
+        {history.length ? <Activity items={history} showCustomer={false} /> : <p className="muted small">{t('No activity yet.')}</p>}
       </section>
 
       <InstallButton className="btn btn-ghost btn-block">
-        <Download size={18} /> Add to home screen
+        <Download size={18} /> {t('Add to home screen')}
       </InstallButton>
       <PinCard token={token} hasPin={data.hasPin} onSaved={load} />
-    </main>
+    </PublicPage>
   );
 }
 
 /** /join/<code> — sign-up page behind the shop's counter QR code. */
 export function Join({ code }: { code: string }) {
+  useLang();
   const [shop, setShop] = useState<{ shop: string; welcomeBonus: number; pointsPer100: number } | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', birthday: '', pin: '', confirmPin: '' });
   const [loadError, setLoadError] = useState('');
@@ -274,7 +416,7 @@ export function Join({ code }: { code: string }) {
     api<typeof shop>(`public/join/${encodeURIComponent(code)}`)
       .then((s) => {
         setShop(s);
-        if (s) document.title = `Join ${s.shop} rewards`;
+        if (s) document.title = t('Join {shop} rewards', { shop: s.shop });
       })
       .catch((err) => setLoadError((err as Error).message));
   }, [code]);
@@ -282,7 +424,7 @@ export function Join({ code }: { code: string }) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      if (form.pin !== form.confirmPin) throw new Error("The PINs don't match");
+      if (form.pin !== form.confirmPin) throw new Error(t("The PINs don't match"));
       const r = await api<{ walletToken: string; bonuses: Bonus[] }>(`public/join/${encodeURIComponent(code)}`, 'POST', {
         name: form.name,
         phone: form.phone,
@@ -295,64 +437,64 @@ export function Join({ code }: { code: string }) {
 
   if (loadError) {
     return (
-      <main className="public">
+      <PublicPage>
         <section className="card">
-          <EmptyState icon={Gift} title="This QR code doesn't work" text={loadError} />
+          <EmptyState icon={Gift} title={t("This QR code doesn't work")} text={loadError} />
         </section>
-      </main>
+      </PublicPage>
     );
   }
   if (!shop) {
     return (
-      <main className="public">
+      <PublicPage>
         <Skeleton h={180} />
-      </main>
+      </PublicPage>
     );
   }
 
   return (
-    <main className="public">
-      <MemberCard shop={shop.shop} name="Join our rewards" points={shop.welcomeBonus > 0 ? shop.welcomeBonus : undefined}>
+    <PublicPage>
+      <MemberCard shop={shop.shop} name={t('Join our rewards')} points={shop.welcomeBonus > 0 ? shop.welcomeBonus : undefined}>
         <div className="member-foot">
           <span>
-            {shop.welcomeBonus > 0 ? 'points free when you join · ' : ''}
-            Earn {shop.pointsPer100} points on every ₹100
+            {shop.welcomeBonus > 0 ? t('points free when you join · ') : ''}
+            {t('Earn {n} points on every ₹100', { n: shop.pointsPer100 })}
           </span>
         </div>
       </MemberCard>
       <form className="card" onSubmit={submit}>
         <label>
-          Your name
+          {t('Your name')}
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" required autoFocus />
         </label>
         <label>
-          Phone number
+          {t('Phone number')}
           <input value={form.phone} inputMode="tel" autoComplete="tel" onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="98765 43210" required />
         </label>
         <div className="form-row pin-row">
           <label>
-            Choose a 4-digit PIN
+            {t('Choose a 4-digit PIN')}
             <PinInput value={form.pin} onChange={(pin) => setForm({ ...form, pin })} />
           </label>
           <label>
-            Repeat PIN
+            {t('Repeat PIN')}
             <PinInput value={form.confirmPin} onChange={(confirmPin) => setForm({ ...form, confirmPin })} />
           </label>
         </div>
-        <span className="hint">You'll use your phone number and PIN to check your points.</span>
+        <span className="hint">{t("You'll use your phone number and PIN to check your points.")}</span>
         <label>
-          Birthday <span className="hint">optional — for a birthday treat 🎂</span>
+          {t('Birthday')} <span className="hint">{t('optional — for a birthday treat 🎂')}</span>
           <BirthdayInput value={form.birthday} onChange={(birthday) => setForm({ ...form, birthday })} />
         </label>
-        <ErrorText text={error.includes('already exists') ? "You're already a member! Log in with your phone and PIN." : error} />
+        <ErrorText text={error.includes('already exists') ? t("You're already a member! Log in with your phone and PIN.") : error} />
         <button className="btn btn-primary btn-lg" disabled={busy}>
-          {busy ? 'Joining…' : 'Join and see my points'}
+          {busy ? t('Joining…') : t('Join and see my points')}
         </button>
         <p className="muted small center">
-          Already a member? <a href="/login">Log in</a>
+          {t('Already a member?')} <a href="/login">{t('Log in')}</a>
         </p>
       </form>
-    </main>
+    </PublicPage>
   );
 }
 
@@ -370,6 +512,7 @@ type Claimed = {
 
 /** /c/<code> — the bill QR the shop shows. One tap with a saved card, otherwise the phone number (and name, if new). */
 export function Claim({ code }: { code: string }) {
+  useLang();
   const [info, setInfo] = useState<ClaimInfo | null>(null);
   const [loadError, setLoadError] = useState('');
   const [done, setDone] = useState<Claimed | null>(null);
@@ -383,7 +526,7 @@ export function Claim({ code }: { code: string }) {
     api<ClaimInfo>(path)
       .then((i) => {
         setInfo(i);
-        document.title = `Points from ${i.shop}`;
+        document.title = t('Points from {shop}', { shop: i.shop });
       })
       .catch((err) => setLoadError((err as Error).message));
   }, [path]);
@@ -397,6 +540,7 @@ export function Claim({ code }: { code: string }) {
         if ('needName' in r) return setNeedName(true);
         if (r.walletToken && r.name) rememberWallet({ token: r.walletToken, shopId: info!.shopId, shop: r.shop, name: r.name });
         setDone(r);
+        confetti();
       } catch (err) {
         if (body.walletToken) setUsePhone(true); // that saved card no longer works here
         throw err;
@@ -410,82 +554,84 @@ export function Claim({ code }: { code: string }) {
 
   if (loadError) {
     return (
-      <main className="public">
+      <PublicPage>
         <section className="card">
-          <EmptyState icon={QrCode} title="Can't add these points" text={loadError} />
+          <EmptyState icon={QrCode} title={t("Can't add these points")} text={loadError} />
         </section>
-      </main>
+      </PublicPage>
     );
   }
   if (!info) {
     return (
-      <main className="public">
+      <PublicPage>
         <Skeleton h={180} />
-      </main>
+      </PublicPage>
     );
   }
 
   if (done) {
     const total = done.points + done.bonuses.reduce((a, b) => a + b.points, 0);
     return (
-      <main className="public">
+      <PublicPage>
         <section className="card success">
           <span className="success-burst">
             <Check size={34} strokeWidth={3} />
           </span>
           <span className="success-points tabular">+{num(total)}</span>
           <span className="muted">
-            points from <strong style={{ color: 'var(--ink)' }}>{done.shop}</strong>
-            {done.balance !== null && <> · balance {num(done.balance)}</>}
+            {t('points from {shop}', { shop: done.shop })}
+            {done.balance !== null && <> · {t('balance {n}', { n: num(done.balance) })}</>}
           </span>
           {done.bonuses.length > 0 && (
-            <span className="small muted">includes {done.bonuses.map((b) => `${num(b.points)} ${b.label.toLowerCase()}`).join(' + ')}</span>
+            <span className="small muted">
+              {t('includes {list}', { list: done.bonuses.map((b) => `${num(b.points)} ${t(b.label).toLowerCase()}`).join(' + ') })}
+            </span>
           )}
         </section>
         {done.tierUp && (
           <div className="callout">
             <Crown size={20} />
             <div>
-              <strong>You're now a ★ Gold member!</strong>
-              <div className="small muted">You'll earn extra points on every bill.</div>
+              <strong>{t("You're now a ★ Gold member!")}</strong>
+              <div className="small muted">{t("You'll earn extra points on every bill.")}</div>
             </div>
           </div>
         )}
         {done.walletToken ? (
           <a className="btn btn-primary btn-lg btn-block" href={`/w/${done.walletToken}`}>
-            <Gift size={18} /> {done.isNew ? 'See my card and rewards' : 'Open my card'}
+            <Gift size={18} /> {done.isNew ? t('See my card and rewards') : t('Open my card')}
           </a>
         ) : (
           <p className="muted small center">
-            Added to the account for this number. <a href="/login">Log in</a> with your PIN to see your balance.
+            {t('Added to the account for this number.')} <a href="/login">{t('Log in')}</a> {t('with your PIN to see your balance.')}
           </p>
         )}
-      </main>
+      </PublicPage>
     );
   }
 
   return (
-    <main className="public">
-      <MemberCard shop={info.shop} name={`₹${num(info.amount)} bill`} points={info.points}>
+    <PublicPage>
+      <MemberCard shop={info.shop} name={t('{amount} bill', { amount: rupees(info.amount) })} points={info.points}>
         <div className="member-foot">
-          <span>waiting for you — tap below to add them</span>
+          <span>{t('waiting for you — tap below to add them')}</span>
         </div>
       </MemberCard>
 
       {saved ? (
         <section className="card" style={{ display: 'grid', gap: 12 }}>
           <button className="btn btn-primary btn-lg" disabled={busy} onClick={() => claim({ walletToken: saved.token })}>
-            {busy ? 'Adding…' : `Add to my card · ${saved.name}`}
+            {busy ? t('Adding…') : t('Add to my card · {name}', { name: saved.name })}
           </button>
           <ErrorText text={error} />
           <button className="link small" onClick={() => setUsePhone(true)}>
-            Not {saved.name}? Use a phone number
+            {t('Not {name}? Use a phone number', { name: saved.name })}
           </button>
         </section>
       ) : (
         <form className="card" onSubmit={submit}>
           <label>
-            Your phone number
+            {t('Your phone number')}
             <span className="input-icon">
               <Phone size={18} />
               <input
@@ -502,34 +648,38 @@ export function Claim({ code }: { code: string }) {
           {needName && (
             <>
               <p className="alert alert-ok small" style={{ margin: 0 }}>
-                Welcome! You're new here{info.welcomeBonus > 0 ? ` — you also get ${num(info.welcomeBonus)} bonus points` : ''}. What's your name?
+                {info.welcomeBonus > 0
+                  ? t("Welcome! You're new here — you also get {n} bonus points. What's your name?", { n: num(info.welcomeBonus) })
+                  : t("Welcome! You're new here. What's your name?")}
               </p>
               <label>
-                Your name
+                {t('Your name')}
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" required autoFocus />
               </label>
             </>
           )}
           <ErrorText text={error} />
           <button className="btn btn-primary btn-lg" disabled={busy}>
-            {busy ? 'Adding…' : `Get ${num(info.points)} points`}
+            {busy ? t('Adding…') : t('Get {n} points', { n: num(info.points) })}
           </button>
         </form>
       )}
-    </main>
+    </PublicPage>
   );
 }
 
-type LoginResult ={ wallets: { token: string; shop: string; name: string; points: number }[] };
+type LoginResult = { wallets: { token: string; shop: string; name: string; points: number }[] };
 
-/** /login — customers check their points with phone number + PIN. */
+/** /login — customers check their points with phone number + PIN, or open a card saved on this phone. */
 export function CustomerLogin() {
+  useLang();
   const [form, setForm] = useState({ phone: '', pin: '' });
   const [wallets, setWallets] = useState<LoginResult['wallets'] | null>(null);
   const { busy, error, run } = useAction();
+  const saved = savedWallets();
 
   useEffect(() => {
-    document.title = 'Check your points';
+    document.title = t('Check your points');
   }, []);
 
   const submit = (e: FormEvent) => {
@@ -543,14 +693,14 @@ export function CustomerLogin() {
 
   if (wallets) {
     return (
-      <main className="public">
-        <MemberCard shop="Your rewards" name={`Hi ${wallets[0].name}`} points={wallets.reduce((a, w) => a + w.points, 0)}>
+      <PublicPage>
+        <MemberCard shop={t('Your rewards')} name={t('Hi {name}', { name: wallets[0].name })} points={wallets.reduce((a, w) => a + w.points, 0)}>
           <div className="member-foot">
-            <span>across {wallets.length} shops</span>
+            <span>{t('across {n} shops', { n: wallets.length })}</span>
           </div>
         </MemberCard>
         <section className="card">
-          <h2>Choose a shop</h2>
+          <h2>{t('Choose a shop')}</h2>
           <ul className="rows">
             {wallets.map((w) => (
               <li key={w.token}>
@@ -558,26 +708,55 @@ export function CustomerLogin() {
                   <span className="row-main">
                     <strong>{w.shop}</strong>
                   </span>
-                  <span className="points-pill">{num(w.points)} pts</span>
+                  <span className="points-pill">
+                    {num(w.points)} {t('pts')}
+                  </span>
                 </a>
               </li>
             ))}
           </ul>
         </section>
-      </main>
+      </PublicPage>
     );
   }
 
   return (
-    <main className="public">
-      <MemberCard shop="Loyalty Points" name="Check your points">
+    <PublicPage>
+      <MemberCard shop="Loyalty Points" name={t('Check your points')}>
         <div className="member-foot">
-          <span>Log in with the phone number you gave the shop and your PIN.</span>
+          <span>{t('Log in with the phone number you gave the shop and your PIN.')}</span>
         </div>
       </MemberCard>
+
+      {saved.length > 0 && (
+        <section className="card">
+          <div className="card-head">
+            <h2>{t('Your cards on this phone')}</h2>
+          </div>
+          <p className="muted small" style={{ margin: 0 }}>
+            {t('Open straight away — no PIN needed on this phone.')}
+          </p>
+          <ul className="rows">
+            {saved.map((w) => (
+              <li key={w.token}>
+                <a className="row-item" href={`/w/${w.token}`}>
+                  <span className="row-main">
+                    <strong>{w.shop}</strong>
+                    <span>{w.name}</span>
+                  </span>
+                  <span className="points-pill">
+                    <QrCode size={14} />
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <form className="card" onSubmit={submit}>
         <label>
-          Phone number
+          {t('Phone number')}
           <span className="input-icon">
             <Phone size={18} />
             <input
@@ -587,20 +766,25 @@ export function CustomerLogin() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="98765 43210"
               required
-              autoFocus
+              autoFocus={!saved.length}
             />
           </span>
         </label>
         <label>
-          PIN
+          {t('PIN')}
           <PinInput value={form.pin} onChange={(pin) => setForm({ ...form, pin })} />
         </label>
         <ErrorText text={error} />
         <button className="btn btn-primary btn-lg" disabled={busy || form.pin.length !== 4}>
-          <LogIn size={18} /> {busy ? 'Checking…' : 'Log in'}
+          <LogIn size={18} /> {busy ? t('Checking…') : t('Log in')}
         </button>
-        <p className="muted small center">Forgot your PIN? Ask the shop to reset it — they'll send you a link to set a new one.</p>
+        <p className="muted small center">
+          <strong>{t('Forgot your PIN?')}</strong>{' '}
+          {saved.length
+            ? t('Open your card above and set a new one.')
+            : t('Ask the shop to send your points link on WhatsApp — open it and set a new PIN.')}
+        </p>
       </form>
-    </main>
+    </PublicPage>
   );
 }

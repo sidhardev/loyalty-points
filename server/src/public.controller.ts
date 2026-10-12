@@ -65,7 +65,16 @@ export class PublicController {
       customer: { name: view.name, points: view.points, lifetimePoints: view.lifetimePoints, tier: view.tier, since: view.createdAt },
       rewards,
       history,
+      redeemCode: this.loyalty.latestRedeemCode(c.id),
     };
+  }
+
+  /** The customer picks a reward; they get a 4-digit code to show at the counter. */
+  @Post('wallet/:token/redeem')
+  @HttpCode(200)
+  redeemCode(@Param('token') token: string, @Body() body: { rewardId?: number }, @Req() req: Request) {
+    this.limit(this.claims, req.ip ?? 'unknown', CLAIMS_PER_HOUR, 'Too many attempts, try again later');
+    return this.loyalty.createRedeemCode(token, body?.rewardId);
   }
 
   /** Web app manifest for one wallet, so "Add to Home Screen" opens this wallet rather than the shop app. */
@@ -111,11 +120,12 @@ export class PublicController {
   @Post('wallet/:token/pin')
   @HttpCode(200)
   setPin(@Param('token') token: string, @Body() body: { pin?: string }) {
-    const c = this.db.sql.prepare('SELECT id, phone FROM customers WHERE wallet_token = ?').get(token) as
-      | { id: number; phone: string }
+    const c = this.db.sql.prepare('SELECT id, name, phone, merchant_id, pin_hash FROM customers WHERE wallet_token = ?').get(token) as
+      | { id: number; name: string; phone: string; merchant_id: number; pin_hash: string | null }
       | undefined;
     if (!c) throw new NotFoundException('This link is not valid');
     this.db.sql.prepare('UPDATE customers SET pin_hash = ? WHERE id = ?').run(hashPin(body?.pin), c.id);
+    this.loyalty.log(c.merchant_id, 'customer', 'pin', c.pin_hash ? 'Changed their PIN' : 'Set a PIN', c);
     this.db.sql.prepare('DELETE FROM pin_attempts WHERE phone = ?').run(last10(c.phone)); // a fresh PIN lifts any lock
     return { ok: true };
   }

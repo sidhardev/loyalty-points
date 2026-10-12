@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -15,6 +16,17 @@ import {
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow } from './loyalty.service';
+
+/** One CSV cell; text that looks like a formula is prefixed so spreadsheets don't run it. */
+const cell = (v: unknown) => {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number') return String(v);
+  let text = String(v);
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+/** Excel opens UTF-8 CSV (₹, Hindi names) correctly when it starts with a BOM. */
+const csv = (header: string[], rows: unknown[][]) => String.fromCharCode(0xfeff) + [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
 
 // The signed-in shop's customers, points, rewards and numbers. Every query is scoped to its merchant_id.
 
@@ -62,7 +74,43 @@ export class LoyaltyController {
       .sort((a, b) => a.days - b.days)
       .map(({ c, days }) => ({ ...this.loyalty.view(m, c), daysUntilBirthday: days }));
 
-    return { totals, today, birthdays: soon, recent: this.transactions(merchantId, undefined, 12) };
+    return {
+      totals,
+      today,
+      birthdays: soon,
+      recent: this.transactions(merchantId, undefined, 12),
+      comeback: { current: this.comeback(m, 0), previous: this.comeback(m, 30) },
+    };
+  }
+
+  /**
+   * What returning customers brought in over 30 days, ending `daysAgo` days ago. A return visit is
+   * any purchase after a customer's first; "won back" is a return after the shop's inactive period.
+   */
+  private comeback(m: { id: number; inactive_days: number }, daysAgo: number) {
+    const range = { m: m.id, from: `-${daysAgo + 30} days`, to: `-${daysAgo} days`, gap: m.inactive_days };
+    const visits = this.db.sql
+      .prepare(
+        `WITH v AS (
+           SELECT customer_id, amount, created_at,
+                  LAG(created_at) OVER (PARTITION BY customer_id ORDER BY created_at, id) AS prev
+           FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+         )
+         SELECT COUNT(DISTINCT CASE WHEN prev IS NOT NULL THEN customer_id END) AS customers,
+                COALESCE(SUM(prev IS NOT NULL), 0) AS visits,
+                COALESCE(SUM(CASE WHEN prev IS NOT NULL THEN amount END), 0) AS sales,
+                COUNT(DISTINCT CASE WHEN julianday(created_at) - julianday(prev) >= :gap THEN customer_id END) AS wonBack,
+                COALESCE(SUM(amount), 0) AS allSales
+         FROM v WHERE created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
+      )
+      .get(range) as { customers: number; visits: number; sales: number; wonBack: number; allSales: number };
+    const { rewards } = this.db.sql
+      .prepare(
+        `SELECT COUNT(*) AS rewards FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0
+           AND created_at >= datetime('now', :from) AND created_at < datetime('now', :to)`,
+      )
+      .get({ m: m.id, from: range.from, to: range.to }) as { rewards: number };
+    return { ...visits, rewards };
   }
 
   // ---- bill QR ----
@@ -81,6 +129,64 @@ export class LoyaltyController {
   cancelClaim(@MerchantId() merchantId: number, @Param('code') code: string) {
     this.loyalty.cancelClaim(merchantId, code);
     return { ok: true };
+  }
+
+  // ---- reward codes customers make in their wallet ----
+
+  @Get('redeem-codes/:code')
+  findRedeemCode(@MerchantId() merchantId: number, @Param('code') code: string) {
+    return this.loyalty.findRedeemCode(merchantId, code);
+  }
+
+  @Post('redeem-codes/:code')
+  useRedeemCode(@MerchantId() merchantId: number, @Param('code') code: string) {
+    return this.loyalty.useRedeemCode(merchantId, code);
+  }
+
+  // ---- activity log and exports ----
+
+  @Get('activity')
+  activity(@MerchantId() merchantId: number, @Query('limit') limitParam = '200') {
+    const limit = Math.min(1000, Math.max(1, Number(limitParam) || 200));
+    return this.db.sql
+      .prepare('SELECT id, actor, action, detail, customer_id, customer_name, created_at FROM activity WHERE merchant_id = ? ORDER BY id DESC LIMIT ?')
+      .all(merchantId, limit);
+  }
+
+  @Get('export/customers.csv')
+  @Header('content-type', 'text/csv; charset=utf-8')
+  @Header('content-disposition', 'attachment; filename="customers.csv"')
+  exportCustomers(@MerchantId() merchantId: number) {
+    const m = this.loyalty.merchant(merchantId);
+    const rows = this.db.sql
+      .prepare(
+        `SELECT c.*, (SELECT COUNT(*) FROM transactions t WHERE t.customer_id = c.id AND t.type = 'earn' AND t.reversed = 0) AS visits,
+                (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.customer_id = c.id AND t.type = 'earn' AND t.reversed = 0) AS spent
+         FROM customers c WHERE c.merchant_id = ? ORDER BY c.created_at`,
+      )
+      .all(merchantId) as (CustomerRow & { visits: number; spent: number })[];
+    this.loyalty.log(merchantId, 'shop', 'export', `Downloaded customers (${rows.length})`);
+    return csv(
+      ['Name', 'Phone', 'Points', 'Lifetime points', 'Tier', 'Visits', 'Total spent (₹)', 'Birthday (MM-DD)', 'Last visit (UTC)', 'Joined (UTC)'],
+      rows.map((c) => [c.name, c.phone, c.points, c.lifetime_points, this.loyalty.tier(m, c).name, c.visits, c.spent, c.birthday, c.last_visit, c.created_at]),
+    );
+  }
+
+  @Get('export/transactions.csv')
+  @Header('content-type', 'text/csv; charset=utf-8')
+  @Header('content-disposition', 'attachment; filename="history.csv"')
+  exportTransactions(@MerchantId() merchantId: number) {
+    const rows = this.db.sql
+      .prepare(
+        `SELECT t.created_at, c.name, c.phone, t.type, t.amount, t.points, t.note, t.reversed
+         FROM transactions t JOIN customers c ON c.id = t.customer_id WHERE t.merchant_id = ? ORDER BY t.id`,
+      )
+      .all(merchantId) as { created_at: string; name: string; phone: string; type: string; amount: number | null; points: number; note: string | null; reversed: number }[];
+    this.loyalty.log(merchantId, 'shop', 'export', `Downloaded points history (${rows.length} entries)`);
+    return csv(
+      ['Date (UTC)', 'Customer', 'Phone', 'Type', 'Bill (₹)', 'Points', 'Note', 'Undone'],
+      rows.map((t) => [t.created_at, t.name, t.phone, t.type, t.amount, t.points, t.note, t.reversed ? 'yes' : '']),
+    );
   }
 
   // ---- customers ----
@@ -140,6 +246,12 @@ export class LoyaltyController {
     const other = this.loyalty.byPhone(merchantId, phone);
     if (other && other.id !== c.id) throw new BadRequestException('Another customer already has this phone number');
     this.db.sql.prepare('UPDATE customers SET name = ?, phone = ?, birthday = ? WHERE id = ?').run(name, phone, birthday, c.id);
+    const changes = [
+      name !== c.name && `name ${c.name} → ${name}`,
+      phone !== c.phone && `phone ${c.phone} → ${phone}`,
+      birthday !== c.birthday && `birthday ${c.birthday ?? '—'} → ${birthday ?? '—'}`,
+    ].filter(Boolean);
+    if (changes.length) this.loyalty.log(merchantId, 'shop', 'edit_customer', `Changed ${changes.join(', ')}`, { id: c.id, name });
     return this.loyalty.view(this.loyalty.merchant(merchantId), this.loyalty.customer(merchantId, c.id));
   }
 
@@ -150,6 +262,7 @@ export class LoyaltyController {
     this.db.transaction(() => {
       this.db.sql.prepare('DELETE FROM transactions WHERE customer_id = ?').run(c.id);
       this.db.sql.prepare('DELETE FROM customers WHERE id = ?').run(c.id);
+      this.loyalty.log(merchantId, 'shop', 'delete_customer', `Deleted ${c.name} (${c.phone}) with ${c.points} points`, { id: c.id, name: c.name });
     });
     return { ok: true };
   }
@@ -160,6 +273,7 @@ export class LoyaltyController {
     const c = this.loyalty.customer(merchantId, id);
     this.db.sql.prepare('UPDATE customers SET pin_hash = NULL WHERE id = ?').run(c.id);
     this.db.sql.prepare('DELETE FROM pin_attempts WHERE phone = ?').run(c.phone.replace(/\D/g, '').slice(-10));
+    this.loyalty.log(merchantId, 'shop', 'reset_pin', 'Reset the PIN', c);
     return { ok: true };
   }
 
@@ -208,6 +322,7 @@ export class LoyaltyController {
       .prepare('UPDATE rewards SET name = ?, points_cost = ? WHERE id = ? AND merchant_id = ? AND active = 1')
       .run(name.slice(0, 80), cost, id, merchantId);
     if (!changes) throw new NotFoundException('Reward not found');
+    this.loyalty.log(merchantId, 'shop', 'reward', `Changed reward ${name} (${cost} points)`);
     return { id, name, points_cost: cost };
   }
 
@@ -220,6 +335,7 @@ export class LoyaltyController {
     const { lastInsertRowid } = this.db.sql
       .prepare('INSERT INTO rewards (merchant_id, name, points_cost) VALUES (?, ?, ?)')
       .run(merchantId, name.slice(0, 80), cost);
+    this.loyalty.log(merchantId, 'shop', 'reward', `Added reward ${name} (${cost} points)`);
     return { id: Number(lastInsertRowid), name, points_cost: cost };
   }
 
@@ -230,6 +346,8 @@ export class LoyaltyController {
       .prepare('UPDATE rewards SET active = 0 WHERE id = ? AND merchant_id = ?')
       .run(id, merchantId);
     if (!changes) throw new NotFoundException('Reward not found');
+    const { name } = this.db.sql.prepare('SELECT name FROM rewards WHERE id = ?').get(id) as { name: string };
+    this.loyalty.log(merchantId, 'shop', 'reward', `Removed reward ${name}`);
     return { ok: true };
   }
 

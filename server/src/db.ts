@@ -115,6 +115,31 @@ const MIGRATIONS: string[] = [
   );
   ALTER TABLE customers ADD COLUMN card_code TEXT;
   `,
+
+  // 5: safety limits, rewards the customer claims from their wallet with a code, and an activity log.
+  `
+  ALTER TABLE merchants ADD COLUMN max_visits_per_day INTEGER NOT NULL DEFAULT 3; -- per customer, rolling 24 hours; 0 = no limit
+  ALTER TABLE merchants ADD COLUMN large_bill INTEGER NOT NULL DEFAULT 5000; -- bills above this ask to confirm and are logged; 0 = off
+  CREATE TABLE redeem_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    reward_id INTEGER NOT NULL REFERENCES rewards(id),
+    code TEXT NOT NULL, -- 4 digits, unique among the shop's open codes
+    expires_at TEXT NOT NULL,
+    used_at TEXT
+  );
+  CREATE TABLE activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    actor TEXT NOT NULL, -- 'shop' or 'customer'
+    action TEXT NOT NULL,
+    detail TEXT NOT NULL,
+    customer_id INTEGER,
+    customer_name TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 const INDEXES = `
@@ -122,6 +147,8 @@ CREATE INDEX IF NOT EXISTS idx_customers_merchant ON customers (merchant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_wallet ON customers (wallet_token);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_join ON merchants (join_code);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_card ON customers (card_code);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes ON redeem_codes (merchant_id, code);
+CREATE INDEX IF NOT EXISTS idx_activity ON activity (merchant_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tx_merchant ON transactions (merchant_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tx_customer ON transactions (customer_id, created_at);
 `;

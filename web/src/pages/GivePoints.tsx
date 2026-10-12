@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import QRCode from 'qrcode';
-import { ArrowLeft, Check, Crown, Gift, MessageCircle, QrCode, RefreshCw, ScanLine, Search, UserPlus } from 'lucide-react';
-import { api, claimUrl, num, walletUrl, whatsapp, type Bonus, type Customer, type Merchant, type Reward } from '../api';
+import { ArrowLeft, Check, Crown, Gift, MessageCircle, QrCode, RefreshCw, ScanLine, Search, Ticket, UserPlus } from 'lucide-react';
+import { api, claimUrl, num, rupees, spendFor, walletUrl, whatsapp, type Bonus, type Customer, type Merchant, type Reward } from '../api';
 import { QrScanner } from '../scanner';
 import {
   Avatar,
@@ -22,7 +22,18 @@ import {
 
 type Earned = { points: number; bonuses: Bonus[]; isNew: boolean; customer: Customer; tierUp: boolean };
 type Picked = { customer: Customer } | { newPhone: string };
-type Mode = 'find' | 'scan' | 'bill';
+type Mode = 'find' | 'scan' | 'bill' | 'code';
+
+/** Bills above the shop's check amount need a second "yes" — catches an extra zero typed by mistake. */
+async function largeBillOk(merchant: Merchant, amount: number) {
+  if (!merchant.largeBill || amount <= merchant.largeBill) return true;
+  return confirmDialog({
+    title: `${rupees(amount)} — is that right?`,
+    body: `This is above your ${rupees(merchant.largeBill)} check. It will be noted in the activity log.`,
+    confirm: 'Yes, it’s right',
+    cancel: 'Fix amount',
+  });
+}
 
 const QUICK = [100, 200, 500, 1000];
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -85,6 +96,11 @@ function FindStep({ onPick, onMode }: { onPick: (p: Picked) => void; onMode: (m:
           <ScanLine size={22} />
           <strong>Scan card</strong>
           <span>Their member QR</span>
+        </button>
+        <button type="button" onClick={() => onMode('code')}>
+          <Ticket size={22} />
+          <strong>Reward code</strong>
+          <span>From their phone</span>
         </button>
       </div>
       <span className="or">or find by phone</span>
@@ -166,6 +182,74 @@ function ScanStep({ onPick }: { onPick: (p: Picked) => void }) {
   );
 }
 
+type CodePreview = { code: string; reward: Reward; customer: Customer };
+
+/** The customer picked a reward in their wallet and shows a 4-digit code; the shop checks it and hands it over. */
+function RedeemCodeStep({ onDone }: { onDone: () => void }) {
+  const [code, setCode] = useState('');
+  const [preview, setPreview] = useState<CodePreview | null>(null);
+  const { busy, error, setError, run } = useAction();
+
+  const check = (value: string) => {
+    setCode(value);
+    setPreview(null);
+    setError('');
+    if (value.length === 4) void run(async () => setPreview(await api<CodePreview>(`redeem-codes/${value}`)));
+  };
+
+  const give = () =>
+    void run(async () => {
+      const r = await api<{ reward: string; customer: Customer }>(`redeem-codes/${code}`, 'POST');
+      dataChanged();
+      toast(`Give ${r.customer.name}: ${r.reward} 🎁`);
+      onDone();
+    });
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <label>
+        4-digit code on the customer's phone
+        <input
+          className="code-input tabular"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={4}
+          placeholder="••••"
+          value={code}
+          onChange={(e) => check(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          autoFocus
+        />
+      </label>
+      <ErrorText text={error} />
+      {preview && (
+        <>
+          <div className="picked">
+            <Avatar name={preview.customer.name} />
+            <span className="row-main">
+              <strong>
+                {preview.customer.name} <TierBadge tier={preview.customer.tier} />
+              </strong>
+              <span>
+                {preview.customer.phone} · {num(preview.customer.points)} points
+              </span>
+            </span>
+          </div>
+          <div className="preview">
+            <span>
+              <Gift size={16} style={{ verticalAlign: '-3px' }} /> {preview.reward.name}
+            </span>
+            <strong className="tabular">−{num(preview.reward.points_cost)}</strong>
+          </div>
+          <button className="btn btn-primary btn-lg btn-block" disabled={busy} onClick={give}>
+            <Check size={18} /> Give {preview.reward.name}
+          </button>
+        </>
+      )}
+      {!preview && !error && <p className="muted small center">The customer taps “Get it” on a reward in their points page to get a code.</p>}
+    </div>
+  );
+}
+
 type Claim = { code: string; expiresAt: string; amount: number; qr: string };
 
 /** The shop types the bill; the customer scans the QR with their phone and the points land in their wallet. */
@@ -183,8 +267,9 @@ function BillStep({ merchant, onDone }: { merchant: Merchant; onDone: (r: Earned
   };
   useEffect(() => cancel, []);
 
-  const show = (e?: FormEvent) => {
+  const show = async (e?: FormEvent) => {
     e?.preventDefault();
+    if (!(await largeBillOk(merchant, Number(amount)))) return;
     void run(async () => {
       cancel();
       const c = await api<Omit<Claim, 'qr'>>('claims', 'POST', { amount: Number(amount) });
@@ -324,8 +409,9 @@ function AmountStep({
     if (!isNew) amountRef.current?.focus();
   }, [isNew]);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!(await largeBillOk(merchant, Number(amount)))) return;
     void run(async () => {
       const r = await api<Earned>('points/earn', 'POST', {
         phone: isNew ? picked.newPhone : picked.customer.phone,
@@ -493,7 +579,7 @@ function DoneStep({
       ))}
       {!affordable.length && next && (
         <p className="small muted center">
-          {num(next.points_cost - customer.points)} more points to {next.name}
+          {num(next.points_cost - customer.points)} more points (about {rupees(spendFor(next.points_cost - customer.points, merchant.pointsPer100, customer.tier.multiplier))} of shopping) to {next.name}
         </p>
       )}
 
@@ -561,7 +647,8 @@ export function GivePointsHost({ merchant }: { merchant: Merchant }) {
       <ArrowLeft size={18} />
     </button>
   );
-  const title = result ? 'Points added' : mode === 'bill' ? <>{back} Bill QR</> : mode === 'scan' ? <>{back} Scan member card</> : 'Give points';
+  const titles: Record<Mode, string> = { find: 'Give points', bill: 'Bill QR', scan: 'Scan member card', code: 'Reward code' };
+  const title = result ? 'Points added' : mode === 'find' ? titles.find : <>{back} {titles[mode]}</>;
 
   return (
     <Sheet title={title} onClose={close}>
@@ -573,6 +660,8 @@ export function GivePointsHost({ merchant }: { merchant: Merchant }) {
         <BillStep merchant={merchant} onDone={setResult} />
       ) : mode === 'scan' ? (
         <ScanStep onPick={pick} />
+      ) : mode === 'code' ? (
+        <RedeemCodeStep onDone={close} />
       ) : (
         <FindStep onPick={pick} onMode={setMode} />
       )}

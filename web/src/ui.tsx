@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { birthdayLabel, num, rupees, when, type Tier, type Transaction } from './api';
+import { t, t as tr, withIcon } from './i18n';
 
 // Shared building blocks: feedback (toasts, confirm dialogs), sheets, and small display pieces.
 
@@ -104,40 +105,14 @@ export function useInstall() {
 
 /** Steps for browsers that don't offer a one-tap install (iPhone, or before Chrome is ready to offer it). */
 function InstallHelpSheet({ onClose }: { onClose: () => void }) {
+  const icon = (Icon: LucideIcon) => <Icon size={15} className="inline-icon" />;
   const steps = isIos
-    ? [
-        <>
-          Tap the <Share size={15} className="inline-icon" /> <strong>Share</strong> button in the browser bar.
-        </>,
-        <>
-          Scroll down and tap <strong>Add to Home Screen</strong>.
-        </>,
-        <>
-          Tap <strong>Add</strong>.
-        </>,
-      ]
+    ? [withIcon(t('Tap the {icon} Share button in the browser bar.'), icon(Share)), t('Scroll down and tap Add to Home Screen.'), t('Tap Add.')]
     : isAndroid
-      ? [
-          <>
-            Tap the <MoreVertical size={15} className="inline-icon" /> <strong>menu</strong> at the top right of the browser.
-          </>,
-          <>
-            Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.
-          </>,
-          <>
-            Tap <strong>Install</strong>.
-          </>,
-        ]
-      : [
-          <>
-            Click the <Download size={15} className="inline-icon" /> <strong>install icon</strong> at the right end of the address bar.
-          </>,
-          <>
-            Or open the browser menu and choose <strong>Install</strong> / <strong>Apps → Install this site</strong>.
-          </>,
-        ];
+      ? [withIcon(t('Tap the {icon} menu at the top right of the browser.'), icon(MoreVertical)), t('Tap Install app or Add to Home screen.'), t('Tap Install.')]
+      : [withIcon(t('Click the {icon} install icon at the right end of the address bar.'), icon(Download)), t('Or open the browser menu and choose Install.')];
   return (
-    <Sheet title="Install the app" onClose={onClose}>
+    <Sheet title={t('Install the app')} onClose={onClose}>
       <div style={{ display: 'grid', gap: 14 }}>
         <ol className="install-steps">
           {steps.map((step, i) => (
@@ -148,10 +123,10 @@ function InstallHelpSheet({ onClose }: { onClose: () => void }) {
           ))}
         </ol>
         <p className="muted small" style={{ margin: 0 }}>
-          It then opens from your home screen like any other app.
+          {t('It then opens from your home screen like any other app.')}
         </p>
         <button className="btn btn-primary btn-lg" onClick={onClose}>
-          Got it
+          {t('Got it')}
         </button>
       </div>
     </Sheet>
@@ -209,12 +184,59 @@ export function InstallBanner({ id, title, text }: { id: string; title: string; 
         <strong>{title}</strong>
         <span>{text}</span>
       </div>
-      <InstallButton className="btn btn-primary btn-sm">Install</InstallButton>
-      <button className="icon-btn" onClick={hide} aria-label="Not now">
+      <InstallButton className="btn btn-primary btn-sm">{t('Install')}</InstallButton>
+      <button className="icon-btn" onClick={hide} aria-label={t('Not now')}>
         <X size={18} />
       </button>
     </section>
   );
+}
+
+// ---------------------------------------------------------------- confetti
+
+const CONFETTI_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#facc15'];
+
+/** A short burst of confetti over the page (skipped when the phone asks for less motion). */
+export function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti';
+  canvas.width = innerWidth * devicePixelRatio;
+  canvas.height = innerHeight * devicePixelRatio;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d')!;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const pieces = Array.from({ length: 140 }, () => ({
+    x: innerWidth / 2 + (Math.random() - 0.5) * innerWidth * 0.3,
+    y: innerHeight * 0.35,
+    vx: (Math.random() - 0.5) * 14,
+    vy: -Math.random() * 14 - 4,
+    size: 6 + Math.random() * 6,
+    spin: Math.random() * Math.PI,
+    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+  }));
+  const start = performance.now();
+  const frame = (now: number) => {
+    const elapsed = now - start;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalAlpha = Math.max(0, 1 - elapsed / 2600);
+    for (const p of pieces) {
+      p.vy += 0.35;
+      p.vx *= 0.99;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.spin += 0.15;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.spin);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      ctx.restore();
+    }
+    if (elapsed < 2600) requestAnimationFrame(frame);
+    else canvas.remove();
+  };
+  requestAnimationFrame(frame);
 }
 
 // ---------------------------------------------------------------- toasts
@@ -253,7 +275,7 @@ export function Toaster() {
 
 // ---------------------------------------------------------------- confirm dialog
 
-type ConfirmOptions = { title: string; body?: ReactNode; confirm?: string; danger?: boolean };
+type ConfirmOptions = { title: string; body?: ReactNode; confirm?: string; cancel?: string; danger?: boolean };
 type Pending = ConfirmOptions & { resolve: (ok: boolean) => void };
 let confirmListener: ((p: Pending) => void) | null = null;
 
@@ -281,7 +303,7 @@ export function ConfirmHost() {
         {pending.body && <p>{pending.body}</p>}
         <div className="actions">
           <button className="btn btn-ghost" onClick={() => close(false)}>
-            Cancel
+            {pending.cancel ?? 'Cancel'}
           </button>
           <button className={`btn ${pending.danger ? 'btn-danger' : 'btn-primary'}`} onClick={() => close(true)} autoFocus>
             {pending.confirm ?? 'Confirm'}
@@ -482,16 +504,16 @@ export function EmptyState({ icon: Icon, title, text, action }: { icon: LucideIc
   );
 }
 
-export function describe(t: Transaction) {
-  switch (t.type) {
+export function describe(tx: Transaction) {
+  switch (tx.type) {
     case 'earn':
-      return `Bill of ${rupees(t.amount ?? 0)}${t.note ? ` · ${t.note}` : ''}`;
+      return `${tr('Bill of {amount}', { amount: rupees(tx.amount ?? 0) })}${tx.note ? ` · ${tx.note}` : ''}`;
     case 'redeem':
-      return `Redeemed ${t.note}`;
+      return tr('Redeemed {reward}', { reward: tx.note ?? '' });
     case 'bonus':
-      return t.note ?? 'Bonus';
+      return tr(tx.note ?? 'Bonus');
     default:
-      return t.note ?? 'Adjustment';
+      return tx.note ? tr(tx.note) : tr('Adjustment');
   }
 }
 
@@ -529,7 +551,7 @@ export function Activity({
                 <span>
                   {showCustomer ? `${describe(t)} · ` : ''}
                   {when(t.created_at)}
-                  {t.reversed ? ' · undone' : ''}
+                  {t.reversed ? ` · ${tr('undone')}` : ''}
                 </span>
               </div>
               <div className="row-end">
