@@ -22,21 +22,24 @@ A simple loyalty program for small shops: give customers points on every bill an
 
 Needs Node.js 22.16 or newer.
 
-```sh
-npm install
-npm run dev
-```
-
-Open http://localhost:5173 (the API runs on :3000).
-
-### Production
+**One command** (or double-click `start.bat` on Windows):
 
 ```sh
-npm run build
+npm install   # first time only
 npm start
 ```
 
-One process on http://localhost:3000 serves both the API and the website. Set `JWT_SECRET` in production (otherwise one is generated into `server/data/`), and optionally `PORT` and `DB_FILE`. Back up `server/data/` — it is the whole database.
+Open **http://localhost:4000**. `npm start` builds the website and API and runs them as one server on port 4000.
+
+**While changing code** (live reload):
+
+```sh
+npm run dev
+```
+
+Also open http://localhost:4000 — the website dev server forwards `/api` to the API on port 4001.
+
+Set `JWT_SECRET` in production (otherwise one is generated into `server/data/`), and optionally `PORT` and `DB_FILE`. Back up `server/data/` — it is the whole database.
 
 ## API
 

@@ -47,7 +47,7 @@ async function bootstrap() {
     });
   }
 
-  const port = Number(process.env.PORT) || 3000;
+  const port = Number(process.env.PORT) || 4000;
   await app.listen(port);
   console.log(`Loyalty Points running on http://localhost:${port}`);
 }
