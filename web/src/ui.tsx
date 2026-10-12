@@ -257,7 +257,7 @@ export const Logo = () => (
   </span>
 );
 
-const AVATAR_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#9333ea', '#db2777', '#0891b2', '#ca8a04', '#4f46e5'];
+const AVATAR_COLORS = ['#047857', '#2563eb', '#7c3aed', '#db2777', '#0e7490', '#b45309', '#4f46e5', '#be123c'];
 
 export function Avatar({ name, size }: { name: string; size?: 'lg' }) {
   const initials = name

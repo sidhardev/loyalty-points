@@ -3,59 +3,82 @@
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f7f7f5;
+  --bg: #f4f8f6;
   --surface: #ffffff;
-  --surface-2: #f3f2ef;
-  --surface-3: #ebe9e4;
-  --ink: #141416;
-  --ink-2: #3f3f46;
-  --muted: #71717a;
-  --line: #e7e5e0;
-  --line-strong: #d6d3cc;
-  --brand: #ea580c;
-  --brand-ink: #c2410c;
-  --brand-soft: #fff1e6;
-  --brand-glow: rgba(234, 88, 12, 0.22);
-  --ok: #15803d;
-  --ok-soft: #e8f6ed;
+  --surface-2: #ecf3f0;
+  --surface-3: #dfe9e5;
+  --ink: #0d1f19;
+  --ink-2: #2b3d36;
+  --muted: #5b6b65;
+  --line: #e0e9e5;
+  --line-strong: #c9d6d1;
+  --brand: #047857; /* buttons and brand text: 5.5:1 with white */
+  --brand-ink: #047857;
+  --brand-hover: #065f46;
+  --brand-fill: #10b981; /* meters, chart bars, accents */
+  --brand-soft: #e3f4ec;
+  --brand-glow: rgba(4, 120, 87, 0.28);
+  --on-brand: #ffffff;
+  --hero-1: #064e3b;
+  --hero-2: #047857;
+  --hero-3: #10b981;
+  --ok: #047857;
+  --ok-soft: #e3f4ec;
   --bad: #dc2626;
   --bad-soft: #fdecec;
-  --gold: #a16207;
-  --gold-soft: #fdf3d1;
-  --blue: #2563eb;
-  --whatsapp: #1fa855;
-  --shadow-sm: 0 1px 2px rgba(20, 20, 22, 0.05);
-  --shadow: 0 1px 2px rgba(20, 20, 22, 0.05), 0 10px 30px -14px rgba(20, 20, 22, 0.16);
-  --shadow-lg: 0 24px 60px -20px rgba(20, 20, 22, 0.35);
-  --scrim: rgba(20, 20, 22, 0.45);
+  --gold: #92400e;
+  --gold-soft: #fdf2d0;
+  --violet: #6d28d9;
+  --violet-soft: #f1ebfe;
+  --blue: #1d4ed8;
+  --blue-soft: #e8efff;
+  --chart-new: #10b981;
+  --chart-back: #6366f1;
+  --whatsapp: #128c4a;
+  --shadow-sm: 0 1px 2px rgba(13, 31, 25, 0.05);
+  --shadow: 0 1px 2px rgba(13, 31, 25, 0.05), 0 10px 30px -14px rgba(13, 31, 25, 0.18);
+  --shadow-lg: 0 24px 60px -20px rgba(13, 31, 25, 0.38);
+  --scrim: rgba(8, 20, 16, 0.5);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0e0e11;
-  --surface: #16161a;
-  --surface-2: #1d1d22;
-  --surface-3: #26262c;
-  --ink: #f4f4f5;
-  --ink-2: #d4d4d8;
-  --muted: #a1a1aa;
-  --line: #26262c;
-  --line-strong: #34343c;
-  --brand: #fb7a3c;
-  --brand-ink: #fd9a63;
-  --brand-soft: rgba(251, 122, 60, 0.13);
-  --brand-glow: rgba(251, 122, 60, 0.25);
-  --ok: #4ade80;
-  --ok-soft: rgba(74, 222, 128, 0.12);
-  --bad: #f87171;
-  --bad-soft: rgba(248, 113, 113, 0.12);
-  --gold: #fbbf24;
-  --gold-soft: rgba(251, 191, 36, 0.13);
-  --blue: #60a5fa;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
-  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
-  --scrim: rgba(0, 0, 0, 0.6);
+  --bg: #0a110e;
+  --surface: #121b18;
+  --surface-2: #18241f;
+  --surface-3: #213029;
+  --ink: #e8f3ee;
+  --ink-2: #c3d4cd;
+  --muted: #93a69f;
+  --line: #1f2d28;
+  --line-strong: #2e3f38;
+  --brand: #34d399;
+  --brand-ink: #6ee7b7;
+  --brand-hover: #6ee7b7;
+  --brand-fill: #34d399;
+  --brand-soft: #163a2d;
+  --brand-glow: rgba(52, 211, 153, 0.25);
+  --on-brand: #052e21;
+  --hero-1: #022c22;
+  --hero-2: #065f46;
+  --hero-3: #059669;
+  --ok: #6ee7b7;
+  --ok-soft: #163a2d;
+  --bad: #fca5a5;
+  --bad-soft: #3a1717;
+  --gold: #fcd34d;
+  --gold-soft: #2f2711;
+  --violet: #c4b5fd;
+  --violet-soft: #221d3a;
+  --blue: #93c5fd;
+  --blue-soft: #172338;
+  --chart-new: #34d399;
+  --chart-back: #818cf8;
+  --whatsapp: #1fa855;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 12px 32px -16px rgba(0, 0, 0, 0.75);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+  --scrim: rgba(0, 0, 0, 0.65);
 }
 
 :root {
@@ -261,17 +284,13 @@ textarea:focus {
 .btn-primary {
   border-color: transparent;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   box-shadow: 0 8px 20px -10px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-primary:hover {
   border-color: transparent;
-  background: var(--brand-ink);
-}
-
-:root[data-theme='dark'] .btn-primary {
-  color: #1a0d05;
+  background: var(--brand-hover);
 }
 
 .btn-ghost {
@@ -309,7 +328,7 @@ textarea:focus {
 
 .btn-whatsapp:hover {
   border-color: transparent;
-  background: #178a45;
+  filter: brightness(1.08);
 }
 
 .btn-sm {
@@ -436,8 +455,8 @@ textarea:focus {
 }
 
 .badge-minus {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+  background: var(--violet-soft);
+  color: var(--violet);
 }
 
 .badge-neutral {
@@ -506,9 +525,9 @@ textarea:focus {
 }
 
 .chip.active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--bg);
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
 .chip em {
@@ -589,7 +608,7 @@ textarea:focus {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--brand);
+  background: var(--brand-fill);
   transition: width 0.6s var(--ease);
 }
 
@@ -679,8 +698,8 @@ button.row-item:hover {
 }
 
 .activity-icon.redeem {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+  background: var(--violet-soft);
+  color: var(--violet);
 }
 
 .activity-icon.bonus {
@@ -752,7 +771,7 @@ button.row-item:hover {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: linear-gradient(140deg, #fb923c, #ea580c 55%, #c2410c);
+  background: linear-gradient(140deg, #34d399, #059669 55%, #065f46);
   color: #fff;
   box-shadow: 0 6px 16px -6px var(--brand-glow);
 }
@@ -796,7 +815,7 @@ button.row-item:hover {
   border: 4px solid var(--bg);
   border-radius: 50%;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   box-shadow: 0 10px 24px -8px var(--brand-glow);
   cursor: pointer;
   transition: transform 0.15s var(--ease);
@@ -1159,8 +1178,10 @@ button.row-item:hover {
   gap: 16px;
   padding: 20px;
   border-radius: var(--radius);
-  background: radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
-    linear-gradient(135deg, #f97316, #ea580c 50%, #c2410c);
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--hero-3) 55%, transparent), transparent 60%),
+    linear-gradient(135deg, var(--hero-1), var(--hero-2));
   color: #fff;
   box-shadow: 0 18px 40px -22px var(--brand-glow);
 }
@@ -1178,14 +1199,14 @@ button.row-item:hover {
 }
 
 .hero-cta p {
-  opacity: 0.88;
+  color: rgba(255, 255, 255, 0.86);
   font-size: 14px;
 }
 
 .hero-cta .btn {
   border: 0;
   background: #fff;
-  color: #c2410c;
+  color: #065f46;
 }
 
 .today {
@@ -1198,13 +1219,14 @@ button.row-item:hover {
   display: grid;
   gap: 2px;
   padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .today span {
   font-size: 12px;
-  opacity: 0.85;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .today strong {
@@ -1238,7 +1260,27 @@ button.row-item:hover {
 }
 
 .stat-label svg {
+  flex: none;
+  box-sizing: content-box;
+  padding: 7px;
+  border-radius: 10px;
+  background: var(--brand-soft);
   color: var(--brand-ink);
+}
+
+.stat:nth-child(2) .stat-label svg {
+  background: var(--violet-soft);
+  color: var(--violet);
+}
+
+.stat:nth-child(3) .stat-label svg {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.stat:nth-child(4) .stat-label svg {
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .stat strong {
@@ -1415,7 +1457,7 @@ button.row-item:hover {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: var(--brand);
+  background: linear-gradient(140deg, #34d399, #059669);
   color: #fff;
 }
 
@@ -1446,11 +1488,11 @@ button.row-item:hover {
 }
 
 .bar-new {
-  fill: var(--brand);
+  fill: var(--chart-new);
 }
 
 .bar-back {
-  fill: var(--blue);
+  fill: var(--chart-back);
 }
 
 .chart .dim rect:not([fill]) {
@@ -1479,11 +1521,11 @@ button.row-item:hover {
 }
 
 .dot-new {
-  background: var(--brand);
+  background: var(--chart-new);
 }
 
 .dot-back {
-  background: var(--blue);
+  background: var(--chart-back);
 }
 
 .tip {
@@ -1599,8 +1641,9 @@ button.row-item:hover {
   align-content: center;
   gap: 14px;
   padding: 36px 24px 28px;
-  background: radial-gradient(120% 100% at 0% 0%, rgba(255, 255, 255, 0.16), transparent 60%),
-    linear-gradient(150deg, #f97316, #ea580c 45%, #9a3412);
+  background: radial-gradient(80% 70% at 100% 0%, rgba(52, 211, 153, 0.45), transparent 60%),
+    radial-gradient(60% 60% at 0% 100%, rgba(16, 185, 129, 0.25), transparent 60%),
+    linear-gradient(150deg, #022c22, #064e3b 50%, #065f46);
   color: #fff;
 }
 
@@ -1622,7 +1665,7 @@ button.row-item:hover {
 
 .auth-hero p {
   max-width: 420px;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.86);
   font-size: 16px;
 }
 
@@ -1692,15 +1735,15 @@ button.row-item:hover {
   padding: 22px 22px 20px;
   overflow: hidden;
   border-radius: 22px;
-  background: radial-gradient(130% 120% at 100% 0%, rgba(255, 255, 255, 0.22), transparent 55%),
-    linear-gradient(140deg, #fb923c, #ea580c 50%, #9a3412);
+  background: radial-gradient(90% 110% at 100% 0%, rgba(110, 231, 183, 0.45), transparent 60%),
+    linear-gradient(140deg, #047857, #065f46 55%, #022c22);
   color: #fff;
-  box-shadow: 0 24px 50px -24px rgba(194, 65, 12, 0.75);
+  box-shadow: 0 24px 50px -24px rgba(4, 120, 87, 0.7);
 }
 
 .member-card.gold {
   background: radial-gradient(130% 120% at 100% 0%, rgba(255, 255, 255, 0.3), transparent 55%),
-    linear-gradient(140deg, #f5c451, #c58a10 50%, #6b4400);
+    linear-gradient(140deg, #d99a0b, #a16207 50%, #5c3a03);
   box-shadow: 0 24px 50px -24px rgba(122, 79, 0, 0.8);
 }
 
