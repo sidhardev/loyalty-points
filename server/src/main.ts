@@ -10,6 +10,8 @@ import { join } from 'node:path';
 import { AuthController, AuthGuard } from './auth';
 import { Db } from './db';
 import { LoyaltyController } from './loyalty.controller';
+import { LoyaltyService } from './loyalty.service';
+import { PublicController } from './public.controller';
 
 /** JWT_SECRET from the environment, or one generated on first run and kept in data/. */
 function jwtSecret() {
@@ -24,8 +26,8 @@ function jwtSecret() {
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController],
-  providers: [Db, AuthGuard],
+  controllers: [AuthController, LoyaltyController, PublicController],
+  providers: [Db, AuthGuard, LoyaltyService],
 })
 class AppModule {}
 

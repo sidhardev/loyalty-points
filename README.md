@@ -8,14 +8,18 @@ A simple loyalty program for small shops: give customers points on every bill an
 ## Features
 
 - **Sign up / log in** – each shop has its own account (email + password, 7-day login token)
-- **Give points** – enter the customer's phone and bill amount; first-time customers are created on the spot
-- **Customers** – search, add, and see each customer's balance and full history
-- **Rewards** – create rewards (e.g. "Free coffee – 100 points") and redeem them from a customer's page
-- **Dashboard & settings** – totals, recent activity, and how many points every ₹100 earns
+- **Give points** – phone + bill amount; first-time customers are created on the spot. A **Send on WhatsApp** button opens WhatsApp with the points message and the customer's wallet link
+- **Customer wallet** – `/w/<link>`: the customer's points, Gold progress, rewards and history, no app or login needed
+- **Counter QR** – printable poster (Settings) that opens `/join/<code>`, where customers sign up themselves
+- **Customers** – search, add, edit, delete; full history with **Undo** per entry and manual **Adjust** with a reason
+- **Rewards** – create rewards and redeem them from a customer's page
+- **Bonuses & tiers** – welcome bonus, birthday bonus (on their visit within a week of the birthday, once a year), and ★ Gold after a lifetime-points threshold with a points multiplier
+- **Win-back** – list of customers who haven't visited in N days, each with a ready "we miss you" WhatsApp message
+- **Insights** – visits per day (new vs returning), top customers, repeat rate, sales and average bill
 
 ## Run it
 
-Needs Node.js 22.5 or newer.
+Needs Node.js 22.16 or newer.
 
 ```sh
 npm install
@@ -49,3 +53,12 @@ All routes except signup/login need `Authorization: Bearer <token>`.
 | POST | `/api/points/redeem` | `{ customerId, rewardId }` |
 | GET / POST | `/api/rewards` | list / add `{ name, pointsCost }` |
 | DELETE | `/api/rewards/:id` | remove a reward |
+| PATCH / DELETE | `/api/customers/:id` | edit `{ name, phone, birthday }` / delete with history |
+| POST | `/api/customers/:id/adjust` | `{ points, reason }` (negative removes) |
+| POST | `/api/transactions/:id/undo` | reverse one entry |
+| GET | `/api/customers?filter=inactive` | customers who haven't visited recently |
+| GET | `/api/insights?days=30&tz=330` | daily visits, top customers, repeat rate |
+| GET | `/api/public/wallet/:token` | customer wallet (no login) |
+| GET / POST | `/api/public/join/:code` | counter QR sign-up (no login) |
+
+The database schema upgrades itself on start (`PRAGMA user_version`), keeping existing data.

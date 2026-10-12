@@ -7,141 +7,136 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
+import { LoyaltyService, type CustomerRow } from './loyalty.service';
 
-// Customers, points and rewards for the signed-in shop. Every query is scoped to its merchant_id.
-
-type Customer = { id: number; name: string; phone: string; points: number; created_at: string };
-type Reward = { id: number; name: string; points_cost: number };
-
-const PHONE = /^[0-9+\-\s]{7,20}$/;
-
-const cleanPhone = (phone: string) => phone.replace(/[\s-]/g, '');
+// The signed-in shop's customers, points, rewards and numbers. Every query is scoped to its merchant_id.
 
 @Controller('api')
 @UseGuards(AuthGuard)
 export class LoyaltyController {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly loyalty: LoyaltyService,
+  ) {}
 
   // ---- dashboard ----
 
   @Get('dashboard')
   dashboard(@MerchantId() merchantId: number) {
-    const sql = this.db.sql;
-    const totals = sql
+    const m = this.loyalty.merchant(merchantId);
+    const totals = this.db.sql
       .prepare(
         `SELECT
-           (SELECT COUNT(*) FROM customers WHERE merchant_id = ?) AS customers,
-           (SELECT COALESCE(SUM(points), 0) FROM transactions WHERE merchant_id = ? AND type = 'earn') AS issued,
-           (SELECT COALESCE(SUM(points), 0) FROM transactions WHERE merchant_id = ? AND type = 'redeem') AS redeemed,
-           (SELECT COUNT(*) FROM transactions WHERE merchant_id = ? AND type = 'redeem') AS redemptions,
-           (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE merchant_id = ? AND type = 'earn') AS sales`,
+           (SELECT COUNT(*) FROM customers WHERE merchant_id = :m) AS customers,
+           (SELECT COALESCE(SUM(points), 0) FROM transactions WHERE merchant_id = :m AND type IN ('earn', 'bonus') AND reversed = 0) AS issued,
+           (SELECT COALESCE(-SUM(points), 0) FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0) AS redeemed,
+           (SELECT COUNT(*) FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0) AS redemptions,
+           (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0) AS sales,
+           (SELECT COUNT(*) FROM customers WHERE merchant_id = :m
+              AND COALESCE(last_visit, created_at) < datetime('now', :inactive)) AS inactive`,
       )
-      .get(merchantId, merchantId, merchantId, merchantId, merchantId);
-    return { totals, recent: this.transactions(merchantId, undefined, 10) };
+      .get({ m: merchantId, inactive: `-${m.inactive_days} days` });
+
+    // Birthdays in the next 7 days (birthday bonus is added on their visit).
+    const soon = (this.db.sql.prepare('SELECT * FROM customers WHERE merchant_id = ? AND birthday IS NOT NULL').all(merchantId) as CustomerRow[])
+      .map((c) => ({ c, days: this.daysUntil(c.birthday!) }))
+      .filter((x) => x.days <= 7)
+      .sort((a, b) => a.days - b.days)
+      .map(({ c, days }) => ({ ...this.loyalty.view(m, c), daysUntilBirthday: days }));
+
+    return { totals, birthdays: soon, recent: this.transactions(merchantId, undefined, 10) };
   }
 
   // ---- customers ----
 
+  /** `filter=inactive` lists customers who haven't visited for the shop's inactive period. */
   @Get('customers')
-  customers(@MerchantId() merchantId: number, @Query('q') q = '') {
+  customers(@MerchantId() merchantId: number, @Query('q') q = '', @Query('filter') filter = '') {
+    const m = this.loyalty.merchant(merchantId);
     const like = `%${q.trim()}%`;
-    return this.db.sql
+    const rows = this.db.sql
       .prepare(
-        `SELECT id, name, phone, points, created_at FROM customers
-         WHERE merchant_id = ? AND (name LIKE ? OR phone LIKE ?)
-         ORDER BY created_at DESC LIMIT 200`,
+        `SELECT * FROM customers
+         WHERE merchant_id = :m AND (name LIKE :q OR phone LIKE :q)
+           AND (:inactive IS NULL OR COALESCE(last_visit, created_at) < datetime('now', :inactive))
+         ORDER BY ${filter === 'inactive' ? 'COALESCE(last_visit, created_at) ASC' : 'created_at DESC'}
+         LIMIT 500`,
       )
-      .all(merchantId, like, like);
+      .all({ m: merchantId, q: like, inactive: filter === 'inactive' ? `-${m.inactive_days} days` : null }) as CustomerRow[];
+    return rows.map((c) => this.loyalty.view(m, c));
   }
 
   @Post('customers')
-  addCustomer(@MerchantId() merchantId: number, @Body() body: { name?: string; phone?: string }) {
-    const { name, phone } = this.validCustomer(body);
-    const exists = this.db.sql
-      .prepare('SELECT id FROM customers WHERE merchant_id = ? AND phone = ?')
-      .get(merchantId, phone);
-    if (exists) throw new BadRequestException('A customer with this phone number already exists');
-    const { lastInsertRowid } = this.db.sql
-      .prepare('INSERT INTO customers (merchant_id, name, phone) VALUES (?, ?, ?)')
-      .run(merchantId, name, phone);
-    return this.customer(merchantId, Number(lastInsertRowid));
+  addCustomer(@MerchantId() merchantId: number, @Body() body: { name?: string; phone?: string; birthday?: string }) {
+    const { customer, bonuses } = this.loyalty.createCustomer(merchantId, body ?? {});
+    return { customer: this.loyalty.view(this.loyalty.merchant(merchantId), customer), bonuses };
   }
 
   @Get('customers/:id')
   customerDetail(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
-    return { customer: this.customer(merchantId, id), history: this.transactions(merchantId, id, 100) };
+    const m = this.loyalty.merchant(merchantId);
+    const c = this.loyalty.customer(merchantId, id);
+    const stats = this.db.sql
+      .prepare(
+        `SELECT COUNT(*) AS visits, COALESCE(SUM(amount), 0) AS spent
+         FROM transactions WHERE customer_id = ? AND type = 'earn' AND reversed = 0`,
+      )
+      .get(c.id);
+    return { customer: this.loyalty.view(m, c), stats, history: this.transactions(merchantId, id, 200) };
+  }
+
+  @Patch('customers/:id')
+  editCustomer(
+    @MerchantId() merchantId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { name?: string; phone?: string; birthday?: string },
+  ) {
+    const c = this.loyalty.customer(merchantId, id);
+    const { name, phone, birthday } = this.loyalty.validate({ name: body?.name ?? c.name, phone: body?.phone ?? c.phone, birthday: body?.birthday === undefined ? c.birthday : body.birthday });
+    const other = this.loyalty.byPhone(merchantId, phone);
+    if (other && other.id !== c.id) throw new BadRequestException('Another customer already has this phone number');
+    this.db.sql.prepare('UPDATE customers SET name = ?, phone = ?, birthday = ? WHERE id = ?').run(name, phone, birthday, c.id);
+    return this.loyalty.view(this.loyalty.merchant(merchantId), this.loyalty.customer(merchantId, c.id));
+  }
+
+  /** Removes the customer and their history. */
+  @Delete('customers/:id')
+  deleteCustomer(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
+    const c = this.loyalty.customer(merchantId, id);
+    this.db.transaction(() => {
+      this.db.sql.prepare('DELETE FROM transactions WHERE customer_id = ?').run(c.id);
+      this.db.sql.prepare('DELETE FROM customers WHERE id = ?').run(c.id);
+    });
+    return { ok: true };
+  }
+
+  @Post('customers/:id/adjust')
+  adjust(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { points?: number; reason?: string }) {
+    return this.loyalty.adjust(merchantId, id, body?.points, body?.reason);
   }
 
   // ---- points ----
 
-  /**
-   * Adds points for a purchase: points = bill amount / 100 x the shop's rate (rounded down).
-   * Finds the customer by phone, creating them on their first visit when a name is given.
-   */
   @Post('points/earn')
-  earn(@MerchantId() merchantId: number, @Body() body: { phone?: string; name?: string; amount?: number }) {
-    const phone = cleanPhone(body?.phone ?? '');
-    const amount = Number(body?.amount);
-    if (!PHONE.test(phone)) throw new BadRequestException('Enter a valid phone number');
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) {
-      throw new BadRequestException('Enter the bill amount');
-    }
-
-    const { points_per_100: rate } = this.db.sql
-      .prepare('SELECT points_per_100 FROM merchants WHERE id = ?')
-      .get(merchantId) as { points_per_100: number };
-    const points = Math.floor((amount / 100) * rate);
-
-    return this.db.transaction(() => {
-      let customer = this.db.sql
-        .prepare('SELECT * FROM customers WHERE merchant_id = ? AND phone = ?')
-        .get(merchantId, phone) as Customer | undefined;
-      let isNew = false;
-      if (!customer) {
-        const name = body?.name?.trim();
-        if (!name) throw new BadRequestException('New customer — please enter their name');
-        const { lastInsertRowid } = this.db.sql
-          .prepare('INSERT INTO customers (merchant_id, name, phone) VALUES (?, ?, ?)')
-          .run(merchantId, name.slice(0, 80), phone);
-        customer = this.customer(merchantId, Number(lastInsertRowid));
-        isNew = true;
-      }
-      if (points > 0) {
-        this.db.sql
-          .prepare('INSERT INTO transactions (merchant_id, customer_id, type, points, amount) VALUES (?, ?, ?, ?, ?)')
-          .run(merchantId, customer.id, 'earn', points, amount);
-        this.db.sql.prepare('UPDATE customers SET points = points + ? WHERE id = ?').run(points, customer.id);
-      }
-      return { points, isNew, customer: this.customer(merchantId, customer.id) };
-    });
+  earn(@MerchantId() merchantId: number, @Body() body: { phone?: string; name?: string; amount?: number; birthday?: string }) {
+    return this.loyalty.earn(merchantId, body ?? {});
   }
 
-  /** Spends a customer's points on a reward. */
   @Post('points/redeem')
   redeem(@MerchantId() merchantId: number, @Body() body: { customerId?: number; rewardId?: number }) {
-    return this.db.transaction(() => {
-      const customer = this.customer(merchantId, Number(body?.customerId));
-      const reward = this.db.sql
-        .prepare('SELECT id, name, points_cost FROM rewards WHERE id = ? AND merchant_id = ? AND active = 1')
-        .get(Number(body?.rewardId), merchantId) as Reward | undefined;
-      if (!reward) throw new NotFoundException('Reward not found');
-      if (customer.points < reward.points_cost) {
-        throw new BadRequestException(
-          `${customer.name} has ${customer.points} points; ${reward.name} needs ${reward.points_cost}`,
-        );
-      }
-      this.db.sql
-        .prepare('INSERT INTO transactions (merchant_id, customer_id, type, points, reward_id, note) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(merchantId, customer.id, 'redeem', reward.points_cost, reward.id, reward.name);
-      this.db.sql.prepare('UPDATE customers SET points = points - ? WHERE id = ?').run(reward.points_cost, customer.id);
-      return { reward: reward.name, customer: this.customer(merchantId, customer.id) };
-    });
+    return this.loyalty.redeem(merchantId, Number(body?.customerId), Number(body?.rewardId));
+  }
+
+  @Post('transactions/:id/undo')
+  undo(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
+    return this.loyalty.undo(merchantId, id);
   }
 
   // ---- rewards ----
@@ -175,28 +170,80 @@ export class LoyaltyController {
     return { ok: true };
   }
 
-  // ---- helpers ----
+  // ---- insights ----
 
-  private validCustomer(body: { name?: string; phone?: string }) {
-    const name = body?.name?.trim();
-    const phone = cleanPhone(body?.phone ?? '');
-    if (!name) throw new BadRequestException('Name is required');
-    if (!PHONE.test(phone)) throw new BadRequestException('Enter a valid phone number');
-    return { name: name.slice(0, 80), phone };
+  /**
+   * Visits, points and customers over the last `days` days, grouped by day in the shop's time zone
+   * (`tz` = minutes ahead of UTC, e.g. 330 for India). A visit is a purchase that earned points.
+   */
+  @Get('insights')
+  insights(@MerchantId() merchantId: number, @Query('days') daysParam = '30', @Query('tz') tzParam = '330') {
+    const days = Math.min(365, Math.max(1, Number(daysParam) || 30));
+    const tz = Math.min(840, Math.max(-720, Number(tzParam) || 0));
+    const shift = `${tz >= 0 ? '+' : ''}${tz} minutes`;
+    const since = `-${days} days`;
+    const sql = this.db.sql;
+    const p = { m: merchantId, shift, since };
+
+    const daily = sql
+      .prepare(
+        `WITH first_visit AS (
+           SELECT customer_id, MIN(id) AS first_id FROM transactions
+           WHERE merchant_id = :m AND type = 'earn' AND reversed = 0 GROUP BY customer_id
+         )
+         SELECT date(t.created_at, :shift) AS day,
+                COUNT(*) AS visits,
+                SUM(CASE WHEN t.id = f.first_id THEN 1 ELSE 0 END) AS new_customers,
+                COALESCE(SUM(t.amount), 0) AS sales,
+                COALESCE(SUM(t.points), 0) AS points
+         FROM transactions t JOIN first_visit f ON f.customer_id = t.customer_id
+         WHERE t.merchant_id = :m AND t.type = 'earn' AND t.reversed = 0 AND t.created_at >= datetime('now', :since)
+         GROUP BY day ORDER BY day`,
+      )
+      .all(p);
+
+    const top = sql
+      .prepare(
+        `SELECT c.id, c.name, c.phone, c.points, COUNT(*) AS visits, COALESCE(SUM(t.amount), 0) AS spent
+         FROM transactions t JOIN customers c ON c.id = t.customer_id
+         WHERE t.merchant_id = :m AND t.type = 'earn' AND t.reversed = 0 AND t.created_at >= datetime('now', :since)
+         GROUP BY c.id ORDER BY visits DESC, spent DESC LIMIT 10`,
+      )
+      .all({ m: merchantId, since });
+
+    const repeat = sql
+      .prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+              AND created_at >= datetime('now', :since) GROUP BY customer_id)) AS active,
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+              AND created_at >= datetime('now', :since) GROUP BY customer_id HAVING COUNT(*) >= 2)) AS "returning",
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+              GROUP BY customer_id)) AS everVisited,
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+              GROUP BY customer_id HAVING COUNT(*) >= 2)) AS everReturned`,
+      )
+      .get({ m: merchantId, since });
+
+    return { days, daily, top, repeat };
   }
 
-  private customer(merchantId: number, id: number) {
-    const customer = this.db.sql
-      .prepare('SELECT id, name, phone, points, created_at FROM customers WHERE id = ? AND merchant_id = ?')
-      .get(id, merchantId) as Customer | undefined;
-    if (!customer) throw new NotFoundException('Customer not found');
-    return customer;
+  // ---- helpers ----
+
+  private daysUntil(mmdd: string) {
+    const now = new Date();
+    const [m, d] = mmdd.split('-').map(Number);
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    let next = Date.UTC(now.getFullYear(), m - 1, d);
+    if (next < today) next = Date.UTC(now.getFullYear() + 1, m - 1, d);
+    return Math.round((next - today) / 86_400_000);
   }
 
   private transactions(merchantId: number, customerId: number | undefined, limit: number) {
     return this.db.sql
       .prepare(
-        `SELECT t.id, t.type, t.points, t.amount, t.note, t.created_at, c.id AS customer_id, c.name AS customer_name
+        `SELECT t.id, t.type, t.points, t.amount, t.note, t.reversed, t.reversal_of, t.created_at,
+                c.id AS customer_id, c.name AS customer_name
          FROM transactions t JOIN customers c ON c.id = t.customer_id
          WHERE t.merchant_id = ? AND (? IS NULL OR t.customer_id = ?)
          ORDER BY t.created_at DESC, t.id DESC LIMIT ?`,

@@ -17,11 +17,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
-import { Db } from './db';
+import { Db, randomToken } from './db';
+import type { MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with email + password and get a token the website sends with every request.
-
-type MerchantRow = { id: number; name: string; email: string; password_hash: string; points_per_100: number };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -41,7 +40,29 @@ export const publicMerchant = (m: MerchantRow) => ({
   name: m.name,
   email: m.email,
   pointsPer100: m.points_per_100,
+  joinCode: m.join_code,
+  welcomeBonus: m.welcome_bonus,
+  birthdayBonus: m.birthday_bonus,
+  goldThreshold: m.gold_threshold,
+  goldMultiplier: m.gold_multiplier,
+  inactiveDays: m.inactive_days,
 });
+
+type Settings = {
+  name?: string;
+  pointsPer100?: number;
+  welcomeBonus?: number;
+  birthdayBonus?: number;
+  goldThreshold?: number;
+  goldMultiplier?: number;
+  inactiveDays?: number;
+};
+
+function wholeNumber(value: unknown, label: string, min: number, max: number) {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < min || n > max) throw new BadRequestException(`${label} must be a whole number from ${min} to ${max}`);
+  return n;
+}
 
 /** Lets only signed-in shops through and puts their id on the request. */
 @Injectable()
@@ -87,8 +108,8 @@ export class AuthController {
     if (exists) throw new ConflictException('An account with this email already exists');
 
     const { lastInsertRowid } = this.db.sql
-      .prepare('INSERT INTO merchants (name, email, password_hash) VALUES (?, ?, ?)')
-      .run(name, email, hashPassword(password));
+      .prepare('INSERT INTO merchants (name, email, password_hash, join_code) VALUES (?, ?, ?, ?)')
+      .run(name, email, hashPassword(password), randomToken(6));
     return this.session(Number(lastInsertRowid));
   }
 
@@ -108,18 +129,27 @@ export class AuthController {
     return publicMerchant(this.find(req.merchantId));
   }
 
-  /** Shop settings: name and how many points every ₹100 spent earns. */
+  /** Shop settings: name, earning rate, bonuses, Gold tier and when a customer counts as inactive. */
   @Patch('me')
   @UseGuards(AuthGuard)
-  update(@Req() req: { merchantId: number }, @Body() body: { name?: string; pointsPer100?: number }) {
-    const merchant = this.find(req.merchantId);
-    const name = body?.name?.trim() || merchant.name;
-    const rate = body?.pointsPer100 ?? merchant.points_per_100;
-    if (!Number.isInteger(rate) || rate < 1 || rate > 1000) {
-      throw new BadRequestException('Points per ₹100 must be a whole number from 1 to 1000');
-    }
-    this.db.sql.prepare('UPDATE merchants SET name = ?, points_per_100 = ? WHERE id = ?').run(name, rate, merchant.id);
-    return publicMerchant(this.find(merchant.id));
+  update(@Req() req: { merchantId: number }, @Body() body: Settings) {
+    const m = this.find(req.merchantId);
+    const b = body ?? {};
+    const name = b.name?.trim() || m.name;
+    const rate = wholeNumber(b.pointsPer100 ?? m.points_per_100, 'Points per ₹100', 1, 1000);
+    const welcome = wholeNumber(b.welcomeBonus ?? m.welcome_bonus, 'Welcome bonus', 0, 100_000);
+    const birthday = wholeNumber(b.birthdayBonus ?? m.birthday_bonus, 'Birthday bonus', 0, 100_000);
+    const threshold = wholeNumber(b.goldThreshold ?? m.gold_threshold, 'Gold tier points', 1, 10_000_000);
+    const inactive = wholeNumber(b.inactiveDays ?? m.inactive_days, 'Inactive days', 7, 365);
+    const multiplier = Number(b.goldMultiplier ?? m.gold_multiplier);
+    if (!(multiplier >= 1 && multiplier <= 5)) throw new BadRequestException('Gold multiplier must be between 1 and 5');
+    this.db.sql
+      .prepare(
+        `UPDATE merchants SET name = ?, points_per_100 = ?, welcome_bonus = ?, birthday_bonus = ?,
+         gold_threshold = ?, gold_multiplier = ?, inactive_days = ? WHERE id = ?`,
+      )
+      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, m.id);
+    return publicMerchant(this.find(m.id));
   }
 
   private find(id: number) {

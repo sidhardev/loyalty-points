@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Simple loyalty points app for small shops: NestJS API + React website, SQLite storage.",
-  "engines": { "node": ">=22.5" },
+  "engines": { "node": ">=22.16" },
   "workspaces": ["server", "web"],
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
