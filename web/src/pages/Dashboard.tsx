@@ -1,199 +1,176 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { api, num, rupees, walletUrl, whatsapp, type Bonus, type Customer, type Merchant, type Transaction } from '../api';
-import { Activity, BirthdayInput, ErrorText, TierBadge, birthdayText, useAction } from '../ui';
-
-type Earned = { points: number; bonuses: Bonus[]; isNew: boolean; customer: Customer; tierUp: boolean };
-
-/** WhatsApp message after a purchase, with the customer's wallet link. */
-export const earnedMessage = (shop: string, r: Earned) =>
-  [
-    `Hi ${r.customer.name}! 🎉`,
-    `You earned ${num(r.points + r.bonuses.reduce((a, b) => a + b.points, 0))} points at ${shop}.`,
-    r.tierUp ? 'You are now a ★ Gold member!' : '',
-    `Your balance: ${num(r.customer.points)} points.`,
-    `See your points and rewards: ${walletUrl(r.customer.walletToken)}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-/** The main counter action: phone + bill amount → points (creates the customer on their first visit). */
-function EarnForm({ merchant, onDone }: { merchant: Merchant; onDone: () => void }) {
-  const [form, setForm] = useState({ phone: '', amount: '', name: '', birthday: '' });
-  const [needName, setNeedName] = useState(false);
-  const [result, setResult] = useState<Earned | null>(null);
-  const { busy, error, setError, run } = useAction();
-  const preview = Math.floor(((Number(form.amount) || 0) / 100) * merchant.pointsPer100);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    setResult(null);
-    void run(async () => {
-      try {
-        const r = await api<Earned>('points/earn', 'POST', {
-          phone: form.phone,
-          amount: Number(form.amount),
-          name: form.name || undefined,
-          birthday: form.birthday || undefined,
-        });
-        setResult(r);
-        setForm({ phone: '', amount: '', name: '', birthday: '' });
-        setNeedName(false);
-        onDone();
-      } catch (err) {
-        if ((err as Error).message.startsWith('New customer')) {
-          setNeedName(true);
-          setError('First visit — add their name to create the customer.');
-          return;
-        }
-        throw err;
-      }
-    });
-  };
-
-  return (
-    <form className="card earn" onSubmit={submit}>
-      <h2>Give points</h2>
-      <div className="row">
-        <label>
-          Customer phone
-          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} inputMode="tel" placeholder="98765 43210" required />
-        </label>
-        <label>
-          Bill amount (₹)
-          <input type="number" min="1" step="any" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
-        </label>
-      </div>
-      {needName && (
-        <div className="row">
-          <label>
-            Customer name
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoFocus />
-          </label>
-          <label>
-            Birthday <span className="muted">(optional)</span>
-            <BirthdayInput value={form.birthday} onChange={(birthday) => setForm({ ...form, birthday })} />
-          </label>
-        </div>
-      )}
-      <ErrorText text={error} />
-      {result && (
-        <div className="alert alert-ok earned">
-          <p>
-            <strong>
-              {result.isNew ? 'Welcome! ' : ''}
-              {result.customer.name}
-            </strong>{' '}
-            got {num(result.points)} points
-            {result.bonuses.map((b) => ` + ${num(b.points)} ${b.label.toLowerCase()}`).join('')} — balance{' '}
-            <strong>{num(result.customer.points)}</strong>.{result.tierUp && ' Now a ★ Gold member!'}
-          </p>
-          <a className="btn btn-whatsapp btn-small" href={whatsapp(result.customer.phone, earnedMessage(merchant.name, result))} target="_blank" rel="noreferrer">
-            Send on WhatsApp
-          </a>
-        </div>
-      )}
-      <button className="btn btn-primary" disabled={busy}>
-        {busy ? 'Adding…' : preview > 0 ? `Give ${num(preview)} points` : 'Give points'}
-      </button>
-      <p className="muted small">
-        {merchant.pointsPer100} points for every ₹100
-        {merchant.goldMultiplier > 1 && ` · Gold members ×${merchant.goldMultiplier}`} · <a href="#/settings">change</a>
-      </p>
-    </form>
-  );
-}
+import { useCallback, useEffect, useState } from 'react';
+import { Activity as ActivityIcon, Cake, ChevronRight, Coins, Gift, IndianRupee, Plus, Users, UserX } from 'lucide-react';
+import { api, birthdayLabel, num, rupees, walletUrl, whatsapp, type Customer, type Merchant, type Transaction } from '../api';
+import { Activity, Avatar, EmptyState, Skeleton, SkeletonRows, openGivePoints, useDataVersion } from '../ui';
 
 type DashboardData = {
   totals: { customers: number; issued: number; redeemed: number; redemptions: number; sales: number; inactive: number };
+  today: { visits: number; points: number; sales: number };
   birthdays: (Customer & { daysUntilBirthday: number })[];
   recent: Transaction[];
 };
 
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+};
+
 export function Dashboard({ merchant }: { merchant: Merchant }) {
   const [data, setData] = useState<DashboardData | null>(null);
-  const load = useCallback(() => void api<DashboardData>('dashboard').then(setData), []);
-  useEffect(load, [load]);
+  const version = useDataVersion();
+  const load = useCallback(() => {
+    api<DashboardData>(`dashboard?tz=${-new Date().getTimezoneOffset()}`).then(setData);
+  }, []);
+  useEffect(load, [load, version]);
 
   const t = data?.totals;
+  const stats = [
+    { icon: Users, label: 'Customers', value: t && num(t.customers) },
+    { icon: Coins, label: 'Points given', value: t && num(t.issued) },
+    { icon: Gift, label: 'Rewards redeemed', value: t && num(t.redemptions), sub: t && `${num(t.redeemed)} points` },
+    { icon: IndianRupee, label: 'Sales with points', value: t && rupees(t.sales) },
+  ];
+
   return (
     <>
       <header className="page-head">
-        <h1>Hello, {merchant.name}</h1>
-        <p className="muted">Here's how your loyalty program is doing.</p>
+        <div>
+          <p style={{ marginTop: 0 }}>
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} · {merchant.name}
+          </p>
+          <h1>{greeting()} 👋</h1>
+        </div>
       </header>
+
+      <section className="hero-cta">
+        <div className="hero-cta-top">
+          <div>
+            <h2>Customer at the counter?</h2>
+            <p>Give points in seconds — by phone number or name.</p>
+          </div>
+          <button className="btn btn-lg" onClick={() => openGivePoints()}>
+            <Plus size={20} /> Give points
+          </button>
+        </div>
+        <div className="today">
+          <div>
+            <span>Visits today</span>
+            <strong>{data ? num(data.today.visits) : '—'}</strong>
+          </div>
+          <div>
+            <span>Points today</span>
+            <strong>{data ? num(data.today.points) : '—'}</strong>
+          </div>
+          <div>
+            <span>Sales today</span>
+            <strong>{data ? rupees(data.today.sales) : '—'}</strong>
+          </div>
+        </div>
+      </section>
+
       <section className="stats">
-        <div className="stat">
-          <span>Customers</span>
-          <strong>{t ? num(t.customers) : '—'}</strong>
-        </div>
-        <div className="stat">
-          <span>Points given</span>
-          <strong>{t ? num(t.issued) : '—'}</strong>
-        </div>
-        <div className="stat">
-          <span>Rewards redeemed</span>
-          <strong>{t ? num(t.redemptions) : '—'}</strong>
-          <em>{t ? `${num(t.redeemed)} points` : ''}</em>
-        </div>
-        <div className="stat">
-          <span>Sales with points</span>
-          <strong>{t ? rupees(t.sales) : '—'}</strong>
-        </div>
+        {stats.map(({ icon: Icon, label, value, sub }) => (
+          <div className="stat" key={label}>
+            <span className="stat-label">
+              <Icon size={16} /> {label}
+            </span>
+            {value !== undefined ? <strong>{value}</strong> : <Skeleton h={30} w="60%" />}
+            {sub && <em>{sub}</em>}
+          </div>
+        ))}
       </section>
 
       {t && t.inactive > 0 && (
         <a className="notice" href="#/customers?filter=inactive">
-          <span>
-            👋 <strong>{num(t.inactive)}</strong> customer{t.inactive === 1 ? " hasn't" : "s haven't"} visited in{' '}
-            {merchant.inactiveDays} days.
+          <span className="notice-icon">
+            <UserX size={18} />
           </span>
-          <span>Send a reminder →</span>
+          <div>
+            <strong>
+              {num(t.inactive)} customer{t.inactive === 1 ? " hasn't" : "s haven't"} visited in {merchant.inactiveDays} days
+            </strong>
+            <div className="small muted">Send a "we miss you" message with their points.</div>
+          </div>
+          <ChevronRight size={18} />
         </a>
       )}
 
-      <div className="grid">
-        <div className="stack">
-          <EarnForm merchant={merchant} onDone={load} />
-          {data && data.birthdays.length > 0 && (
-            <section className="card">
-              <h2>Birthdays this week 🎂</h2>
-              <ul className="list">
-                {data.birthdays.map((c) => (
-                  <li key={c.id}>
-                    <a href={`#/customers/${c.id}`}>
-                      <strong>{c.name}</strong> <TierBadge tier={c.tier} />
+      <div className="grid-2">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Cake size={18} /> Birthdays this week
+            </h2>
+          </div>
+          {!data ? (
+            <SkeletonRows count={2} />
+          ) : data.birthdays.length ? (
+            <ul className="rows">
+              {data.birthdays.map((c) => (
+                <li key={c.id}>
+                  <div className="row-item">
+                    <Avatar name={c.name} />
+                    <a className="row-main" href={`#/customers/${c.id}`} style={{ color: 'inherit' }}>
+                      <strong>{c.name}</strong>
+                      <span>
+                        {c.daysUntilBirthday === 0 ? 'Today 🎉' : `In ${c.daysUntilBirthday} day${c.daysUntilBirthday === 1 ? '' : 's'}`} ·{' '}
+                        {c.birthday && birthdayLabel(c.birthday)}
+                      </span>
                     </a>
-                    <span className="muted small">
-                      {c.daysUntilBirthday === 0 ? 'Today!' : `in ${c.daysUntilBirthday} day${c.daysUntilBirthday === 1 ? '' : 's'}`} ·{' '}
-                      {birthdayText(c.birthday)}
-                    </span>
                     <a
-                      className="btn btn-whatsapp btn-small"
+                      className="btn btn-sm btn-whatsapp"
                       target="_blank"
                       rel="noreferrer"
                       href={whatsapp(
                         c.phone,
-                        `Happy birthday in advance, ${c.name}! 🎂 Visit ${merchant.name} this week${
+                        `Happy birthday${c.daysUntilBirthday ? ' in advance' : ''}, ${c.name}! 🎂 Visit ${merchant.name} this week${
                           merchant.birthdayBonus ? ` and get ${num(merchant.birthdayBonus)} bonus points` : ''
                         }. Your points: ${walletUrl(c.walletToken)}`,
                       )}
                     >
                       Wish
                     </a>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">
+              No birthdays in the next 7 days.{' '}
               {!merchant.birthdayBonus && (
-                <p className="muted small">
-                  Tip: set a birthday bonus in <a href="#/settings">settings</a>.
-                </p>
+                <>
+                  Set a <a href="#/settings">birthday bonus</a> to make them special.
+                </>
               )}
-            </section>
+            </p>
           )}
-        </div>
+        </section>
+
         <section className="card">
-          <h2>Recent activity</h2>
-          <Activity items={data?.recent ?? []} />
+          <div className="card-head">
+            <h2>
+              <ActivityIcon size={18} /> Recent activity
+            </h2>
+            <a href="#/customers" className="small">
+              All customers
+            </a>
+          </div>
+          {!data ? (
+            <SkeletonRows />
+          ) : data.recent.length ? (
+            <Activity items={data.recent} />
+          ) : (
+            <EmptyState
+              icon={Coins}
+              title="No points given yet"
+              text="Give your first customer points — they'll show up here."
+              action={
+                <button className="btn btn-primary" onClick={() => openGivePoints()}>
+                  <Plus size={18} /> Give points
+                </button>
+              }
+            />
+          )}
         </section>
       </div>
     </>

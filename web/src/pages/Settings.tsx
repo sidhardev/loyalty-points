@@ -1,20 +1,28 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import QRCode from 'qrcode';
+import { Bell, Coins, Crown, Download, ExternalLink, Gift, Printer, QrCode, Store } from 'lucide-react';
 import { api, joinUrl, num, type Merchant } from '../api';
-import { ErrorText, useAction } from '../ui';
+import { ErrorText, toast, useAction } from '../ui';
 
 /** Printable counter poster: customers scan it to join and see their points. */
 function JoinQr({ merchant }: { merchant: Merchant }) {
   const url = joinUrl(merchant.joinCode);
   const [qr, setQr] = useState('');
   useEffect(() => {
-    QRCode.toDataURL(url, { width: 480, margin: 1, color: { dark: '#18181b' } }).then(setQr);
+    QRCode.toDataURL(url, { width: 480, margin: 1, color: { dark: '#141416' } }).then(setQr);
   }, [url]);
 
   return (
-    <section className="card qr-card">
-      <h2>Counter QR code</h2>
-      <p className="muted small">Customers scan it, enter their name and phone, and join your program{merchant.welcomeBonus ? ` with ${num(merchant.welcomeBonus)} welcome points` : ''}.</p>
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <QrCode size={18} /> Counter QR code
+        </h2>
+      </div>
+      <p className="muted small">
+        Customers scan it, enter their name, phone and a PIN, and join your program
+        {merchant.welcomeBonus ? ` with ${num(merchant.welcomeBonus)} welcome points` : ''}.
+      </p>
       <div className="poster" id="poster">
         <strong>{merchant.name}</strong>
         <span>Scan to join our rewards</span>
@@ -24,19 +32,24 @@ function JoinQr({ merchant }: { merchant: Merchant }) {
           {merchant.welcomeBonus ? ` · ${num(merchant.welcomeBonus)} points free when you join` : ''}
         </em>
       </div>
-      <div className="row-inline">
+      <div className="actions">
         <button className="btn btn-primary" onClick={() => print()}>
-          Print poster
+          <Printer size={17} /> Print poster
         </button>
         {qr && (
-          <a className="btn" href={qr} download="join-qr.png">
-            Download QR
+          <a className="btn btn-soft" href={qr} download="join-qr.png">
+            <Download size={17} /> Download
           </a>
         )}
-        <a className="link small" href={url} target="_blank" rel="noreferrer">
-          Open join page
+        <a className="btn btn-ghost" href={url} target="_blank" rel="noreferrer">
+          <ExternalLink size={17} /> Open
         </a>
       </div>
+      {location.hostname === 'localhost' && (
+        <p className="alert alert-error small">
+          This QR points to localhost, which customers' phones can't open. Open the app from its public address and print it from there.
+        </p>
+      )}
     </section>
   );
 }
@@ -51,13 +64,9 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
     goldMultiplier: String(merchant.goldMultiplier),
     inactiveDays: String(merchant.inactiveDays),
   });
-  const [saved, setSaved] = useState(false);
   const { busy, error, run } = useAction();
 
-  const set = (key: keyof typeof form) => (e: { target: { value: string } }) => {
-    setSaved(false);
-    setForm({ ...form, [key]: e.target.value });
-  };
+  const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
   const save = (e: FormEvent) => {
     e.preventDefault();
@@ -73,7 +82,7 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
           inactiveDays: Number(form.inactiveDays),
         }),
       );
-      setSaved(true);
+      toast('Settings saved');
     });
   };
 
@@ -82,61 +91,85 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
   return (
     <>
       <header className="page-head">
-        <h1>Settings</h1>
-        <p className="muted">{merchant.email}</p>
+        <div>
+          <h1>Settings</h1>
+          <p>{merchant.email}</p>
+        </div>
       </header>
-      <div className="grid">
+      <div className="grid-2">
         <form className="card" onSubmit={save}>
-          <h2>Your program</h2>
-          <label>
-            Shop name
-            <input value={form.name} onChange={set('name')} required />
-          </label>
-          <label>
-            Points for every ₹100 spent
-            <input type="number" min="1" max="1000" step="1" value={form.pointsPer100} onChange={set('pointsPer100')} required />
-          </label>
-          <p className="muted small">Example: a ₹450 bill gives {num(Math.floor(4.5 * rate))} points.</p>
-
-          <h3>Bonuses</h3>
-          <div className="row">
+          <div className="settings-section">
+            <h3>
+              <Store size={17} /> Shop
+            </h3>
             <label>
-              Welcome bonus (points)
-              <input type="number" min="0" step="1" value={form.welcomeBonus} onChange={set('welcomeBonus')} required />
-            </label>
-            <label>
-              Birthday bonus (points)
-              <input type="number" min="0" step="1" value={form.birthdayBonus} onChange={set('birthdayBonus')} required />
+              Shop name
+              <input value={form.name} onChange={set('name')} required />
             </label>
           </div>
-          <p className="muted small">Welcome bonus is given when a customer joins. Birthday bonus is added on their visit within a week of their birthday, once a year. 0 = off.</p>
 
-          <h3>★ Gold tier</h3>
-          <div className="row">
+          <div className="settings-section">
+            <h3>
+              <Coins size={17} /> Earning
+            </h3>
             <label>
-              Gold after earning (points)
-              <input type="number" min="1" step="1" value={form.goldThreshold} onChange={set('goldThreshold')} required />
-            </label>
-            <label>
-              Gold members earn ×
-              <input type="number" min="1" max="5" step="0.1" value={form.goldMultiplier} onChange={set('goldMultiplier')} required />
+              Points for every ₹100 spent
+              <input type="number" min="1" max="1000" step="1" value={form.pointsPer100} onChange={set('pointsPer100')} required />
+              <span className="hint">A ₹450 bill gives {num(Math.floor(4.5 * rate))} points.</span>
             </label>
           </div>
-          <p className="muted small">
-            Customers who have earned {num(Number(form.goldThreshold) || 0)} points in total become Gold and get{' '}
-            {num(Math.floor(4.5 * rate * (Number(form.goldMultiplier) || 1)))} points on a ₹450 bill.
-          </p>
 
-          <h3>Reminders</h3>
-          <label>
-            A customer is "inactive" after this many days without a visit
-            <input type="number" min="7" max="365" step="1" value={form.inactiveDays} onChange={set('inactiveDays')} required />
-          </label>
+          <div className="settings-section">
+            <h3>
+              <Gift size={17} /> Bonuses
+            </h3>
+            <div className="form-row">
+              <label>
+                Welcome bonus
+                <input type="number" min="0" step="1" value={form.welcomeBonus} onChange={set('welcomeBonus')} required />
+                <span className="hint">When a customer joins. 0 = off.</span>
+              </label>
+              <label>
+                Birthday bonus
+                <input type="number" min="0" step="1" value={form.birthdayBonus} onChange={set('birthdayBonus')} required />
+                <span className="hint">On a visit within a week of their birthday, once a year.</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>
+              <Crown size={17} /> Gold tier
+            </h3>
+            <div className="form-row">
+              <label>
+                Gold after earning
+                <input type="number" min="1" step="1" value={form.goldThreshold} onChange={set('goldThreshold')} required />
+                <span className="hint">Lifetime points.</span>
+              </label>
+              <label>
+                Gold members earn ×
+                <input type="number" min="1" max="5" step="0.1" value={form.goldMultiplier} onChange={set('goldMultiplier')} required />
+                <span className="hint">
+                  ₹450 → {num(Math.floor(4.5 * rate * (Number(form.goldMultiplier) || 1)))} points for Gold.
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>
+              <Bell size={17} /> Reminders
+            </h3>
+            <label>
+              Days without a visit before a customer counts as inactive
+              <input type="number" min="7" max="365" step="1" value={form.inactiveDays} onChange={set('inactiveDays')} required />
+            </label>
+          </div>
 
           <ErrorText text={error} />
-          {saved && <p className="alert alert-ok">Saved.</p>}
-          <button className="btn btn-primary" disabled={busy}>
-            Save
+          <button className="btn btn-primary btn-lg" disabled={busy}>
+            {busy ? 'Saving…' : 'Save settings'}
           </button>
         </form>
         <JoinQr merchant={merchant} />

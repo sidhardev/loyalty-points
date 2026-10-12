@@ -1,13 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { BarChart3, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { AuthPage } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
+import { GivePointsHost } from './pages/GivePoints';
 import { Insights } from './pages/Insights';
 import { CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
 import { Settings } from './pages/Settings';
+import { ConfirmHost, Logo, Toaster, confirmDialog, openGivePoints, useTheme } from './ui';
 
 // Customer pages use real paths (/w/<token>, /join/<code>, /login) so their links are clean to share.
 // The shop's own screens are picked from the URL hash (#/customers/3), so no router library is needed.
@@ -15,44 +18,93 @@ import { Settings } from './pages/Settings';
 function useHash() {
   const [hash, setHash] = useState(location.hash.slice(1) || '/');
   useEffect(() => {
-    const onChange = () => setHash(location.hash.slice(1) || '/');
+    const onChange = () => {
+      setHash(location.hash.slice(1) || '/');
+      scrollTo({ top: 0 });
+    };
     addEventListener('hashchange', onChange);
     return () => removeEventListener('hashchange', onChange);
   }, []);
   return hash;
 }
 
+const NAV = [
+  { path: '/', label: 'Home', icon: LayoutDashboard },
+  { path: '/customers', label: 'Customers', icon: Users },
+  { path: '/rewards', label: 'Rewards', icon: Gift },
+  { path: '/insights', label: 'Insights', icon: BarChart3 },
+  { path: '/settings', label: 'Settings', icon: SettingsIcon },
+];
+
 function Shell({ merchant, children, onLogout }: { merchant: Merchant; children: ReactNode; onLogout: () => void }) {
   const hash = useHash();
-  const links = [
-    ['/', 'Dashboard'],
-    ['/customers', 'Customers'],
-    ['/rewards', 'Rewards'],
-    ['/insights', 'Insights'],
-    ['/settings', 'Settings'],
-  ];
+  const theme = useTheme();
   const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
+  const logout = async () => {
+    if (await confirmDialog({ title: 'Log out?', confirm: 'Log out' })) onLogout();
+  };
+
   return (
-    <>
-      <nav className="nav">
-        <div className="nav-inner">
-          <a href="#/" className="brand">
-            ⭐ <span>{merchant.name}</span>
+    <div className="app">
+      <aside className="sidebar">
+        <a href="#/" className="brand">
+          <Logo /> <span>{merchant.name}</span>
+        </a>
+        <button className="btn btn-primary btn-lg" onClick={() => openGivePoints()}>
+          <Plus size={20} /> Give points
+        </button>
+        {NAV.map(({ path, label, icon: Icon }) => (
+          <a key={path} href={`#${path}`} className={`side-link ${active(path) ? 'active' : ''}`}>
+            <Icon size={19} /> {label === 'Home' ? 'Dashboard' : label}
           </a>
-          <div className="nav-links">
-            {links.map(([path, label]) => (
-              <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
-                {label}
-              </a>
-            ))}
-          </div>
-          <button className="link" onClick={onLogout}>
-            Log out
+        ))}
+        <div className="side-foot">
+          <button className="side-link" onClick={theme.toggle}>
+            <theme.Icon size={19} /> {theme.theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+          <button className="side-link" onClick={logout}>
+            <LogOut size={19} /> Log out
           </button>
         </div>
+      </aside>
+
+      <header className="topbar">
+        <a href="#/" className="brand">
+          <Logo /> <span>{merchant.name}</span>
+        </a>
+        <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
+          <theme.Icon size={20} />
+        </button>
+        <a className="icon-btn" href="#/settings" aria-label="Settings">
+          <SettingsIcon size={20} />
+        </a>
+        <button className="icon-btn" onClick={logout} aria-label="Log out">
+          <LogOut size={20} />
+        </button>
+      </header>
+
+      <main className="page" key={hash.split('?')[0]}>
+        {children}
+      </main>
+
+      <nav className="bottom-nav" aria-label="Main">
+        {NAV.slice(0, 2).map(({ path, label, icon: Icon }) => (
+          <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
+            <Icon size={21} /> {label}
+          </a>
+        ))}
+        <button className="fab" onClick={() => openGivePoints()} aria-label="Give points">
+          <Plus size={26} strokeWidth={2.5} />
+        </button>
+        {NAV.slice(2, 4).map(({ path, label, icon: Icon }) => (
+          <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
+            <Icon size={21} /> {label}
+          </a>
+        ))}
       </nav>
-      <main className="page">{children}</main>
-    </>
+
+      <GivePointsHost merchant={merchant} />
+    </div>
   );
 }
 
@@ -79,7 +131,7 @@ function ShopApp() {
   const customerId = hash.match(/^\/customers\/(\d+)$/)?.[1];
   let page: ReactNode;
   if (customerId) page = <CustomerPage key={customerId} id={Number(customerId)} merchant={merchant} />;
-  else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} inactiveView={hash.includes('filter=inactive')} />;
+  else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} />;
   else if (hash.startsWith('/rewards')) page = <Rewards />;
   else if (hash.startsWith('/insights')) page = <Insights />;
   else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} />;
@@ -92,10 +144,20 @@ function ShopApp() {
   );
 }
 
-export function App() {
+function Route() {
   if (location.pathname === '/login') return <CustomerLogin />;
   const [, kind, id] = location.pathname.match(/^\/(w|join)\/([^/]+)/) ?? [];
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;
   return <ShopApp />;
+}
+
+export function App() {
+  return (
+    <>
+      <Route />
+      <Toaster />
+      <ConfirmHost />
+    </>
+  );
 }

@@ -1,6 +1,14 @@
 import { useState, type FormEvent } from 'react';
+import { ArrowRight, BarChart3, Coins, Gift, MessageCircle } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
-import { ErrorText, useAction } from '../ui';
+import { ErrorText, Logo, useAction } from '../ui';
+
+const FEATURES = [
+  { icon: Coins, text: 'Points on every bill, by phone number' },
+  { icon: Gift, text: 'Rewards and a Gold tier that bring regulars back' },
+  { icon: MessageCircle, text: 'One-tap WhatsApp messages and reminders' },
+  { icon: BarChart3, text: 'See who comes back, and how often' },
+];
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -24,60 +32,74 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
 
   return (
     <main className="auth">
-      <div className="auth-side">
-        <div className="brand brand-lg">⭐ Loyalty Points</div>
+      <section className="auth-hero">
+        <span className="brand">
+          <Logo /> <span>Loyalty Points</span>
+        </span>
         <h1>Bring your customers back.</h1>
-        <p>Give points on every bill, let customers spend them on rewards, and see who your regulars are.</p>
-        <a className="customer-link" href="/login">
-          Customer? Check your points →
-        </a>
+        <p>A simple loyalty program for your shop — points, rewards and reminders, without any app for your customers.</p>
         <ul>
-          <li>Points on every purchase, by phone number</li>
-          <li>Rewards your customers actually want</li>
-          <li>Every customer's history in one place</li>
+          {FEATURES.map(({ icon: Icon, text }) => (
+            <li key={text}>
+              <span className="feature-icon">
+                <Icon size={18} />
+              </span>
+              {text}
+            </li>
+          ))}
         </ul>
-      </div>
-      <form className="card auth-card" onSubmit={submit}>
-        <h2>{mode === 'login' ? 'Log in' : 'Create your shop account'}</h2>
-        {mode === 'signup' && (
+        <a className="customer-link" href="/login">
+          Customer? Check your points <ArrowRight size={16} />
+        </a>
+      </section>
+
+      <div className="auth-form-wrap">
+        <form className="card auth-card" onSubmit={submit}>
+          <div>
+            <h2 style={{ fontSize: 22 }}>{mode === 'login' ? 'Welcome back' : 'Create your shop account'}</h2>
+            <p className="muted small">{mode === 'login' ? 'Log in to your shop.' : 'Free, and ready in under a minute.'}</p>
+          </div>
+          {mode === 'signup' && (
+            <label>
+              Shop name
+              <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required autoFocus />
+            </label>
+          )}
           <label>
-            Shop name
-            <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required autoFocus />
+            Email
+            <input type="email" autoComplete="email" value={form.email} onChange={set('email')} required autoFocus={mode === 'login'} />
           </label>
-        )}
-        <label>
-          Email
-          <input type="email" value={form.email} onChange={set('email')} required autoFocus={mode === 'login'} />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={form.password}
-            onChange={set('password')}
-            required
-            minLength={mode === 'signup' ? 8 : undefined}
-            placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
-          />
-        </label>
-        <ErrorText text={error} />
-        <button className="btn btn-primary" disabled={busy}>
-          {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Sign up'}
-        </button>
-        <p className="muted center">
-          {mode === 'login' ? 'New here? ' : 'Already have an account? '}
-          <button
-            type="button"
-            className="link"
-            onClick={() => {
-              setMode(mode === 'login' ? 'signup' : 'login');
-              setError('');
-            }}
-          >
-            {mode === 'login' ? 'Create an account' : 'Log in'}
+          <label>
+            Password
+            <input
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              value={form.password}
+              onChange={set('password')}
+              required
+              minLength={mode === 'signup' ? 8 : undefined}
+              placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
+            />
+          </label>
+          <ErrorText text={error} />
+          <button className="btn btn-primary btn-lg" disabled={busy}>
+            {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
-        </p>
-      </form>
+          <p className="muted small center">
+            {mode === 'login' ? 'New here? ' : 'Already have an account? '}
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                setMode(mode === 'login' ? 'signup' : 'login');
+                setError('');
+              }}
+            >
+              {mode === 'login' ? 'Create an account' : 'Log in'}
+            </button>
+          </p>
+        </form>
+      </div>
     </main>
   );
 }

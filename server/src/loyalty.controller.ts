@@ -28,9 +28,20 @@ export class LoyaltyController {
 
   // ---- dashboard ----
 
+  /** Totals, today's numbers (in the shop's time zone: `tz` = minutes ahead of UTC), birthdays and recent activity. */
   @Get('dashboard')
-  dashboard(@MerchantId() merchantId: number) {
+  dashboard(@MerchantId() merchantId: number, @Query('tz') tzParam = '330') {
     const m = this.loyalty.merchant(merchantId);
+    const tz = Math.min(840, Math.max(-720, Number(tzParam) || 0));
+    const shift = `${tz >= 0 ? '+' : ''}${tz} minutes`;
+    const today = this.db.sql
+      .prepare(
+        `SELECT COUNT(*) AS visits, COALESCE(SUM(points), 0) AS points, COALESCE(SUM(amount), 0) AS sales
+         FROM transactions
+         WHERE merchant_id = ? AND type = 'earn' AND reversed = 0
+           AND date(created_at, ?) = date('now', ?)`,
+      )
+      .get(merchantId, shift, shift);
     const totals = this.db.sql
       .prepare(
         `SELECT
@@ -51,7 +62,7 @@ export class LoyaltyController {
       .sort((a, b) => a.days - b.days)
       .map(({ c, days }) => ({ ...this.loyalty.view(m, c), daysUntilBirthday: days }));
 
-    return { totals, birthdays: soon, recent: this.transactions(merchantId, undefined, 10) };
+    return { totals, today, birthdays: soon, recent: this.transactions(merchantId, undefined, 12) };
   }
 
   // ---- customers ----
@@ -153,8 +164,25 @@ export class LoyaltyController {
   @Get('rewards')
   rewards(@MerchantId() merchantId: number) {
     return this.db.sql
-      .prepare('SELECT id, name, points_cost FROM rewards WHERE merchant_id = ? AND active = 1 ORDER BY points_cost')
+      .prepare(
+        `SELECT r.id, r.name, r.points_cost,
+                (SELECT COUNT(*) FROM transactions t WHERE t.reward_id = r.id AND t.type = 'redeem' AND t.reversed = 0) AS redeemed
+         FROM rewards r WHERE r.merchant_id = ? AND r.active = 1 ORDER BY r.points_cost`,
+      )
       .all(merchantId);
+  }
+
+  @Patch('rewards/:id')
+  editReward(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { name?: string; pointsCost?: number }) {
+    const name = body?.name?.trim();
+    const cost = Number(body?.pointsCost);
+    if (!name) throw new BadRequestException('Reward name is required');
+    if (!Number.isInteger(cost) || cost < 1) throw new BadRequestException('Points needed must be a whole number above 0');
+    const { changes } = this.db.sql
+      .prepare('UPDATE rewards SET name = ?, points_cost = ? WHERE id = ? AND merchant_id = ? AND active = 1')
+      .run(name.slice(0, 80), cost, id, merchantId);
+    if (!changes) throw new NotFoundException('Reward not found');
+    return { id, name, points_cost: cost };
   }
 
   @Post('rewards')

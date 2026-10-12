@@ -111,7 +111,7 @@ export function Insights() {
 
   return (
     <>
-      <header className="page-head page-head-row">
+      <header className="page-head">
         <div>
           <h1>Insights</h1>
           <p className="muted">Are customers coming back?</p>
