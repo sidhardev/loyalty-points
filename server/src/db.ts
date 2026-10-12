@@ -91,6 +91,16 @@ const MIGRATIONS: string[] = [
     lifetime_points = (SELECT COALESCE(SUM(points), 0) FROM transactions t WHERE t.customer_id = customers.id AND t.type = 'earn'),
     last_visit = (SELECT MAX(created_at) FROM transactions t WHERE t.customer_id = customers.id AND t.type = 'earn');
   `,
+
+  // 3: customer login with phone + PIN, and lockout after repeated wrong PINs.
+  `
+  ALTER TABLE customers ADD COLUMN pin_hash TEXT;
+  CREATE TABLE pin_attempts (
+    phone TEXT PRIMARY KEY, -- last 10 digits
+    failures INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT
+  );
+  `,
 ];
 
 const INDEXES = `

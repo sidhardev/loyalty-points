@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { Db, randomToken } from './db';
 
 // All point rules live here, shared by the shop's screens and the public join page.
@@ -29,6 +30,7 @@ export type CustomerRow = {
   birthday_bonus_year: number | null;
   last_visit: string | null;
   wallet_token: string;
+  pin_hash: string | null;
   created_at: string;
 };
 
@@ -40,6 +42,20 @@ const PHONE = /^\+?[0-9]{7,15}$/;
 const BIRTHDAY = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
 
 export const cleanPhone = (phone: unknown) => String(phone ?? '').replace(/[\s()-]/g, '');
+
+const PIN = /^[0-9]{4}$/;
+
+export function hashPin(pin: unknown) {
+  if (!PIN.test(String(pin ?? ''))) throw new BadRequestException('PIN must be exactly 4 digits');
+  const salt = randomBytes(16).toString('hex');
+  return `${salt}:${scryptSync(String(pin), salt, 32).toString('hex')}`;
+}
+
+export function pinMatches(pin: string, stored: string | null) {
+  if (!stored || !PIN.test(pin)) return false;
+  const [salt, hash] = stored.split(':');
+  return timingSafeEqual(scryptSync(pin, salt, 32), Buffer.from(hash, 'hex'));
+}
 
 /** Days between today and this year's (or the nearest) birthday, ignoring the year. */
 function daysFromBirthday(mmdd: string, today = new Date()) {
@@ -94,6 +110,7 @@ export class LoyaltyService {
       birthday: c.birthday,
       lastVisit: c.last_visit,
       walletToken: c.wallet_token,
+      hasPin: Boolean(c.pin_hash),
       createdAt: c.created_at,
       tier: this.tier(m, c),
     };
@@ -109,14 +126,15 @@ export class LoyaltyService {
     return { name, phone, birthday };
   }
 
-  /** New customer, with the shop's welcome bonus if it has one. */
-  createCustomer(merchantId: number, input: { name?: unknown; phone?: unknown; birthday?: unknown }) {
+  /** New customer, with the shop's welcome bonus if it has one. A PIN is optional (set when they join themselves). */
+  createCustomer(merchantId: number, input: { name?: unknown; phone?: unknown; birthday?: unknown; pin?: unknown }) {
     const { name, phone, birthday } = this.validate(input);
+    const pinHash = input.pin ? hashPin(input.pin) : null;
     return this.db.transaction(() => {
       if (this.byPhone(merchantId, phone)) throw new ConflictException('A customer with this phone number already exists');
       const { lastInsertRowid } = this.db.sql
-        .prepare('INSERT INTO customers (merchant_id, name, phone, birthday, wallet_token) VALUES (?, ?, ?, ?, ?)')
-        .run(merchantId, name, phone, birthday, randomToken());
+        .prepare('INSERT INTO customers (merchant_id, name, phone, birthday, wallet_token, pin_hash) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(merchantId, name, phone, birthday, randomToken(), pinHash);
       const id = Number(lastInsertRowid);
       const m = this.merchant(merchantId);
       const bonuses: Bonus[] = [];

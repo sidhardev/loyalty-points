@@ -1,22 +1,76 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, num, when, type Bonus, type Reward, type Tier, type Transaction } from '../api';
-import { BirthdayInput, ErrorText, describe, useAction } from '../ui';
+import { BirthdayInput, ErrorText, PinInput, describe, useAction } from '../ui';
 
 // Pages customers open on their phone, without an account.
 
 type WalletData = {
+  hasPin: boolean;
   shop: { name: string; pointsPer100: number; goldThreshold: number; goldMultiplier: number };
   customer: { name: string; points: number; lifetimePoints: number; tier: Tier; since: string };
   rewards: Reward[];
   history: Transaction[];
 };
 
+/** Lets the wallet's owner set (or change) the PIN they log in with. */
+function PinCard({ token, hasPin, onSaved }: { token: string; hasPin: boolean; onSaved: () => void }) {
+  const [open, setOpen] = useState(!hasPin);
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [done, setDone] = useState(false);
+  const { busy, error, setError, run } = useAction();
+
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    if (pin !== confirmPin) return setError("The PINs don't match");
+    void run(async () => {
+      await api(`public/wallet/${encodeURIComponent(token)}/pin`, 'POST', { pin });
+      setDone(true);
+      setOpen(false);
+      setPin('');
+      setConfirmPin('');
+      onSaved();
+    });
+  };
+
+  if (!open) {
+    return (
+      <p className="muted small center">
+        {done ? 'PIN saved. ' : ''}Log in anytime at <a href="/login">{location.host}/login</a> with your phone and PIN ·{' '}
+        <button className="link small" onClick={() => setOpen(true)}>
+          Change PIN
+        </button>
+      </p>
+    );
+  }
+  return (
+    <form className="card" onSubmit={save}>
+      <h2>{hasPin ? 'Change your PIN' : 'Set a PIN to log in later'}</h2>
+      <p className="muted small">With a 4-digit PIN you can check your points from any phone at {location.host}/login.</p>
+      <div className="row">
+        <label>
+          New PIN
+          <PinInput value={pin} onChange={setPin} />
+        </label>
+        <label>
+          Repeat PIN
+          <PinInput value={confirmPin} onChange={setConfirmPin} />
+        </label>
+      </div>
+      <ErrorText text={error} />
+      <button className="btn btn-primary" disabled={busy || pin.length !== 4 || confirmPin.length !== 4}>
+        Save PIN
+      </button>
+    </form>
+  );
+}
+
 /** /w/<token> — a customer's points, rewards and history at one shop. */
 export function Wallet({ token }: { token: string }) {
   const [data, setData] = useState<WalletData | null>(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api<WalletData>(`public/wallet/${encodeURIComponent(token)}`)
       .then((d) => {
         setData(d);
@@ -24,6 +78,7 @@ export function Wallet({ token }: { token: string }) {
       })
       .catch((err) => setError((err as Error).message));
   }, [token]);
+  useEffect(load, [load]);
 
   if (error) return <main className="public"><p className="alert alert-error">{error}</p></main>;
   if (!data) return <main className="public"><p className="muted center">Loading…</p></main>;
@@ -97,7 +152,7 @@ export function Wallet({ token }: { token: string }) {
           <p className="muted">No activity yet.</p>
         )}
       </section>
-      <p className="muted small center">Save this page to see your points anytime.</p>
+      <PinCard token={token} hasPin={data.hasPin} onSaved={load} />
     </main>
   );
 }
@@ -105,7 +160,7 @@ export function Wallet({ token }: { token: string }) {
 /** /join/<code> — sign-up page behind the shop's counter QR code. */
 export function Join({ code }: { code: string }) {
   const [shop, setShop] = useState<{ shop: string; welcomeBonus: number; pointsPer100: number } | null>(null);
-  const [form, setForm] = useState({ name: '', phone: '', birthday: '' });
+  const [form, setForm] = useState({ name: '', phone: '', birthday: '', pin: '', confirmPin: '' });
   const [loadError, setLoadError] = useState('');
   const { busy, error, run } = useAction();
 
@@ -121,8 +176,11 @@ export function Join({ code }: { code: string }) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
+      if (form.pin !== form.confirmPin) throw new Error("The PINs don't match");
       const r = await api<{ walletToken: string; bonuses: Bonus[] }>(`public/join/${encodeURIComponent(code)}`, 'POST', {
-        ...form,
+        name: form.name,
+        phone: form.phone,
+        pin: form.pin,
         birthday: form.birthday || undefined,
       });
       location.href = `/w/${r.walletToken}`;
@@ -154,6 +212,17 @@ export function Join({ code }: { code: string }) {
           Phone number
           <input value={form.phone} inputMode="tel" onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="98765 43210" required />
         </label>
+        <div className="row">
+          <label>
+            Choose a 4-digit PIN
+            <PinInput value={form.pin} onChange={(pin) => setForm({ ...form, pin })} />
+          </label>
+          <label>
+            Repeat PIN
+            <PinInput value={form.confirmPin} onChange={(confirmPin) => setForm({ ...form, confirmPin })} />
+          </label>
+        </div>
+        <p className="muted small">You'll use your phone number and PIN to check your points.</p>
         <label>
           Birthday <span className="muted">(optional — for a birthday treat)</span>
           <BirthdayInput value={form.birthday} onChange={(birthday) => setForm({ ...form, birthday })} />
@@ -162,6 +231,93 @@ export function Join({ code }: { code: string }) {
         <button className="btn btn-primary" disabled={busy}>
           {busy ? 'Joining…' : 'Join'}
         </button>
+        <p className="muted small center">
+          Already a member? <a href="/login">Log in</a>
+        </p>
+      </form>
+    </main>
+  );
+}
+
+type LoginResult = { wallets: { token: string; shop: string; name: string; points: number }[] };
+
+/** /login — customers check their points with phone number + PIN. */
+export function CustomerLogin() {
+  const [form, setForm] = useState({ phone: '', pin: '' });
+  const [wallets, setWallets] = useState<LoginResult['wallets'] | null>(null);
+  const { busy, error, run } = useAction();
+
+  useEffect(() => {
+    document.title = 'Check your points';
+  }, []);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      const r = await api<LoginResult>('public/login', 'POST', form);
+      if (r.wallets.length === 1) location.href = `/w/${r.wallets[0].token}`;
+      else setWallets(r.wallets);
+    });
+  };
+
+  if (wallets) {
+    return (
+      <main className="public">
+        <section className="wallet-card">
+          <span className="wallet-shop">Your rewards</span>
+          <span className="wallet-name">Hi {wallets[0].name}</span>
+          <strong className="wallet-points">{num(wallets.reduce((a, w) => a + w.points, 0))}</strong>
+          <span>points across {wallets.length} shops</span>
+        </section>
+        <section className="card">
+          <h2>Choose a shop</h2>
+          <ul className="list">
+            {wallets.map((w) => (
+              <li key={w.token}>
+                <a href={`/w/${w.token}`}>
+                  <strong>{w.shop}</strong>
+                </a>
+                <span className="points">{num(w.points)} points</span>
+                <a className="btn btn-small" href={`/w/${w.token}`}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="public">
+      <section className="wallet-card">
+        <span className="wallet-shop">Loyalty Points</span>
+        <span className="wallet-name">Check your points</span>
+        <em className="wallet-tier">Log in with the phone number you gave the shop and your PIN.</em>
+      </section>
+      <form className="card" onSubmit={submit}>
+        <label>
+          Phone number
+          <input
+            value={form.phone}
+            inputMode="tel"
+            autoComplete="tel"
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder="98765 43210"
+            required
+            autoFocus
+          />
+        </label>
+        <label>
+          PIN
+          <PinInput value={form.pin} onChange={(pin) => setForm({ ...form, pin })} />
+        </label>
+        <ErrorText text={error} />
+        <button className="btn btn-primary" disabled={busy || form.pin.length !== 4}>
+          {busy ? 'Checking…' : 'Log in'}
+        </button>
+        <p className="muted small center">Forgot your PIN? Ask the shop to reset it — they'll send you a link to set a new one.</p>
       </form>
     </main>
   );

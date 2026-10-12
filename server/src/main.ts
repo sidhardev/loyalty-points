@@ -33,6 +33,9 @@ class AppModule {}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Behind a local tunnel or proxy (ngrok, nginx), take the visitor's IP from X-Forwarded-For,
+  // so per-IP limits apply to each visitor rather than to the proxy.
+  app.set('trust proxy', 'loopback');
 
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');

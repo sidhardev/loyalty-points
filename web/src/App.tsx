@@ -5,11 +5,11 @@ import { CustomerPage } from './pages/CustomerPage';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { Insights } from './pages/Insights';
-import { Join, Wallet } from './pages/Public';
+import { CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
 import { Settings } from './pages/Settings';
 
-// Customer pages use real paths (/w/<token>, /join/<code>) so their links are clean to share.
+// Customer pages use real paths (/w/<token>, /join/<code>, /login) so their links are clean to share.
 // The shop's own screens are picked from the URL hash (#/customers/3), so no router library is needed.
 
 function useHash() {
@@ -93,6 +93,7 @@ function ShopApp() {
 }
 
 export function App() {
+  if (location.pathname === '/login') return <CustomerLogin />;
   const [, kind, id] = location.pathname.match(/^\/(w|join)\/([^/]+)/) ?? [];
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;

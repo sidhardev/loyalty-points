@@ -998,3 +998,18 @@ h3 {
     display: none;
   }
 }
+
+/* ---- customer login & PIN ---- */
+
+.pin {
+  max-width: 160px;
+  font-size: 22px;
+  letter-spacing: 0.5em;
+  text-align: center;
+}
+
+.customer-link {
+  display: inline-block;
+  margin-top: 18px;
+  font-weight: 700;
+}

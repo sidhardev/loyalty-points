@@ -82,6 +82,17 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
     });
   };
 
+  const resetPin = () => {
+    if (!confirm(`Reset ${customer.name}'s PIN? They can set a new one from their wallet link.`)) return;
+    act(async () => {
+      await api(`customers/${customer.id}/reset-pin`, 'POST');
+      setMessage({
+        text: 'PIN reset. Send them their wallet link to set a new one.',
+        share: `Hi ${customer.name}! Your ${merchant.name} PIN was reset. Open this link to set a new PIN: ${wallet}`,
+      });
+    });
+  };
+
   const remove = () => {
     if (!confirm(`Delete ${customer.name} and their whole history? This can't be undone.`)) return;
     void run(async () => {
@@ -127,6 +138,13 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
             <a className="link small" href={wallet} target="_blank" rel="noreferrer">
               Open wallet
             </a>
+            {customer.hasPin ? (
+              <button className="link small" onClick={resetPin}>
+                Reset PIN
+              </button>
+            ) : (
+              <span className="muted small">No PIN yet</span>
+            )}
             <a
               className="link small"
               href={whatsapp(customer.phone, `Hi ${customer.name}! Here are your ${merchant.name} points and rewards: ${wallet}`)}

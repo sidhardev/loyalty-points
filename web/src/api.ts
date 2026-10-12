@@ -24,6 +24,7 @@ export type Customer = {
   birthday: string | null; // MM-DD
   lastVisit: string | null;
   walletToken: string;
+  hasPin: boolean;
   createdAt: string;
   tier: Tier;
 };

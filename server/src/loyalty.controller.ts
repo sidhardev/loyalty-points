@@ -117,6 +117,15 @@ export class LoyaltyController {
     return { ok: true };
   }
 
+  /** Clears a forgotten PIN; the customer sets a new one from their wallet link. */
+  @Post('customers/:id/reset-pin')
+  resetPin(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
+    const c = this.loyalty.customer(merchantId, id);
+    this.db.sql.prepare('UPDATE customers SET pin_hash = NULL WHERE id = ?').run(c.id);
+    this.db.sql.prepare('DELETE FROM pin_attempts WHERE phone = ?').run(c.phone.replace(/\D/g, '').slice(-10));
+    return { ok: true };
+  }
+
   @Post('customers/:id/adjust')
   adjust(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { points?: number; reason?: string }) {
     return this.loyalty.adjust(merchantId, id, body?.points, body?.reason);

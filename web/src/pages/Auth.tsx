@@ -28,6 +28,9 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         <div className="brand brand-lg">⭐ Loyalty Points</div>
         <h1>Bring your customers back.</h1>
         <p>Give points on every bill, let customers spend them on rewards, and see who your regulars are.</p>
+        <a className="customer-link" href="/login">
+          Customer? Check your points →
+        </a>
         <ul>
           <li>Points on every purchase, by phone number</li>
           <li>Rewards your customers actually want</li>

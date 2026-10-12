@@ -111,4 +111,23 @@ export function BirthdayInput({ value, onChange }: { value: string; onChange: (v
   );
 }
 
+/** 4-digit PIN field (numeric keypad on phones, hidden as it's typed). */
+export function PinInput({ value, onChange, autoFocus }: { value: string; onChange: (v: string) => void; autoFocus?: boolean }) {
+  return (
+    <input
+      className="pin"
+      type="password"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      pattern="[0-9]{4}"
+      maxLength={4}
+      placeholder="••••"
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
+      autoFocus={autoFocus}
+      required
+    />
+  );
+}
+
 export const birthdayText = (b: string | null) => (b ? `🎂 ${birthdayLabel(b)}` : '');

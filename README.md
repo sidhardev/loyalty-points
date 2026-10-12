@@ -10,7 +10,8 @@ A simple loyalty program for small shops: give customers points on every bill an
 - **Sign up / log in** – each shop has its own account (email + password, 7-day login token)
 - **Give points** – phone + bill amount; first-time customers are created on the spot. A **Send on WhatsApp** button opens WhatsApp with the points message and the customer's wallet link
 - **Customer wallet** – `/w/<link>`: the customer's points, Gold progress, rewards and history, no app or login needed
-- **Counter QR** – printable poster (Settings) that opens `/join/<code>`, where customers sign up themselves
+- **Counter QR** – printable poster (Settings) that opens `/join/<code>`, where customers sign up themselves and choose a PIN
+- **Customer login** – `/login` with phone + 4-digit PIN opens their wallet (or a list, if they're a member of several shops). PINs are hashed; 5 wrong PINs lock that number for 15 minutes. Shops can reset a forgotten PIN; customers set a new one from their wallet link
 - **Customers** – search, add, edit, delete; full history with **Undo** per entry and manual **Adjust** with a reason
 - **Rewards** – create rewards and redeem them from a customer's page
 - **Bonuses & tiers** – welcome bonus, birthday bonus (on their visit within a week of the birthday, once a year), and ★ Gold after a lifetime-points threshold with a points multiplier
@@ -59,6 +60,9 @@ All routes except signup/login need `Authorization: Bearer <token>`.
 | GET | `/api/customers?filter=inactive` | customers who haven't visited recently |
 | GET | `/api/insights?days=30&tz=330` | daily visits, top customers, repeat rate |
 | GET | `/api/public/wallet/:token` | customer wallet (no login) |
-| GET / POST | `/api/public/join/:code` | counter QR sign-up (no login) |
+| GET / POST | `/api/public/join/:code` | counter QR sign-up `{ name, phone, pin, birthday? }` (no login) |
+| POST | `/api/public/wallet/:token/pin` | set or change the customer's PIN |
+| POST | `/api/public/login` | `{ phone, pin }` → `{ wallets }` |
+| POST | `/api/customers/:id/reset-pin` | shop clears a forgotten PIN |
 
 The database schema upgrades itself on start (`PRAGMA user_version`), keeping existing data.
