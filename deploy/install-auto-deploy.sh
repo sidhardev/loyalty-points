@@ -30,11 +30,10 @@ if ! git fetch -q origin main 2>/dev/null; then
   exit 2
 fi
 
-# First time: start from the commit that's running now, so the timer's first run deploys what came after it.
-if ! git rev-parse -q --verify HEAD >/dev/null; then
-  start=$(cat DEPLOYED_COMMIT 2>/dev/null || true)
-  git rev-parse -q --verify "${start:-x}^{commit}" >/dev/null || start=origin/main
-  git reset -q --hard "$start"
+# First time: take the files from main (this script and the timer only exist there). The running container is
+# left as it is; the timer rebuilds on the next backend change.
+if ! git rev-parse -q --verify HEAD >/dev/null || [ ! -f deploy/auto-deploy.sh ]; then
+  git reset -q --hard origin/main
   rm -f DEPLOYED_COMMIT
   echo "Checkout set to $(git rev-parse --short HEAD)"
 fi
