@@ -20,6 +20,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { getToken } from '../api';
+import { LogoMark } from '../ui';
 import '../landing.css';
 
 // habiturn.sidhar.me — the homepage for shop owners. The shop app itself lives at /app.
@@ -160,7 +161,7 @@ function Nav() {
       <div className="lp-wrap">
         <a className="lp-logo" href="/" aria-label="Habiturn home">
           <span className="lp-logo-mark" aria-hidden="true">
-            ★
+            <LogoMark />
           </span>
           Habiturn
         </a>
@@ -986,7 +987,7 @@ export function Landing() {
         <div className="lp-wrap">
           <a className="lp-logo" href="/" aria-label="Habiturn home">
             <span className="lp-logo-mark" aria-hidden="true">
-              ★
+              <LogoMark />
             </span>
             Habiturn
           </a>

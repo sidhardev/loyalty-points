@@ -1,0 +1,193 @@
+/* Growth bits: the "made with Habiturn" line on customer pages, and Admin → Growth / Follow up. */
+
+.made-with {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.made-with svg {
+  flex: none;
+  border-radius: 6px;
+}
+
+.made-with b {
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.made-with:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* ---- funnel */
+
+.funnel {
+  display: grid;
+  gap: 10px;
+}
+
+.funnel-step {
+  display: grid;
+  grid-template-columns: minmax(130px, 200px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.funnel-step > span:first-child {
+  font-weight: 600;
+}
+
+.funnel-bar {
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.funnel-bar i {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-fill));
+  transition: width 0.6s var(--ease, ease);
+}
+
+.funnel-step strong {
+  min-width: 92px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.funnel-step em {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .funnel-step {
+    grid-template-columns: 1fr auto;
+  }
+
+  .funnel-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 14px;
+  }
+}
+
+/* ---- tracking link builder */
+
+.link-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.link-out {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.link-out span {
+  flex: 1;
+}
+
+.link-qr {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link-qr img {
+  width: 116px;
+  height: 116px;
+  border-radius: 10px;
+  background: #fff;
+  padding: 6px;
+}
+
+@media (max-width: 560px) {
+  .link-builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- follow up */
+
+.follow-list {
+  display: grid;
+  gap: 12px;
+}
+
+.follow-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.follow-card.done {
+  opacity: 0.62;
+}
+
+.follow-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.follow-top a {
+  color: inherit;
+}
+
+.follow-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.follow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}

@@ -209,6 +209,18 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_page_views_day ON page_views (day);
   `,
+
+  // 8: growth — the owner's WhatsApp number (optional), where each shop came from (first visit to the website before
+  // signing up: utm source/medium/campaign, referring site, landing page), and the shop whose customer card led here.
+  `
+  ALTER TABLE merchants ADD COLUMN phone TEXT;
+  ALTER TABLE merchants ADD COLUMN signup_source TEXT NOT NULL DEFAULT '';
+  ALTER TABLE merchants ADD COLUMN signup_medium TEXT NOT NULL DEFAULT '';
+  ALTER TABLE merchants ADD COLUMN signup_campaign TEXT NOT NULL DEFAULT '';
+  ALTER TABLE merchants ADD COLUMN signup_ref TEXT NOT NULL DEFAULT '';
+  ALTER TABLE merchants ADD COLUMN signup_landing TEXT NOT NULL DEFAULT '';
+  ALTER TABLE merchants ADD COLUMN referred_by INTEGER REFERENCES merchants(id);
+  `,
 ];
 
 const INDEXES = `

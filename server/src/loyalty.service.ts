@@ -23,6 +23,13 @@ export type MerchantRow = {
   last_seen_at: string | null;
   suspended_at: string | null;
   suspended_reason: string | null;
+  phone: string | null;
+  signup_source: string;
+  signup_medium: string;
+  signup_campaign: string;
+  signup_ref: string;
+  signup_landing: string;
+  referred_by: number | null;
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';

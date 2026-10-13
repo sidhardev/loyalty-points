@@ -779,10 +779,12 @@ button.row-item:hover {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
-  background: linear-gradient(140deg, #34d399, #059669 55%, #065f46);
-  color: #fff;
+  border-radius: 9px;
   box-shadow: 0 6px 16px -6px var(--brand-glow);
+}
+
+.logo svg {
+  display: block;
 }
 
 .bottom-nav {
@@ -1886,7 +1888,6 @@ button.row-item:hover {
 
 .auth-hero .logo,
 .member-shop .logo {
-  background: rgba(255, 255, 255, 0.22);
   box-shadow: none;
 }
 

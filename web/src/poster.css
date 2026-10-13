@@ -1,0 +1,88 @@
+/* Counter poster (poster.tsx) in Settings: an on-screen preview, and the only thing on the page when printing. */
+
+.poster-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.poster-check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.poster-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
+.poster-sheet {
+  max-width: 420px;
+  width: 100%;
+  margin: 4px auto 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  outline: 1px solid var(--line);
+}
+
+.poster-sheet > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The print copy (a direct child of <body>, see PosterPrint). Only it is printed, one A4 sheet. */
+.poster-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Take the rest of the page out of the flow so nothing spills onto a second sheet. Not display: none, because
+     the logo's gradient is defined in SVGs in there too, and Chrome drops gradients from undisplayed trees. */
+  body > :not(.poster-print) {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+  }
+
+  .poster-print,
+  .poster-print * {
+    visibility: visible !important;
+  }
+
+  .poster-print {
+    display: block !important;
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+    break-after: avoid;
+  }
+
+  .poster-print > svg {
+    display: block;
+    width: 210mm;
+    height: 297mm;
+  }
+}

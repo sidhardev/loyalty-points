@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import QRCode from 'qrcode';
 import {
   ArrowLeft,
+  Check,
   Copy,
+  Download,
   Globe2,
+  Link2,
+  Mail,
+  MessageCircle,
+  Rocket,
   IndianRupee,
   KeyRound,
   LayoutDashboard,
@@ -20,7 +27,9 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { daysAgo, num, rupees, when } from '../api';
+import { daysAgo, num, rupees, when, whatsapp } from '../api';
+import { trackedLink } from '../attribution';
+import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { VisitsPage, type PageView } from './Visits';
 
@@ -76,6 +85,18 @@ type Shop = {
   sales30: number;
   last_bill: string | null;
   status: Status;
+  phone: string | null;
+  source: string;
+  signup_source: string;
+  signup_medium: string;
+  signup_campaign: string;
+  signup_ref: string;
+  signup_landing: string;
+  referred_by: number | null;
+  referred_by_name: string | null;
+  referrals: number;
+  last_contact: string | null;
+  last_contact_detail: string | null;
 };
 type Comeback = { customers: number; visits: number; sales: number; wonBack: number; allSales: number; rewards: number };
 
@@ -102,6 +123,61 @@ const ago = (t: string | null) => {
 /** Why a shop is on the "needs a call" list. */
 const reason = (s: Shop) =>
   s.status === 'sleeping' ? `No bills for ${daysAgo(s.last_bill!)} days — had ${num(s.bills30)} in the last 30` : `Joined ${ago(s.created_at)}, never gave points`;
+
+/** How a source label reads in the panel. */
+const SOURCE_NAMES: Record<string, string> = {
+  direct: 'Direct / unknown',
+  card: 'Customer cards',
+  google: 'Google',
+  bing: 'Bing',
+  whatsapp: 'WhatsApp',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  linkedin: 'LinkedIn',
+  x: 'X (Twitter)',
+  producthunt: 'Product Hunt',
+};
+const sourceName = (s: string) => SOURCE_NAMES[s] ?? s;
+
+/** A ready message for a shop that needs a nudge. */
+function nudge(s: Shop) {
+  if (s.status === 'sleeping') {
+    return `Hi! This is the Habiturn team. ${s.name} gave ${num(s.bills30)} bills with points last month, and your regulars still have points waiting. Is anything making it hard at the counter? Happy to help on a quick call.`;
+  }
+  return `Hi! This is the Habiturn team, thanks for signing up ${s.name}. Can we help you give your first points? Print your counter poster from Settings, put it where people pay, and the next customer can join in 10 seconds. Happy to set it up with you on a call.`;
+}
+
+/** WhatsApp / call / email buttons for a shop; using one records the contact in the admin log. */
+function ContactButtons({ shop, onDone, compact }: { shop: Shop; onDone: () => void; compact?: boolean }) {
+  const record = (channel: 'whatsapp' | 'call' | 'email' | 'visit') =>
+    void adminApi(`shops/${shop.id}/contacted`, 'POST', { channel }).then(onDone, (e) => toast((e as Error).message, 'error'));
+  const size = compact ? 'btn-sm' : '';
+  return (
+    <div className="follow-actions">
+      {shop.phone && (
+        <a className={`btn ${size} btn-whatsapp`} href={whatsapp(shop.phone, nudge(shop))} target="_blank" rel="noreferrer" onClick={() => record('whatsapp')}>
+          <MessageCircle size={16} /> WhatsApp
+        </a>
+      )}
+      {shop.phone && (
+        <a className={`btn ${size} btn-soft`} href={`tel:${shop.phone}`} onClick={() => record('call')}>
+          <Phone size={16} /> Call
+        </a>
+      )}
+      <a
+        className={`btn ${size} btn-soft`}
+        href={`mailto:${shop.email}?subject=${encodeURIComponent(`Your Habiturn shop: ${shop.name}`)}&body=${encodeURIComponent(nudge(shop))}`}
+        onClick={() => record('email')}
+      >
+        <Mail size={16} /> Email
+      </a>
+      <button className={`btn ${size} btn-ghost`} onClick={() => record('visit')}>
+        <Check size={16} /> Visited / other
+      </button>
+    </div>
+  );
+}
 
 function useAdminHash() {
   const [hash, setHash] = useState(location.hash.slice(1) || '/');
@@ -218,8 +294,8 @@ function OverviewPage() {
           <h2>
             <Phone size={18} /> Needs a call
           </h2>
-          <a href="#/shops" className="small">
-            All shops
+          <a href="#/follow-up" className="small">
+            Follow-up list
           </a>
         </div>
         <p className="muted small" style={{ margin: 0 }}>
@@ -308,6 +384,7 @@ function ShopsPage() {
                   <th className="num">Sales (30d)</th>
                   <th>Last bill</th>
                   <th>Joined</th>
+                  <th>From</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,6 +404,9 @@ function ShopsPage() {
                     <td className="num">{rupees(s.sales30)}</td>
                     <td>{ago(s.last_bill)}</td>
                     <td>{ago(s.created_at)}</td>
+                    <td>
+                      <span className="source-chip">{sourceName(s.source)}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -448,10 +528,23 @@ function ShopPage({ id }: { id: number }) {
             {shop.name} <StatusBadge status={shop.status} />
           </h1>
           <p>
-            {shop.email} · joined {when(shop.created_at)} · last seen {ago(shop.last_seen_at)}
+            {shop.email}
+            {shop.phone ? ` · ${shop.phone}` : ''} · joined {when(shop.created_at)} · last seen {ago(shop.last_seen_at)}
+          </p>
+          <p className="follow-meta">
+            <span className="source-chip">From: {sourceName(shop.source)}</span>
+            {shop.signup_campaign && !shop.referred_by && <span>Campaign: {shop.signup_campaign}</span>}
+            {shop.referred_by && (
+              <span>
+                Via the customer card of <a href={`#/shops/${shop.referred_by}`}>{shop.referred_by_name}</a>
+              </span>
+            )}
+            {shop.referrals > 0 && <span>Brought {num(shop.referrals)} new shops</span>}
+            {shop.last_contact && <span>Last contacted {ago(shop.last_contact)}</span>}
           </p>
         </div>
       </header>
+      <ContactButtons shop={shop} onDone={load} />
 
       {shop.suspended_at && (
         <p className="alert alert-error">
@@ -620,6 +713,331 @@ function ShopPage({ id }: { id: number }) {
   );
 }
 
+// ---------------------------------------------------------------- growth
+
+type FunnelRow = { source: string; visitors: number; signups: number; started: number; active: number };
+type Growth = {
+  days: number;
+  totals: Omit<FunnelRow, 'source'>;
+  sources: FunnelRow[];
+  cards: { shopId: number | null; shop: string; visitors: number; signups: number }[];
+  signups: Shop[];
+};
+
+/** a as a share of b. Sign-ups can outnumber homepage visitors (people who go straight to /app), so that's said in words. */
+const pct = (a: number, b: number) => (!b ? '–' : a > b ? 'more than' : `${Math.round((a / b) * 100)}%`);
+
+/** Makes a homepage link that Growth counts under its own source, with a QR for flyers. */
+function LinkBuilder() {
+  const [source, setSource] = useState('');
+  const [campaign, setCampaign] = useState('');
+  const [qr, setQr] = useState('');
+  const clean = (v: string) =>
+    v
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-|-$/g, '');
+  const url = clean(source) ? trackedLink(clean(source), clean(campaign)) : '';
+  useEffect(() => {
+    if (!url) return setQr('');
+    void QRCode.toDataURL(url, { width: 600, margin: 2, color: { dark: '#0f2e24' } }).then(setQr);
+  }, [url]);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied');
+    } catch {
+      prompt('Copy this link:', url);
+    }
+  };
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <Link2 size={18} /> Tracking link
+        </h2>
+      </div>
+      <p className="muted small" style={{ margin: 0 }}>
+        Make a separate link for each place you promote Habiturn: a WhatsApp group, a flyer, someone visiting shops. Sign-ups from it are counted
+        under its own source above. WhatsApp doesn't tell the website where a click came from, so without a link like this those visits show as
+        “direct”.
+      </p>
+      <div className="link-builder">
+        <label>
+          Source
+          <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="whatsapp-group, flyer, ravi" />
+        </label>
+        <label>
+          Campaign (optional)
+          <input value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="mg-road, diwali" />
+        </label>
+      </div>
+      {url && (
+        <>
+          <div className="link-out">
+            <span>{url}</span>
+            <button className="btn btn-sm" onClick={() => void copy()}>
+              <Copy size={15} /> Copy
+            </button>
+          </div>
+          {qr && (
+            <div className="link-qr">
+              <img src={qr} alt={`QR code for ${url}`} />
+              <a className="btn btn-soft" href={qr} download={`habiturn-${clean(source)}${clean(campaign) ? `-${clean(campaign)}` : ''}.png`}>
+                <Download size={16} /> Download QR
+              </a>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+const RANGES = [7, 30, 90] as const;
+
+function GrowthPage() {
+  const [days, setDays] = useState<(typeof RANGES)[number]>(30);
+  const [data, setData] = useState<Growth | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    setData(null);
+    void adminApi<Growth>(`growth?days=${days}`).then(setData, (e) => setError((e as Error).message));
+  }, [days]);
+  const t = data?.totals;
+  const steps = t
+    ? [
+        { label: 'Homepage visitors', value: t.visitors, note: 'people on the homepage' },
+        { label: 'Signed up', value: t.signups, note: `${pct(t.signups, t.visitors)} of visitors` },
+        { label: 'Gave first points', value: t.started, note: `${pct(t.started, t.signups)} of sign-ups` },
+        { label: 'Active this week', value: t.active, note: `${pct(t.active, t.started)} of those who started` },
+      ]
+    : [];
+  const max = Math.max(1, ...steps.map((s) => s.value));
+
+  return (
+    <>
+      <header className="page-head">
+        <div>
+          <h1>Growth</h1>
+          <p>Where new shops come from, and how many of them start using Habiturn.</p>
+        </div>
+        <div className="seg">
+          {RANGES.map((d) => (
+            <button key={d} className={days === d ? 'active' : ''} onClick={() => setDays(d)}>
+              {d} days
+            </button>
+          ))}
+        </div>
+      </header>
+      <ErrorText text={error} />
+
+      <section className="card">
+        <div className="card-head">
+          <h2>
+            <Rocket size={18} /> Funnel
+          </h2>
+          <span className="muted small">last {days} days</span>
+        </div>
+        {!data ? (
+          <SkeletonRows count={4} />
+        ) : (
+          <div className="funnel">
+            {steps.map((s) => (
+              <div className="funnel-step" key={s.label}>
+                <span>{s.label}</span>
+                <div className="funnel-bar">
+                  <i style={{ width: `${(s.value / max) * 100}%` }} />
+                </div>
+                <strong>
+                  {num(s.value)}
+                  <em>{s.note}</em>
+                </strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>
+            <Globe2 size={18} /> By source
+          </h2>
+        </div>
+        {!data ? (
+          <SkeletonRows count={3} />
+        ) : data.sources.length ? (
+          <div className="table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th className="num">Visitors</th>
+                  <th className="num">Sign-ups</th>
+                  <th className="num">Started</th>
+                  <th className="num">Active</th>
+                  <th className="num">Visitor → sign-up</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.sources.map((r) => (
+                  <tr key={r.source}>
+                    <td>
+                      <strong>{sourceName(r.source)}</strong>
+                    </td>
+                    <td className="num">{num(r.visitors)}</td>
+                    <td className="num">{num(r.signups)}</td>
+                    <td className="num">{num(r.started)}</td>
+                    <td className="num">{num(r.active)}</td>
+                    <td className="num">{r.visitors ? pct(r.signups, r.visitors) : '–'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState icon={Globe2} title="No visits or sign-ups yet" text="Share a tracking link (below) to get started." />
+        )}
+      </section>
+
+      <div className="grid-2">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Users size={18} /> Shops bringing shops
+            </h2>
+          </div>
+          <p className="muted small" style={{ margin: 0 }}>
+            Customers see a small “Run a shop? Get it free” link on their points card. These shops' customers clicked it.
+          </p>
+          {!data ? (
+            <SkeletonRows count={2} />
+          ) : data.cards.length ? (
+            <ul className="rows">
+              {data.cards.map((c) => (
+                <li key={`${c.shopId}-${c.shop}`}>
+                  <div className="row-item">
+                    <span className="row-main">
+                      <strong>{c.shopId ? <a href={`#/shops/${c.shopId}`}>{c.shop}</a> : c.shop}</strong>
+                      <span>
+                        {num(c.visitors)} visitors · {num(c.signups)} sign-ups
+                      </span>
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">None yet.</p>
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Store size={18} /> Latest sign-ups
+            </h2>
+            <a href="#/follow-up" className="small">
+              Follow up
+            </a>
+          </div>
+          {!data ? (
+            <SkeletonRows count={3} />
+          ) : data.signups.length ? (
+            <ul className="rows">
+              {data.signups.slice(0, 12).map((s) => (
+                <li key={s.id}>
+                  <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
+                    <span className="row-main">
+                      <strong>
+                        {s.name} <StatusBadge status={s.status} />
+                      </strong>
+                      <span>
+                        joined {ago(s.created_at)}
+                        {s.referred_by_name ? ` · via ${s.referred_by_name}` : s.signup_campaign ? ` · ${s.signup_campaign}` : ''}
+                      </span>
+                    </span>
+                    <span className="source-chip">{sourceName(s.source)}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">No sign-ups in this period.</p>
+          )}
+        </section>
+      </div>
+
+      <LinkBuilder />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- follow up
+
+const needsStart = (s: Shop) => s.status === 'new' || s.status === 'never';
+
+/** Shops worth a message: new ones that haven't started, and ones that went quiet. Contacted in the last 3 days go last. */
+function FollowUpPage() {
+  const [shops, setShops] = useState<Shop[] | null>(null);
+  const [show, setShow] = useState<'start' | 'quiet'>('start');
+  const load = useCallback(() => void adminApi<Shop[]>('shops').then(setShops), []);
+  useEffect(load, [load]);
+
+  const recent = (s: Shop) => Boolean(s.last_contact) && daysAgo(s.last_contact!) < 3;
+  const inTab = (s: Shop, tab: typeof show) => (tab === 'start' ? needsStart(s) : s.status === 'sleeping');
+  const list = (shops ?? [])
+    .filter((s) => inTab(s, show))
+    .sort((a, b) => Number(recent(a)) - Number(recent(b)) || (show === 'start' ? b.created_at.localeCompare(a.created_at) : b.bills30 - a.bills30));
+  const count = (tab: typeof show) => (shops ?? []).filter((s) => inTab(s, tab)).length;
+
+  return (
+    <>
+      <header className="page-head">
+        <div>
+          <h1>Follow up</h1>
+          <p>A message in the first days keeps a shop for months. Each button opens a ready message and marks the shop as contacted.</p>
+        </div>
+      </header>
+      <div className="seg">
+        <button className={show === 'start' ? 'active' : ''} onClick={() => setShow('start')}>
+          Help them start{shops ? ` (${count('start')})` : ''}
+        </button>
+        <button className={show === 'quiet' ? 'active' : ''} onClick={() => setShow('quiet')}>
+          Gone quiet{shops ? ` (${count('quiet')})` : ''}
+        </button>
+      </div>
+      {!shops ? (
+        <SkeletonRows count={4} />
+      ) : list.length ? (
+        <div className="follow-list">
+          {list.map((s) => (
+            <article key={s.id} className={`follow-card ${recent(s) ? 'done' : ''}`}>
+              <div className="follow-top">
+                <a href={`#/shops/${s.id}`}>
+                  <strong>{s.name}</strong> <StatusBadge status={s.status} />
+                </a>
+                <span className="source-chip">{sourceName(s.source)}</span>
+              </div>
+              <div className="follow-meta">
+                <span>{reason(s)}</span>
+                <span>{s.phone || s.email}</span>
+                <span>{s.last_contact ? `Contacted ${ago(s.last_contact)}` : 'Not contacted yet'}</span>
+                {!s.phone && <span>No phone number, so email only</span>}
+              </div>
+              <ContactButtons shop={s} onDone={load} compact />
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={ShieldCheck} title="Nobody to chase" text={show === 'start' ? 'Every new shop has started giving points.' : 'No shop has gone quiet.'} />
+      )}
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- admin log
 
 type LogItem = { id: number; action: string; detail: string; created_at: string; admin: string; merchant_id?: number | null };
@@ -670,6 +1088,8 @@ const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[] }>
 const NAV = [
   { path: '/', label: 'Overview', icon: LayoutDashboard },
   { path: '/shops', label: 'Shops', icon: Store },
+  { path: '/growth', label: 'Growth', icon: Rocket },
+  { path: '/follow-up', label: 'Follow up', icon: Phone },
   { path: '/visits', label: 'Visits', icon: Globe2 },
   { path: '/log', label: 'Admin log', icon: ScrollText },
 ];
@@ -732,6 +1152,10 @@ export function AdminApp() {
     <ShopPage key={shopId} id={Number(shopId)} />
   ) : hash.startsWith('/shops') ? (
     <ShopsPage />
+  ) : hash.startsWith('/growth') ? (
+    <GrowthPage />
+  ) : hash.startsWith('/follow-up') ? (
+    <FollowUpPage />
   ) : hash.startsWith('/visits') ? (
     <VisitsPage fetchViews={fetchViews} />
   ) : hash.startsWith('/log') ? (

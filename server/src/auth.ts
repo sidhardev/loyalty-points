@@ -21,6 +21,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Db, randomToken } from './db';
+import { CARD_SOURCE, readAttribution, readPhone } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with email + password and get a token the website sends with every request.
@@ -51,10 +52,12 @@ export const publicMerchant = (m: MerchantRow) => ({
   inactiveDays: m.inactive_days,
   maxVisitsPerDay: m.max_visits_per_day,
   largeBill: m.large_bill,
+  phone: m.phone ?? '',
 });
 
 type Settings = {
   name?: string;
+  phone?: string;
   pointsPer100?: number;
   welcomeBonus?: number;
   birthdayBonus?: number;
@@ -126,20 +129,31 @@ export class AuthController {
   ) {}
 
   @Post('auth/signup')
-  async signup(@Body() body: { name?: string; email?: string; password?: string }) {
+  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown }) {
     const name = body?.name?.trim();
     const email = body?.email?.trim().toLowerCase();
     const password = body?.password ?? '';
     if (!name) throw new BadRequestException('Shop name is required');
     if (!email || !EMAIL.test(email)) throw new BadRequestException('Enter a valid email');
     if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
+    const phone = readPhone(body?.phone);
 
     const exists = this.db.sql.prepare('SELECT id FROM merchants WHERE email = ?').get(email);
     if (exists) throw new ConflictException('An account with this email already exists');
 
+    // Where they came from; a customer card's link names the shop by its (public) join code.
+    const from = readAttribution(body?.attribution);
+    const referrer =
+      from.source === CARD_SOURCE && from.campaign
+        ? (this.db.sql.prepare('SELECT id FROM merchants WHERE join_code = ?').get(from.campaign) as { id: number } | undefined)
+        : undefined;
+
     const { lastInsertRowid } = this.db.sql
-      .prepare('INSERT INTO merchants (name, email, password_hash, join_code) VALUES (?, ?, ?, ?)')
-      .run(name, email, hashPassword(password), randomToken(6));
+      .prepare(
+        `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
+           signup_ref, signup_landing, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(name, email, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null);
     return this.session(Number(lastInsertRowid));
   }
 
@@ -198,6 +212,7 @@ export class AuthController {
     const m = this.find(req.merchantId);
     const b = body ?? {};
     const name = b.name?.trim() || m.name;
+    const phone = b.phone === undefined ? (m.phone ?? '') : readPhone(b.phone);
     const rate = wholeNumber(b.pointsPer100 ?? m.points_per_100, 'Points per ₹100', 1, 1000);
     const welcome = wholeNumber(b.welcomeBonus ?? m.welcome_bonus, 'Welcome bonus', 0, 100_000);
     const birthday = wholeNumber(b.birthdayBonus ?? m.birthday_bonus, 'Birthday bonus', 0, 100_000);
@@ -210,9 +225,9 @@ export class AuthController {
     this.db.sql
       .prepare(
         `UPDATE merchants SET name = ?, points_per_100 = ?, welcome_bonus = ?, birthday_bonus = ?,
-         gold_threshold = ?, gold_multiplier = ?, inactive_days = ?, max_visits_per_day = ?, large_bill = ? WHERE id = ?`,
+         gold_threshold = ?, gold_multiplier = ?, inactive_days = ?, max_visits_per_day = ?, large_bill = ?, phone = ? WHERE id = ?`,
       )
-      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, maxVisits, largeBill, m.id);
+      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, maxVisits, largeBill, phone || null, m.id);
 
     const changed = (
       [

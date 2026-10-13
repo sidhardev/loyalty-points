@@ -1,46 +1,76 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import QRCode from 'qrcode';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Bell, ChevronRight, Coins, Crown, Database, Download, ExternalLink, FileSpreadsheet, Gift, Printer, QrCode, ScrollText, ShieldCheck, Store } from 'lucide-react';
 import { api, download, joinUrl, num, rupees, type Merchant } from '../api';
+import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
+import '../poster.css';
 import { ErrorText, toast, useAction } from '../ui';
 
-/** Printable counter poster: customers scan it to join and see their points. */
+/** The counter poster: customers scan it to join and see their points. Prints on A4 or saves as a PNG. */
 function JoinQr({ merchant }: { merchant: Merchant }) {
   const url = joinUrl(merchant.joinCode);
-  const [qr, setQr] = useState('');
+  const [theme, setTheme] = useState<PosterTheme>(() => (localStorage.getItem('lp_poster_theme') as PosterTheme) || 'green');
+  const [hindi, setHindi] = useState(() => localStorage.getItem('lp_poster_hi') !== '0');
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    QRCode.toDataURL(url, { width: 480, margin: 1, color: { dark: '#141416' } }).then(setQr);
-  }, [url]);
+    try {
+      localStorage.setItem('lp_poster_theme', theme);
+      localStorage.setItem('lp_poster_hi', hindi ? '1' : '0');
+    } catch {
+      // Just not remembered.
+    }
+  }, [theme, hindi]);
+
+  const poster = { shop: merchant.name, url, pointsPer100: merchant.pointsPer100, welcomeBonus: merchant.welcomeBonus, theme, hindi };
+
+  const save = async () => {
+    const svg = ref.current?.querySelector('svg');
+    if (!svg) return;
+    setSaving(true);
+    try {
+      await downloadPoster(svg, `${merchant.name.replace(/[^\w]+/g, '-').toLowerCase() || 'shop'}-poster.png`);
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <section className="card">
       <div className="card-head">
         <h2>
-          <QrCode size={18} /> Counter QR code
+          <QrCode size={18} /> Counter poster
         </h2>
       </div>
-      <p className="muted small">
-        Customers scan it, enter their name, phone and a PIN, and join your program
+      <p className="muted small" style={{ margin: 0 }}>
+        Put it where people pay. Customers scan it, enter their name, phone and a PIN, and join your program
         {merchant.welcomeBonus ? ` with ${num(merchant.welcomeBonus)} welcome points` : ''}.
       </p>
-      <div className="poster" id="poster">
-        <strong>{merchant.name}</strong>
-        <span>Scan to join our rewards</span>
-        {qr && <img src={qr} alt={`QR code for ${url}`} />}
-        <em>
-          Earn {merchant.pointsPer100} points on every ₹100
-          {merchant.welcomeBonus ? ` · ${num(merchant.welcomeBonus)} points free when you join` : ''}
-        </em>
+      <div className="poster-options">
+        <div className="seg" role="group" aria-label="Poster colour">
+          <button type="button" className={theme === 'green' ? 'active' : ''} onClick={() => setTheme('green')}>
+            Green
+          </button>
+          <button type="button" className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>
+            Light (saves ink)
+          </button>
+        </div>
+        <label className="poster-check">
+          <input type="checkbox" checked={hindi} onChange={(e) => setHindi(e.target.checked)} /> Hindi lines
+        </label>
       </div>
+      <div className="poster-sheet" ref={ref}>
+        <PosterSvg {...poster} />
+      </div>
+      <PosterPrint {...poster} />
       <div className="actions">
         <button className="btn btn-primary" onClick={() => print()}>
-          <Printer size={17} /> Print poster
+          <Printer size={17} /> Print (A4)
         </button>
-        {qr && (
-          <a className="btn btn-soft" href={qr} download="join-qr.png">
-            <Download size={17} /> Download
-          </a>
-        )}
+        <button className="btn btn-soft" onClick={() => void save()} disabled={saving}>
+          <Download size={17} /> {saving ? 'Saving…' : 'Download PNG'}
+        </button>
         <a className="btn btn-ghost" href={url} target="_blank" rel="noreferrer">
           <ExternalLink size={17} /> Open
         </a>
@@ -102,6 +132,7 @@ function YourData({ merchant }: { merchant: Merchant }) {
 export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (m: Merchant) => void }) {
   const [form, setForm] = useState({
     name: merchant.name,
+    phone: merchant.phone,
     pointsPer100: String(merchant.pointsPer100),
     welcomeBonus: String(merchant.welcomeBonus),
     birthdayBonus: String(merchant.birthdayBonus),
@@ -121,6 +152,7 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
       onSaved(
         await api<Merchant>('me', 'PATCH', {
           name: form.name,
+          phone: form.phone,
           pointsPer100: Number(form.pointsPer100),
           welcomeBonus: Number(form.welcomeBonus),
           birthdayBonus: Number(form.birthdayBonus),
@@ -154,6 +186,11 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
             <label>
               Shop name
               <input value={form.name} onChange={set('name')} required />
+            </label>
+            <label>
+              Your WhatsApp number
+              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
+              <span className="hint">Only for Habiturn support. Customers don't see it.</span>
             </label>
           </div>
 

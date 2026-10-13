@@ -61,7 +61,7 @@ export class PublicController {
     return {
       hasPin: view.hasPin,
       cardCode: c.card_code,
-      shop: { id: m.id, name: m.name, pointsPer100: m.points_per_100, goldThreshold: m.gold_threshold, goldMultiplier: m.gold_multiplier },
+      shop: { id: m.id, name: m.name, joinCode: m.join_code, pointsPer100: m.points_per_100, goldThreshold: m.gold_threshold, goldMultiplier: m.gold_multiplier },
       customer: { name: view.name, points: view.points, lifetimePoints: view.lifetimePoints, tier: view.tier, since: view.createdAt },
       rewards,
       history,

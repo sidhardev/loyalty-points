@@ -2,6 +2,7 @@
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { ignoreThisBrowser, trackPageView } from './analytics';
 import { App } from './App';
+import { rememberArrival } from './attribution';
 import './styles.css';
 
 // The homepage arrives prerendered (scripts/prerender.mjs), so React takes over that HTML instead of redrawing it.
@@ -12,6 +13,8 @@ else createRoot(root).render(<App />);
 // Website visits for the superadmin; opening /admin marks this browser as the owner's so it isn't counted.
 if (location.pathname === '/admin') ignoreThisBrowser();
 else trackPageView();
+// Where a future shop owner came from, sent with their sign-up.
+rememberArrival();
 
 // Installable app + offline shell (built app only, so live reload in development isn't cached).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

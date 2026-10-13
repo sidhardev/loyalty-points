@@ -13,7 +13,7 @@ import {
   SlidersHorizontal,
   Smartphone,
   Sparkles,
-  Star,
+
   Sun,
   Undo2,
   X,
@@ -441,9 +441,56 @@ export function PinInput({ value, onChange, autoFocus }: { value: string; onChan
 
 // ---------------------------------------------------------------- display
 
+/** The Habiturn mark: a shopfront drawn from QR modules — striped awning, finder-square windows, and the member ★ on the door. */
+export const LogoMark = ({ size = 34 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 96 96" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="hbLogoG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#0b7a52" />
+        <stop offset="1" stopColor="#0a5e40" />
+      </linearGradient>
+    </defs>
+    <rect width="96" height="96" rx="22" fill="url(#hbLogoG)" />
+    <rect x="12" y="12" width="12" height="14" fill="#f0a202" />
+    <rect x="24" y="12" width="12" height="14" fill="#eef2ec" />
+    <rect x="36" y="12" width="12" height="14" fill="#f0a202" />
+    <rect x="48" y="12" width="12" height="14" fill="#eef2ec" />
+    <rect x="60" y="12" width="12" height="14" fill="#f0a202" />
+    <rect x="72" y="12" width="12" height="14" fill="#eef2ec" />
+    <circle cx="18" cy="26" r="6" fill="#f0a202" />
+    <circle cx="30" cy="26" r="6" fill="#eef2ec" />
+    <circle cx="42" cy="26" r="6" fill="#f0a202" />
+    <circle cx="54" cy="26" r="6" fill="#eef2ec" />
+    <circle cx="66" cy="26" r="6" fill="#f0a202" />
+    <circle cx="78" cy="26" r="6" fill="#eef2ec" />
+    <g fill="none" stroke="#eef2ec" strokeWidth="3.5">
+      <rect x="15.75" y="39.75" width="14.5" height="14.5" rx="2" />
+      <rect x="65.75" y="39.75" width="14.5" height="14.5" rx="2" />
+    </g>
+    <rect x="20" y="44" width="6" height="6" fill="#eef2ec" />
+    <rect x="70" y="44" width="6" height="6" fill="#eef2ec" />
+    <g fill="#eef2ec">
+      <rect x="38" y="40" width="5" height="5" />
+      <rect x="47" y="44" width="5" height="5" />
+      <rect x="53" y="38" width="5" height="5" />
+      <rect x="16" y="62" width="5" height="5" />
+      <rect x="25" y="70" width="5" height="5" />
+      <rect x="16" y="78" width="5" height="5" />
+      <rect x="75" y="62" width="5" height="5" />
+      <rect x="66" y="70" width="5" height="5" />
+      <rect x="75" y="78" width="5" height="5" />
+    </g>
+    <path d="M38 84 V67 Q38 57 48 57 Q58 57 58 67 V84 Z" fill="#f0a202" />
+    <polygon
+      points="48,63.4 49.15,66.42 52.37,66.58 49.85,68.6 50.7,71.72 48,69.95 45.3,71.72 46.15,68.6 43.63,66.58 46.85,66.42"
+      fill="#0a5e40"
+    />
+  </svg>
+);
+
 export const Logo = () => (
   <span className="logo" aria-hidden>
-    <Star size={17} fill="currentColor" />
+    <LogoMark />
   </span>
 );
 

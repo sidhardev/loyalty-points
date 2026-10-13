@@ -13,6 +13,7 @@ export type Merchant = {
   inactiveDays: number;
   maxVisitsPerDay: number; // per customer in 24 hours, 0 = no limit
   largeBill: number; // bills above this ask to confirm, 0 = off
+  phone: string; // owner's WhatsApp number, '' = not given
 };
 
 export type Tier = { name: 'Gold' | 'Member'; multiplier: number; toGold: number };

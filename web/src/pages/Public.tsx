@@ -3,7 +3,9 @@ import QRCode from 'qrcode';
 import { Check, Crown, Download, Gift, History, KeyRound, LogIn, Phone, QrCode, Ticket } from 'lucide-react';
 
 import { api, forgetWallet, num, rememberWallet, rupees, savedWallets, spendFor, type Bonus, type Reward, type Tier, type Transaction } from '../api';
+import { trackedLink } from '../attribution';
 import { LangToggle, t, useLang } from '../i18n';
+import '../marketing.css';
 import {
   Activity,
   BirthdayInput,
@@ -12,6 +14,7 @@ import {
   InstallBanner,
   InstallButton,
   Logo,
+  LogoMark,
   PinInput,
   Sheet,
   Skeleton,
@@ -28,21 +31,28 @@ type RedeemCode = { code: string; expiresAt: string; usedAt: string | null; rewa
 type WalletData = {
   hasPin: boolean;
   cardCode: string;
-  shop: { id: number; name: string; pointsPer100: number; goldThreshold: number; goldMultiplier: number };
+  shop: { id: number; name: string; joinCode: string; pointsPer100: number; goldThreshold: number; goldMultiplier: number };
   customer: { name: string; points: number; lifetimePoints: number; tier: Tier; since: string };
   rewards: Reward[];
   history: Transaction[];
   redeemCode: RedeemCode | null;
 };
 
-/** Page frame for customer pages, with the language switch on top. */
-function PublicPage({ children }: { children: ReactNode }) {
+/** Page frame for customer pages, with the language switch on top and a small "made with Habiturn" line below.
+ * `via` is the shop's join code, so Admin → Growth can see which shop's customers brought new shops. */
+function PublicPage({ children, via }: { children: ReactNode; via?: string }) {
   return (
     <main className="public">
       <div className="public-top">
         <LangToggle />
       </div>
       {children}
+      <a className="made-with" href={trackedLink('card', via, 'referral')} target="_blank" rel="noopener">
+        <LogoMark size={22} />
+        <span>
+          {t('Rewards by Habiturn')} · <b>{t('Run a shop? Get it free')}</b>
+        </span>
+      </a>
     </main>
   );
 }
@@ -303,7 +313,7 @@ export function Wallet({ token }: { token: string }) {
   };
 
   return (
-    <PublicPage>
+    <PublicPage via={shop.joinCode}>
       <MemberCard shop={shop.name} name={t('Hi {name}', { name: customer.name })} points={customer.points} gold={gold} badge>
         <div className="member-foot">
           {next && <span className="member-next">{t('Shop for {amount} more → {reward}', { amount: spend(next.points_cost - customer.points), reward: next.name })}</span>}
@@ -461,7 +471,7 @@ export function Join({ code }: { code: string }) {
   }
 
   return (
-    <PublicPage>
+    <PublicPage via={code}>
       <MemberCard shop={shop.shop} name={t('Join our rewards')} points={shop.welcomeBonus > 0 ? shop.welcomeBonus : undefined}>
         <div className="member-foot">
           <span>

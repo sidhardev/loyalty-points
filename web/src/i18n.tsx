@@ -36,6 +36,10 @@ const HI: Record<string, string> = {
   'Log in with your PIN': 'PIN से लॉग इन करें',
   '{shop} · My points': '{shop} · मेरे पॉइंट्स',
 
+  // footer
+  'Rewards by Habiturn': 'Habiturn के इनाम',
+  'Run a shop? Get it free': 'दुकान है? मुफ़्त में पाएँ',
+
   // reward code
   'Your code for {reward}': '{reward} के लिए आपका कोड',
   'Show this code at the counter · {time} left': 'यह कोड काउंटर पर दिखाएँ · {time} बाकी',

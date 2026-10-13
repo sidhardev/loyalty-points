@@ -25,6 +25,7 @@ import type { Request } from 'express';
 import { AnalyticsStore } from './analytics';
 import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
+import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
 
 // Superadmin: the platform owner's view of every shop — how the business is doing, which shops need a call,
@@ -75,6 +76,17 @@ type ShopRow = {
   bills30: number;
   sales30: number;
   last_bill: string | null;
+  phone: string | null;
+  signup_source: string;
+  signup_medium: string;
+  signup_campaign: string;
+  signup_ref: string;
+  signup_landing: string;
+  referred_by: number | null;
+  referred_by_name: string | null;
+  referrals: number;
+  last_contact: string | null;
+  last_contact_detail: string | null;
 };
 
 /** Per-shop numbers used by the list and the detail page. */
@@ -85,7 +97,12 @@ const SHOP_SELECT = `
             AND t.created_at >= datetime('now', '-30 days')) AS bills30,
          (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0
             AND t.created_at >= datetime('now', '-30 days')) AS sales30,
-         (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_bill
+         (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_bill,
+         m.phone, m.signup_source, m.signup_medium, m.signup_campaign, m.signup_ref, m.signup_landing, m.referred_by,
+         (SELECT r.name FROM merchants r WHERE r.id = m.referred_by) AS referred_by_name,
+         (SELECT COUNT(*) FROM merchants r WHERE r.referred_by = m.id) AS referrals,
+         (SELECT MAX(created_at) FROM admin_log l WHERE l.merchant_id = m.id AND l.action = 'contact') AS last_contact,
+         (SELECT detail FROM admin_log l WHERE l.merchant_id = m.id AND l.action = 'contact' ORDER BY id DESC LIMIT 1) AS last_contact_detail
   FROM merchants m`;
 
 /** active: a bill in the last 7 days · sleeping: bills before, none for 7+ days · new: joined in the last 7 days · never: no bill yet. */
@@ -97,7 +114,11 @@ function status(s: ShopRow) {
   return daysSince(s.created_at) <= 2 ? 'new' : 'never';
 }
 
-const shopView = (s: ShopRow) => ({ ...s, status: status(s) });
+const shopView = (s: ShopRow) => ({ ...s, status: status(s), source: sourceLabel(s.signup_source, s.signup_ref) });
+
+const CONTACT_CHANNELS = { whatsapp: 'WhatsApp', call: 'a call', email: 'email', visit: 'a visit' } as const;
+
+type FunnelRow = { source: string; visitors: number; signups: number; started: number; active: number };
 
 @Controller('api/admin')
 export class AdminController {
@@ -270,6 +291,88 @@ export class AdminController {
     if (!note) throw new BadRequestException('Write a note');
     this.db.sql.prepare('INSERT INTO admin_notes (merchant_id, admin_id, note) VALUES (?, ?, ?)').run(id, adminId, note);
     return { ok: true };
+  }
+
+  /** Records that an admin reached out to a shop (shown on the follow-up list and in the admin log). */
+  @Post('shops/:id/contacted')
+  @UseGuards(AdminGuard)
+  contacted(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { channel?: string; note?: string }) {
+    const m = this.loyalty.merchant(id);
+    const channel = CONTACT_CHANNELS[body?.channel as keyof typeof CONTACT_CHANNELS];
+    if (!channel) throw new BadRequestException('Pick how you contacted them');
+    const note = String(body?.note ?? '').trim().slice(0, 300);
+    this.audit(adminId, id, 'contact', `Contacted ${m.name} by ${channel}${note ? `: ${note}` : ''}`);
+    return { ok: true };
+  }
+
+  /**
+   * The growth funnel for the last `days` days, per source: homepage visitors → sign-ups → shops that gave their first
+   * points → shops active in the last 7 days. Also which shops' customer cards brought visitors and sign-ups.
+   */
+  @Get('growth')
+  @UseGuards(AdminGuard)
+  growth(@Query('days') daysParam = '30') {
+    const days = Math.min(400, Math.max(1, Number.parseInt(daysParam, 10) || 30));
+    const sql = this.db.sql;
+    const rows = new Map<string, FunnelRow>();
+    const row = (source: string) => {
+      let r = rows.get(source);
+      if (!r) rows.set(source, (r = { source, visitors: 0, signups: 0, started: 0, active: 0 }));
+      return r;
+    };
+
+    // A visitor is a browser on a day (ids renew daily); counted under the source of their first homepage view.
+    const views = sql
+      .prepare(
+        `SELECT day, vid, utm_source, utm_campaign, ref FROM page_views
+         WHERE path = '/' AND day >= date('now', ?) ORDER BY ts`,
+      )
+      .all(`-${days - 1} days`) as { day: string; vid: string; utm_source: string; utm_campaign: string; ref: string }[];
+    const seen = new Set<string>();
+    const cardVisits = new Map<string, number>();
+    for (const v of views) {
+      const key = `${v.day}|${v.vid}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const source = sourceLabel(v.utm_source, v.ref);
+      row(source).visitors++;
+      if (source === CARD_SOURCE && v.utm_campaign) cardVisits.set(v.utm_campaign, (cardVisits.get(v.utm_campaign) ?? 0) + 1);
+    }
+
+    const shops = (sql.prepare(`${SHOP_SELECT} WHERE m.created_at >= datetime('now', ?) ORDER BY m.created_at DESC`).all(`-${days} days`) as ShopRow[]).map(
+      shopView,
+    );
+    for (const s of shops) {
+      const r = row(s.source);
+      r.signups++;
+      if (s.last_bill) r.started++;
+      if (s.status === 'active') r.active++;
+    }
+
+    // Shops whose customer cards brought people here, by join code.
+    const codes = new Set([...cardVisits.keys(), ...shops.filter((s) => s.source === CARD_SOURCE && s.signup_campaign).map((s) => s.signup_campaign)]);
+    const byCode = sql.prepare('SELECT id, name FROM merchants WHERE join_code = ?');
+    const cards = [...codes]
+      .map((code) => {
+        const shop = byCode.get(code) as { id: number; name: string } | undefined;
+        return {
+          shopId: shop?.id ?? null,
+          shop: shop?.name ?? 'Unknown shop',
+          visitors: cardVisits.get(code) ?? 0,
+          signups: shops.filter((s) => s.source === CARD_SOURCE && s.signup_campaign === code).length,
+        };
+      })
+      .sort((a, b) => b.signups - a.signups || b.visitors - a.visitors);
+
+    const sources = [...rows.values()].sort((a, b) => b.signups - a.signups || b.visitors - a.visitors);
+    const total = (k: keyof Omit<FunnelRow, 'source'>) => sources.reduce((n, r) => n + r[k], 0);
+    return {
+      days,
+      totals: { visitors: total('visitors'), signups: total('signups'), started: total('started'), active: total('active') },
+      sources,
+      cards,
+      signups: shops.slice(0, 50),
+    };
   }
 
   /** Every admin action across all shops. */

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, BarChart3, Coins, Gift, MessageCircle } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
+import { arrival } from '../attribution';
 import { ErrorText, Logo, useAction } from '../ui';
 
 const FEATURES = [
@@ -12,7 +13,7 @@ const FEATURES = [
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' ? 'signup' : 'login');
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const { busy, error, setError, run } = useAction();
 
   const submit = (e: FormEvent) => {
@@ -21,7 +22,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
       const { token, merchant } = await api<{ token: string; merchant: Merchant }>(
         `auth/${mode}`,
         'POST',
-        mode === 'signup' ? form : { email: form.email, password: form.password },
+        mode === 'signup' ? { ...form, attribution: arrival() } : { email: form.email, password: form.password },
       );
       setToken(token);
       onAuthed(merchant);
@@ -69,6 +70,13 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
             Email
             <input type="email" autoComplete="email" value={form.email} onChange={set('email')} required autoFocus={mode === 'login'} />
           </label>
+          {mode === 'signup' && (
+            <label>
+              WhatsApp number <span className="muted">(optional)</span>
+              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
+              <span className="hint">So we can help you set up. We never share it.</span>
+            </label>
+          )}
           <label>
             Password
             <input

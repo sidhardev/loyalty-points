@@ -156,13 +156,14 @@
 
 .lp-logo-mark {
   display: grid;
+  flex: none;
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 9px;
-  background: var(--green);
-  color: #fff;
-  font-size: 17px;
+}
+
+.lp-logo-mark svg {
+  display: block;
 }
 
 .lp-nav-links {
