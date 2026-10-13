@@ -4,9 +4,15 @@
     <loc>https://habiturn.sidhar.me/</loc>
     <lastmod>2026-10-13</lastmod>
     <image:image><image:loc>https://habiturn.sidhar.me/og.png</image:loc></image:image>
-    <image:image><image:loc>https://habiturn.sidhar.me/landing/dashboard.webp</image:loc></image:image>
-    <image:image><image:loc>https://habiturn.sidhar.me/landing/give-points.webp</image:loc></image:image>
-    <image:image><image:loc>https://habiturn.sidhar.me/landing/bill-qr.webp</image:loc></image:image>
-    <image:image><image:loc>https://habiturn.sidhar.me/landing/wallet-en.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/salon/dashboard.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/salon/wallet-en.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/kirana/dashboard.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/kirana/wallet-en.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/cafe/dashboard.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/cafe/wallet-en.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/sweets/dashboard.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/sweets/wallet-en.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/pharmacy/dashboard.webp</image:loc></image:image>
+    <image:image><image:loc>https://habiturn.sidhar.me/landing/pharmacy/wallet-en.webp</image:loc></image:image>
   </url>
 </urlset>

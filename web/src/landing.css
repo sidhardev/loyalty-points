@@ -2011,6 +2011,87 @@
   color: #fff;
 }
 
+/* ---------- example shop picker ("pick a shop like yours") */
+
+.lp-pick {
+  display: grid;
+  gap: 10px;
+  margin-top: 30px;
+  max-width: 560px;
+}
+
+.lp-pick-label {
+  color: var(--soft);
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lp-pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lp-pick button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink-2);
+  font: 700 14px/1 var(--body);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.lp-pick button:hover {
+  border-color: var(--green);
+  transform: translateY(-1px);
+}
+
+.lp-pick button.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lp-pick button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.lp-pick small {
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.lp-pick-sm {
+  margin-top: 20px;
+}
+
+/* On phones the buttons scroll sideways instead of stacking into a tall block. */
+@media (max-width: 560px) {
+  .lp-pick-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 calc(var(--gutter) * -1);
+    padding: 2px var(--gutter) 6px;
+    scrollbar-width: none;
+  }
+
+  .lp-pick-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lp-pick button {
+    flex: none;
+  }
+}
+
 /* ---------- dashboard card plays in */
 
 .lp-dash.play .lp-trend {

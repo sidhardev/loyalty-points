@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import QRCode from 'qrcode';
 import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import {
@@ -13,8 +13,13 @@ import {
   Phone,
   QrCode,
   ScanLine,
+  Scissors,
   ScrollText,
   ShieldCheck,
+  ShoppingBasket,
+  Coffee,
+  Cake,
+  Pill,
   Smartphone,
   Ticket,
   TrendingUp,
@@ -24,7 +29,8 @@ import { LogoMark } from '../ui';
 import '../landing.css';
 
 // habiturn.sidhar.me — the homepage for shop owners. The shop app itself lives at /app.
-// The phone screens are real screenshots of the app (a demo tea stall); figures on the drawn dashboard card are marked as examples.
+// The story is told with an example shop the visitor picks (a salon or a kirana store); see EXAMPLES. Its phone screens are real
+// screenshots of the app with demo data, and figures on the drawn dashboard card are marked as examples.
 // Motion: everything is readable at rest; animations only replay what the product does, and stop for reduced motion.
 // CSS plays the one-off moments; Motion (springs, scroll progress) drives anything that follows the pointer or the scroll.
 
@@ -88,7 +94,8 @@ function CountUp({ from = 0, to, run, delay = 0, ms = 1100, format = (n: number)
 }) {
   const [value, setValue] = useState(to);
   useEffect(() => {
-    if (!run || reducedMotion()) return;
+    // At rest (and when the example shop changes without animating) it shows the final value.
+    if (!run || reducedMotion()) return setValue(to);
     let frame = 0;
     const timer = setTimeout(() => {
       const start = performance.now();
@@ -193,14 +200,275 @@ function Nav() {
   );
 }
 
+// ---------------------------------------------------------------- the example shop
+
+// The page tells its story with one made-up shop at a time, and the visitor picks one like theirs: a salon (a visit every
+// few weeks, bigger bills), a kirana store (near-daily), a café, a sweet shop (festival spikes) or a pharmacy (monthly refills). The phone screens are real screenshots of the app with each
+// shop's demo data; the drawn bill, card, messages and figures match them.
+type ExampleKey = 'salon' | 'kirana' | 'cafe' | 'sweets' | 'pharmacy';
+type Example = {
+  key: ExampleKey;
+  label: string;
+  icon: typeof Scissors;
+  shop: string;
+  time: string;
+  customer: string;
+  bill: readonly (readonly [string, number])[];
+  total: number;
+  points: number; // for this bill
+  before: number; // the customer's points before it
+  after: number;
+  reward: string; // the next reward on their card
+  toReward: number; // ₹ more to get it
+  meter: string;
+  place: string; // "Here it is at …"
+  habit: {
+    visits: number[][]; // days of the week with a visit, for 12 weeks
+    first: [number, number];
+    today: [number, number];
+    label: string;
+    milestones: readonly (readonly [string, string])[];
+    firstVisit: string;
+    said: string;
+  };
+  later: string;
+  proof: { sales: number; customers: number; visits: number; trend: number; share: number; wonBack: number; rewards: number };
+};
+
+const EXAMPLES: Record<ExampleKey, Example> = {
+  salon: {
+    key: 'salon',
+    label: 'Salon',
+    icon: Scissors,
+    shop: 'Kesh Unisex Salon',
+    time: '6:10 pm',
+    customer: 'Priya',
+    bill: [
+      ['Haircut', 350],
+      ['Hair spa', 600],
+      ['Threading', 50],
+    ],
+    total: 1000,
+    points: 100,
+    before: 220,
+    after: 320,
+    reward: 'Free haircut',
+    toReward: 800,
+    meter: '80%',
+    place: 'at a salon',
+    habit: {
+      visits: [[2], [], [], [4], [], [], [2, 6], [], [], [3], [], [1, 5]],
+      first: [0, 2],
+      today: [11, 5],
+      label: 'Priya at the salon · each dot is a visit · Aug → Oct',
+      milestones: [
+        ['Week 1', 'First haircut. Scans the bill QR and gets welcome points.'],
+        ['Week 7', 'Back for threading, then a hair spa. A free haircut is close, and the card shows it.'],
+        ['Week 12', 'Every three weeks, same chair. Doesn’t try the salon next door.'],
+      ],
+      firstVisit: 'a ₹350 haircut',
+      said: '“Same as last time, didi.”',
+    },
+    later: '5 weeks later',
+    proof: { sales: 124600, customers: 86, visits: 131, trend: 18, share: 46, wonBack: 12, rewards: 19 },
+  },
+  kirana: {
+    key: 'kirana',
+    label: 'Kirana store',
+    icon: ShoppingBasket,
+    shop: 'Gupta General Store',
+    time: '7:25 pm',
+    customer: 'Ravi',
+    bill: [
+      ['Atta 5 kg', 265],
+      ['Toor dal 1 kg', 165],
+      ['Oil 1 L', 150],
+      ['Milk ×4', 68],
+    ],
+    total: 648,
+    points: 32,
+    before: 236,
+    after: 268,
+    reward: 'Free 1 L oil',
+    toReward: 640,
+    meter: '89%',
+    place: 'at a kirana store',
+    habit: {
+      visits: [[2], [], [5], [1, 5], [3], [1, 4, 6], [0, 3, 5], [1, 2, 4, 6], [0, 2, 3, 5], [0, 1, 3, 4, 6], [0, 1, 2, 4, 5, 6], [0, 1, 2, 3, 4, 5]],
+      first: [0, 2],
+      today: [11, 5],
+      label: 'Ravi at the store · each dot is a day · Aug → Oct',
+      milestones: [
+        ['Week 1', 'Milk and bread. Scans the bill QR and gets welcome points.'],
+        ['Week 6', 'Buys the monthly ration here too. Free oil is close, and the card shows it.'],
+        ['Week 12', 'Sends his list on WhatsApp and picks it up on the way home.'],
+      ],
+      firstVisit: '₹68 of milk',
+      said: '“Bhaiya, the usual list.”',
+    },
+    later: '31 days later',
+    proof: { sales: 218400, customers: 152, visits: 1640, trend: 11, share: 58, wonBack: 9, rewards: 31 },
+  },
+  cafe: {
+    key: 'cafe',
+    label: 'Café',
+    icon: Coffee,
+    shop: 'Little Bean Café',
+    time: '4:40 pm',
+    customer: 'Aditi',
+    bill: [
+      ['Cold coffee', 180],
+      ['Sandwich', 160],
+      ['Brownie', 110],
+    ],
+    total: 450,
+    points: 45,
+    before: 120,
+    after: 165,
+    reward: 'Free cold coffee',
+    toReward: 350,
+    meter: '82%',
+    place: 'at a café',
+    habit: {
+      visits: [[4], [], [5], [], [2, 5], [5], [1, 5], [3, 5], [5, 6], [2, 5], [1, 3, 5], [2, 5]],
+      first: [0, 4],
+      today: [11, 5],
+      label: 'Aditi at the café · each dot is a visit · Aug → Oct',
+      milestones: [
+        ['Week 1', 'First cold coffee. Scans the bill QR and gets welcome points.'],
+        ['Week 5', 'Fridays with friends now. A free cold coffee is close, and the card shows it.'],
+        ['Week 12', 'Has a usual table and a usual order.'],
+      ],
+      firstVisit: 'a ₹180 cold coffee',
+      said: '“One cold coffee, less sugar.”',
+    },
+    later: '3 weeks later',
+    proof: { sales: 96800, customers: 210, visits: 320, trend: 14, share: 52, wonBack: 15, rewards: 44 },
+  },
+  sweets: {
+    key: 'sweets',
+    label: 'Sweets & bakery',
+    icon: Cake,
+    shop: 'Mishra Sweets & Bakery',
+    time: '8:05 pm',
+    customer: 'Sunil',
+    bill: [
+      ['Kaju katli', 450],
+      ['Cake ½ kg', 350],
+      ['Samosa ×4', 80],
+    ],
+    total: 880,
+    points: 88,
+    before: 212,
+    after: 300,
+    reward: 'Free ½ kg cake',
+    toReward: 1000,
+    meter: '75%',
+    place: 'at a sweet shop',
+    habit: {
+      visits: [[6], [], [6], [], [3, 6], [], [6], [1, 3, 4, 5], [6], [], [6], [2, 6]],
+      first: [0, 6],
+      today: [11, 6],
+      label: 'Sunil at the sweet shop · each dot is a visit · Aug → Oct',
+      milestones: [
+        ['Week 1', 'Sunday samosas. Scans the bill QR and gets welcome points.'],
+        ['Week 8', 'Every Diwali box for the family, from here. A free cake is close.'],
+        ['Week 12', 'Every birthday cake in the family comes from here now.'],
+      ],
+      firstVisit: '₹80 of samosas',
+      said: '“Bhaiya, the usual box.”',
+    },
+    later: '4 weeks later',
+    proof: { sales: 148200, customers: 260, visits: 690, trend: 31, share: 49, wonBack: 22, rewards: 38 },
+  },
+  pharmacy: {
+    key: 'pharmacy',
+    label: 'Pharmacy',
+    icon: Pill,
+    shop: 'City Care Pharmacy',
+    time: '10:15 am',
+    customer: 'Kamla',
+    bill: [
+      ['BP tablets', 420],
+      ['Test strips', 550],
+      ['Vitamin D3', 130],
+    ],
+    total: 1100,
+    points: 55,
+    before: 145,
+    after: 200,
+    reward: '₹100 off your bill',
+    toReward: 1000,
+    meter: '80%',
+    place: 'at a pharmacy',
+    habit: {
+      visits: [[1], [], [], [], [1, 5], [], [], [], [1], [], [3], [1]],
+      first: [0, 1],
+      today: [11, 1],
+      label: 'Kamla at the pharmacy · each dot is a visit · Aug → Oct',
+      milestones: [
+        ['Week 1', 'Her monthly BP medicine. Scans the bill QR and gets welcome points.'],
+        ['Week 5', 'Back on the same date for the refill. ₹100 off is close, and the card shows it.'],
+        ['Week 12', 'Every refill comes from here, and her son’s cough syrup too.'],
+      ],
+      firstVisit: 'a ₹420 refill',
+      said: '“Same as last month, beta.”',
+    },
+    later: '5 weeks later',
+    proof: { sales: 212000, customers: 180, visits: 410, trend: 9, share: 63, wonBack: 11, rewards: 27 },
+  },
+};
+
+const ExampleContext = createContext<{ ex: Example; pick: (key: ExampleKey) => void }>({ ex: EXAMPLES.salon, pick: () => {} });
+const useExample = () => useContext(ExampleContext);
+
+/** The chosen example: ?shop=kirana in the link, then the visitor's last pick. The prerendered page is the salon. */
+function ExampleProvider({ children }: { children: ReactNode }) {
+  const [key, setKey] = useState<ExampleKey>('salon');
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = new URLSearchParams(location.search).get('shop') ?? localStorage.getItem('lp_example');
+    } catch {
+      // No storage: stay on the salon.
+    }
+    if (saved && saved in EXAMPLES) setKey(saved as ExampleKey);
+  }, []);
+  const pick = (k: ExampleKey) => {
+    setKey(k);
+    try {
+      localStorage.setItem('lp_example', k);
+    } catch {
+      // Just not remembered.
+    }
+  };
+  return <ExampleContext.Provider value={{ ex: EXAMPLES[key], pick }}>{children}</ExampleContext.Provider>;
+}
+
+/** "Pick a shop like yours": the examples, and a line saying they're only examples. */
+function ExamplePicker({ className = '' }: { className?: string }) {
+  const { ex, pick } = useExample();
+  return (
+    <div className={`lp-pick ${className}`}>
+      <span className="lp-pick-label" id={`lp-pick-${className || 'hero'}`}>
+        Pick a shop like yours
+      </span>
+      <div className="lp-pick-row" role="group" aria-labelledby={`lp-pick-${className || 'hero'}`}>
+        {Object.values(EXAMPLES).map((e) => (
+          <button key={e.key} className={e.key === ex.key ? 'on' : ''} aria-pressed={e.key === ex.key} onClick={() => pick(e.key)}>
+            <e.icon size={15} /> {e.label}
+          </button>
+        ))}
+      </div>
+      <small>Works for any shop that gives a bill: gyms, boutiques, tiffin services, juice bars…</small>
+    </div>
+  );
+}
+
+const inr = (n: number) => n.toLocaleString('en-IN');
+
 // ---------------------------------------------------------------- hero
 
-const BILL = [
-  ['Masala chai ×2', 60],
-  ['Bun maska', 45],
-  ['Samosa ×3', 45],
-  ['Cold coffee', 300],
-] as const;
 
 /** Offset of one piece of the hero scene: follows the pointer by `k` px and drifts by `drift` px as the hero scrolls away. */
 function useDepth(px: MotionValue<number>, py: MotionValue<number>, scroll: MotionValue<number>, k: number, drift: number) {
@@ -210,6 +478,7 @@ function useDepth(px: MotionValue<number>, py: MotionValue<number>, scroll: Moti
 }
 
 function Hero() {
+  const { ex } = useExample();
   const [qr, setQr] = useState('');
   const [started, setStarted] = useState(false);
   const still = useReducedMotion();
@@ -286,32 +555,33 @@ function Hero() {
             <Check size={16} /> Any phone with a camera
           </li>
         </ul>
+        <ExamplePicker />
       </div>
 
       <motion.div
         className="lp-scene"
         role="img"
-        aria-label="A ₹450 bill stamped with 45 points, the counter QR standee, and the customer's points card showing 165 points"
+        aria-label={`A ₹${inr(ex.total)} bill at ${ex.shop} stamped with ${ex.points} points, the counter QR standee, and ${ex.customer}'s points card showing ${ex.after} points`}
         style={{ rotateX, rotateY, transformPerspective: 1100 }}
       >
         <motion.div className="lp-receipt" aria-hidden="true" style={receipt}>
-          <h4>CHAI POINT</h4>
-          <div className="lp-c">MG Road · 12 Oct, 5:42 pm</div>
+          <h4>{ex.shop.toUpperCase()}</h4>
+          <div className="lp-c">Today · {ex.time}</div>
           <hr />
-          {BILL.map(([item, price], i) => (
-            <div className="lp-row lp-line" style={{ '--i': i } as CSSProperties} key={item}>
+          {ex.bill.map(([item, price], i) => (
+            <div className="lp-row lp-line" style={{ '--i': i } as CSSProperties} key={`${ex.key}-${item}`}>
               <span>{item}</span>
-              <span>₹{price}</span>
+              <span>₹{inr(price)}</span>
             </div>
           ))}
           <hr />
           <div className="lp-row lp-total">
             <span>TOTAL</span>
             <span>
-              ₹<CountUp to={450} run={started} delay={700} ms={700} />
+              ₹<CountUp to={ex.total} run={started} delay={700} ms={700} />
             </span>
           </div>
-          <div className="lp-stamp">+45 POINTS</div>
+          <div className="lp-stamp">+{ex.points} POINTS</div>
         </motion.div>
         <motion.div className="lp-standee" style={standee}>
           <b>Scan to try Habiturn</b>
@@ -319,15 +589,17 @@ function Hero() {
           <span>Opens sign-up on your phone</span>
         </motion.div>
         <motion.div className="lp-walletcard" aria-hidden="true" style={card}>
-          <small>Chai Point · Ravi</small>
+          <small>
+            {ex.shop} · {ex.customer}
+          </small>
           <strong>
-            <CountUp from={120} to={165} run={started} delay={2250} ms={800} />
+            <CountUp from={ex.before} to={ex.after} run={started} delay={2250} ms={800} />
           </strong>
           <p>
-            Shop for ₹350 more → <b>Free cold coffee</b>
+            Shop for ₹{inr(ex.toReward)} more → <b>{ex.reward}</b>
           </p>
           <div className="lp-meter">
-            <i style={{ width: '82%' }} />
+            <i style={{ width: ex.meter }} />
           </div>
         </motion.div>
         {/* the stamp's points fly over to the customer's card */}
@@ -362,12 +634,9 @@ function ShopTypes() {
 
 // ---------------------------------------------------------------- why + the habit
 
-// Ravi's visits by week, Aug → Oct: one visit at first, almost daily by the end.
-const VISITS = [[2], [], [5], [1, 5], [3], [1, 4, 6], [0, 3, 5], [1, 2, 4, 6], [0, 2, 3, 5], [0, 1, 3, 4, 6], [0, 1, 2, 4, 5, 6], [0, 1, 2, 3, 4, 5]];
-
-const VISIT_COUNT = VISITS.flat().length;
-
 function Problem() {
+  const { ex } = useExample();
+  const { habit } = ex;
   const ref = useRef<HTMLDivElement>(null);
   // Scroll progress through the card → --p (0 … 1); CSS fills the dots and milestones from it (1 until the script sets it).
   // It moves only as fast as the visitor scrolls, so it stays on under reduced motion (as fades; see the CSS).
@@ -402,43 +671,38 @@ function Problem() {
         </ul>
       </div>
 
-      <div ref={ref} className="lp-habit lp-reveal" style={{ '--n': VISIT_COUNT } as CSSProperties}>
+      <div ref={ref} className="lp-habit lp-reveal" style={{ '--n': habit.visits.flat().length } as CSSProperties}>
         <div className="lp-habit-head">
           <h3>What a regular looks like</h3>
-          <span className="lp-mono">Ravi at Chai Point · each dot is a day · Aug → Oct</span>
+          <span className="lp-mono">{habit.label}</span>
         </div>
         <div className="lp-habit-body">
-          <div className="lp-cal" role="img" aria-label="Twelve weeks of visits: one in the first week, rising to almost every day by week twelve">
-            {VISITS.map((days, w) => (
+          <div className="lp-cal" role="img" aria-label={`Twelve weeks of ${ex.customer}'s visits: ${habit.visits.flat().length} in all, from the first one to a habit`}>
+            {habit.visits.map((days, w) => (
               <div className="lp-week" key={w}>
                 {Array.from({ length: 7 }, (_, d) => {
                   const on = days.includes(d);
-                  const cls = ['lp-d', on && 'on', w === 0 && d === 2 && 'first', w === 11 && d === 5 && 'today'].filter(Boolean).join(' ');
+                  const at = (p: [number, number]) => w === p[0] && d === p[1];
+                  const cls = ['lp-d', on && 'on', at(habit.first) && 'first', at(habit.today) && 'today'].filter(Boolean).join(' ');
                   return <span key={d} className={cls} style={on ? ({ '--i': n++ } as CSSProperties) : undefined} />;
                 })}
               </div>
             ))}
           </div>
           <ol className="lp-milestones">
-            <li>
-              <b>Week 1</b>
-              <span>One visit. Scans the bill QR, gets a welcome bonus.</span>
-            </li>
-            <li>
-              <b>Week 6</b>
-              <span>Three visits. A free chai is close, and the card shows it.</span>
-            </li>
-            <li>
-              <b>Week 12</b>
-              <span>Six visits. Doesn’t order any more, just nods.</span>
-            </li>
+            {habit.milestones.map(([when, what]) => (
+              <li key={`${ex.key}-${when}`}>
+                <b>{when}</b>
+                <span>{what}</span>
+              </li>
+            ))}
           </ol>
         </div>
         <div className="lp-habit-foot">
           <span>
-            <b>First visit</b> · a ₹40 chai
+            <b>First visit</b> · {habit.firstVisit}
           </span>
-          <span className="lp-said">“The usual, bhaiya.”</span>
+          <span className="lp-said">{habit.said}</span>
         </div>
       </div>
     </section>
@@ -470,14 +734,15 @@ const STEPS = [
 
 /** The picture for one step. `play` replays what that step does on screen. */
 function StepArt({ step, play }: { step: number; play: boolean }) {
+  const { ex } = useExample();
   if (step === 0)
     return (
-      <div className="lp-mini" aria-label="Bill QR screen: ₹450, 45 points, waiting for the customer to scan">
-        <small>Bill QR · Chai Point</small>
+      <div className="lp-mini" aria-label={`Bill QR screen: ₹${inr(ex.total)}, ${ex.points} points, waiting for the customer to scan`}>
+        <small>Bill QR · {ex.shop}</small>
         <span className="lp-big">
-          +<CountUp to={45} run={play} ms={800} />
+          +<CountUp to={ex.points} run={play} ms={800} />
         </span>
-        <small>points for ₹450</small>
+        <small>points for ₹{inr(ex.total)}</small>
         <div className="lp-qr-wrap lp-qr-mini">
           <FakeQr seed={41} />
         </div>
@@ -488,17 +753,19 @@ function StepArt({ step, play }: { step: number; play: boolean }) {
     );
   if (step === 1)
     return (
-      <div className="lp-mini" aria-label="Customer's points card: 165 points, ₹350 more to a free cold coffee">
-        <small>Hi Ravi</small>
+      <div className="lp-mini" aria-label={`Customer's points card: ${ex.after} points, ₹${inr(ex.toReward)} more to ${ex.reward.toLowerCase()}`}>
+        <small>Hi {ex.customer}</small>
         <div className="lp-mini-card">
-          <small>Chai Point · Member</small>
+          <small>{ex.shop} · Member</small>
           <strong>
-            <CountUp from={120} to={165} run={play} delay={200} />
+            <CountUp from={ex.before} to={ex.after} run={play} delay={200} />
           </strong>
           <div className="lp-meter">
-            <i style={{ width: '82%' }} />
+            <i style={{ width: ex.meter }} />
           </div>
-          <p>Shop for ₹350 more → Free cold coffee</p>
+          <p>
+            Shop for ₹{inr(ex.toReward)} more → {ex.reward}
+          </p>
         </div>
         <span className="lp-mini-btn">My card</span>
       </div>
@@ -506,17 +773,17 @@ function StepArt({ step, play }: { step: number; play: boolean }) {
   return (
     <div className="lp-chat" aria-label="WhatsApp messages to the customer">
       <div className="lp-bubble lp-b1">
-        Hi Ravi! 🎉 You earned 45 points at Chai Point. Your balance: 165 points. <a href="#how">habiturn.sidhar.me/w/…</a>
+        Hi {ex.customer}! 🎉 You earned {ex.points} points at {ex.shop}. Your balance: {ex.after} points. <a href="#how">habiturn.sidhar.me/w/…</a>
         <time>5:43 pm</time>
       </div>
-      <div className="lp-chat-gap">31 days later</div>
+      <div className="lp-chat-gap">{ex.later}</div>
       <div className="lp-typing" aria-hidden="true">
         <i />
         <i />
         <i />
       </div>
       <div className="lp-bubble lp-b2">
-        We miss you at Chai Point! You have 165 points waiting — your free cold coffee is close.
+        We miss you at {ex.shop}! You have {ex.after} points waiting — your {ex.reward.toLowerCase()} is close.
         <time>11:02 am</time>
       </div>
     </div>
@@ -627,23 +894,40 @@ function Steps() {
 
 // ---------------------------------------------------------------- the real app
 
-const SCREENS = [
-  { src: '/landing/dashboard.webp', alt: 'Habiturn shop dashboard: 8 visits and ₹1,715 in sales today, ₹32,145 spent by returning customers in 30 days', title: 'Your day at a glance', text: 'Today’s visits and sales, and what returning customers spent this month.' },
-  { src: '/landing/give-points.webp', alt: 'Give points sheet with Bill QR, Scan card, Reward code and phone search', title: 'One button at the counter', text: 'Bill QR, scan their card, a reward code, or their phone number.' },
-  { src: '/landing/bill-qr.webp', alt: 'Bill QR for a ₹450 bill worth 45 points, waiting for the customer to scan', title: 'The bill QR', text: 'The customer scans, and your screen says “Points added” by itself.' },
+const screens = (ex: Example) => [
+  {
+    src: `/landing/${ex.key}/dashboard.webp`,
+    alt: `Habiturn dashboard ${ex.place}: today’s visits and sales, and what returning customers spent in 30 days`,
+    title: 'Your day at a glance',
+    text: 'Today’s visits and sales, and what returning customers spent this month.',
+  },
+  {
+    src: `/landing/${ex.key}/give-points.webp`,
+    alt: 'Give points sheet with Bill QR, Scan card, Reward code and phone search',
+    title: 'One button at the counter',
+    text: 'Bill QR, scan their card, a reward code, or their phone number.',
+  },
+  {
+    src: `/landing/${ex.key}/bill-qr.webp`,
+    alt: `Bill QR for a ₹${inr(ex.total)} bill worth ${ex.points} points, waiting for the customer to scan`,
+    title: 'The bill QR',
+    text: 'The customer scans, and your screen says “Points added” by itself.',
+  },
 ];
 
 function AppScreens() {
+  const { ex } = useExample();
   return (
     <section className="lp-section lp-screens" id="app">
       <div className="lp-wrap">
         <div className="lp-reveal">
           <p className="lp-kicker">The app</p>
           <h2 className="lp-h2">This is what you’ll use. Real screens, not mock-ups.</h2>
-          <p className="lp-sub">Habiturn runs in the browser on your phone and installs to the home screen. Here it is at a tea stall.</p>
+          <p className="lp-sub">Habiturn runs in the browser on your phone and installs to the home screen. Here it is {ex.place}.</p>
+          <ExamplePicker className="lp-pick-sm" />
         </div>
         <div className="lp-phones">
-          {SCREENS.map((s, i) => (
+          {screens(ex).map((s, i) => (
             <figure className="lp-shot lp-reveal" key={s.src} style={{ '--i': i } as CSSProperties}>
               <div className="lp-device">
                 <img src={s.src} alt={s.alt} width={390} height={844} loading="lazy" decoding="async" />
@@ -732,6 +1016,7 @@ function Counter() {
 // ---------------------------------------------------------------- the customer's card (real screenshots, EN / हिं)
 
 function Customer() {
+  const { ex } = useExample();
   const [lang, setLang] = useState<'en' | 'hi'>('en');
   return (
     <section className="lp-section lp-wrap" id="customers">
@@ -743,7 +1028,7 @@ function Customer() {
           <ul className="lp-points-list">
             <li>
               <Gift size={18} />
-              <span>The next reward shown in rupees, so “₹350 more” means something.</span>
+              <span>The next reward shown in rupees, so “₹{inr(ex.toReward)} more” means something.</span>
             </li>
             <li>
               <Languages size={18} />
@@ -771,15 +1056,15 @@ function Customer() {
           <div className="lp-device lp-device-lg">
             <img
               className={lang === 'en' ? 'on' : ''}
-              src="/landing/wallet-en.webp"
-              alt="Ravi's card at Chai Point: 165 points, shop for ₹350 more for a free cold coffee"
+              src={`/landing/${ex.key}/wallet-en.webp`}
+              alt={`${ex.customer}'s card at ${ex.shop}: ${ex.after} points, shop for ₹${inr(ex.toReward)} more for ${ex.reward.toLowerCase()}`}
               width={390}
               height={844}
               loading="lazy"
             />
             <img
               className={lang === 'hi' ? 'on' : ''}
-              src="/landing/wallet-hi.webp"
+              src={`/landing/${ex.key}/wallet-hi.webp`}
               alt="The same card in Hindi"
               width={390}
               height={844}
@@ -796,6 +1081,8 @@ function Customer() {
 // ---------------------------------------------------------------- proof
 
 function Proof() {
+  const { ex } = useExample();
+  const { proof } = ex;
   const [ref, seen] = useInView<HTMLDivElement>(0.5);
   return (
     <section className="lp-section lp-proof" id="proof">
@@ -814,29 +1101,30 @@ function Proof() {
             <span>Last 30 days</span>
           </div>
           <strong>
-            ₹<CountUp to={18400} run={seen} ms={1400} />
+            ₹<CountUp to={proof.sales} run={seen} ms={1400} />
           </strong>
           <p className="lp-dash-sub">
-            spent by <CountUp to={34} run={seen} ms={1400} /> returning customers on <CountUp to={61} run={seen} ms={1400} /> repeat visits
+            spent by <CountUp to={proof.customers} run={seen} ms={1400} /> returning customers on <CountUp to={proof.visits} run={seen} ms={1400} /> repeat
+            visits
           </p>
           <span className="lp-trend">
-            <TrendingUp size={15} /> +22% vs the 30 days before
+            <TrendingUp size={15} /> +{proof.trend}% vs the 30 days before
           </span>
           <div className="lp-dash-facts">
             <div>
-              <b>41%</b>
+              <b>{proof.share}%</b>
               <span>of sales</span>
             </div>
             <div>
-              <b>7</b>
+              <b>{proof.wonBack}</b>
               <span>back after 30+ days</span>
             </div>
             <div>
-              <b>9</b>
+              <b>{proof.rewards}</b>
               <span>rewards given</span>
             </div>
           </div>
-          <p className="lp-example">Example figures for a tea stall</p>
+          <p className="lp-example">Example figures {ex.place}</p>
         </div>
       </div>
     </section>
@@ -953,53 +1241,55 @@ export function Landing() {
   useFonts();
 
   return (
-    <div className="lp">
-      <Nav />
-      <main>
-        <Hero />
-        <ShopTypes />
-        <Problem />
-        <hr className="lp-tear" />
-        <Steps />
-        <AppScreens />
-        <Counter />
-        <hr className="lp-tear" />
-        <Customer />
-        <Proof />
-        <Trust />
-        <hr className="lp-tear" />
-        <Pricing />
-        <hr className="lp-tear" />
-        <Faq />
-        <section className="lp-final">
-          <div className="lp-wrap">
-            <div className="lp-reveal">
-              <h2>Your next regular walks in today.</h2>
-              <p>Set up takes two minutes. Your first points can go out with the next bill.</p>
+    <ExampleProvider>
+      <div className="lp">
+        <Nav />
+        <main>
+          <Hero />
+          <ShopTypes />
+          <Problem />
+          <hr className="lp-tear" />
+          <Steps />
+          <AppScreens />
+          <Counter />
+          <hr className="lp-tear" />
+          <Customer />
+          <Proof />
+          <Trust />
+          <hr className="lp-tear" />
+          <Pricing />
+          <hr className="lp-tear" />
+          <Faq />
+          <section className="lp-final">
+            <div className="lp-wrap">
+              <div className="lp-reveal">
+                <h2>Your next regular walks in today.</h2>
+                <p>Set up takes two minutes. Your first points can go out with the next bill.</p>
+              </div>
+              <a className="lp-btn lp-btn-paper" href={SIGNUP}>
+                Start free <ArrowRight size={18} />
+              </a>
             </div>
-            <a className="lp-btn lp-btn-paper" href={SIGNUP}>
-              Start free <ArrowRight size={18} />
+          </section>
+        </main>
+        <footer className="lp-foot">
+          <div className="lp-wrap">
+            <a className="lp-logo" href="/" aria-label="Habiturn home">
+              <span className="lp-logo-mark" aria-hidden="true">
+                <LogoMark />
+              </span>
+              Habiturn
             </a>
+            <nav aria-label="Footer">
+              <a href="#how">How it works</a>
+              <a href="#pricing">Pricing</a>
+              <a href="/app">Shop log in</a>
+              <a href="/login">Customer: check your points</a>
+            </nav>
+            <small>From first visit to “the usual”.</small>
           </div>
-        </section>
-      </main>
-      <footer className="lp-foot">
-        <div className="lp-wrap">
-          <a className="lp-logo" href="/" aria-label="Habiturn home">
-            <span className="lp-logo-mark" aria-hidden="true">
-              <LogoMark />
-            </span>
-            Habiturn
-          </a>
-          <nav aria-label="Footer">
-            <a href="#how">How it works</a>
-            <a href="#pricing">Pricing</a>
-            <a href="/app">Shop log in</a>
-            <a href="/login">Customer: check your points</a>
-          </nav>
-          <small>From first visit to “the usual”.</small>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </ExampleProvider>
   );
 }
