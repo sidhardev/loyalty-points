@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import { Activity, BarChart3, Clock, Eye, Globe2, MousePointerClick, RefreshCw, Users, X as XIcon } from 'lucide-react';
+import { Activity, BarChart3, Clock, Eye, Globe2, Home, MousePointerClick, RefreshCw, Rocket, ScrollText, Users, X as XIcon } from 'lucide-react';
+import { LANDING_SECTIONS } from '../analytics';
 import { num } from '../api';
 import { ErrorText, Skeleton } from '../ui';
 
@@ -28,6 +29,9 @@ export type PageView = {
   dur?: number;
   scroll?: number;
 };
+
+/** Something a visitor did during a page view (see src/analytics.ts). */
+export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup'; name: string; ts: string };
 
 type Range = 'today' | '7d' | '30d' | '90d' | 'custom';
 type Dim = 'path' | 'source' | 'country' | 'device' | 'browser' | 'os';
@@ -286,11 +290,157 @@ function group(list: PageView[], key: (v: PageView) => string, label: (k: string
 const pageLabel = (path: string) =>
   path === '/w/…' ? 'Customer wallet' : path === '/c/…' ? 'Bill QR claim' : path === '/reset/…' ? 'Password reset' : path.startsWith('/join/') ? 'Join a shop' : '';
 
-export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[] }> }) {
+/** Buttons that lead to the sign-up form. */
+const isSignupButton = (name: string) => /start free|create your shop/i.test(name);
+
+/**
+ * Homepage: which buttons visitors click, how far down they read, and which clicks end in a sign-up in the same visit
+ * (one browser tab). Counts only homepage views that recorded events, so visits from before this tracking existed
+ * don't drag the percentages down.
+ */
+function HomepageInsights({ views, allViews, events }: { views: PageView[]; allViews: PageView[]; events: PageEvent[] }) {
+  const data = useMemo(() => {
+    const byView = new Map<string, PageEvent[]>();
+    for (const e of events) byView.set(e.view, [...(byView.get(e.view) ?? []), e]);
+    const sessionOf = new Map(allViews.map((v) => [v.id, v.sid || v.id]));
+    const signedUp = new Set(events.filter((e) => e.kind === 'signup').map((e) => sessionOf.get(e.view)).filter(Boolean));
+
+    const home = views.filter((v) => v.path === '/' && byView.has(v.id));
+    const sessions = new Set(home.map((v) => v.sid || v.id));
+    const clicks = new Map<string, Set<string>>();
+    const reached = new Map<string, number>();
+    for (const v of home) {
+      for (const e of byView.get(v.id)!) {
+        if (e.kind === 'click') clicks.set(e.name, (clicks.get(e.name) ?? new Set()).add(v.sid || v.id));
+        if (e.kind === 'section') reached.set(e.name, (reached.get(e.name) ?? 0) + 1);
+      }
+    }
+    const clickedSignup = new Set([...clicks].filter(([name]) => isSignupButton(name)).flatMap(([, s]) => [...s]));
+    const buttons = [...clicks]
+      .map(([name, s]) => {
+        const [where, label] = name.includes(': ') ? [name.slice(0, name.indexOf(': ')), name.slice(name.indexOf(': ') + 2)] : ['', name];
+        return { name, where, label, visits: s.size, signups: [...s].filter((x) => signedUp.has(x)).length };
+      })
+      .sort((a, b) => b.visits - a.visits || b.signups - a.signups);
+    const known = new Set(LANDING_SECTIONS.map(([k]) => k));
+    const sections = [...LANDING_SECTIONS, ...[...reached.keys()].filter((k) => !known.has(k)).map((k): [string, string] => [k, k])].map(([key, label]) => ({
+      key,
+      label,
+      share: home.length ? (reached.get(key) ?? 0) / home.length : 0,
+    }));
+    return {
+      views: home.length,
+      visits: sessions.size,
+      clickedSignup: clickedSignup.size,
+      signups: [...sessions].filter((x) => signedUp.has(x)).length,
+      pricing: home.length ? (reached.get('pricing') ?? 0) / home.length : 0,
+      buttons,
+      sections,
+    };
+  }, [views, allViews, events]);
+
+  const share = (n: number) => (data.visits ? pct(n / data.visits) : '—');
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <Home size={18} /> Homepage: what visitors do
+        </h2>
+        <span className="muted small">{num(data.visits)} visits with tracking</span>
+      </div>
+      {!data.views ? (
+        <p className="muted small">No homepage visits with click tracking in this range yet. Clicks and scrolling are recorded from now on.</p>
+      ) : (
+        <>
+          <div className="stats home-stats">
+            {[
+              { icon: Home, label: 'Homepage visits', value: num(data.visits), sub: `${num(data.views)} page views` },
+              { icon: MousePointerClick, label: 'Clicked sign-up', value: share(data.clickedSignup), sub: `${num(data.clickedSignup)} ${data.clickedSignup === 1 ? 'visit' : 'visits'} clicked Start free` },
+              { icon: Rocket, label: 'Signed up', value: share(data.signups), sub: `${num(data.signups)} ${data.signups === 1 ? 'shop' : 'shops'}, in the same visit` },
+              { icon: ScrollText, label: 'Read to pricing', value: pct(data.pricing), sub: 'of homepage views' },
+            ].map(({ icon: Icon, label, value, sub }) => (
+              <div className="stat" key={label}>
+                <span className="stat-label">
+                  <Icon size={16} /> {label}
+                </span>
+                <strong>{value}</strong>
+                <em>{sub}</em>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid-2 visits-grid">
+            <div className="home-block">
+              <h3>Buttons clicked</h3>
+              <div className="table-wrap">
+                <table className="admin-table visits-table">
+                  <thead>
+                    <tr>
+                      <th>Button</th>
+                      <th className="num">Visits</th>
+                      <th className="num">Signed up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.buttons.map((b) => (
+                      <tr key={b.name}>
+                        <td className="home-button">
+                          <strong>{b.label}</strong>
+                          {b.where && <span className="muted small">{b.where}</span>}
+                        </td>
+                        <td className="num">
+                          {num(b.visits)} <span className="muted small">{share(b.visits)}</span>
+                        </td>
+                        <td className="num">{b.signups ? num(b.signups) : <span className="muted">—</span>}</td>
+                      </tr>
+                    ))}
+                    {!data.buttons.length && (
+                      <tr>
+                        <td colSpan={3} className="muted">
+                          No clicks yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="home-block">
+              <h3>How far down they read</h3>
+              <ul className="reach">
+                {data.sections.map((sec, i) => {
+                  const drop = i ? data.sections[i - 1].share - sec.share : 0;
+                  return (
+                    <li key={sec.key}>
+                      <span className="reach-label">{sec.label}</span>
+                      <span className="reach-track">
+                        <span className="reach-bar" style={{ width: `${sec.share * 100}%` }} />
+                      </span>
+                      <span className="reach-num">
+                        {pct(sec.share)}
+                        {drop >= 0.1 && <em> −{pct(drop)}</em>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="muted small">Share of homepage views that scrolled to each part. A big drop shows where people lose interest.</p>
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[]; events: PageEvent[] }> }) {
   const [range, setRange] = useStored<Range>('lp_admin_visits_range', '7d');
   const [custom, setCustom] = useStored('lp_admin_visits_custom', { from: addDays(localToday(), -29), to: localToday() });
   const [filters, setFilters] = useState<Partial<Record<Dim, string>>>({});
   const [views, setViews] = useState<PageView[] | null>(null);
+  const [events, setEvents] = useState<PageEvent[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tech, setTech] = useState<'device' | 'browser' | 'os'>('device');
@@ -311,6 +461,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
     fetchViews(addDays(from, -1), addDays(to, 1))
       .then((d) => {
         setViews(d.views);
+        setEvents(d.events);
         setError('');
       })
       .catch((err) => setError((err as Error).message))
@@ -515,6 +666,8 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
           onPick={pick(tech)}
         />
       </div>
+
+      {views && <HomepageInsights views={filtered} allViews={views} events={events} />}
 
       <section className="card">
         <div className="card-head">

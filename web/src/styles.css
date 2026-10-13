@@ -2979,3 +2979,81 @@ circle.trend-views {
 .visits-table td:first-child {
   display: table-cell;
 }
+
+/* Visits → homepage: what visitors do */
+
+.home-stats {
+  margin: 4px 0 18px;
+}
+
+.home-stats .stat {
+  box-shadow: none;
+}
+
+.home-block {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-block h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.visits-table td.home-button {
+  display: grid;
+  gap: 1px;
+  white-space: normal;
+}
+
+.reach {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reach li {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr) 5.5rem;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.reach-label {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reach-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.reach-bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand-fill);
+}
+
+.reach-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.reach-num em {
+  color: var(--bad);
+  font-size: 12px;
+  font-style: normal;
+}

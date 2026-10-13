@@ -33,7 +33,7 @@ import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { SeoPage } from './AdminSeo';
-import { VisitsPage, type PageView } from './Visits';
+import { VisitsPage, type PageEvent, type PageView } from './Visits';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
 // Uses its own login (admin accounts are created on the server: npm run create-admin -w server -- <email>).
@@ -1083,7 +1083,7 @@ function LogPage() {
 
 // ---------------------------------------------------------------- visits
 
-const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[] }>(`analytics?from=${from}&to=${to}`);
+const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; events: PageEvent[] }>(`analytics?from=${from}&to=${to}`);
 
 // ---------------------------------------------------------------- shell
 

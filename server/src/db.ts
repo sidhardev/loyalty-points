@@ -269,6 +269,20 @@ const MIGRATIONS: string[] = [
     description = replace(description, 'Habiturn', 'Regularhood')
   WHERE content LIKE '%Habiturn%' OR title LIKE '%Habiturn%' OR description LIKE '%Habiturn%';
   `,
+
+  // 11: what visitors do on a page — buttons clicked, homepage sections they scrolled to, and sign-ups — tied to the
+  // page view they happened on. Each (view, kind, name) is kept once.
+  `
+  CREATE TABLE page_events (
+    view_id TEXT NOT NULL,
+    kind TEXT NOT NULL, -- click | section | signup
+    name TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    day TEXT NOT NULL,
+    PRIMARY KEY (view_id, kind, name)
+  );
+  CREATE INDEX idx_page_events_day ON page_events (day);
+  `,
 ];
 
 const INDEXES = `

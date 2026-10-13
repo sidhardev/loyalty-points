@@ -2,7 +2,8 @@
 // Sends one "view" when a page opens and a "leave" with the time the page was actually visible and
 // how far it was scrolled. The visitor id is random and changes every day; the session id lives
 // only as long as the browser tab. Visits from a browser that has opened /admin are not counted.
-// The superadmin sees the numbers under Admin → Visits.
+// Also records what visitors do: clicks on elements marked data-track="<name>", homepage sections (data-section)
+// they scroll to, and sign-ups. The superadmin sees the numbers under Admin → Visits.
 
 const IGNORE_KEY = 'lp_sa_ignore';
 
@@ -32,6 +33,55 @@ function send(body: object) {
   }
 }
 
+/** Homepage sections in page order, as marked with data-section in Landing.tsx; Admin → Visits shows how far people read. */
+export const LANDING_SECTIONS: [string, string][] = [
+  ['hero', 'Top of the page'],
+  ['why', 'Why regulars matter'],
+  ['how', 'How it works'],
+  ['app', 'The app'],
+  ['counter', 'At the counter'],
+  ['customers', 'Customer card'],
+  ['proof', 'Dashboard'],
+  ['trust', 'Trust and data'],
+  ['pricing', 'Pricing'],
+  ['faq', 'FAQ'],
+  ['final', 'Last call to sign up'],
+  ['footer', 'Footer'],
+];
+
+/** The page view being recorded in this tab, if any (none when this browser is excluded). */
+let viewId: string | null = null;
+
+/** Records something the visitor did during this page view. Each name counts once per view. */
+export function trackEvent(kind: 'click' | 'section' | 'signup', name: string) {
+  if (viewId) send({ t: 'event', id: viewId, kind, name: name.slice(0, 100) });
+}
+
+/** Records each [data-section] element once the visitor scrolls to it. Returns a cleanup function. */
+export function watchSections(root: ParentNode = document) {
+  if (!viewId || !('IntersectionObserver' in window)) return () => {};
+  const seen = new Set<string>();
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const name = (e.target as HTMLElement).dataset.section;
+        // Seen: most of it is on screen, or it fills a good part of the screen (tall sections never fit whole).
+        if (!name || seen.has(name) || !(e.intersectionRatio >= 0.6 || e.intersectionRect.height >= innerHeight * 0.4)) continue;
+        seen.add(name);
+        io.unobserve(e.target);
+        trackEvent('section', name);
+      }
+    },
+    { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] },
+  );
+  // Start a moment after load, so the page view reaches the server before its first section does.
+  const start = setTimeout(() => root.querySelectorAll('[data-section]').forEach((el) => io.observe(el)), 1500);
+  return () => {
+    clearTimeout(start);
+    io.disconnect();
+  };
+}
+
 /** Marks this browser as the site owner's, so its visits are left out of the numbers. */
 export function ignoreThisBrowser() {
   safe(() => localStorage)?.setItem(IGNORE_KEY, '1');
@@ -57,6 +107,7 @@ export function trackPageView() {
   }
 
   const id = randomId();
+  viewId = id;
   const params = new URLSearchParams(location.search);
   const path = maskPath(location.pathname);
   send({
@@ -77,6 +128,17 @@ export function trackPageView() {
     sid,
     ret: returning,
   });
+
+  // Clicks on anything marked data-track (buttons, links); captured before a link navigates away.
+  document.addEventListener(
+    'click',
+    (e) => {
+      const el = (e.target as Element | null)?.closest?.('[data-track]');
+      const name = el?.getAttribute('data-track');
+      if (name) trackEvent('click', name);
+    },
+    { capture: true },
+  );
 
   // Count only time the page is in front of the reader.
   let visibleSince = document.visibilityState === 'visible' ? performance.now() : 0;

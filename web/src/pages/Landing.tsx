@@ -24,6 +24,7 @@ import {
   Ticket,
   TrendingUp,
 } from 'lucide-react';
+import { watchSections } from '../analytics';
 import { getToken } from '../api';
 import { LogoMark } from '../ui';
 import '../landing.css';
@@ -173,23 +174,33 @@ function Nav() {
           Regularhood
         </a>
         <nav className="lp-nav-links" aria-label="Sections">
-          <a href="#how">How it works</a>
-          <a href="#app">The app</a>
-          <a href="#counter">At the counter</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#faq">FAQ</a>
+          <a href="#how" data-track="nav: How it works">
+            How it works
+          </a>
+          <a href="#app" data-track="nav: The app">
+            The app
+          </a>
+          <a href="#counter" data-track="nav: At the counter">
+            At the counter
+          </a>
+          <a href="#pricing" data-track="nav: Pricing">
+            Pricing
+          </a>
+          <a href="#faq" data-track="nav: FAQ">
+            FAQ
+          </a>
         </nav>
         <div className="lp-nav-end">
           {signedIn ? (
-            <a className="lp-btn lp-btn-ink" href="/app">
+            <a className="lp-btn lp-btn-ink" href="/app" data-track="nav: Open your shop">
               Open your shop <ArrowRight size={16} />
             </a>
           ) : (
             <>
-              <a className="lp-login" href="/app">
+              <a className="lp-login" href="/app" data-track="nav: Log in">
                 Log in
               </a>
-              <a className="lp-btn lp-btn-ink" href={SIGNUP}>
+              <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="nav: Start free">
                 Start free
               </a>
             </>
@@ -455,7 +466,13 @@ function ExamplePicker({ className = '' }: { className?: string }) {
       </span>
       <div className="lp-pick-row" role="group" aria-labelledby={`lp-pick-${className || 'hero'}`}>
         {Object.values(EXAMPLES).map((e) => (
-          <button key={e.key} className={e.key === ex.key ? 'on' : ''} aria-pressed={e.key === ex.key} onClick={() => pick(e.key)}>
+          <button
+            key={e.key}
+            className={e.key === ex.key ? 'on' : ''}
+            aria-pressed={e.key === ex.key}
+            onClick={() => pick(e.key)}
+            data-track={`example: ${e.label}`}
+          >
             <e.icon size={15} /> {e.label}
           </button>
         ))}
@@ -513,7 +530,13 @@ function Hero() {
   };
 
   return (
-    <section ref={ref} className={`lp-wrap lp-hero ${started ? 'play' : ''}`} onPointerMove={onMove} onPointerLeave={onLeave}>
+    <section
+      ref={ref}
+      className={`lp-wrap lp-hero ${started ? 'play' : ''}`}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      data-section="hero"
+    >
       <div className="lp-hero-bg" aria-hidden="true">
         <i />
         <i />
@@ -537,10 +560,10 @@ function Hero() {
           haven’t been back. Nothing for them to install.
         </p>
         <div className="lp-cta">
-          <a className="lp-btn lp-btn-ink" href={SIGNUP}>
+          <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="hero: Start free">
             Start free <ArrowRight size={18} />
           </a>
-          <a className="lp-btn lp-btn-line" href="#how">
+          <a className="lp-btn lp-btn-line" href="#how" data-track="hero: See how it works">
             See how it works
           </a>
         </div>
@@ -645,7 +668,7 @@ function Problem() {
   useEffect(() => ref.current?.style.setProperty('--p', String(scrollYProgress.get())), [scrollYProgress]);
   let n = 0;
   return (
-    <section className="lp-section lp-wrap" id="why">
+    <section className="lp-section lp-wrap" id="why" data-section="why">
       <div className="lp-problem lp-reveal">
         <div>
           <p className="lp-kicker">Why it matters</p>
@@ -873,7 +896,7 @@ function StepsStory() {
 function Steps() {
   const wide = useMedia('(min-width: 861px)');
   return (
-    <section className="lp-section lp-wrap" id="how">
+    <section className="lp-section lp-wrap" id="how" data-section="how">
       {wide ? (
         <StepsStory />
       ) : (
@@ -918,7 +941,7 @@ const screens = (ex: Example) => [
 function AppScreens() {
   const { ex } = useExample();
   return (
-    <section className="lp-section lp-screens" id="app">
+    <section className="lp-section lp-screens" id="app" data-section="app">
       <div className="lp-wrap">
         <div className="lp-reveal">
           <p className="lp-kicker">The app</p>
@@ -948,7 +971,7 @@ function AppScreens() {
 
 function Counter() {
   return (
-    <section className="lp-section lp-wrap" id="counter">
+    <section className="lp-section lp-wrap" id="counter" data-section="counter">
       <div className="lp-reveal">
         <p className="lp-kicker">At the counter</p>
         <h2 className="lp-h2">Built for a queue, not a demo.</h2>
@@ -1019,7 +1042,7 @@ function Customer() {
   const { ex } = useExample();
   const [lang, setLang] = useState<'en' | 'hi'>('en');
   return (
-    <section className="lp-section lp-wrap" id="customers">
+    <section className="lp-section lp-wrap" id="customers" data-section="customers">
       <div className="lp-customer">
         <div className="lp-reveal">
           <p className="lp-kicker">For your customers</p>
@@ -1046,10 +1069,16 @@ function Customer() {
         </div>
         <div className="lp-card-demo lp-reveal">
           <div className="lp-lang" role="group" aria-label="Show the card in">
-            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'}>
+            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} data-track="card language: English">
               English
             </button>
-            <button className={lang === 'hi' ? 'on' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi">
+            <button
+              className={lang === 'hi' ? 'on' : ''}
+              onClick={() => setLang('hi')}
+              aria-pressed={lang === 'hi'}
+              lang="hi"
+              data-track="card language: Hindi"
+            >
               हिंदी
             </button>
           </div>
@@ -1085,7 +1114,7 @@ function Proof() {
   const { proof } = ex;
   const [ref, seen] = useInView<HTMLDivElement>(0.5);
   return (
-    <section className="lp-section lp-proof" id="proof">
+    <section className="lp-section lp-proof" id="proof" data-section="proof">
       <div className="lp-wrap lp-proof-grid">
         <div className="lp-reveal">
           <p className="lp-kicker">On your dashboard</p>
@@ -1135,7 +1164,7 @@ function Proof() {
 
 function Trust() {
   return (
-    <section className="lp-section lp-wrap" id="trust">
+    <section className="lp-section lp-wrap" id="trust" data-section="trust">
       <div className="lp-reveal">
         <p className="lp-kicker">Your customers stay yours</p>
         <h2 className="lp-h2">Built so you can trust it with your regulars.</h2>
@@ -1168,7 +1197,7 @@ function Trust() {
 
 function Pricing() {
   return (
-    <section className="lp-section lp-wrap" id="pricing">
+    <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <div className="lp-price">
         <div className="lp-reveal">
           <p className="lp-kicker">Pricing</p>
@@ -1195,7 +1224,7 @@ function Pricing() {
               </li>
             ))}
           </ul>
-          <a className="lp-btn lp-btn-ink" href={SIGNUP}>
+          <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="pricing: Create your shop">
             Create your shop <ArrowRight size={18} />
           </a>
         </div>
@@ -1216,7 +1245,7 @@ export const FAQ = [
 
 function Faq() {
   return (
-    <section className="lp-section lp-wrap" id="faq">
+    <section className="lp-section lp-wrap" id="faq" data-section="faq">
       <div className="lp-faq">
         <div className="lp-reveal">
           <p className="lp-kicker">Questions</p>
@@ -1225,7 +1254,7 @@ function Faq() {
         <div className="lp-faq-list lp-reveal">
           {FAQ.map(([q, a], i) => (
             <details key={q} open={i === 0}>
-              <summary>{q}</summary>
+              <summary data-track={`faq: ${q}`}>{q}</summary>
               <p>{a}</p>
             </details>
           ))}
@@ -1239,6 +1268,7 @@ function Faq() {
 
 export function Landing() {
   useFonts();
+  useEffect(() => watchSections(), []);
 
   return (
     <ExampleProvider>
@@ -1260,19 +1290,19 @@ export function Landing() {
           <Pricing />
           <hr className="lp-tear" />
           <Faq />
-          <section className="lp-final">
+          <section className="lp-final" data-section="final">
             <div className="lp-wrap">
               <div className="lp-reveal">
                 <h2>Your next regular walks in today.</h2>
                 <p>Set up takes two minutes. Your first points can go out with the next bill.</p>
               </div>
-              <a className="lp-btn lp-btn-paper" href={SIGNUP}>
+              <a className="lp-btn lp-btn-paper" href={SIGNUP} data-track="final: Start free">
                 Start free <ArrowRight size={18} />
               </a>
             </div>
           </section>
         </main>
-        <footer className="lp-foot">
+        <footer className="lp-foot" data-section="footer">
           <div className="lp-wrap">
             <a className="lp-logo" href="/" aria-label="Regularhood home">
               <span className="lp-logo-mark" aria-hidden="true">
@@ -1281,11 +1311,21 @@ export function Landing() {
               Regularhood
             </a>
             <nav aria-label="Footer">
-              <a href="#how">How it works</a>
-              <a href="#pricing">Pricing</a>
-              <a href="/for">For your kind of shop</a>
-              <a href="/app">Shop log in</a>
-              <a href="/login">Customer: check your points</a>
+              <a href="#how" data-track="footer: How it works">
+                How it works
+              </a>
+              <a href="#pricing" data-track="footer: Pricing">
+                Pricing
+              </a>
+              <a href="/for" data-track="footer: For your kind of shop">
+                For your kind of shop
+              </a>
+              <a href="/app" data-track="footer: Shop log in">
+                Shop log in
+              </a>
+              <a href="/login" data-track="footer: Customer: check your points">
+                Customer: check your points
+              </a>
             </nav>
             <small>From first visit to “the usual”.</small>
           </div>

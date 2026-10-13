@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, BarChart3, Coins, Gift, MessageCircle } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
+import { trackEvent } from '../analytics';
 import { arrival } from '../attribution';
 import { ErrorText, Logo, useAction } from '../ui';
 
@@ -25,6 +26,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         mode === 'signup' ? { ...form, attribution: arrival() } : { email: form.email, password: form.password },
       );
       setToken(token);
+      if (mode === 'signup') trackEvent('signup', 'shop');
       onAuthed(merchant);
     });
   };

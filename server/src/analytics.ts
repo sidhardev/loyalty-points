@@ -9,6 +9,8 @@ import { Db } from './db';
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|whatsapp|telegram|lighthouse|headless|phantom|puppeteer|playwright|curl|wget|python|axios|node-fetch|go-http/i;
 const ID = /^[a-z0-9-]{8,40}$/i;
 const KEEP_DAYS = 400;
+const EVENT_KINDS = ['click', 'section', 'signup'] as const;
+const EVENTS_PER_VIEW = 60;
 
 export type PageView = {
   id: string;
@@ -32,6 +34,9 @@ export type PageView = {
   dur?: number;
   scroll?: number;
 };
+
+/** Something a visitor did during a page view: clicked a tracked button, reached a homepage section, signed up. */
+export type PageEvent = { view: string; kind: (typeof EVENT_KINDS)[number]; name: string; ts: string };
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : '');
 
@@ -156,9 +161,10 @@ export class AnalyticsStore implements OnModuleDestroy {
     this.pruneTimer.unref();
   }
 
-  /** Page views older than about 13 months are deleted. */
+  /** Page views and their events older than about 13 months are deleted. */
   private prune() {
     this.db.sql.prepare(`DELETE FROM page_views WHERE day < date('now', '-${KEEP_DAYS} days')`).run();
+    this.db.sql.prepare(`DELETE FROM page_events WHERE day < date('now', '-${KEEP_DAYS} days')`).run();
   }
 
   addView(v: PageView) {
@@ -180,6 +186,25 @@ export class AnalyticsStore implements OnModuleDestroy {
          WHERE id = :id AND (dur IS NULL OR dur < :dur) AND ts >= :since`,
       )
       .run({ id, dur, scroll, since: new Date(Date.now() - 86_400_000).toISOString() });
+  }
+
+  /** Events count only for a page view from the last day, each once, and at most EVENTS_PER_VIEW per view. */
+  addEvent(view: string, kind: PageEvent['kind'], name: string) {
+    const now = new Date().toISOString();
+    this.db.sql
+      .prepare(
+        `INSERT OR IGNORE INTO page_events (view_id, kind, name, ts, day)
+         SELECT id, :kind, :name, :now, :day FROM page_views
+         WHERE id = :view AND ts >= :since AND (SELECT COUNT(*) FROM page_events WHERE view_id = :view) < :max`,
+      )
+      .run({ view, kind, name, now, day: now.slice(0, 10), since: new Date(Date.now() - 86_400_000).toISOString(), max: EVENTS_PER_VIEW });
+  }
+
+  /** Events on the UTC days from..to. */
+  events(from: string, to: string): PageEvent[] {
+    return this.db.sql
+      .prepare('SELECT view_id AS view, kind, name, ts FROM page_events WHERE day BETWEEN ? AND ? ORDER BY ts')
+      .all(from, to) as PageEvent[];
   }
 
   /** Every view on the UTC days from..to (YYYY-MM-DD); the dashboard does the counting. */
@@ -232,6 +257,13 @@ export class AnalyticsController {
       const scroll = Math.round(Number(body.scroll));
       if (!(dur >= 0 && dur < 6 * 3600_000)) return;
       this.store.finishView(String(body.id), dur, Math.min(100, Math.max(0, scroll || 0)));
+      return;
+    }
+
+    if (body.t === 'event') {
+      const kind = EVENT_KINDS.find((k) => k === body.kind);
+      const name = clip(body.name, 100).trim();
+      if (kind && name) this.store.addEvent(String(body.id), kind, name);
       return;
     }
 

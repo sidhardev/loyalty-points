@@ -395,7 +395,7 @@ export class AdminController {
     const day = /^\d{4}-\d{2}-\d{2}$/;
     if (!day.test(from) || !day.test(to) || from > to) throw new BadRequestException('Pick a valid date range');
     if (Date.parse(to) - Date.parse(from) > 400 * 86_400_000) throw new BadRequestException('Pick at most 400 days');
-    return { views: this.analytics.views(from, to) };
+    return { views: this.analytics.views(from, to), events: this.analytics.events(from, to) };
   }
 
   private audit(adminId: number, merchantId: number | null, action: string, detail: string) {
