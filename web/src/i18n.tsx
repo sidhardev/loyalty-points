@@ -37,7 +37,7 @@ const HI: Record<string, string> = {
   '{shop} · My points': '{shop} · मेरे पॉइंट्स',
 
   // footer
-  'Rewards by Habiturn': 'Habiturn के इनाम',
+  'Rewards by Regularhood': 'Regularhood के इनाम',
   'Run a shop? Get it free': 'दुकान है? मुफ़्त में पाएँ',
 
   // reward code

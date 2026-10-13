@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Habiturn",
-  "short_name": "Habiturn",
+  "name": "Regularhood",
+  "short_name": "Regularhood",
   "description": "From first visit to “the usual”. Turn walk-ins into regulars.",
   "start_url": "/app",
   "scope": "/",

@@ -1,5 +1,5 @@
 #!/bin/bash
-# First boot of the Habiturn API server (Amazon Linux 2023, arm64): Docker, Compose, and swap for the 1 GB instance.
+# First boot of the Regularhood API server (Amazon Linux 2023, arm64): Docker, Compose, and swap for the 1 GB instance.
 set -euxo pipefail
 
 dnf update -y

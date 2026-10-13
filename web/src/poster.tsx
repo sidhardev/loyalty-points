@@ -279,7 +279,7 @@ export function PosterSvg({ shop, url, pointsPer100, welcomeBonus, theme, hindi 
             POWERED BY
           </text>
           <text x={84} y={60} fontFamily={DISPLAY} fontWeight={900} fontSize={34} fill={onBg}>
-            Habiturn
+            Regularhood
           </text>
         </g>
       </g>

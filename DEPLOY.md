@@ -1,4 +1,4 @@
-# Deploying Habiturn to habiturn.sidhar.me
+# Deploying Regularhood to habiturn.sidhar.me
 
 The app is one Node server (website + API) with its data in one SQLite file. Whatever the host, it needs:
 

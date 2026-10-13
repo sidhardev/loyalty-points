@@ -441,7 +441,7 @@ export function PinInput({ value, onChange, autoFocus }: { value: string; onChan
 
 // ---------------------------------------------------------------- display
 
-/** The Habiturn mark: a shopfront drawn from QR modules — striped awning, finder-square windows, and the member ★ on the door. */
+/** The Regularhood mark: a shopfront drawn from QR modules — striped awning, finder-square windows, and the member ★ on the door. */
 export function LogoMark({ size = 34 }: { size?: number }) {
   // Its own gradient id: with a shared one, a logo inside a hidden part of the page (the sidebar on phones)
   // takes the gradient with it and every other logo loses its green.

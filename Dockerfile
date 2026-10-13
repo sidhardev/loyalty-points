@@ -1,4 +1,4 @@
-# Habiturn: builds the website and API, then runs them as one server on port 4000.
+# Regularhood: builds the website and API, then runs them as one server on port 4000.
 # The database lives in /app/server/data — mount a volume there, or every redeploy starts empty.
 
 FROM node:22.23.1-bookworm-slim AS build

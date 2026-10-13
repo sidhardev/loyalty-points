@@ -38,7 +38,7 @@ type WalletData = {
   redeemCode: RedeemCode | null;
 };
 
-/** Page frame for customer pages, with the language switch on top and a small "made with Habiturn" line below.
+/** Page frame for customer pages, with the language switch on top and a small "made with Regularhood" line below.
  * `via` is the shop's join code, so Admin → Growth can see which shop's customers brought new shops. */
 function PublicPage({ children, via }: { children: ReactNode; via?: string }) {
   return (
@@ -50,7 +50,7 @@ function PublicPage({ children, via }: { children: ReactNode; via?: string }) {
       <a className="made-with" href={trackedLink('card', via, 'referral')} target="_blank" rel="noopener">
         <LogoMark size={22} />
         <span>
-          {t('Rewards by Habiturn')} · <b>{t('Run a shop? Get it free')}</b>
+          {t('Rewards by Regularhood')} · <b>{t('Run a shop? Get it free')}</b>
         </span>
       </a>
     </main>

@@ -190,7 +190,7 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
             <label>
               Your WhatsApp number
               <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
-              <span className="hint">Only for Habiturn support. Customers don't see it.</span>
+              <span className="hint">Only for Regularhood support. Customers don't see it.</span>
             </label>
           </div>
 

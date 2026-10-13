@@ -166,11 +166,11 @@ function Nav() {
   return (
     <header className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
       <div className="lp-wrap">
-        <a className="lp-logo" href="/" aria-label="Habiturn home">
+        <a className="lp-logo" href="/" aria-label="Regularhood home">
           <span className="lp-logo-mark" aria-hidden="true">
             <LogoMark />
           </span>
-          Habiturn
+          Regularhood
         </a>
         <nav className="lp-nav-links" aria-label="Sections">
           <a href="#how">How it works</a>
@@ -533,7 +533,7 @@ function Hero() {
           </em>
         </h1>
         <p className="lp-lede">
-          Habiturn turns walk-ins into regulars. Points on every bill, rewards your customers can see on their phone, and a nudge when they
+          Regularhood turns walk-ins into regulars. Points on every bill, rewards your customers can see on their phone, and a nudge when they
           haven’t been back. Nothing for them to install.
         </p>
         <div className="lp-cta">
@@ -584,8 +584,8 @@ function Hero() {
           <div className="lp-stamp">+{ex.points} POINTS</div>
         </motion.div>
         <motion.div className="lp-standee" style={standee}>
-          <b>Scan to try Habiturn</b>
-          <div className="lp-qr-wrap">{qr ? <img src={qr} alt="QR code that opens Habiturn sign-up on your phone" /> : <FakeQr seed={11} />}</div>
+          <b>Scan to try Regularhood</b>
+          <div className="lp-qr-wrap">{qr ? <img src={qr} alt="QR code that opens Regularhood sign-up on your phone" /> : <FakeQr seed={11} />}</div>
           <span>Opens sign-up on your phone</span>
         </motion.div>
         <motion.div className="lp-walletcard" aria-hidden="true" style={card}>
@@ -665,7 +665,7 @@ function Problem() {
             <span>knows faces, not who hasn’t been in for a month.</span>
           </li>
           <li className="lp-us">
-            <b>Habiturn</b>
+            <b>Regularhood</b>
             <span>remembers every customer for you, and gives them a reason to return.</span>
           </li>
         </ul>
@@ -897,7 +897,7 @@ function Steps() {
 const screens = (ex: Example) => [
   {
     src: `/landing/${ex.key}/dashboard.webp`,
-    alt: `Habiturn dashboard ${ex.place}: today’s visits and sales, and what returning customers spent in 30 days`,
+    alt: `Regularhood dashboard ${ex.place}: today’s visits and sales, and what returning customers spent in 30 days`,
     title: 'Your day at a glance',
     text: 'Today’s visits and sales, and what returning customers spent this month.',
   },
@@ -923,7 +923,7 @@ function AppScreens() {
         <div className="lp-reveal">
           <p className="lp-kicker">The app</p>
           <h2 className="lp-h2">This is what you’ll use. Real screens, not mock-ups.</h2>
-          <p className="lp-sub">Habiturn runs in the browser on your phone and installs to the home screen. Here it is {ex.place}.</p>
+          <p className="lp-sub">Regularhood runs in the browser on your phone and installs to the home screen. Here it is {ex.place}.</p>
           <ExamplePicker className="lp-pick-sm" />
         </div>
         <div className="lp-phones">
@@ -1208,7 +1208,7 @@ function Pricing() {
 export const FAQ = [
   ['Do my customers need to download an app?', 'No. Their card opens from a link in the browser. They can add it to their home screen if they like, but they never have to install anything.'],
   ['What if a customer doesn’t have a smartphone?', 'Type their phone number and the bill amount. They collect points the same way, and you can redeem rewards for them from their page.'],
-  ['What do I need at the counter?', 'Any phone with a camera and internet. Open Habiturn in the browser or install it on your home screen. A printed QR poster helps new customers join on their own.'],
+  ['What do I need at the counter?', 'Any phone with a camera and internet. Open Regularhood in the browser or install it on your home screen. A printed QR poster helps new customers join on their own.'],
   ['Can staff give extra points to friends?', 'You set a limit on how many times one customer can get points in 24 hours, and very large bills ask for a second confirmation. Every undo, adjustment and deletion is recorded in the activity log.'],
   ['What happens if a customer forgets their PIN?', 'If they’ve opened their card on that phone before, it opens without the PIN and they can set a new one. Otherwise, send them their card link from your customer list.'],
   ['Can I get my data out?', 'Yes. Settings → Your data downloads your customers and full points history as spreadsheets that open in Excel or Google Sheets.'],
@@ -1274,11 +1274,11 @@ export function Landing() {
         </main>
         <footer className="lp-foot">
           <div className="lp-wrap">
-            <a className="lp-logo" href="/" aria-label="Habiturn home">
+            <a className="lp-logo" href="/" aria-label="Regularhood home">
               <span className="lp-logo-mark" aria-hidden="true">
                 <LogoMark />
               </span>
-              Habiturn
+              Regularhood
             </a>
             <nav aria-label="Footer">
               <a href="#how">How it works</a>

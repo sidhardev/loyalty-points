@@ -1,4 +1,4 @@
-# Habiturn: the homepage is public; the shop app, admin and customers' personal pages are not for search engines.
+# Regularhood: the homepage is public; the shop app, admin and customers' personal pages are not for search engines.
 User-agent: *
 Allow: /
 Disallow: /api/

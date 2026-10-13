@@ -126,7 +126,7 @@ export function Dashboard({ merchant }: { merchant: Merchant }) {
         </div>
       </header>
 
-      <InstallBanner id="shop" title="Install Habiturn on this phone" text="Opens in one tap from your home screen." />
+      <InstallBanner id="shop" title="Install Regularhood on this phone" text="Opens in one tap from your home screen." />
 
       <section className="hero-cta">
         <div className="hero-cta-top">

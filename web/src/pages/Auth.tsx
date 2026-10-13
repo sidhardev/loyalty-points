@@ -35,10 +35,10 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
     <main className="auth">
       <section className="auth-hero">
         <span className="brand">
-          <Logo /> <span>Habiturn</span>
+          <Logo /> <span>Regularhood</span>
         </span>
         <h1>From first visit to “the usual”.</h1>
-        <p>Habiturn turns walk-ins into regulars — points, rewards and reminders for your shop, with nothing for your customers to install.</p>
+        <p>Regularhood turns walk-ins into regulars — points, rewards and reminders for your shop, with nothing for your customers to install.</p>
         <ul>
           {FEATURES.map(({ icon: Icon, text }) => (
             <li key={text}>
@@ -138,7 +138,7 @@ export function ResetPassword({ token }: { token: string }) {
     <main className="public">
       <form className="card auth-card" onSubmit={submit}>
         <span className="brand">
-          <Logo /> <span>Habiturn</span>
+          <Logo /> <span>Regularhood</span>
         </span>
         {loadError ? (
           <>

@@ -380,7 +380,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
   const entryViews = useMemo(() => [...stats.sessions.values()].map((s) => s.reduce((first, v) => (v.ts < first.ts ? v : first))), [stats.sessions]);
   const titleOf = useMemo(() => new Map(filtered.map((v) => [v.path, v.title])), [filtered]);
 
-  const pages = group(pagesMode === 'entry' ? entryViews : filtered, (v) => v.path, (k) => k, (k) => pageLabel(k) || (titleOf.get(k) ?? '').replace(/\s*[·|—-]\s*Habiturn$/, '')).sort(
+  const pages = group(pagesMode === 'entry' ? entryViews : filtered, (v) => v.path, (k) => k, (k) => pageLabel(k) || (titleOf.get(k) ?? '').replace(/\s*[·|—-]\s*Regularhood$/, '')).sort(
     (a, b) => b.views - a.views,
   );
   const sources = group(entryViews, source, (k) => k, (_k, vs) => (vs[0].utmSource ? 'campaign' : vs[0].ref ? 'referral' : 'typed or bookmarked'));

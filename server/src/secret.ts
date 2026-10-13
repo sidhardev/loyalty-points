@@ -15,6 +15,7 @@ export function jwtSecret() {
 // Secrets kept in the database (e.g. an API key set from the admin panel) are encrypted with a key derived from the
 // server's JWT secret, so a copy of the database or a backup alone doesn't reveal them. If the JWT secret changes,
 // they can no longer be read and have to be entered again.
+// The salt keeps the app's old name on purpose: changing it would make secrets already saved unreadable.
 const sealKey = () => scryptSync(jwtSecret(), 'habiturn-db-secret', 32);
 
 export function seal(plain: string) {

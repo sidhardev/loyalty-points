@@ -29,7 +29,7 @@ writeFileSync(
   dist + 'shell.html',
   shell
     .replace('<meta charset="UTF-8" />', '$&\n    <meta name="robots" content="noindex" />')
-    .replace(/<title>[^<]*<\/title>/, '<title>Habiturn</title>'),
+    .replace(/<title>[^<]*<\/title>/, '<title>Regularhood</title>'),
 );
 
 // The homepage's lazy-loaded code and stylesheet, so it's styled on first paint.
@@ -48,11 +48,11 @@ const description = shell.match(/<meta name="description" content="([^"]*)"/)[1]
 const data = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Habiturn', url: `${SITE}/`, logo: `${SITE}/icon-512.png` },
-    { '@type': 'WebSite', '@id': `${SITE}/#site`, name: 'Habiturn', url: `${SITE}/`, inLanguage: 'en-IN', publisher: { '@id': `${SITE}/#org` } },
+    { '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Regularhood', url: `${SITE}/`, logo: `${SITE}/icon-512.png` },
+    { '@type': 'WebSite', '@id': `${SITE}/#site`, name: 'Regularhood', url: `${SITE}/`, inLanguage: 'en-IN', publisher: { '@id': `${SITE}/#org` } },
     {
       '@type': 'SoftwareApplication',
-      name: 'Habiturn',
+      name: 'Regularhood',
       url: `${SITE}/`,
       image: `${SITE}/og.png`,
       description,

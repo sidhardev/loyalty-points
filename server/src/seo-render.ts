@@ -49,10 +49,10 @@ const T = {
     faq: 'Questions',
     ctaTitle: 'Your next regular walks in today.',
     ctaText: 'Set up takes two minutes on the phone you already have. Free to start.',
-    others: 'Habiturn for other shops',
+    others: 'Regularhood for other shops',
     twin: 'हिंदी में पढ़ें',
     hubTitle: 'Loyalty programs for every kind of shop',
-    hubIntro: 'Habiturn gives points on every bill and brings customers back. Pick a shop like yours to see how it works there.',
+    hubIntro: 'Regularhood gives points on every bill and brings customers back. Pick a shop like yours to see how it works there.',
     hubEmpty: 'Pages for each kind of shop are on their way.',
     notFound: 'This page doesn’t exist (yet).',
     footer: 'From first visit to “the usual”.',
@@ -77,10 +77,10 @@ const T = {
     faq: 'सवाल-जवाब',
     ctaTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
     ctaText: 'आपके अपने फ़ोन पर दो मिनट में सेटअप। शुरू करना मुफ़्त है।',
-    others: 'दूसरी दुकानों के लिए Habiturn',
+    others: 'दूसरी दुकानों के लिए Regularhood',
     twin: 'Read in English',
     hubTitle: 'हर तरह की दुकान के लिए लॉयल्टी प्रोग्राम',
-    hubIntro: 'Habiturn हर बिल पर पॉइंट्स देता है और ग्राहकों को वापस लाता है। अपनी जैसी दुकान चुनें और देखें कि वहाँ यह कैसे काम करता है।',
+    hubIntro: 'Regularhood हर बिल पर पॉइंट्स देता है और ग्राहकों को वापस लाता है। अपनी जैसी दुकान चुनें और देखें कि वहाँ यह कैसे काम करता है।',
     hubEmpty: 'हर तरह की दुकान के पेज जल्द आ रहे हैं।',
     notFound: 'यह पेज मौजूद नहीं है।',
     footer: 'पहली बार से “रोज़ का ग्राहक” तक।',
@@ -167,7 +167,7 @@ function shell(o: { lang: SeoLang; site: string; path: string; title: string; de
 ${o.noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${o.site}${o.path}">`}
 ${alt}
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Habiturn">
+<meta property="og:site_name" content="Regularhood">
 <meta property="og:title" content="${esc(o.title)}">
 <meta property="og:description" content="${esc(o.description)}">
 <meta property="og:url" content="${o.site}${o.path}">
@@ -182,11 +182,11 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 </head>
 <body class="${o.lang}">
 <header><div class="wrap">
-<a class="logo" href="/"><img src="/favicon.svg" alt="" width="32" height="32">Habiturn</a>
+<a class="logo" href="/"><img src="/favicon.svg" alt="" width="32" height="32">Regularhood</a>
 <nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Habiturn · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a></span></div></footer>
 ${BEACON}
 </body>
 </html>`;
@@ -208,13 +208,13 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
         description: c.description,
         url: `${o.site}${here}`,
         inLanguage: lang === 'hi' ? 'hi-IN' : 'en-IN',
-        isPartOf: { '@type': 'WebSite', name: 'Habiturn', url: `${o.site}/` },
+        isPartOf: { '@type': 'WebSite', name: 'Regularhood', url: `${o.site}/` },
         ...(row.generated_at ? { dateModified: `${row.generated_at.replace(' ', 'T')}Z` } : {}),
       },
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Habiturn', item: `${o.site}/` },
+          { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${o.site}/` },
           { '@type': 'ListItem', position: 2, name: t.all, item: `${o.site}${path(lang)}` },
           { '@type': 'ListItem', position: 3, name: row.topic, item: `${o.site}${here}` },
         ],
@@ -309,14 +309,14 @@ export function renderHub(site: string, lang: SeoLang, pages: PageRef[], hasTwin
     return `<a href="${path(lang, p.slug)}"><b>${esc(p.topic)}</b><span>${esc(c?.eyebrow ?? '')}</span></a>`;
   });
   const body = `<main><div class="wrap" style="padding:56px 20px">
-  <p class="eyebrow">Habiturn</p>
+  <p class="eyebrow">Regularhood</p>
   <h1>${t.hubTitle}</h1>
   <p class="intro">${t.hubIntro}</p>
   ${items.length ? `<div class="hub">${items.join('')}</div>` : `<p>${t.hubEmpty}</p>`}
   ${hasTwin ? `<p style="margin-top:28px"><a href="${path(lang === 'en' ? 'hi' : 'en')}">${t.twin}</a></p>` : ''}
 </div></main>`;
   const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: path('en') }, { lang: 'hi', path: path('hi') }] : [{ lang, path: here }];
-  return shell({ lang, site, path: here, title: `${t.hubTitle} · Habiturn`, description: t.hubIntro, alternates, body, noindex: !items.length });
+  return shell({ lang, site, path: here, title: `${t.hubTitle} · Regularhood`, description: t.hubIntro, alternates, body, noindex: !items.length });
 }
 
 export function render404(site: string, lang: SeoLang) {
@@ -325,7 +325,7 @@ export function render404(site: string, lang: SeoLang) {
     lang,
     site,
     path: path(lang),
-    title: `${t.notFound} · Habiturn`,
+    title: `${t.notFound} · Regularhood`,
     description: t.hubIntro,
     noindex: true,
     body: `<main><div class="wrap" style="padding:80px 20px"><h1>${t.notFound}</h1><p class="intro"><a href="${path(lang)}">${t.all} →</a></p></div></main>`,

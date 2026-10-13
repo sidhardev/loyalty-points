@@ -1,5 +1,5 @@
 [Unit]
-Description=Habiturn: deploy new commits from GitHub main
+Description=Regularhood: deploy new commits from GitHub main
 After=network-online.target docker.service
 Wants=network-online.target
 

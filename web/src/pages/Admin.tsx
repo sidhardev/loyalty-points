@@ -145,9 +145,9 @@ const sourceName = (s: string) => SOURCE_NAMES[s] ?? s;
 /** A ready message for a shop that needs a nudge. */
 function nudge(s: Shop) {
   if (s.status === 'sleeping') {
-    return `Hi! This is the Habiturn team. ${s.name} gave ${num(s.bills30)} bills with points last month, and your regulars still have points waiting. Is anything making it hard at the counter? Happy to help on a quick call.`;
+    return `Hi! This is the Regularhood team. ${s.name} gave ${num(s.bills30)} bills with points last month, and your regulars still have points waiting. Is anything making it hard at the counter? Happy to help on a quick call.`;
   }
-  return `Hi! This is the Habiturn team, thanks for signing up ${s.name}. Can we help you give your first points? Print your counter poster from Settings, put it where people pay, and the next customer can join in 10 seconds. Happy to set it up with you on a call.`;
+  return `Hi! This is the Regularhood team, thanks for signing up ${s.name}. Can we help you give your first points? Print your counter poster from Settings, put it where people pay, and the next customer can join in 10 seconds. Happy to set it up with you on a call.`;
 }
 
 /** WhatsApp / call / email buttons for a shop; using one records the contact in the admin log. */
@@ -169,7 +169,7 @@ function ContactButtons({ shop, onDone, compact }: { shop: Shop; onDone: () => v
       )}
       <a
         className={`btn ${size} btn-soft`}
-        href={`mailto:${shop.email}?subject=${encodeURIComponent(`Your Habiturn shop: ${shop.name}`)}&body=${encodeURIComponent(nudge(shop))}`}
+        href={`mailto:${shop.email}?subject=${encodeURIComponent(`Your Regularhood shop: ${shop.name}`)}&body=${encodeURIComponent(nudge(shop))}`}
         onClick={() => record('email')}
       >
         <Mail size={16} /> Email
@@ -211,11 +211,11 @@ function AdminLogin({ onIn }: { onIn: (email: string) => void }) {
     <main className="public">
       <form className="card auth-card" onSubmit={submit}>
         <span className="brand">
-          <Logo /> <span>Habiturn Admin</span>
+          <Logo /> <span>Regularhood Admin</span>
         </span>
         <div>
           <h2 style={{ fontSize: 22 }}>Admin log in</h2>
-          <p className="muted small">For the people who run Habiturn. Shops log in at /app.</p>
+          <p className="muted small">For the people who run Regularhood. Shops log in at /app.</p>
         </div>
         <label>
           Email
@@ -761,7 +761,7 @@ function LinkBuilder() {
         </h2>
       </div>
       <p className="muted small" style={{ margin: 0 }}>
-        Make a separate link for each place you promote Habiturn: a WhatsApp group, a flyer, someone visiting shops. Sign-ups from it are counted
+        Make a separate link for each place you promote Regularhood: a WhatsApp group, a flyer, someone visiting shops. Sign-ups from it are counted
         under its own source above. WhatsApp doesn't tell the website where a click came from, so without a link like this those visits show as
         “direct”.
       </p>
@@ -786,7 +786,7 @@ function LinkBuilder() {
           {qr && (
             <div className="link-qr">
               <img src={qr} alt={`QR code for ${url}`} />
-              <a className="btn btn-soft" href={qr} download={`habiturn-${clean(source)}${clean(campaign) ? `-${clean(campaign)}` : ''}.png`}>
+              <a className="btn btn-soft" href={qr} download={`regularhood-${clean(source)}${clean(campaign) ? `-${clean(campaign)}` : ''}.png`}>
                 <Download size={16} /> Download QR
               </a>
             </div>
@@ -823,7 +823,7 @@ function GrowthPage() {
       <header className="page-head">
         <div>
           <h1>Growth</h1>
-          <p>Where new shops come from, and how many of them start using Habiturn.</p>
+          <p>Where new shops come from, and how many of them start using Regularhood.</p>
         </div>
         <div className="seg">
           {RANGES.map((d) => (
@@ -1105,7 +1105,7 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
     <div className="admin">
       <header className="admin-bar">
         <a href="#/" className="brand">
-          <Logo /> <span>Habiturn Admin</span>
+          <Logo /> <span>Regularhood Admin</span>
         </a>
         <nav>
           {NAV.map(({ path, label, icon: Icon }) => (
@@ -1134,7 +1134,7 @@ export function AdminApp() {
   const hash = useAdminHash();
 
   useEffect(() => {
-    document.title = 'Superadmin · Habiturn';
+    document.title = 'Superadmin · Regularhood';
     if (getAdminToken()) adminApi<{ email: string }>('me').then((me) => setEmail(me.email), () => setEmail(null));
     const out = () => setEmail(null);
     addEventListener(ADMIN_LOGGED_OUT, out);

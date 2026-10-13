@@ -56,7 +56,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 4000;
   await app.listen(port);
-  console.log(`Habiturn running on http://localhost:${port}`);
+  console.log(`Regularhood running on http://localhost:${port}`);
 }
 
 void bootstrap();

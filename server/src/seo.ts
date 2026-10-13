@@ -60,6 +60,8 @@ export const SITE = (process.env.SITE_URL || 'https://habiturn.sidhar.me').repla
 
 export const slugify = (text: string) =>
   text
+    .normalize('NFKD') // "Café" → "Cafe" + accent, and the accent is dropped below
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9]+/g, '-')
@@ -95,7 +97,7 @@ const SCHEMA = S('OBJECT', {
     h1: str('The page headline: a benefit for this kind of shop, at most 70 characters'),
     intro: str('Two or three short sentences under the headline'),
     problems: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'Why customers of this kind of shop drift away'),
-    steps: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'How Habiturn works at this kind of shop, in order'),
+    steps: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'How Regularhood works at this kind of shop, in order'),
     billShopName: str('A made-up, ordinary shop name for the example bill (not a real brand or chain)'),
     billItems: list(S('OBJECT', { properties: { name: str('item, at most 14 characters'), price: S('INTEGER', { description: 'realistic price in rupees' }) }, required: ['name', 'price'] }), 2, 4, 'A typical bill at this kind of shop'),
     rewards: list(S('OBJECT', { properties: { name: str('the reward'), points: S('INTEGER', { description: `points needed, at ${POINTS_PER_100} points per ₹100 spent` }) }, required: ['name', 'points'] }), 3, 4, 'Reward ideas, cheapest first'),
@@ -106,16 +108,16 @@ const SCHEMA = S('OBJECT', {
 });
 
 function prompt(topic: string, lang: SeoLang, notes: string) {
-  return `You write landing pages for Habiturn, a loyalty and rewards app for small neighbourhood shops in India.
+  return `You write landing pages for Regularhood, a loyalty and rewards app for small neighbourhood shops in India.
 Write one page for owners of this kind of shop: "${topic}".${notes ? `\nExtra notes from the editor: ${notes}` : ''}
 
 Language: ${
     lang === 'hi'
-      ? 'Hindi, written in Devanagari script (हिंदी), the way shop owners speak. Every sentence must be in Devanagari: never write Hindi in Latin letters (no "ke liye", no Hinglish). Only brand and tech words may stay in Latin letters: Habiturn, QR, WhatsApp. Write the shop type in Hindi too (for example सैलून, किराना स्टोर, जिम), and use पॉइंट्स, इनाम, लॉयल्टी.'
+      ? 'Hindi, written in Devanagari script (हिंदी), the way shop owners speak. Every sentence must be in Devanagari: never write Hindi in Latin letters (no "ke liye", no Hinglish). Only brand and tech words may stay in Latin letters: Regularhood, QR, WhatsApp. Write the shop type in Hindi too (for example सैलून, किराना स्टोर, जिम), and use पॉइंट्स, इनाम, लॉयल्टी.'
       : 'Simple Indian English. Short sentences.'
   }
 
-What Habiturn does (use only these facts):
+What Regularhood does (use only these facts):
 - The shop gives points on every bill: ${POINTS_PER_100} points per ₹100 by default (the shop can change it).
 - Three ways to give points at the counter: show a bill QR the customer scans with their phone camera, scan the customer's card QR, or type their phone number (works for customers without a smartphone).
 - The customer's card opens from a link in the browser: no app to install. It shows the balance, the next reward in rupees ("₹350 more for a free haircut"), history, and works in English and Hindi.
@@ -131,7 +133,7 @@ Rules:
 - Use the name of this kind of shop and the words loyalty or rewards ${lang === 'hi' ? '(in Hindi: लॉयल्टी, इनाम) ' : ''}naturally in the headline, intro and a few answers, the way an owner would search for it.
 - Friendly and practical, like advice from another shop owner. Never say customers are forced or pressured to come back.
 - Every FAQ question ends with a question mark.
-- No statistics, percentages or research claims, no testimonials, no quotes from people, no competitor names, no prices for Habiturn except "free to start".
+- No statistics, percentages or research claims, no testimonials, no quotes from people, no competitor names, no prices for Regularhood except "free to start".
 - Prices on the example bill and the reward points must be realistic in India today. Reward points must fit ${POINTS_PER_100} points per ₹100.
 - No markdown, no emoji, no exclamation marks in the headline.`;
 }
@@ -147,6 +149,7 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    this.fixSlugs();
     // Checks every 10 minutes whether today's pages are due; one page per check, so a day's few spread out a little.
     this.timer = setInterval(() => void this.tick(), 10 * 60_000);
     this.timer.unref();
@@ -155,6 +158,17 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     clearInterval(this.timer);
+  }
+
+  /** Pages queued before accents were handled got addresses like /for/caf; they move to /for/cafe (unless taken). */
+  private fixSlugs() {
+    const rows = this.db.sql.prepare('SELECT id, slug, lang, topic FROM seo_pages').all() as { id: number; slug: string; lang: string; topic: string }[];
+    const taken = this.db.sql.prepare('SELECT 1 FROM seo_pages WHERE slug = ? AND lang = ?');
+    const move = this.db.sql.prepare('UPDATE seo_pages SET slug = ? WHERE id = ?');
+    for (const r of rows) {
+      const slug = slugify(r.topic);
+      if (slug && slug !== r.slug && !taken.get(slug, r.lang)) move.run(slug, r.id);
+    }
   }
 
   settings(): SeoSettings {

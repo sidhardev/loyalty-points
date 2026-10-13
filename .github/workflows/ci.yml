@@ -33,4 +33,4 @@ jobs:
         run: npm run build -w server
 
       - name: Server image (Docker build)
-        run: docker build --tag habiturn-api:ci .
+        run: docker build --tag regularhood-api:ci .

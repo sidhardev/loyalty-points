@@ -260,6 +260,15 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+
+  // 10: the app is now called Regularhood (it was Habiturn): SEO pages already written keep their text, with the new name.
+  `
+  UPDATE seo_pages SET
+    content = replace(content, 'Habiturn', 'Regularhood'),
+    title = replace(title, 'Habiturn', 'Regularhood'),
+    description = replace(description, 'Habiturn', 'Regularhood')
+  WHERE content LIKE '%Habiturn%' OR title LIKE '%Habiturn%' OR description LIKE '%Habiturn%';
+  `,
 ];
 
 const INDEXES = `
