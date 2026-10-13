@@ -7,8 +7,8 @@ The app is one Node server (website + API) with its data in one SQLite file. Wha
 - `TRUST_PROXY=1` when it runs behind a proxy, so per-visitor limits see real IPs
 
 > **Keep this address forever.** It is printed on shops' QR posters and inside every customer's wallet link.
-> The site moved from `habiturn.sidhar.me` to `regularhood.in`. The old address stays attached to Vercel and
-> redirects every page to the same path on the new one (`vercel.json`), so printed posters and old links keep working.
+> The site moved from `habiturn.sidhar.me` to `www.regularhood.in` (Vercel sends `regularhood.in` to www). The old
+> address stays attached to Vercel and redirects every page to the same path on the new one (`vercel.json`), so printed posters and old links keep working.
 > The API keeps its own host (`api-habiturn.sidhar.me`), which visitors never see.
 
 ---

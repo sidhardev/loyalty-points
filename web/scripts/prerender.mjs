@@ -4,7 +4,7 @@
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const SITE = 'https://regularhood.in';
+const SITE = 'https://www.regularhood.in';
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const ssr = fileURLToPath(new URL('../dist-ssr/', import.meta.url));
 

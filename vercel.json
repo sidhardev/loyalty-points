@@ -8,7 +8,7 @@
     {
       "source": "/:path((?!api/).*)",
       "has": [{ "type": "host", "value": "habiturn.sidhar.me" }],
-      "destination": "https://regularhood.in/:path",
+      "destination": "https://www.regularhood.in/:path",
       "permanent": true
     }
   ],
