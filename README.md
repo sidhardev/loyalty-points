@@ -1,6 +1,8 @@
-# Loyalty Points
+# Regularhood
 
-A simple loyalty program for small shops: give customers points on every bill and let them spend the points on rewards.
+Turn walk-ins into regulars. A simple loyalty program for neighbourhood shops: give customers points on every bill and
+let them spend the points on rewards. Live at [www.regularhood.in](https://www.regularhood.in) (formerly Habiturn,
+at habiturn.sidhar.me, which now redirects there).
 
 - **server/** – NestJS API, data in one SQLite file (`server/data/loyalty.db`, Node's built-in `node:sqlite`)
 - **web/** – React + Vite website
