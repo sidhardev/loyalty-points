@@ -28,7 +28,7 @@ import { getToken } from '../api';
 import { LogoMark } from '../ui';
 import '../landing.css';
 
-// habiturn.sidhar.me — the homepage for shop owners. The shop app itself lives at /app.
+// regularhood.in — the homepage for shop owners. The shop app itself lives at /app.
 // The story is told with an example shop the visitor picks (a salon or a kirana store); see EXAMPLES. Its phone screens are real
 // screenshots of the app with demo data, and figures on the drawn dashboard card are marked as examples.
 // Motion: everything is readable at rest; animations only replay what the product does, and stop for reduced motion.
@@ -773,7 +773,7 @@ function StepArt({ step, play }: { step: number; play: boolean }) {
   return (
     <div className="lp-chat" aria-label="WhatsApp messages to the customer">
       <div className="lp-bubble lp-b1">
-        Hi {ex.customer}! 🎉 You earned {ex.points} points at {ex.shop}. Your balance: {ex.after} points. <a href="#how">habiturn.sidhar.me/w/…</a>
+        Hi {ex.customer}! 🎉 You earned {ex.points} points at {ex.shop}. Your balance: {ex.after} points. <a href="#how">regularhood.in/w/…</a>
         <time>5:43 pm</time>
       </div>
       <div className="lp-chat-gap">{ex.later}</div>

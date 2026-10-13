@@ -56,7 +56,7 @@ const SUGGESTED = [
 ];
 
 const POINTS_PER_100 = 10;
-export const SITE = (process.env.SITE_URL || 'https://habiturn.sidhar.me').replace(/\/$/, '');
+export const SITE = (process.env.SITE_URL || 'https://regularhood.in').replace(/\/$/, '');
 
 export const slugify = (text: string) =>
   text

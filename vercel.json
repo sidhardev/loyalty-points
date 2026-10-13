@@ -4,6 +4,14 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build -w web",
   "outputDirectory": "web/dist",
+  "redirects": [
+    {
+      "source": "/:path((?!api/).*)",
+      "has": [{ "type": "host", "value": "habiturn.sidhar.me" }],
+      "destination": "https://regularhood.in/:path",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://api-habiturn.sidhar.me/api/:path*" },
     { "source": "/sitemap.xml", "destination": "https://api-habiturn.sidhar.me/sitemap.xml" },

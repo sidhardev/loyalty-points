@@ -1,13 +1,15 @@
-# Deploying Regularhood to habiturn.sidhar.me
+# Deploying Regularhood to regularhood.in
 
 The app is one Node server (website + API) with its data in one SQLite file. Whatever the host, it needs:
 
 - a **disk that survives redeploys**, mounted at `/app/server/data` (database, `jwt-secret`, daily backups in `data/backups`)
-- **HTTPS** on `habiturn.sidhar.me` (the camera, install-as-app and wallet links need it)
+- **HTTPS** on `regularhood.in` (the camera, install-as-app and wallet links need it)
 - `TRUST_PROXY=1` when it runs behind a proxy, so per-visitor limits see real IPs
 
 > **Keep this address forever.** It is printed on shops' QR posters and inside every customer's wallet link.
-> If you move to another domain later, keep `habiturn.sidhar.me` running and redirect it.
+> The site moved from `habiturn.sidhar.me` to `regularhood.in`. The old address stays attached to Vercel and
+> redirects every page to the same path on the new one (`vercel.json`), so printed posters and old links keep working.
+> The API keeps its own host (`api-habiturn.sidhar.me`), which visitors never see.
 
 ---
 
@@ -45,7 +47,7 @@ Caddy gets the HTTPS certificate by itself once the DNS record points at the VPS
 docker compose exec app node --no-warnings scripts/create-admin.mjs devsidharr@gmail.com
 ```
 
-Then open `https://habiturn.sidhar.me/admin`.
+Then open `https://regularhood.in/admin`.
 
 **Updating — automatic.** Pushing to `main` is the whole deploy:
 
@@ -86,7 +88,7 @@ scp -r user@your-vps-ip:habiturn/deploy/data/backups ./habiturn-backups
 1. New Project → **Deploy from GitHub repo** → `sidhardev/loyalty-points`. Railway builds the `Dockerfile`.
 2. On the service: **Volumes** → add a volume mounted at **`/app/server/data`**. (Without it every deploy wipes the data.)
 3. **Variables**: `TRUST_PROXY` = `1`, `JWT_SECRET` = a long random string (e.g. from `openssl rand -hex 32`).
-4. **Settings → Networking → Custom Domain** → `habiturn.sidhar.me`. Railway shows a CNAME target.
+4. **Settings → Networking → Custom Domain** → `regularhood.in`. Railway shows a CNAME target.
 5. Namecheap → `sidhar.me` → **Advanced DNS** → **Add New Record**:
 
    | Type | Host | Value | TTL |
@@ -102,7 +104,7 @@ Backups land on the volume in `data/backups`; download them now and then from a 
 
 ## After it's live
 
-- Log in as a shop on `https://habiturn.sidhar.me` and print the counter QR from Settings — it now points at the real address.
+- Log in as a shop on `https://regularhood.in` and print the counter QR from Settings — it now points at the real address.
 - On a phone: open a wallet link and try **Add to home screen**; try **Give points → Scan card** (camera works on HTTPS).
 - The local test data on your computer is not copied — the server starts with an empty database.
 

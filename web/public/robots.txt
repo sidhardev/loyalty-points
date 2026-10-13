@@ -5,4 +5,4 @@ Disallow: /api/
 Disallow: /admin
 Disallow: /reset/
 
-Sitemap: https://habiturn.sidhar.me/sitemap.xml
+Sitemap: https://regularhood.in/sitemap.xml
