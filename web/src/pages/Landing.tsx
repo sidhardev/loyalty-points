@@ -1283,6 +1283,7 @@ export function Landing() {
             <nav aria-label="Footer">
               <a href="#how">How it works</a>
               <a href="#pricing">Pricing</a>
+              <a href="/for">For your kind of shop</a>
               <a href="/app">Shop log in</a>
               <a href="/login">Customer: check your points</a>
             </nav>

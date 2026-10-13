@@ -105,3 +105,17 @@ Backups land on the volume in `data/backups`; download them now and then from a 
 - Log in as a shop on `https://habiturn.sidhar.me` and print the counter QR from Settings — it now points at the real address.
 - On a phone: open a wallet link and try **Add to home screen**; try **Give points → Scan card** (camera works on HTTPS).
 - The local test data on your computer is not copied — the server starts with an empty database.
+
+## AI-written SEO pages (optional)
+
+Admin → **SEO pages** writes a page for each kind of shop (`/for/gym`, `/hi/for/gym`) with Google Gemini, a few a day,
+and `/sitemap.xml` lists them as they're published. It needs a Gemini API key on the server (never in the website):
+
+```
+echo "GEMINI_API_KEY=your-key-here" >> deploy/.env   # on the server, next to JWT_SECRET
+cd deploy && docker compose up -d                  # restart so the app sees it
+```
+
+Then open `/admin#/seo`, press **Add 30 suggested** (or type your own kinds of shops), and set pages per day, the
+start time and the monthly budget. Costs are tracked per call; writing stops for the month when the budget is reached.
+On Vercel, `/for/*`, `/hi/for/*` and `/sitemap.xml` are forwarded to the server (see `vercel.json`).

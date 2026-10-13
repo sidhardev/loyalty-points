@@ -191,3 +191,57 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* ---- SEO pages */
+
+.seo-published {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.seo-draft {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.seo-queued {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.seo-failed {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.seo-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.seo-table td:first-child {
+  max-width: 420px;
+}
+
+.seo-table td:first-child > span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.key-row {
+  display: flex;
+  gap: 10px;
+}
+
+.key-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+
+@media (max-width: 560px) {
+  .key-row {
+    flex-direction: column;
+  }
+}

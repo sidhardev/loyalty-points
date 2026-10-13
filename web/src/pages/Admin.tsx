@@ -5,6 +5,7 @@ import {
   Check,
   Copy,
   Download,
+  FileText,
   Globe2,
   Link2,
   Mail,
@@ -31,6 +32,7 @@ import { daysAgo, num, rupees, when, whatsapp } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
+import { SeoPage } from './AdminSeo';
 import { VisitsPage, type PageView } from './Visits';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
@@ -1090,6 +1092,7 @@ const NAV = [
   { path: '/shops', label: 'Shops', icon: Store },
   { path: '/growth', label: 'Growth', icon: Rocket },
   { path: '/follow-up', label: 'Follow up', icon: Phone },
+  { path: '/seo', label: 'SEO pages', icon: FileText },
   { path: '/visits', label: 'Visits', icon: Globe2 },
   { path: '/log', label: 'Admin log', icon: ScrollText },
 ];
@@ -1156,6 +1159,8 @@ export function AdminApp() {
     <GrowthPage />
   ) : hash.startsWith('/follow-up') ? (
     <FollowUpPage />
+  ) : hash.startsWith('/seo') ? (
+    <SeoPage api={adminApi} adminToken={getAdminToken} />
   ) : hash.startsWith('/visits') ? (
     <VisitsPage fetchViews={fetchViews} />
   ) : hash.startsWith('/log') ? (

@@ -6,6 +6,11 @@
   "outputDirectory": "web/dist",
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://api-habiturn.sidhar.me/api/:path*" },
+    { "source": "/sitemap.xml", "destination": "https://api-habiturn.sidhar.me/sitemap.xml" },
+    { "source": "/for", "destination": "https://api-habiturn.sidhar.me/for" },
+    { "source": "/for/:path*", "destination": "https://api-habiturn.sidhar.me/for/:path*" },
+    { "source": "/hi/for", "destination": "https://api-habiturn.sidhar.me/hi/for" },
+    { "source": "/hi/for/:path*", "destination": "https://api-habiturn.sidhar.me/hi/for/:path*" },
     { "source": "/(.*)", "destination": "/shell.html" }
   ],
   "headers": [

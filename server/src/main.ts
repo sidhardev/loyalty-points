@@ -4,32 +4,27 @@ import { NestFactory } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { NextFunction, Request, Response } from 'express';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AdminController, AdminGuard } from './admin';
 import { AnalyticsController, AnalyticsStore } from './analytics';
 import { AuthController, AuthGuard } from './auth';
 import { Db } from './db';
+import { Gemini } from './gemini';
 import { LoyaltyController } from './loyalty.controller';
 import { LoyaltyService } from './loyalty.service';
 import { PublicController } from './public.controller';
+import { jwtSecret } from './secret';
+import { SeoAdminController, SeoPublicController, SeoService } from './seo';
 
-/** JWT_SECRET from the environment, or one generated on first run and kept in data/. */
-function jwtSecret() {
-  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
-  const file = 'data/jwt-secret';
-  if (!existsSync(file)) {
-    mkdirSync('data', { recursive: true });
-    writeFileSync(file, randomBytes(32).toString('hex'));
-  }
-  return readFileSync(file, 'utf8');
-}
+// Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
+// on the server the same values come from deploy/.env. Variables already set in the environment win.
+if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore],
+  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore, Gemini, SeoService],
 })
 class AppModule {}
 
@@ -50,6 +45,8 @@ async function bootstrap() {
     const page = existsSync(join(web, 'shell.html')) ? readFileSync(join(web, 'shell.html'), 'utf8') : home;
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+      // Server-rendered SEO pages and the live sitemap (seo.ts).
+      if (/^\/(hi\/)?for(\/|$)/.test(req.path) || req.path === '/sitemap.xml') return next();
       if (req.path === '/') return res.type('html').send(home);
       // A wallet's "Add to Home Screen" should open that wallet, so it gets its own manifest.
       const wallet = req.path.match(/^\/w\/([\w-]+)/)?.[1];

@@ -62,7 +62,7 @@ export class AdminGuard implements CanActivate {
   }
 }
 
-const AdminId = createParamDecorator((_: unknown, ctx: ExecutionContext) => ctx.switchToHttp().getRequest<{ adminId: number }>().adminId);
+export const AdminId = createParamDecorator((_: unknown, ctx: ExecutionContext) => ctx.switchToHttp().getRequest<{ adminId: number }>().adminId);
 
 type ShopRow = {
   id: number;
@@ -321,11 +321,12 @@ export class AdminController {
       return r;
     };
 
-    // A visitor is a browser on a day (ids renew daily); counted under the source of their first homepage view.
+    // A visitor is a browser on a day (ids renew daily); counted under the source of their first view of the homepage or
+    // an SEO page (/for/…).
     const views = sql
       .prepare(
         `SELECT day, vid, utm_source, utm_campaign, ref FROM page_views
-         WHERE path = '/' AND day >= date('now', ?) ORDER BY ts`,
+         WHERE (path = '/' OR path = '/for' OR path LIKE '/for/%' OR path = '/hi/for' OR path LIKE '/hi/for/%') AND day >= date('now', ?) ORDER BY ts`,
       )
       .all(`-${days - 1} days`) as { day: string; vid: string; utm_source: string; utm_campaign: string; ref: string }[];
     const seen = new Set<string>();

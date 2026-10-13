@@ -221,6 +221,45 @@ const MIGRATIONS: string[] = [
   ALTER TABLE merchants ADD COLUMN signup_landing TEXT NOT NULL DEFAULT '';
   ALTER TABLE merchants ADD COLUMN referred_by INTEGER REFERENCES merchants(id);
   `,
+
+  // 9: AI-written SEO pages (/for/<shop type>, /hi/for/<shop type>), a log of every AI call with its tokens and cost,
+  // and admin-editable settings (key → JSON value).
+  `
+  CREATE TABLE seo_pages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL, -- from the English shop type: 'salon', 'mobile-repair-shop'
+    lang TEXT NOT NULL CHECK (lang IN ('en', 'hi')),
+    topic TEXT NOT NULL, -- the shop type as the admin typed it, e.g. 'Salon'
+    notes TEXT NOT NULL DEFAULT '', -- extra hints for the writer
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'draft', 'published', 'failed')),
+    content TEXT, -- JSON written by the model
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    error TEXT,
+    cost_usd REAL NOT NULL DEFAULT 0, -- all generations of this page
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    generated_at TEXT,
+    published_at TEXT,
+    UNIQUE (slug, lang)
+  );
+  CREATE TABLE ai_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts TEXT NOT NULL DEFAULT (datetime('now')),
+    purpose TEXT NOT NULL,
+    ref_id INTEGER, -- e.g. the seo_pages row
+    model TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0, -- includes thinking tokens, which are billed as output
+    cost_usd REAL NOT NULL DEFAULT 0,
+    ok INTEGER NOT NULL,
+    error TEXT
+  );
+  CREATE INDEX idx_ai_usage_ts ON ai_usage (ts);
+  CREATE TABLE app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+  `,
 ];
 
 const INDEXES = `
