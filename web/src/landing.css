@@ -205,6 +205,8 @@
 /* ---------------------------------------------------------------- hero */
 
 .lp-hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
   gap: clamp(32px, 4vw, 56px);
@@ -282,6 +284,7 @@
 /* the counter scene */
 .lp-scene {
   position: relative;
+  container-type: inline-size;
   width: 100%;
   max-width: 520px;
   aspect-ratio: 0.96;
@@ -301,7 +304,9 @@
   box-shadow: 0 30px 50px -30px rgba(15, 46, 36, 0.5);
   -webkit-mask: radial-gradient(circle 6px at 50% 100%, transparent 6px, #000 6.5px) bottom / 16px 100% repeat-x;
   mask: radial-gradient(circle 6px at 50% 100%, transparent 6px, #000 6.5px) bottom / 16px 100% repeat-x;
-  animation: lp-print 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation:
+    lp-print 1.1s 0.15s steps(18, end) both,
+    lp-thud 0.4s 1.62s ease-out;
 }
 
 .lp-receipt h4 {
@@ -342,8 +347,20 @@
   border-radius: 6px;
   color: var(--marigold-ink);
   font: 600 1em/1.2 var(--mono);
+  position: relative;
   rotate: -7deg;
-  animation: lp-stamp 0.5s 0.75s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation: lp-stamp 0.55s 1.35s ease-out both;
+}
+
+/* the ink ring the stamp leaves as it hits */
+.lp-stamp::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--marigold);
+  border-radius: 8px;
+  opacity: 0;
+  animation: lp-ink 0.6s 1.62s ease-out both;
 }
 
 .lp-standee {
@@ -393,7 +410,9 @@
   background: var(--ink);
   color: #eaf3ee;
   box-shadow: 0 34px 60px -30px rgba(15, 46, 36, 0.75);
-  animation: lp-rise 0.8s 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation:
+    lp-rise 0.8s 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    lp-receive 0.5s 2.2s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
 .lp-walletcard small {
@@ -432,9 +451,82 @@
   background: var(--marigold);
 }
 
+/* the bill feeds out of the printer top-first, in small jerks */
 @keyframes lp-print {
   from {
-    translate: 0 -18px;
+    clip-path: inset(0 0 100% 0);
+    translate: 0 -24px;
+  }
+  to {
+    clip-path: inset(-40px);
+  }
+}
+
+/* the bill jolts when the stamp comes down */
+@keyframes lp-thud {
+  30% {
+    rotate: -5.6deg;
+    scale: 0.985;
+  }
+  65% {
+    rotate: -3.4deg;
+  }
+}
+
+@keyframes lp-ink {
+  from {
+    opacity: 0.8;
+    scale: 0.95;
+  }
+  to {
+    opacity: 0;
+    scale: 1.45;
+  }
+}
+
+/* coins from the stamp, arcing over to the card */
+.lp-coins i {
+  position: absolute;
+  z-index: 3;
+  left: 15%;
+  top: 60%;
+  width: 4.4cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--marigold) 55%, #c98400);
+  box-shadow: inset 0 0 0 1.5px rgba(138, 90, 0, 0.35), 0 4px 8px -3px rgba(138, 90, 0, 0.6);
+  opacity: 0;
+  animation: lp-coin 0.75s calc(1.62s + var(--i) * 0.07s) cubic-bezier(0.45, 0, 0.55, 1) both;
+}
+
+@keyframes lp-coin {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+    translate: 0 0;
+  }
+  12% {
+    opacity: 1;
+    scale: 1;
+  }
+  45% {
+    translate: calc(16cqw + var(--i) * 1.5cqw) calc(-10cqw - var(--i) * 1cqw);
+  }
+  85% {
+    opacity: 1;
+    scale: 0.9;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.5;
+    translate: 33cqw 19cqw;
+  }
+}
+
+/* the card gives a little as the points land */
+@keyframes lp-receive {
+  40% {
+    scale: 1.045;
   }
 }
 
@@ -445,8 +537,72 @@
 }
 
 @keyframes lp-stamp {
-  from {
-    scale: 1.5;
+  0% {
+    opacity: 0;
+    scale: 2.6;
+  }
+  50% {
+    opacity: 1;
+    scale: 0.9;
+  }
+  75% {
+    scale: 1.05;
+  }
+}
+
+/* soft light behind the hero, drifting slowly so the page is never quite still */
+.lp-hero-bg {
+  position: absolute;
+  inset: -12% -25% -6%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.lp-hero-bg i {
+  position: absolute;
+  border-radius: 50%;
+  animation: lp-drift 22s ease-in-out infinite alternate;
+}
+
+.lp-hero-bg i:nth-child(1) {
+  right: 4%;
+  top: 0;
+  width: 620px;
+  height: 620px;
+  background: radial-gradient(closest-side, rgba(11, 122, 82, 0.16), transparent);
+}
+
+.lp-hero-bg i:nth-child(2) {
+  right: 20%;
+  bottom: 0;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(closest-side, rgba(240, 162, 2, 0.16), transparent);
+  animation-duration: 17s;
+  animation-direction: alternate-reverse;
+}
+
+.lp-hero-bg i:nth-child(3) {
+  left: 12%;
+  top: 30%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(closest-side, rgba(215, 236, 225, 0.9), transparent);
+  animation-duration: 26s;
+}
+
+@keyframes lp-drift {
+  33% {
+    translate: -60px 40px;
+    scale: 1.08;
+  }
+  66% {
+    translate: 40px -30px;
+    scale: 0.95;
+  }
+  100% {
+    translate: 20px 50px;
+    scale: 1.04;
   }
 }
 
@@ -1234,12 +1390,59 @@
   }
 }
 
+/* Reduced motion (Windows "Animation effects" off, iOS "Reduce Motion"): nothing slides, tilts or flies,
+   but things still arrive with a plain fade, steps cross-fade, and scroll-filled pictures still fill. */
 @media (prefers-reduced-motion: reduce) {
   .lp *,
   .lp *::before,
   .lp *::after {
     animation: none !important;
-    transition: none !important;
+    transition-property: opacity, background-color, color, border-color, grid-template-rows !important;
+  }
+
+  .lp .lp-hero-copy > *,
+  .lp .lp-scene > :not(.lp-coins),
+  .lp .lp-stamp,
+  .lp .lp-reveal {
+    animation: lp-fade 0.8s ease both !important;
+  }
+
+  .lp .lp-hero-copy > :nth-child(2) {
+    animation-delay: 0.1s !important;
+  }
+
+  .lp .lp-hero-copy > :nth-child(n + 3),
+  .lp .lp-scene > :nth-child(2) {
+    animation-delay: 0.25s !important;
+  }
+
+  .lp .lp-scene > :nth-child(3) {
+    animation-delay: 0.45s !important;
+  }
+
+  .lp .lp-stamp {
+    animation-delay: 0.8s !important;
+  }
+
+  .lp .lp-d.on::after,
+  .lp .lp-milestones li,
+  .lp .lp-said {
+    scale: 1;
+    translate: none;
+  }
+
+  @supports (animation-timeline: view()) {
+    .lp .lp-reveal {
+      animation: lp-fade linear both !important;
+      animation-timeline: view() !important;
+      animation-range: entry 0% entry 45% !important;
+    }
+  }
+}
+
+@keyframes lp-fade {
+  from {
+    opacity: 0;
   }
 }
 
@@ -1254,17 +1457,42 @@
 
 /* ---------- hero: headline, the bill printing, the stamp, the card filling up */
 
+/* each line of the headline rises out of a mask; a highlighter swipes under "the usual" */
 .lp-h1-line {
   display: inline-block;
-  animation: lp-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  overflow: clip;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+  vertical-align: top;
 }
 
-.lp-h1-line:nth-child(2) {
-  animation-delay: 0.08s;
+.lp-h1-line > span {
+  display: inline-block;
+  animation: lp-mask 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.lp-h1-line:nth-child(3) {
-  animation-delay: 0.16s;
+.lp-h1-line:nth-child(2) > span {
+  animation-delay: 0.1s;
+}
+
+.lp-h1-line:nth-child(3) > span {
+  background: linear-gradient(rgba(240, 162, 2, 0.32), rgba(240, 162, 2, 0.32)) no-repeat 0 86% / 100% 0.24em;
+  animation:
+    lp-mask 0.9s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    lp-highlight 0.7s 1s cubic-bezier(0.6, 0, 0.3, 1) both;
+}
+
+@keyframes lp-mask {
+  from {
+    translate: 0 105%;
+    rotate: 3deg;
+  }
+}
+
+@keyframes lp-highlight {
+  from {
+    background-size: 0% 0.24em;
+  }
 }
 
 .lp-hero-copy .lp-lede,
@@ -1304,7 +1532,7 @@
 
 .lp-walletcard .lp-meter i,
 .lp-step-art.play .lp-meter i {
-  animation: lp-fill 1.1s 1.6s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+  animation: lp-fill 1.1s 2.3s cubic-bezier(0.3, 0.8, 0.3, 1) both;
 }
 
 .lp-step-art.play .lp-meter i {
@@ -1505,16 +1733,19 @@
   font-size: 15.5px;
 }
 
-.lp-habit.play .lp-milestones li {
-  animation: lp-up 0.5s both;
+/* Each milestone shows as the scroll reaches its third of the card (--p comes from the page script; 1 at rest). */
+.lp-milestones li {
+  --t: clamp(0, (var(--p, 1) * 3 - var(--k, 0)) * 1.6, 1);
+  opacity: calc(0.2 + 0.8 * var(--t));
+  translate: 0 calc((1 - var(--t)) * 14px);
 }
 
-.lp-habit.play .lp-milestones li:nth-child(2) {
-  animation-delay: 0.7s;
+.lp-milestones li:nth-child(2) {
+  --k: 1;
 }
 
-.lp-habit.play .lp-milestones li:nth-child(3) {
-  animation-delay: 1.4s;
+.lp-milestones li:nth-child(3) {
+  --k: 2;
 }
 
 @media (max-width: 860px) {
@@ -1535,33 +1766,32 @@
   background: var(--paper-2);
 }
 
-.lp-d.on {
+.lp-d {
+  position: relative;
+}
+
+/* a visit fills in once the scroll gets to it */
+.lp-d.on::after {
+  --t: clamp(0, var(--p, 1) * (var(--n, 36) + 4) - var(--i), 1);
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   background: var(--green);
+  opacity: var(--t);
+  scale: calc(0.2 + 0.8 * var(--t));
 }
 
 .lp-d.first {
   box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5px var(--marigold);
 }
 
-.lp-d.today {
+.lp-d.today::after {
   background: var(--ink);
 }
 
-.lp-habit.play .lp-d.on {
-  animation: lp-dot 0.45s calc(var(--i) * 45ms) cubic-bezier(0.3, 1.5, 0.5, 1) both;
-}
-
-.lp-habit.play .lp-d.today {
-  animation:
-    lp-dot 0.45s calc(var(--i) * 45ms) cubic-bezier(0.3, 1.5, 0.5, 1) both,
-    lp-beat 2.4s 3s ease-in-out infinite;
-}
-
-@keyframes lp-dot {
-  from {
-    scale: 0.2;
-    background: var(--paper-2);
-  }
+.lp-d.today {
+  animation: lp-beat 2.4s ease-in-out infinite;
 }
 
 .lp-habit-foot {
@@ -1584,8 +1814,10 @@
   color: var(--green);
 }
 
-.lp-habit.play .lp-said {
-  animation: lp-up 0.6s 1.9s both;
+.lp-said {
+  --t: clamp(0, (var(--p, 1) - 0.88) * 10, 1);
+  opacity: var(--t);
+  translate: 0 calc((1 - var(--t)) * 10px);
 }
 
 /* ---------- step 3: the chat writes itself */
@@ -1815,6 +2047,163 @@
       translate: 0 48px;
     }
   }
+}
+
+/* ---------- how it works, wide screens: the section pins and one stage walks through the steps */
+
+.lp-story {
+  height: 330vh;
+}
+
+.lp-story-pin {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  height: 100vh;
+  height: 100svh;
+  padding-top: 72px; /* clear of the sticky nav */
+}
+
+.lp-story-side .lp-h2 {
+  font-size: clamp(32px, min(3.6vw, 6svh), 50px);
+}
+
+.lp-story-steps {
+  position: relative;
+  display: grid;
+  margin: 40px 0 0;
+  padding: 0 0 0 28px;
+  list-style: none;
+}
+
+/* the rail on the left, filling as you scroll */
+.lp-story-steps::before,
+.lp-story-rail {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.lp-story-rail {
+  z-index: 1;
+  background: var(--green);
+  transform-origin: top;
+}
+
+.lp-story-steps li {
+  padding: 14px 0;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+.lp-story-steps li.on,
+.lp-story-steps li:hover {
+  opacity: 1;
+}
+
+.lp-story-steps b {
+  font: 600 12px/1 var(--mono);
+  letter-spacing: 0.1em;
+  color: var(--green);
+}
+
+.lp-story-steps h3 {
+  margin: 8px 0 0;
+  font: 800 clamp(22px, 2.2vw, 28px)/1.12 var(--display);
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+}
+
+/* the active step opens to show its text */
+.lp-story-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lp-story-more p {
+  overflow: hidden;
+  max-width: 42ch;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.lp-story-steps li.on .lp-story-more {
+  grid-template-rows: 1fr;
+}
+
+.lp-story-steps li.on .lp-story-more p {
+  padding-top: 8px;
+}
+
+.lp-stage {
+  position: relative;
+  display: grid;
+  height: min(78svh, 640px);
+  border-radius: 28px;
+  background: var(--paper-2);
+  overflow: hidden;
+  transition: background 0.6s ease;
+}
+
+.lp-stage[data-step='1'] {
+  background: var(--mint);
+}
+
+.lp-stage[data-step='2'] {
+  background: #dcefd2;
+}
+
+.lp-stage-count {
+  position: absolute;
+  top: 22px;
+  left: 26px;
+  font: 900 64px/1 var(--display);
+  font-stretch: 118%;
+  letter-spacing: -0.03em;
+  color: rgba(15, 46, 36, 0.12);
+}
+
+.lp-stage-count small {
+  font-size: 0.35em;
+  letter-spacing: 0;
+}
+
+.lp-stage .lp-step-art {
+  grid-area: 1 / 1;
+  min-height: 0;
+  background: none;
+  opacity: 0;
+  translate: 0 60px;
+  scale: 0.94;
+  transition:
+    opacity 0.45s ease,
+    translate 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    scale 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lp-stage .lp-step-art.past {
+  translate: 0 -60px;
+}
+
+.lp-stage .lp-step-art.on {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+}
+
+.lp-stage .lp-step-art > * {
+  zoom: 1.3;
 }
 
 /* ---------- narrow screens */

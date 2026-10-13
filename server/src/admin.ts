@@ -22,6 +22,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'node:crypto';
 import type { Request } from 'express';
+import { AnalyticsStore } from './analytics';
 import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
 import { LoyaltyService } from './loyalty.service';
@@ -106,6 +107,7 @@ export class AdminController {
     private readonly db: Db,
     private readonly jwt: JwtService,
     private readonly loyalty: LoyaltyService,
+    private readonly analytics: AnalyticsStore,
   ) {}
 
   @Post('login')
@@ -280,6 +282,16 @@ export class AdminController {
          JOIN admins a ON a.id = l.admin_id ORDER BY l.id DESC LIMIT 300`,
       )
       .all();
+  }
+
+  /** Website page views on the UTC days from..to (YYYY-MM-DD); the dashboard does the counting. */
+  @Get('analytics')
+  @UseGuards(AdminGuard)
+  pageViews(@Query('from') from = '', @Query('to') to = '') {
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (!day.test(from) || !day.test(to) || from > to) throw new BadRequestException('Pick a valid date range');
+    if (Date.parse(to) - Date.parse(from) > 400 * 86_400_000) throw new BadRequestException('Pick at most 400 days');
+    return { views: this.analytics.views(from, to) };
   }
 
   private audit(adminId: number, merchantId: number | null, action: string, detail: string) {

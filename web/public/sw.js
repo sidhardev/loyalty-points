@@ -1,7 +1,7 @@
 // Makes the app installable and quick to open: pages come from the network when online and from the
-// cache when offline; built files (hashed names) are cached for good. The API is never cached.
-const CACHE = 'lp-v1';
-const SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+// cached app page (shell.html) when offline; built files (hashed names) are cached for good. The API is never cached.
+const CACHE = 'lp-v2';
+const SHELL = ['/shell.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -27,14 +27,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Every page is the same app; keep the plain one (wallet pages carry their own manifest link).
-          if (response.ok && url.pathname === '/') {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put('/', copy));
-          }
           return response;
         })
-        .catch(() => caches.match('/')),
+        // Offline: the empty app page, which opens whichever screen the address asks for.
+        .catch(() => caches.match('/shell.html')),
     );
     return;
   }

@@ -180,6 +180,35 @@ const MIGRATIONS: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+
+  // 7: website visits — the site's own privacy-friendly tracker (no cookies, no IP addresses). One row per page view;
+  // vid is a random id the browser renews daily, sid lasts one tab. dur/scroll arrive when the page is left.
+  `
+  CREATE TABLE page_views (
+    id TEXT PRIMARY KEY,
+    ts TEXT NOT NULL, -- ISO time the page opened (UTC)
+    day TEXT NOT NULL, -- YYYY-MM-DD (UTC)
+    path TEXT NOT NULL,
+    title TEXT NOT NULL,
+    ref TEXT NOT NULL, -- referrer host, '' = direct
+    ref_url TEXT NOT NULL,
+    utm_source TEXT NOT NULL,
+    utm_medium TEXT NOT NULL,
+    utm_campaign TEXT NOT NULL,
+    country TEXT NOT NULL,
+    tz TEXT NOT NULL,
+    lang TEXT NOT NULL,
+    device TEXT NOT NULL,
+    browser TEXT NOT NULL,
+    os TEXT NOT NULL,
+    vid TEXT NOT NULL,
+    sid TEXT NOT NULL,
+    ret INTEGER NOT NULL,
+    dur INTEGER, -- ms the page was visible
+    scroll INTEGER -- deepest scroll, %
+  );
+  CREATE INDEX idx_page_views_day ON page_views (day);
+  `,
 ];
 
 const INDEXES = `

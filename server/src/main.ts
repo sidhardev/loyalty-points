@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { AdminController, AdminGuard } from './admin';
+import { AnalyticsController, AnalyticsStore } from './analytics';
 import { AuthController, AuthGuard } from './auth';
 import { Db } from './db';
 import { LoyaltyController } from './loyalty.controller';
@@ -27,8 +28,8 @@ function jwtSecret() {
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController, AdminController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService],
+  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore],
 })
 class AppModule {}
 
@@ -44,9 +45,12 @@ async function bootstrap() {
   const web = join(__dirname, '..', '..', 'web', 'dist');
   if (existsSync(web)) {
     app.useStaticAssets(web, { index: false });
-    const page = readFileSync(join(web, 'index.html'), 'utf8');
+    // The homepage is prerendered (index.html); every other page starts from the empty app page (shell.html).
+    const home = readFileSync(join(web, 'index.html'), 'utf8');
+    const page = existsSync(join(web, 'shell.html')) ? readFileSync(join(web, 'shell.html'), 'utf8') : home;
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+      if (req.path === '/') return res.type('html').send(home);
       // A wallet's "Add to Home Screen" should open that wallet, so it gets its own manifest.
       const wallet = req.path.match(/^\/w\/([\w-]+)/)?.[1];
       res.type('html').send(wallet ? page.replace('/manifest.webmanifest', `/api/public/wallet/${wallet}/manifest`) : page);

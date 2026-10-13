@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from 'react';
 import QRCode from 'qrcode';
+import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import {
   ArrowRight,
   Check,
@@ -24,6 +25,7 @@ import '../landing.css';
 // habiturn.sidhar.me — the homepage for shop owners. The shop app itself lives at /app.
 // The phone screens are real screenshots of the app (a demo tea stall); figures on the drawn dashboard card are marked as examples.
 // Motion: everything is readable at rest; animations only replay what the product does, and stop for reduced motion.
+// CSS plays the one-off moments; Motion (springs, scroll progress) drives anything that follows the pointer or the scroll.
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Martian+Mono:wght@400;600&display=swap';
 const SIGNUP = '/app#signup';
@@ -60,6 +62,20 @@ function useInView<T extends Element>(threshold = 0.35) {
   return [ref, seen] as const;
 }
 
+/** True while the media query matches. The prerendered page (see scripts/prerender.mjs) is the narrow layout, so it
+ * starts false while hydrating and switches right after. */
+function useMedia(query: string) {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = matchMedia(query);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => matchMedia(query).matches,
+    () => false,
+  );
+}
+
 /** A number that counts from `from` to `to` once `run` turns true. Shows the final value at rest. */
 function CountUp({ from = 0, to, run, delay = 0, ms = 1100, format = (n: number) => n.toLocaleString('en-IN') }: {
   from?: number;
@@ -90,22 +106,6 @@ function CountUp({ from = 0, to, run, delay = 0, ms = 1100, format = (n: number)
     };
   }, [run, from, to, delay, ms]);
   return <span className="lp-num">{format(value)}</span>;
-}
-
-/** Wrapper that adds `.play` when it scrolls into view, so CSS can replay its animation. */
-function Play({ as: Tag = 'div', className = '', children, threshold, style }: {
-  as?: 'div' | 'section' | 'article';
-  className?: string;
-  children: ReactNode;
-  threshold?: number;
-  style?: CSSProperties;
-}) {
-  const [ref, seen] = useInView<HTMLDivElement>(threshold);
-  return (
-    <Tag ref={ref} className={`${className} ${seen ? 'play' : ''}`} style={style}>
-      {children}
-    </Tag>
-  );
 }
 
 /** A drawn QR-like pattern for the illustrations — deliberately not scannable. */
@@ -146,7 +146,9 @@ function FakeQr({ seed }: { seed: number }) {
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const signedIn = Boolean(getToken());
+  // Read after hydrating: the prerendered page is the signed-out one.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => setSignedIn(Boolean(getToken())), []);
   useEffect(() => {
     const onScroll = () => setScrolled(scrollY > 8);
     onScroll();
@@ -199,22 +201,66 @@ const BILL = [
   ['Cold coffee', 300],
 ] as const;
 
+/** Offset of one piece of the hero scene: follows the pointer by `k` px and drifts by `drift` px as the hero scrolls away. */
+function useDepth(px: MotionValue<number>, py: MotionValue<number>, scroll: MotionValue<number>, k: number, drift: number) {
+  const x = useTransform(px, (v) => v * k);
+  const y = useTransform(() => py.get() * k + scroll.get() * drift);
+  return { x, y };
+}
+
 function Hero() {
   const [qr, setQr] = useState('');
   const [started, setStarted] = useState(false);
+  const still = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     QRCode.toDataURL(`${location.origin}${SIGNUP}`, { width: 360, margin: 1, color: { dark: '#0f2e24' } }).then(setQr);
     const t = setTimeout(() => setStarted(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  // Pointer position over the hero, -0.5 … 0.5 from the centre, eased by a spring.
+  const spring = { stiffness: 110, damping: 18, mass: 0.7 };
+  const px = useSpring(useMotionValue(0), spring);
+  const py = useSpring(useMotionValue(0), spring);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const scroll = useTransform(scrollYProgress, (v) => (still ? 0 : v));
+  const rotateY = useTransform(px, (v) => v * 14);
+  const rotateX = useTransform(() => py.get() * -10 + scroll.get() * 8);
+  const receipt = useDepth(px, py, scroll, -22, 70);
+  const standee = useDepth(px, py, scroll, 14, -30);
+  const card = useDepth(px, py, scroll, 30, -110);
+
+  const onMove = (e: PointerEvent<HTMLElement>) => {
+    if (still || e.pointerType !== 'mouse') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    px.set((e.clientX - r.left) / r.width - 0.5);
+    py.set((e.clientY - r.top) / r.height - 0.5);
+  };
+  const onLeave = () => {
+    px.set(0);
+    py.set(0);
+  };
+
   return (
-    <section className={`lp-wrap lp-hero ${started ? 'play' : ''}`}>
+    <section ref={ref} className={`lp-wrap lp-hero ${started ? 'play' : ''}`} onPointerMove={onMove} onPointerLeave={onLeave}>
+      <div className="lp-hero-bg" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
       <div className="lp-hero-copy">
         <p className="lp-eyebrow">Loyalty for neighbourhood shops</p>
         <h1>
-          <span className="lp-h1-line">From first</span> <span className="lp-h1-line">visit to</span>{' '}
-          <em className="lp-h1-line">“the&nbsp;usual”.</em>
+          <span className="lp-h1-line">
+            <span>From first</span>
+          </span>{' '}
+          <span className="lp-h1-line">
+            <span>visit to</span>
+          </span>{' '}
+          <em className="lp-h1-line">
+            <span>“the&nbsp;usual”.</span>
+          </em>
         </h1>
         <p className="lp-lede">
           Habiturn turns walk-ins into regulars. Points on every bill, rewards your customers can see on their phone, and a nudge when they
@@ -241,12 +287,13 @@ function Hero() {
         </ul>
       </div>
 
-      <div
+      <motion.div
         className="lp-scene"
         role="img"
         aria-label="A ₹450 bill stamped with 45 points, the counter QR standee, and the customer's points card showing 165 points"
+        style={{ rotateX, rotateY, transformPerspective: 1100 }}
       >
-        <div className="lp-receipt" aria-hidden="true">
+        <motion.div className="lp-receipt" aria-hidden="true" style={receipt}>
           <h4>CHAI POINT</h4>
           <div className="lp-c">MG Road · 12 Oct, 5:42 pm</div>
           <hr />
@@ -264,16 +311,16 @@ function Hero() {
             </span>
           </div>
           <div className="lp-stamp">+45 POINTS</div>
-        </div>
-        <div className="lp-standee">
+        </motion.div>
+        <motion.div className="lp-standee" style={standee}>
           <b>Scan to try Habiturn</b>
           <div className="lp-qr-wrap">{qr ? <img src={qr} alt="QR code that opens Habiturn sign-up on your phone" /> : <FakeQr seed={11} />}</div>
           <span>Opens sign-up on your phone</span>
-        </div>
-        <div className="lp-walletcard" aria-hidden="true">
+        </motion.div>
+        <motion.div className="lp-walletcard" aria-hidden="true" style={card}>
           <small>Chai Point · Ravi</small>
           <strong>
-            <CountUp from={120} to={165} run={started} delay={1500} ms={900} />
+            <CountUp from={120} to={165} run={started} delay={2250} ms={800} />
           </strong>
           <p>
             Shop for ₹350 more → <b>Free cold coffee</b>
@@ -281,8 +328,14 @@ function Hero() {
           <div className="lp-meter">
             <i style={{ width: '82%' }} />
           </div>
+        </motion.div>
+        {/* the stamp's points fly over to the customer's card */}
+        <div className="lp-coins" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => (
+            <i key={i} style={{ '--i': i } as CSSProperties} />
+          ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -311,7 +364,15 @@ function ShopTypes() {
 // Ravi's visits by week, Aug → Oct: one visit at first, almost daily by the end.
 const VISITS = [[2], [], [5], [1, 5], [3], [1, 4, 6], [0, 3, 5], [1, 2, 4, 6], [0, 2, 3, 5], [0, 1, 3, 4, 6], [0, 1, 2, 4, 5, 6], [0, 1, 2, 3, 4, 5]];
 
+const VISIT_COUNT = VISITS.flat().length;
+
 function Problem() {
+  const ref = useRef<HTMLDivElement>(null);
+  // Scroll progress through the card → --p (0 … 1); CSS fills the dots and milestones from it (1 until the script sets it).
+  // It moves only as fast as the visitor scrolls, so it stays on under reduced motion (as fades; see the CSS).
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.7'] });
+  useMotionValueEvent(scrollYProgress, 'change', (v) => ref.current?.style.setProperty('--p', v.toFixed(3)));
+  useEffect(() => ref.current?.style.setProperty('--p', String(scrollYProgress.get())), [scrollYProgress]);
   let n = 0;
   return (
     <section className="lp-section lp-wrap" id="why">
@@ -340,7 +401,7 @@ function Problem() {
         </ul>
       </div>
 
-      <Play className="lp-habit lp-reveal" threshold={0.3}>
+      <div ref={ref} className="lp-habit lp-reveal" style={{ '--n': VISIT_COUNT } as CSSProperties}>
         <div className="lp-habit-head">
           <h3>What a regular looks like</h3>
           <span className="lp-mono">Ravi at Chai Point · each dot is a day · Aug → Oct</span>
@@ -378,7 +439,7 @@ function Problem() {
           </span>
           <span className="lp-said">“The usual, bhaiya.”</span>
         </div>
-      </Play>
+      </div>
     </section>
   );
 }
@@ -400,90 +461,165 @@ function BillTimer({ run }: { run: boolean }) {
   );
 }
 
+const STEPS = [
+  { title: 'Show the bill QR', text: 'Type the bill amount and turn your phone around. The customer scans it with their camera. New customers join right there.' },
+  { title: 'Points land on their phone', text: 'Their card opens from a link: balance, the next reward in rupees, their history, and a QR for next time.' },
+  { title: 'They come back', text: 'A reward to aim for, a birthday treat, and a one-tap WhatsApp message when someone has been away for a month.' },
+];
+
+/** The picture for one step. `play` replays what that step does on screen. */
+function StepArt({ step, play }: { step: number; play: boolean }) {
+  if (step === 0)
+    return (
+      <div className="lp-mini" aria-label="Bill QR screen: ₹450, 45 points, waiting for the customer to scan">
+        <small>Bill QR · Chai Point</small>
+        <span className="lp-big">
+          +<CountUp to={45} run={play} ms={800} />
+        </span>
+        <small>points for ₹450</small>
+        <div className="lp-qr-wrap lp-qr-mini">
+          <FakeQr seed={41} />
+        </div>
+        <span className="lp-wait">
+          <i /> Waiting for scan · <BillTimer run={play} />
+        </span>
+      </div>
+    );
+  if (step === 1)
+    return (
+      <div className="lp-mini" aria-label="Customer's points card: 165 points, ₹350 more to a free cold coffee">
+        <small>Hi Ravi</small>
+        <div className="lp-mini-card">
+          <small>Chai Point · Member</small>
+          <strong>
+            <CountUp from={120} to={165} run={play} delay={200} />
+          </strong>
+          <div className="lp-meter">
+            <i style={{ width: '82%' }} />
+          </div>
+          <p>Shop for ₹350 more → Free cold coffee</p>
+        </div>
+        <span className="lp-mini-btn">My card</span>
+      </div>
+    );
+  return (
+    <div className="lp-chat" aria-label="WhatsApp messages to the customer">
+      <div className="lp-bubble lp-b1">
+        Hi Ravi! 🎉 You earned 45 points at Chai Point. Your balance: 165 points. <a href="#how">habiturn.sidhar.me/w/…</a>
+        <time>5:43 pm</time>
+      </div>
+      <div className="lp-chat-gap">31 days later</div>
+      <div className="lp-typing" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+      <div className="lp-bubble lp-b2">
+        We miss you at Chai Point! You have 165 points waiting — your free cold coffee is close.
+        <time>11:02 am</time>
+      </div>
+    </div>
+  );
+}
+
+function StepsHead() {
+  return (
+    <>
+      <p className="lp-kicker">How it works</p>
+      <h2 className="lp-h2">Three steps, all on the phone you already have.</h2>
+    </>
+  );
+}
+
+/** Narrow screens: the three steps stacked, each playing as it scrolls in. */
+function StepCard({ step }: { step: number }) {
+  const [ref, seen] = useInView<HTMLDivElement>(0.4);
+  return (
+    <article className="lp-step lp-reveal">
+      <div ref={ref} className={`lp-step-art ${seen ? 'play' : ''}`}>
+        <StepArt step={step} play={seen} />
+      </div>
+      <div className="lp-step-text">
+        <b>STEP {step + 1}</b>
+        <h3>{STEPS[step].title}</h3>
+        <p>{STEPS[step].text}</p>
+      </div>
+    </article>
+  );
+}
+
+/** Wide screens: the section pins while you scroll, and one big screen walks through the three steps. */
+function StepsStory() {
+  const track = useRef<HTMLDivElement>(null);
+  const [inView, seen] = useInView<HTMLDivElement>(0.3);
+  const [active, setActive] = useState(0);
+  const { scrollYProgress } = useScroll({ target: track, offset: ['start start', 'end end'] });
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setActive(Math.min(STEPS.length - 1, Math.floor(v * STEPS.length))));
+
+  // Clicking a step scrolls to the middle of its stretch of the track.
+  const goTo = (i: number) => {
+    const el = track.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + scrollY;
+    scrollTo({ top: top + ((i + 0.5) / STEPS.length) * (el.offsetHeight - innerHeight), behavior: 'smooth' });
+  };
+
+  return (
+    <div ref={track} className="lp-story">
+      <div ref={inView} className="lp-story-pin">
+        <div className="lp-story-side">
+          <StepsHead />
+          <ol className="lp-story-steps">
+            <motion.i className="lp-story-rail" style={{ scaleY: scrollYProgress }} aria-hidden="true" />
+            {STEPS.map((s, i) => (
+              <li key={s.title} className={i === active ? 'on' : i < active ? 'done' : ''} onClick={() => goTo(i)}>
+                <b>STEP {i + 1}</b>
+                <h3>{s.title}</h3>
+                <div className="lp-story-more">
+                  <p>{s.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="lp-stage" data-step={active}>
+          <span className="lp-stage-count" aria-hidden="true">
+            0{active + 1}
+            <small> / 0{STEPS.length}</small>
+          </span>
+          {STEPS.map((s, i) => (
+            <div
+              key={s.title}
+              className={`lp-step-art ${i === active ? 'on' : i < active ? 'past' : ''} ${seen && i === active ? 'play' : ''}`}
+              aria-hidden={i !== active}
+            >
+              <StepArt step={i} play={seen && i === active} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Steps() {
-  const [ref1, seen1] = useInView<HTMLDivElement>(0.4);
-  const [ref2, seen2] = useInView<HTMLDivElement>(0.4);
-  const [ref3, seen3] = useInView<HTMLDivElement>(0.4);
+  const wide = useMedia('(min-width: 861px)');
   return (
     <section className="lp-section lp-wrap" id="how">
-      <div className="lp-reveal">
-        <p className="lp-kicker">How it works</p>
-        <h2 className="lp-h2">Three steps, all on the phone you already have.</h2>
-      </div>
-      <div className="lp-steps">
-        <article className="lp-step lp-reveal">
-          <div ref={ref1} className={`lp-step-art ${seen1 ? 'play' : ''}`}>
-            <div className="lp-mini" aria-label="Bill QR screen: ₹450, 45 points, waiting for the customer to scan">
-              <small>Bill QR · Chai Point</small>
-              <span className="lp-big">
-                +<CountUp to={45} run={seen1} ms={800} />
-              </span>
-              <small>points for ₹450</small>
-              <div className="lp-qr-wrap lp-qr-mini">
-                <FakeQr seed={41} />
-              </div>
-              <span className="lp-wait">
-                <i /> Waiting for scan · <BillTimer run={seen1} />
-              </span>
-            </div>
+      {wide ? (
+        <StepsStory />
+      ) : (
+        <>
+          <div className="lp-reveal">
+            <StepsHead />
           </div>
-          <div className="lp-step-text">
-            <b>STEP 1</b>
-            <h3>Show the bill QR</h3>
-            <p>Type the bill amount and turn your phone around. The customer scans it with their camera. New customers join right there.</p>
+          <div className="lp-steps">
+            {STEPS.map((s, i) => (
+              <StepCard key={s.title} step={i} />
+            ))}
           </div>
-        </article>
-
-        <article className="lp-step lp-reveal">
-          <div ref={ref2} className={`lp-step-art ${seen2 ? 'play' : ''}`}>
-            <div className="lp-mini" aria-label="Customer's points card: 165 points, ₹350 more to a free cold coffee">
-              <small>Hi Ravi</small>
-              <div className="lp-mini-card">
-                <small>Chai Point · Member</small>
-                <strong>
-                  <CountUp from={120} to={165} run={seen2} delay={200} />
-                </strong>
-                <div className="lp-meter">
-                  <i style={{ width: '82%' }} />
-                </div>
-                <p>Shop for ₹350 more → Free cold coffee</p>
-              </div>
-              <span className="lp-mini-btn">My card</span>
-            </div>
-          </div>
-          <div className="lp-step-text">
-            <b>STEP 2</b>
-            <h3>Points land on their phone</h3>
-            <p>Their card opens from a link: balance, the next reward in rupees, their history, and a QR for next time.</p>
-          </div>
-        </article>
-
-        <article className="lp-step lp-reveal">
-          <div ref={ref3} className={`lp-step-art ${seen3 ? 'play' : ''}`}>
-            <div className="lp-chat" aria-label="WhatsApp messages to the customer">
-              <div className="lp-bubble lp-b1">
-                Hi Ravi! 🎉 You earned 45 points at Chai Point. Your balance: 165 points. <a href="#how">habiturn.sidhar.me/w/…</a>
-                <time>5:43 pm</time>
-              </div>
-              <div className="lp-chat-gap">31 days later</div>
-              <div className="lp-typing" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </div>
-              <div className="lp-bubble lp-b2">
-                We miss you at Chai Point! You have 165 points waiting — your free cold coffee is close.
-                <time>11:02 am</time>
-              </div>
-            </div>
-          </div>
-          <div className="lp-step-text">
-            <b>STEP 3</b>
-            <h3>They come back</h3>
-            <p>A reward to aim for, a birthday treat, and a one-tap WhatsApp message when someone has been away for a month.</p>
-          </div>
-        </article>
-      </div>
+        </>
+      )}
     </section>
   );
 }
@@ -779,7 +915,8 @@ function Pricing() {
   );
 }
 
-const FAQ = [
+// Also published as FAQPage structured data by scripts/prerender.mjs.
+export const FAQ = [
   ['Do my customers need to download an app?', 'No. Their card opens from a link in the browser. They can add it to their home screen if they like, but they never have to install anything.'],
   ['What if a customer doesn’t have a smartphone?', 'Type their phone number and the bill amount. They collect points the same way, and you can redeem rewards for them from their page.'],
   ['What do I need at the counter?', 'Any phone with a camera and internet. Open Habiturn in the browser or install it on your home screen. A printed QR poster helps new customers join on their own.'],
@@ -813,9 +950,6 @@ function Faq() {
 
 export function Landing() {
   useFonts();
-  useEffect(() => {
-    document.title = 'Habiturn — turn walk-ins into regulars';
-  }, []);
 
   return (
     <div className="lp">

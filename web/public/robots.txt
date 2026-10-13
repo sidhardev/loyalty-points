@@ -1,0 +1,8 @@
+# Habiturn: the homepage is public; the shop app, admin and customers' personal pages are not for search engines.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /reset/
+
+Sitemap: https://habiturn.sidhar.me/sitemap.xml

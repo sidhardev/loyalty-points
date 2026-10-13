@@ -1,9 +1,17 @@
 /// <reference types="vite/client" />
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { ignoreThisBrowser, trackPageView } from './analytics';
 import { App } from './App';
 import './styles.css';
 
-createRoot(document.getElementById('root')!).render(<App />);
+// The homepage arrives prerendered (scripts/prerender.mjs), so React takes over that HTML instead of redrawing it.
+const root = document.getElementById('root')!;
+if (root.hasChildNodes()) hydrateRoot(root, <App />);
+else createRoot(root).render(<App />);
+
+// Website visits for the superadmin; opening /admin marks this browser as the owner's so it isn't counted.
+if (location.pathname === '/admin') ignoreThisBrowser();
+else trackPageView();
 
 // Installable app + offline shell (built app only, so live reload in development isn't cached).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

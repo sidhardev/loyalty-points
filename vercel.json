@@ -6,7 +6,7 @@
   "outputDirectory": "web/dist",
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://api-habiturn.sidhar.me/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/shell.html" }
   ],
   "headers": [
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

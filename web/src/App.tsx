@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Download, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { enableTranslation } from './i18n';
@@ -10,11 +10,13 @@ import { Dashboard } from './pages/Dashboard';
 import { GivePointsHost } from './pages/GivePoints';
 import { ActivityLog } from './pages/ActivityLog';
 import { Insights } from './pages/Insights';
-import { Landing } from './pages/Landing';
 import { Claim, CustomerLogin, Join, Wallet } from './pages/Public';
 import { Rewards } from './pages/Rewards';
 import { Settings } from './pages/Settings';
 import { ConfirmHost, Logo, Toaster, confirmDialog, InstallButton, openGivePoints, useTheme } from './ui';
+
+// The homepage and its animation library load on their own, so the shop app doesn't download them.
+const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
 
 // Real paths: / (homepage), /app (the shop app), /admin, and customer pages (/w/<token>, /join/<code>, /c/<bill code>,
 // /login) so their links are clean to share.
@@ -172,7 +174,11 @@ function Route() {
     location.replace(`/app${location.hash}`);
     return null;
   }
-  return <Landing />;
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#eef2ec' }} />}>
+      <Landing />
+    </Suspense>
+  );
 }
 
 export function App() {
