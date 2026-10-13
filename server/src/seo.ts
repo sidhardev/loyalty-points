@@ -475,6 +475,9 @@ export class SeoAdminController {
 
 // ---------------------------------------------------------------- public pages and sitemap
 
+/** Vercel reads CDN-Cache-Control / Vercel-CDN-Cache-Control before Cache-Control; all three say "don't keep". */
+const NO_CACHE = { 'cache-control': 'no-store', 'cdn-cache-control': 'no-store', 'vercel-cdn-cache-control': 'no-store' };
+
 @Controller()
 export class SeoPublicController {
   constructor(
@@ -482,28 +485,26 @@ export class SeoPublicController {
     private readonly db: Db,
   ) {}
 
-  // Vercel's CDN keeps these as long as s-maxage says, so the lists (index pages, sitemap) are kept for a minute and
-  // pages for five: a newly published, rewritten or removed page shows up within that. "Not found" isn't kept at all,
-  // so a page that is published later appears straight away.
-  private send(res: Response, html: string, seconds: number, status = 200) {
-    const cache = status === 404 ? 'no-store' : `public, max-age=${seconds}, s-maxage=${seconds}`;
-    res.status(status).type('html').set('cache-control', cache).send(html);
+  // Never cached (not by Vercel's CDN, not by browsers): a page that is published, rewritten or removed shows up on the
+  // very next visit. The pages are cheap to render, so every request goes to the server.
+  private send(res: Response, html: string, status = 200) {
+    res.status(status).type('html').set(NO_CACHE).send(html);
   }
 
   private one(lang: SeoLang, slug: string, res: Response) {
     const row = this.db.sql.prepare("SELECT * FROM seo_pages WHERE slug = ? AND lang = ? AND status = 'published'").get(slug, lang) as SeoPageRow | undefined;
-    if (!row) return this.send(res, render404(SITE, lang), 0, 404);
-    this.send(res, this.seo.html(row), 300);
+    if (!row) return this.send(res, render404(SITE, lang), 404);
+    this.send(res, this.seo.html(row));
   }
 
   @Get('for')
   hubEn(@Res() res: Response) {
-    this.send(res, renderHub(SITE, 'en', this.seo.published('en'), this.seo.published('hi').length > 0), 60);
+    this.send(res, renderHub(SITE, 'en', this.seo.published('en'), this.seo.published('hi').length > 0));
   }
 
   @Get('hi/for')
   hubHi(@Res() res: Response) {
-    this.send(res, renderHub(SITE, 'hi', this.seo.published('hi'), this.seo.published('en').length > 0), 60);
+    this.send(res, renderHub(SITE, 'hi', this.seo.published('hi'), this.seo.published('en').length > 0));
   }
 
   @Get('for/:slug')
@@ -519,6 +520,6 @@ export class SeoPublicController {
   /** The homepage plus every published page, with its other-language twin. Updates as pages are published. */
   @Get('sitemap.xml')
   sitemap(@Res() res: Response) {
-    res.type('application/xml').set('cache-control', 'public, max-age=60, s-maxage=60').send(renderSitemap(SITE, this.seo.published()));
+    res.type('application/xml').set(NO_CACHE).send(renderSitemap(SITE, this.seo.published()));
   }
 }
