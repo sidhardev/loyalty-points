@@ -1,0 +1,10 @@
+[Unit]
+Description=Habiturn: deploy new commits from GitHub main
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ec2-user
+ExecStart=/home/ec2-user/habiturn/deploy/auto-deploy.sh
+TimeoutStartSec=20min

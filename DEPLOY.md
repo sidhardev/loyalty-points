@@ -47,11 +47,30 @@ docker compose exec app node --no-warnings scripts/create-admin.mjs devsidharr@g
 
 Then open `https://habiturn.sidhar.me/admin`.
 
-**Updating** after pushing new code:
+**Updating — automatic.** Pushing to `main` is the whole deploy:
+
+| What | Where | How |
+| --- | --- | --- |
+| Checks | GitHub Actions (`.github/workflows/ci.yml`) | Every push and pull request: website build, API build, Docker image build. |
+| Website | Vercel | Builds `main` by itself. |
+| API | This server | `habiturn-deploy.timer` runs `deploy/auto-deploy.sh` every 2 minutes. If `main` moved and backend files changed (`server/`, `Dockerfile`, `deploy/`, `package*.json`), it rebuilds and checks the API answers. A failed build leaves the running container alone; a failed check rolls back to the previous commit. |
+
+The server reads the repo with a read-only **deploy key** — no AWS keys or open ports for GitHub. One-time setup on the
+server (prints the key to add under GitHub → repo → Settings → Deploy keys, write access off; run it again after):
 
 ```sh
-cd habiturn && git pull && cd deploy && docker compose up -d --build
+cd ~/habiturn && bash deploy/install-auto-deploy.sh
 ```
+
+Day to day:
+
+```sh
+tail -n 20 ~/deploy.log                                   # what was deployed, when, and any rollbacks
+~/habiturn/deploy/auto-deploy.sh                          # deploy now instead of waiting for the timer
+systemctl list-timers habiturn-deploy.timer               # when it runs next
+```
+
+To go back to an older version, revert the commit on GitHub (`git revert <sha>` and push); the server deploys the revert.
 
 **Backups** — the app writes one copy a day to `deploy/data/backups/` and keeps 14. They are on the same
 server, so copy them off now and then, from your own computer:

@@ -1,0 +1,6 @@
+# Shell scripts and server config run on Linux: always check them out with LF line endings.
+*.sh text eol=lf
+deploy/*.service text eol=lf
+deploy/*.timer text eol=lf
+deploy/Caddyfile text eol=lf
+Dockerfile text eol=lf

@@ -1,0 +1,10 @@
+[Unit]
+Description=Habiturn: check GitHub for new commits every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+Unit=habiturn-deploy.service
+
+[Install]
+WantedBy=timers.target

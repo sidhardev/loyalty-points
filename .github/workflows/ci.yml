@@ -1,0 +1,36 @@
+# Checks every push and pull request: the website builds, the API builds, and the server's Docker image builds.
+# Deploys are separate: Vercel builds the website from main, and the server pulls main itself (see DEPLOY.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Website (type-check + build)
+        run: npm run build -w web
+
+      - name: API (build)
+        run: npm run build -w server
+
+      - name: Server image (Docker build)
+        run: docker build --tag habiturn-api:ci .
