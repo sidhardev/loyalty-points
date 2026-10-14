@@ -128,3 +128,22 @@ Admin → **Leads** finds shops on Google Maps that could use Regularhood and wr
 a Google Maps key with **Places API (New)** turned on in Google Cloud: paste it on that page (stored encrypted), or put
 `GOOGLE_MAPS_API_KEY=...` in `deploy/.env`. The page tracks every search and pitch with its cost; set Google's current
 Text Search Enterprise price, the free searches per month and a monthly budget there (searches stop at the budget).
+
+### Sending through the WhatsApp API
+
+The same page can message leads through Meta's WhatsApp Cloud API. Set it up in the **WhatsApp API** card:
+
+1. **Number:** the Phone number ID and WhatsApp Business Account ID (Meta app → WhatsApp → API setup), in the card or
+   as `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_WABA_ID` in `deploy/.env`.
+2. **Access token:** a permanent system-user token with `whatsapp_business_messaging` and `whatsapp_business_management`
+   (the 24-hour test token expires). Or `WHATSAPP_TOKEN=...` in `deploy/.env`.
+3. **Webhook:** paste the Callback URL (`https://www.regularhood.in/api/whatsapp/webhook`) and the Verify token shown in
+   the card into Meta app → WhatsApp → Configuration, subscribe to `messages`, and save the **app secret** (app →
+   Settings → Basic) in the card or as `WHATSAPP_APP_SECRET`. Replies and delivery updates are ignored without it.
+4. **Template:** "Create the intro template" sends a Hindi or Hinglish marketing template to Meta for review; once it's
+   approved, Load templates → Use.
+
+A shop that hasn't written to us can only get that template. When the owner taps "yes" or replies, the AI pitch with the
+sign-up link is sent by itself, and free messages are allowed for 24 hours; "not now" or STOP stops all messages to
+that number. The card has a daily cap (keep it low on a new number: blocks and reports lower its quality rating), the
+price per message from Meta's rate card, and a monthly budget.

@@ -352,6 +352,31 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_places_usage_ts ON places_usage (ts);
   `,
+
+  // 14: WhatsApp Cloud API for the lead finder: every message sent to or received from a lead, with its delivery status
+  // and what Meta charged, and per lead whether they asked not to be messaged.
+  `
+  CREATE TABLE wa_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER REFERENCES leads(id) ON DELETE SET NULL,
+    phone TEXT NOT NULL, -- digits with country code, as WhatsApp writes it: 919876543210
+    direction TEXT NOT NULL CHECK (direction IN ('out', 'in')),
+    wamid TEXT UNIQUE, -- WhatsApp's message id
+    kind TEXT NOT NULL, -- template | text | button | image | ...
+    body TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'sent', -- out: sent | delivered | read | failed · in: received
+    error TEXT,
+    category TEXT, -- what Meta billed it as: marketing | utility | service ...
+    cost_usd REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX idx_wa_messages_lead ON wa_messages (lead_id, id);
+  CREATE INDEX idx_wa_messages_phone ON wa_messages (phone, id);
+  CREATE INDEX idx_wa_messages_created ON wa_messages (created_at);
+  ALTER TABLE leads ADD COLUMN wa_opted_out INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE leads ADD COLUMN last_inbound_at TEXT; -- their last WhatsApp message: free-form replies are allowed for 24 hours after it
+  `,
 ];
 
 const INDEXES = `

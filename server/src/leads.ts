@@ -162,6 +162,8 @@ type LeadRow = {
   created_at: string;
   updated_at: string;
   contacted_at: string | null;
+  wa_opted_out: number;
+  last_inbound_at: string | null;
 };
 
 export type Pitch = {
@@ -502,9 +504,27 @@ export class LeadsAdminController {
            SELECT 'places' AS kind, id, ts, purpose, ref_id, results, NULL AS model, cost_usd, free, ok, error FROM places_usage
            UNION ALL
            SELECT 'ai' AS kind, id, ts, purpose, ref_id, output_tokens AS results, model, cost_usd, 0 AS free, ok, error FROM ai_usage WHERE purpose = 'lead-pitch'
-         ) ORDER BY ts DESC, id DESC LIMIT 40`,
+           UNION ALL
+           SELECT 'wa' AS kind, id, created_at AS ts, kind AS purpose, lead_id AS ref_id, 0 AS results, category AS model, cost_usd, 0 AS free,
+             status != 'failed' AS ok, error FROM wa_messages WHERE direction = 'out'
+         ) ORDER BY ts DESC, id DESC LIMIT 60`,
       )
       .all();
+    const waCost = (where: string) =>
+      sql.prepare(`SELECT COUNT(*) FILTER (WHERE direction = 'out') AS calls, COALESCE(SUM(cost_usd), 0) AS usd FROM wa_messages WHERE ${where}`).get() as { calls: number; usd: number };
+    // Per lead: the latest WhatsApp message each way, to show sent / delivered / read / replied on the list.
+    const wa = new Map(
+      (
+        sql
+          .prepare(
+            `SELECT lead_id,
+               (SELECT status FROM wa_messages o WHERE o.lead_id = m.lead_id AND o.direction = 'out' ORDER BY o.id DESC LIMIT 1) AS last_out,
+               MAX(CASE WHEN direction = 'in' THEN created_at END) AS last_in
+             FROM wa_messages m WHERE lead_id IS NOT NULL GROUP BY lead_id`,
+          )
+          .all() as { lead_id: number; last_out: string | null; last_in: string | null }[]
+      ).map((r) => [r.lead_id, { lastOut: r.last_out, lastIn: r.last_in }]),
+    );
     return {
       settings: s,
       key: this.leads.keyInfo(),
@@ -517,10 +537,15 @@ export class LeadsAdminController {
         placesAll,
         pitchMonth: pitchCost("ts >= date('now', 'start of month')"),
         pitchAll: pitchCost('1 = 1'),
+        waMonth: waCost("created_at >= date('now', 'start of month')"),
+        waAll: waCost('1 = 1'),
       },
       shopTypes: SHOP_TYPES,
       searches: sql.prepare('SELECT * FROM lead_searches ORDER BY id DESC LIMIT 30').all(),
-      leads: (sql.prepare('SELECT * FROM leads ORDER BY score DESC, reviews DESC LIMIT 2000').all() as LeadRow[]).map((l) => this.leads.view(l)),
+      leads: (sql.prepare('SELECT * FROM leads ORDER BY score DESC, reviews DESC LIMIT 2000').all() as LeadRow[]).map((l) => ({
+        ...this.leads.view(l),
+        wa: wa.get(l.id) ?? null,
+      })),
       usage,
     };
   }

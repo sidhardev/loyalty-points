@@ -18,6 +18,7 @@ import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
 import { StatusAdminController } from './status';
 import { LeadsAdminController, LeadsService } from './leads';
+import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
 // on the server the same values come from deploy/.env. Variables already set in the environment win.
@@ -25,13 +26,14 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore, Gemini, SeoService, LeadsService],
+  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore, Gemini, SeoService, LeadsService, WhatsApp],
 })
 class AppModule {}
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: the WhatsApp webhook checks Meta's signature over the exact bytes received.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   // Behind a local tunnel or proxy (ngrok, nginx, Caddy), take the visitor's IP from X-Forwarded-For,
   // so per-IP limits apply to each visitor rather than to the proxy. TRUST_PROXY sets which proxies to
   // believe: a hop count ("1" behind one proxy, e.g. Caddy in Docker or Railway) or Express names like "loopback".

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
-  Bot,
   Copy,
   IndianRupee,
   KeyRound,
@@ -10,6 +9,7 @@ import {
   RefreshCw,
   ScrollText,
   Search,
+  Send,
   Settings2,
   Sparkles,
   Star,
@@ -21,6 +21,7 @@ import {
 import { num, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
+import { WaThread, WhatsAppCard, useWhatsApp, type WaOverview } from './AdminWhatsApp';
 
 // Admin → Leads: finds shops on Google Maps that could use Regularhood (server/src/leads.ts), scores them, and has
 // Gemini write a pitch for each — a WhatsApp message (Hinglish and Hindi), what to say on a call, answers to the usual
@@ -61,9 +62,12 @@ type Lead = {
   created_at: string;
   contacted_at: string | null;
   link: string;
+  wa_opted_out: number;
+  last_inbound_at: string | null;
+  wa?: { lastOut: string | null; lastIn: string | null } | null;
 };
 type SearchRow = { id: number; created_at: string; shop_type: string; area: string; pages: number; found: number; added: number; cost_usd: number };
-type UsageRow = { kind: 'places' | 'ai'; id: number; ts: string; purpose: string; ref_id: number | null; results: number; model: string | null; cost_usd: number; free: number; ok: number; error: string | null };
+type UsageRow = { kind: 'places' | 'ai' | 'wa'; id: number; ts: string; purpose: string; ref_id: number | null; results: number; model: string | null; cost_usd: number; free: number; ok: number; error: string | null };
 type Cost = { calls: number; usd: number };
 type Settings = { pricePer1000Usd: number; freePerMonth: number; monthlyBudgetUsd: number };
 type KeyInfo = { source: 'panel' | 'env' | null; last4: string; envAlsoSet: boolean };
@@ -74,7 +78,7 @@ type Data = {
   model: string;
   usdToInr: number;
   nextCallUsd: number;
-  cost: { placesMonth: Cost; placesAll: Cost; pitchMonth: Cost; pitchAll: Cost };
+  cost: { placesMonth: Cost; placesAll: Cost; pitchMonth: Cost; pitchAll: Cost; waMonth: Cost; waAll: Cost };
   shopTypes: string[];
   searches: SearchRow[];
   leads: Lead[];
@@ -111,6 +115,8 @@ export function LeadsPage({ api }: { api: AdminApi }) {
   const [bulk, setBulk] = useState('');
   const load = useCallback(() => void api<Data>('leads').then(setData, (e) => setError((e as Error).message)), [api]);
   useEffect(load, [load]);
+  const { wa, reload: reloadWa } = useWhatsApp(api);
+  const refresh = () => (load(), reloadWa());
 
   if (error) return <ErrorText text={error} />;
   if (!data) return <SkeletonRows count={6} />;
@@ -128,8 +134,8 @@ export function LeadsPage({ api }: { api: AdminApi }) {
       (!needle || `${l.name} ${l.category} ${l.area} ${l.address} ${l.phone}`.toLowerCase().includes(needle)),
   );
   const open = data.leads.find((l) => l.id === openId);
-  const setLead = (lead: Lead) => setData((d) => d && { ...d, leads: d.leads.map((l) => (l.id === lead.id ? lead : l)) });
-  const totalUsd = data.cost.placesAll.usd + data.cost.pitchAll.usd;
+  const setLead = (lead: Lead) => setData((d) => d && { ...d, leads: d.leads.map((l) => (l.id === lead.id ? { ...l, ...lead } : l)) });
+  const totalUsd = data.cost.placesAll.usd + data.cost.pitchAll.usd + data.cost.waAll.usd;
   const joined = count('joined');
 
   /** Pitches for the best leads in the current list that don't have one yet, one after another. */
@@ -147,6 +153,22 @@ export function LeadsPage({ api }: { api: AdminApi }) {
     }
     setBulk('');
     load();
+  };
+
+  /** The intro template to the best new leads with a WhatsApp number that haven't been messaged. */
+  const sendTop = async (n: number) => {
+    if (!(await confirmDialog({ title: `Send the intro to the top ${n} new leads?`, body: 'Only leads with a mobile number that haven’t been messaged. Each delivered message is charged by Meta.', confirm: 'Send' })))
+      return;
+    setBulk('Sending…');
+    try {
+      const r = await api<{ sent: number; tried: number; error: string }>('whatsapp/bulk', 'POST', { count: n });
+      toast(`${r.sent} of ${r.tried} sent`);
+      if (r.error) toast(r.error, 'error');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+    setBulk('');
+    refresh();
   };
 
   return (
@@ -203,11 +225,11 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         </div>
         <div className="stat">
           <span className="stat-label">
-            <Bot size={16} /> Pitches this month
+            <MessageCircle size={16} /> WhatsApp this month
           </span>
-          <strong>{inr(data.cost.pitchMonth.usd)}</strong>
+          <strong>{inr(data.cost.waMonth.usd)}</strong>
           <em>
-            {num(data.cost.pitchMonth.calls)} AI calls · {usd(data.cost.pitchMonth.usd)}
+            {num(wa?.month.templates ?? 0)} sent · {num(wa?.month.replied ?? 0)} replied
           </em>
         </div>
         <div className="stat">
@@ -216,7 +238,8 @@ export function LeadsPage({ api }: { api: AdminApi }) {
           </span>
           <strong>{inr(totalUsd)}</strong>
           <em>
-            Maps {usd(data.cost.placesAll.usd)} · AI {usd(data.cost.pitchAll.usd)}
+            Maps {usd(data.cost.placesAll.usd)} · AI {usd(data.cost.pitchAll.usd)} · WhatsApp {usd(data.cost.waAll.usd)} · AI this month{' '}
+            {inr(data.cost.pitchMonth.usd)}
           </em>
         </div>
       </section>
@@ -226,14 +249,23 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         <PlacesCard api={api} data={data} onChanged={load} />
       </div>
 
+      {wa && <WhatsAppCard api={api} wa={wa} inr={inr} onChanged={reloadWa} />}
+
       <section className="card">
         <div className="card-head">
           <h2>
             <Users size={18} /> Leads
           </h2>
-          <button className="btn btn-sm btn-primary" disabled={!!bulk || !data.geminiReady} onClick={() => void pitchTop(5)}>
-            <Wand2 size={15} /> {bulk || 'Write pitches for the top 5'}
-          </button>
+          <div className="actions" style={{ margin: 0 }}>
+            <button className="btn btn-sm btn-soft" disabled={!!bulk || !data.geminiReady} onClick={() => void pitchTop(5)}>
+              <Wand2 size={15} /> {bulk || 'Write pitches for the top 5'}
+            </button>
+            {wa?.ready && (
+              <button className="btn btn-sm btn-primary" disabled={!!bulk} onClick={() => void sendTop(10)}>
+                <Send size={15} /> Send intro to the top 10
+              </button>
+            )}
+          </div>
         </div>
         <div className="seg seg-scroll">
           {(['', 'new', 'contacted', 'interested', 'joined', 'not_interested'] as const).map((s) => (
@@ -259,7 +291,7 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         {list.length ? (
           <div className="leads-list">
             {list.slice(0, shown).map((l) => (
-              <LeadItem key={l.id} lead={l} api={api} onOpen={() => setOpenId(l.id)} onChange={setLead} />
+              <LeadItem key={l.id} lead={l} api={api} wa={wa} onOpen={() => setOpenId(l.id)} onChange={setLead} onSent={refresh} />
             ))}
             {list.length > shown && (
               <button className="btn btn-soft" onClick={() => setShown(shown + PAGE)}>
@@ -274,7 +306,7 @@ export function LeadsPage({ api }: { api: AdminApi }) {
 
       <HistoryCard data={data} usd={usd} inr={inr} />
 
-      {open && <PitchSheet lead={open} api={api} geminiReady={data.geminiReady} usd={usd} onChange={setLead} onDeleted={load} onClose={() => setOpenId(0)} />}
+      {open && <PitchSheet lead={open} api={api} wa={wa} geminiReady={data.geminiReady} usd={usd} onChange={setLead} onDeleted={load} onWa={refresh} onClose={() => setOpenId(0)} />}
     </>
   );
 }
@@ -451,13 +483,53 @@ function PlacesCard({ api, data, onChanged }: { api: AdminApi; data: Data; onCha
   );
 }
 
-function LeadItem({ lead: l, api, onOpen, onChange }: { lead: Lead; api: AdminApi; onOpen: () => void; onChange: (lead: Lead) => void }) {
+/** What happened on WhatsApp, for the list: replied beats read beats delivered. */
+function waLabel(l: Lead) {
+  if (l.wa_opted_out) return { text: 'Opted out', cls: 'badge-minus' };
+  if (l.wa?.lastIn) return { text: 'Replied', cls: 'badge-plus' };
+  const out = l.wa?.lastOut;
+  if (!out) return null;
+  return { text: { sent: 'Sent', delivered: 'Delivered', read: 'Read', failed: 'Failed' }[out] ?? out, cls: out === 'failed' ? 'badge-minus' : 'badge-neutral' };
+}
+
+function LeadItem({
+  lead: l,
+  api,
+  wa,
+  onOpen,
+  onChange,
+  onSent,
+}: {
+  lead: Lead;
+  api: AdminApi;
+  wa: WaOverview | null;
+  onOpen: () => void;
+  onChange: (lead: Lead) => void;
+  onSent: () => void;
+}) {
+  const [sending, setSending] = useState(false);
   const setStatus = (status: LeadStatus) =>
     void api<Lead>(`leads/${l.id}`, 'PUT', { status }).then(onChange, (e) => toast((e as Error).message, 'error'));
-  const send = () => {
-    open(whatsapp(l.phone, l.pitch ? fill(l.pitch.whatsapp, l) : ''), '_blank');
-    if (l.status === 'new') setStatus('contacted');
+  const viaApi = Boolean(wa?.ready) && !l.wa?.lastOut && !l.wa_opted_out;
+  /** Through the API: the approved intro template. Without it: opens WhatsApp on this device with the pitch. */
+  const send = async () => {
+    if (!viaApi) {
+      open(whatsapp(l.phone, l.pitch ? fill(l.pitch.whatsapp, l) : ''), '_blank');
+      if (l.status === 'new') setStatus('contacted');
+      return;
+    }
+    setSending(true);
+    try {
+      await api(`whatsapp/leads/${l.id}/template`, 'POST');
+      toast(`Intro sent to ${l.name}`);
+      onSent();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setSending(false);
+    }
   };
+  const badge = waLabel(l);
   return (
     <article className="lead">
       <button className="lead-main" onClick={onOpen}>
@@ -479,6 +551,7 @@ function LeadItem({ lead: l, api, onOpen, onChange }: { lead: Lead; api: AdminAp
             {l.phone || 'No phone'}
             {l.mobile ? <span className="badge badge-plus">WhatsApp</span> : null}
             {l.pitch ? <span className="badge badge-neutral">Pitch ready</span> : null}
+            {badge && <span className={`badge ${badge.cls}`}>WhatsApp: {badge.text}</span>}
           </span>
         </span>
       </button>
@@ -490,9 +563,14 @@ function LeadItem({ lead: l, api, onOpen, onChange }: { lead: Lead; api: AdminAp
             </option>
           ))}
         </select>
-        {l.mobile ? (
-          <button className="btn btn-sm btn-soft" onClick={send} title={l.pitch ? 'Open WhatsApp with the pitch' : 'Open WhatsApp'}>
-            <MessageCircle size={15} /> WhatsApp
+        {l.mobile && !l.wa_opted_out ? (
+          <button
+            className="btn btn-sm btn-soft"
+            disabled={sending}
+            onClick={() => void send()}
+            title={viaApi ? 'Send the approved intro template through the WhatsApp API' : 'Open WhatsApp on this device with the pitch'}
+          >
+            {viaApi ? <Send size={15} /> : <MessageCircle size={15} />} {sending ? 'Sending…' : viaApi ? 'Send intro' : 'WhatsApp'}
           </button>
         ) : null}
         {l.phone && (
@@ -511,18 +589,22 @@ function LeadItem({ lead: l, api, onOpen, onChange }: { lead: Lead; api: AdminAp
 function PitchSheet({
   lead: l,
   api,
+  wa,
   geminiReady,
   usd,
   onChange,
   onDeleted,
+  onWa,
   onClose,
 }: {
   lead: Lead;
   api: AdminApi;
+  wa: WaOverview | null;
   geminiReady: boolean;
   usd: (n: number) => string;
   onChange: (lead: Lead) => void;
   onDeleted: () => void;
+  onWa: () => void;
   onClose: () => void;
 }) {
   const [lang, setLang] = useState<'hinglish' | 'hindi'>('hinglish');
@@ -606,7 +688,7 @@ function PitchSheet({
             <div className="actions">
               {l.mobile ? (
                 <button className="btn btn-primary btn-sm" onClick={() => send(lang === 'hindi' ? p.whatsappHindi : p.whatsapp)}>
-                  <MessageCircle size={15} /> Send on WhatsApp
+                  <MessageCircle size={15} /> Open in my WhatsApp
                 </button>
               ) : null}
               <button className="btn btn-soft btn-sm" onClick={() => void copy(message, 'Message')}>
@@ -650,7 +732,7 @@ function PitchSheet({
             <div className="actions">
               {l.mobile ? (
                 <button className="btn btn-soft btn-sm" onClick={() => send(p.followUp)}>
-                  <MessageCircle size={15} /> Send on WhatsApp
+                  <MessageCircle size={15} /> Open in my WhatsApp
                 </button>
               ) : null}
               <button className="btn btn-soft btn-sm" onClick={() => void copy(fill(p.followUp, l), 'Follow-up')}>
@@ -659,6 +741,19 @@ function PitchSheet({
             </div>
           </div>
         </>
+      )}
+
+      {wa && l.phone && (
+        <WaThread
+          api={api}
+          wa={wa}
+          leadId={l.id}
+          mobile={Boolean(l.mobile)}
+          optedOut={Boolean(l.wa_opted_out)}
+          lastInbound={l.last_inbound_at}
+          hasPitch={Boolean(p)}
+          onChanged={onWa}
+        />
       )}
 
       <label>
@@ -679,7 +774,7 @@ function PitchSheet({
           <Trash2 size={15} /> Delete lead
         </button>
       </div>
-      <p className="muted small" style={{ margin: 0 }}>
+      <p className="muted small" style={{ margin: 0, overflowWrap: 'anywhere' }}>
         Sign-up link in the pitch: {l.link}
         {l.pitch_cost_usd ? ` · pitches for this shop cost ${usd(l.pitch_cost_usd)}` : ''}
         {l.contacted_at ? ` · first contacted ${when(l.contacted_at)}` : ''}
@@ -754,7 +849,7 @@ function HistoryCard({ data, usd, inr }: { data: Data; usd: (n: number) => strin
               {data.usage.map((u) => (
                 <tr key={`${u.kind}${u.id}`}>
                   <td>
-                    {u.kind === 'places' ? 'Google Maps search' : `Pitch (${u.model})`}
+                    {u.kind === 'places' ? 'Google Maps search' : u.kind === 'wa' ? `WhatsApp ${u.purpose}${u.model ? ` (${u.model})` : ''}` : `Pitch (${u.model})`}
                     {!u.ok && <span className="muted small"> · failed: {u.error}</span>}
                   </td>
                   <td className="num">{num(u.results)}</td>
