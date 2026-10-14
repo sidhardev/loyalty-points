@@ -316,7 +316,7 @@ export function ConfirmHost() {
 
 // ---------------------------------------------------------------- sheet (bottom sheet on phones, dialog on desktop)
 
-export function Sheet({ title, onClose, children }: { title: ReactNode; onClose: () => void; children: ReactNode }) {
+export function Sheet({ title, onClose, children, wide }: { title: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     addEventListener('keydown', onKey);
@@ -329,7 +329,7 @@ export function Sheet({ title, onClose, children }: { title: ReactNode; onClose:
   }, [onClose]);
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet${wide ? ' sheet-wide' : ''}`} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <span className="sheet-grip" aria-hidden />
         <div className="sheet-head">
           <h2>{title}</h2>

@@ -21,7 +21,7 @@ import {
 import { num, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
-import { WaThread, WhatsAppCard, useWhatsApp, type WaOverview } from './AdminWhatsApp';
+import { WaThread, WhatsAppBar, useWhatsApp, type WaOverview } from './AdminWhatsApp';
 
 // Admin → Leads: finds shops on Google Maps that could use Regularhood (server/src/leads.ts), scores them, and has
 // Gemini write a pitch for each — a WhatsApp message (Hinglish and Hindi), what to say on a call, answers to the usual
@@ -183,12 +183,14 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         </div>
       </header>
 
-      {!data.key.source && <p className="alert alert-error">No Google Maps key yet. Add one below to start finding shops.</p>}
+      {!data.key.source && <p className="alert alert-error">No Google Maps key yet: press “Add Google Maps key” below to start finding shops.</p>}
       {!data.geminiReady && (
         <p className="alert alert-error">
           No Gemini key, so pitches can’t be written. Add one in <a href="#/seo">SEO pages</a>.
         </p>
       )}
+
+      {wa && <WhatsAppBar api={api} wa={wa} onChanged={reloadWa} />}
 
       <section className="stats stats-6">
         <div className="stat">
@@ -244,12 +246,8 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         </div>
       </section>
 
-      <div className="grid-2">
-        <SearchCard api={api} data={data} inr={inr} onDone={(id) => (setSearchId(id), setStatus(''), setShown(PAGE), load())} />
-        <PlacesCard api={api} data={data} onChanged={load} />
-      </div>
+      <SearchCard api={api} data={data} inr={inr} onDone={(id) => (setSearchId(id), setStatus(''), setShown(PAGE), load())} onSettings={load} />
 
-      {wa && <WhatsAppCard api={api} wa={wa} inr={inr} onChanged={reloadWa} />}
 
       <section className="card">
         <div className="card-head">
@@ -311,7 +309,20 @@ export function LeadsPage({ api }: { api: AdminApi }) {
   );
 }
 
-function SearchCard({ api, data, inr, onDone }: { api: AdminApi; data: Data; inr: (usd: number) => string; onDone: (searchId: number) => void }) {
+function SearchCard({
+  api,
+  data,
+  inr,
+  onDone,
+  onSettings,
+}: {
+  api: AdminApi;
+  data: Data;
+  inr: (usd: number) => string;
+  onDone: (searchId: number) => void;
+  onSettings: () => void;
+}) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [shopType, setShopType] = useState('');
   const [area, setArea] = useState('');
   const [pages, setPages] = useState(1);
@@ -330,45 +341,54 @@ function SearchCard({ api, data, inr, onDone }: { api: AdminApi; data: Data; inr
     });
   };
   return (
-    <form className="card" onSubmit={submit}>
-      <div className="card-head">
-        <h2>
-          <Search size={18} /> Find shops
-        </h2>
-      </div>
-      <label>
-        Kind of shop
-        <input value={shopType} onChange={(e) => setShopType(e.target.value)} list="lead-shop-types" placeholder="e.g. Salon, Kirana store, Café" />
-        <datalist id="lead-shop-types">
-          {data.shopTypes.map((t) => (
-            <option key={t} value={t} />
-          ))}
-        </datalist>
-      </label>
-      <label>
-        Area or city
-        <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Vijay Nagar, Indore" />
-      </label>
-      <label>
-        How many
-        <select value={pages} onChange={(e) => setPages(Number(e.target.value))}>
-          <option value={1}>Up to 20 shops (1 search)</option>
-          <option value={2}>Up to 40 shops (2 searches)</option>
-          <option value={3}>Up to 60 shops (3 searches)</option>
-        </select>
-        <span className="hint">Cost: {estimate}.</span>
-      </label>
-      <ErrorText text={error} />
-      <div className="actions">
-        <button className="btn btn-primary" disabled={busy || !data.key.source || !shopType.trim() || !area.trim()}>
-          <Search size={16} /> {busy ? 'Searching Google Maps…' : 'Find shops'}
-        </button>
-      </div>
-      <p className="muted small" style={{ margin: 0 }}>
-        A small area finds better shops than a whole city: “Salon in Vijay Nagar, Indore” rather than “Salon in Indore”. Shops found before keep their status
-        and notes.
-      </p>
-    </form>
+    <>
+      <form className="card" onSubmit={submit}>
+        <div className="card-head">
+          <h2>
+            <Search size={18} /> Find shops
+          </h2>
+          <button type="button" className={`btn btn-sm ${data.key.source ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setSettingsOpen(true)}>
+            <Settings2 size={15} /> {data.key.source ? 'Google Maps settings' : 'Add Google Maps key'}
+          </button>
+        </div>
+        <div className="leads-search">
+          <label>
+            Kind of shop
+            <input value={shopType} onChange={(e) => setShopType(e.target.value)} list="lead-shop-types" placeholder="e.g. Salon, Kirana store, Café" />
+            <datalist id="lead-shop-types">
+              {data.shopTypes.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Area or city
+            <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Vijay Nagar, Indore" />
+          </label>
+          <label>
+            How many
+            <select value={pages} onChange={(e) => setPages(Number(e.target.value))}>
+              <option value={1}>Up to 20 shops (1 search)</option>
+              <option value={2}>Up to 40 shops (2 searches)</option>
+              <option value={3}>Up to 60 shops (3 searches)</option>
+            </select>
+          </label>
+          <button className="btn btn-primary" disabled={busy || !data.key.source || !shopType.trim() || !area.trim()}>
+            <Search size={16} /> {busy ? 'Searching…' : 'Find shops'}
+          </button>
+        </div>
+        <ErrorText text={error} />
+        <p className="muted small" style={{ margin: 0 }}>
+          Cost: {estimate}. A small area finds better shops than a whole city: “Salon in Vijay Nagar, Indore” rather than “Salon in Indore”. Shops found
+          before keep their status and notes.
+        </p>
+      </form>
+      {settingsOpen && (
+        <Sheet title="Google Maps settings" wide onClose={() => setSettingsOpen(false)}>
+          <PlacesCard api={api} data={data} onChanged={onSettings} />
+        </Sheet>
+      )}
+    </>
   );
 }
 
@@ -415,10 +435,10 @@ function PlacesCard({ api, data, onChanged }: { api: AdminApi; data: Data; onCha
         ? `Using GOOGLE_MAPS_API_KEY from the server’s .env, ending …${info.last4}. A key saved here replaces it.`
         : 'No key set.';
   return (
-    <section className="card">
+    <div className="wa-settings">
       <div className="card-head">
         <h2>
-          <KeyRound size={18} /> Google Maps key & cost
+          <KeyRound size={18} /> Key
         </h2>
         {info.source && (
           <div className="actions" style={{ margin: 0 }}>
@@ -479,7 +499,7 @@ function PlacesCard({ api, data, onChanged }: { api: AdminApi; data: Data; onCha
         built). Check Google’s current price and change it here; searches stop once the month’s billed cost reaches the budget. Pitches are counted against the
         AI budget in SEO pages.
       </p>
-    </section>
+    </div>
   );
 }
 

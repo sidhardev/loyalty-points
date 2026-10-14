@@ -22,7 +22,7 @@ import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { LeadsService } from './leads';
 import { seal, unseal } from './secret';
-import { SITE } from './seo';
+import { SITE, SeoService } from './seo';
 
 // WhatsApp Cloud API (Meta) for the lead finder. A shop that hasn't messaged us can only be sent an approved template:
 // a short intro with the shop's name and kind, and two quick-reply buttons. When the owner taps "yes" (or writes back),
@@ -452,10 +452,11 @@ export class WhatsApp {
            COUNT(*) AS messages,
            SUM(CASE WHEN m.direction = 'in' AND m.seen = 0 THEN 1 ELSE 0 END) AS unread,
            MAX(CASE WHEN m.direction = 'in' THEN m.created_at END) AS last_in,
-           (SELECT body FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_body,
-           (SELECT direction FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_direction,
-           (SELECT status FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_status,
-           l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status,
+           (SELECT body FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.created_at DESC, x.id DESC LIMIT 1) AS last_body,
+           (SELECT direction FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.created_at DESC, x.id DESC LIMIT 1) AS last_direction,
+           (SELECT status FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.created_at DESC, x.id DESC LIMIT 1) AS last_status,
+           l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status, l.notes,
+           (SELECT name FROM wa_contacts c WHERE c.phone = m.phone) AS profile_name,
            EXISTS (SELECT 1 FROM wa_optouts o WHERE o.phone = m.phone) AS opted_out,
            MAX(CASE WHEN m.direction = 'in' THEN m.created_at END) >= datetime('now', '-1 day') AS window_open
          FROM wa_messages m
@@ -464,14 +465,39 @@ export class WhatsApp {
          ORDER BY last_id DESC
          LIMIT 300`,
       )
-      .all();
+      .all()
+      .map((c) => {
+        const row = c as { lead_id: number | null; phone: string };
+        // The sign-up link for quick replies: a lead's own (so a sign-up marks it joined), else one Growth counts as WhatsApp chats.
+        return { ...row, link: row.lead_id ? this.leads.link(row.lead_id) : `${SITE}/?utm_source=whatsapp&utm_medium=chat` };
+      });
+  }
+
+  /** Turns a chat with someone who isn't a lead yet into a lead (they wrote to us, so they're interested). */
+  addLead(phone: string, input: { name?: string; shopType?: string; area?: string }) {
+    const existing = this.leadByPhone(phone);
+    if (existing) return existing.id;
+    const profile = this.db.sql.prepare('SELECT name FROM wa_contacts WHERE phone = ?').get(phone) as { name: string } | undefined;
+    const name = String(input.name ?? '').trim().slice(0, 120) || profile?.name || `+${phone}`;
+    const pretty = phone.startsWith('91') && phone.length === 12 ? `+91 ${phone.slice(2, 7)} ${phone.slice(7)}` : `+${phone}`;
+    const id = Number(
+      this.db.sql
+        .prepare(
+          `INSERT INTO leads (place_id, name, shop_type, area, phone, mobile, status, reasons, contacted_at, last_inbound_at)
+           VALUES (?, ?, ?, ?, ?, 1, 'interested', '["Wrote to us on WhatsApp"]', datetime('now'),
+             (SELECT MAX(created_at) FROM wa_messages WHERE phone = ? AND direction = 'in'))`,
+        )
+        .run(`whatsapp:${phone}`, name, String(input.shopType ?? '').trim().slice(0, 60), String(input.area ?? '').trim().slice(0, 100), pretty, phone).lastInsertRowid,
+    );
+    this.db.sql.prepare('UPDATE wa_messages SET lead_id = ? WHERE phone = ? AND lead_id IS NULL').run(id, phone);
+    return id;
   }
 
   /** One conversation, oldest first. Opening it marks the replies as seen. */
   chat(phone: string) {
     this.db.sql.prepare("UPDATE wa_messages SET seen = 1 WHERE phone = ? AND direction = 'in' AND seen = 0").run(phone);
     return this.db.sql
-      .prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE phone = ? ORDER BY id DESC LIMIT 500')
+      .prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE phone = ? ORDER BY created_at DESC, id DESC LIMIT 500')
       .all(phone)
       .reverse();
   }
@@ -481,7 +507,7 @@ export class WhatsApp {
   }
 
   thread(leadId: number) {
-    return this.db.sql.prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE lead_id = ? ORDER BY id').all(leadId);
+    return this.db.sql.prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE lead_id = ? ORDER BY created_at, id').all(leadId);
   }
 
   // ---------------------------------------------------------------- webhook
@@ -529,6 +555,14 @@ export class WhatsApp {
             .run(status, st.errors?.[0] ? `${st.errors[0].code}: ${st.errors[0].title ?? st.errors[0].message ?? ''}` : null, st.pricing?.category ?? null, price, st.id);
         }
 
+        for (const c of v.contacts ?? []) {
+          const name = c.profile?.name?.trim().slice(0, 80);
+          if (c.wa_id && name)
+            this.db.sql
+              .prepare("INSERT INTO wa_contacts (phone, name) VALUES (?, ?) ON CONFLICT(phone) DO UPDATE SET name = excluded.name, updated_at = datetime('now')")
+              .run(c.wa_id, name);
+        }
+
         for (const m of v.messages ?? []) {
           const phone = m.from;
           const text = m.button?.text ?? m.interactive?.button_reply?.title ?? m.text?.body ?? `[${m.type}]`;
@@ -565,6 +599,7 @@ type WebhookPayload = {
     changes?: {
       value?: {
         metadata?: { phone_number_id?: string };
+        contacts?: { wa_id?: string; profile?: { name?: string } }[];
         statuses?: { id: string; status: string; pricing?: { billable?: boolean; category?: string }; errors?: { code: number; title?: string; message?: string }[] }[];
         messages?: {
           id: string;
@@ -587,6 +622,7 @@ export class WhatsAppAdminController {
   constructor(
     private readonly wa: WhatsApp,
     private readonly db: Db,
+    private readonly seo: SeoService,
   ) {}
 
   @Get()
@@ -597,6 +633,7 @@ export class WhatsAppAdminController {
       secrets: this.wa.secretsInfo(),
       ready: this.wa.ready,
       missing: this.wa.missing(),
+      usdToInr: this.seo.settings().usdToInr,
       webhookUrl: `${SITE}/api/whatsapp/webhook`,
       sentToday: this.wa.sentToday(),
       webhookLog: this.wa.webhookLog(),
@@ -715,6 +752,12 @@ export class WhatsAppAdminController {
     const p = this.digits(phone);
     await this.wa.sendTextTo(p, String(body?.text ?? ''));
     return this.wa.chat(p);
+  }
+
+  @Post('chats/:phone/lead')
+  @HttpCode(200)
+  addLead(@Param('phone') phone: string, @Body() body: { name?: string; shopType?: string; area?: string }) {
+    return { leadId: this.wa.addLead(this.digits(phone), body ?? {}) };
   }
 
   private digits(phone: string) {

@@ -389,6 +389,15 @@ const MIGRATIONS: string[] = [
   INSERT OR IGNORE INTO wa_optouts (phone)
     SELECT replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') FROM leads WHERE wa_opted_out = 1 AND phone != '';
   `,
+
+  // 16: the WhatsApp profile name people chat under, so chats show "Dev Sidhar" rather than a bare number.
+  `
+  CREATE TABLE wa_contacts (
+    phone TEXT PRIMARY KEY, -- digits with country code
+    name TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 const INDEXES = `

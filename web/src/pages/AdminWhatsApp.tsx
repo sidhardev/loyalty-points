@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Check, CheckCheck, Copy, MessageCircle, RefreshCw, Send, ShieldCheck, Trash2 } from 'lucide-react';
+import { Check, CheckCheck, Copy, MessageCircle, RefreshCw, Send, Settings2, ShieldCheck, Trash2 } from 'lucide-react';
 import { when } from '../api';
-import { ErrorText, confirmDialog, toast, useAction } from '../ui';
+import { ErrorText, Sheet, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
 
 // WhatsApp Cloud API for Admin → Leads (server/src/whatsapp.ts): the setup card (number, token, webhook, template,
@@ -30,6 +30,7 @@ export type WaOverview = {
   secrets: { token: SecretInfo; appSecret: SecretInfo };
   ready: boolean;
   missing: string[];
+  usdToInr: number;
   webhookUrl: string;
   sentToday: number;
   webhookLog: { at: string; result: string; phoneNumberId: string; messages: number; statuses: number; from: string[] }[];
@@ -53,7 +54,42 @@ export function useWhatsApp(api: AdminApi) {
   return { wa, reload: load };
 }
 
-export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOverview; inr: (usd: number) => string; onChanged: () => void }) {
+/**
+ * A one-line WhatsApp status for the Leads and Chats pages — ready or what's missing, today's sends, this month's cost —
+ * with the settings in a modal, since they're set once.
+ */
+export function WhatsAppBar({ api, wa, onChanged }: { api: AdminApi; wa: WaOverview; onChanged: () => void }) {
+  const [open, setOpen] = useState(false);
+  const inr = (usd: number) => `₹${(usd * wa.usdToInr).toFixed(usd * wa.usdToInr < 10 ? 2 : 0)}`;
+  const s = wa.settings;
+  return (
+    <>
+      <section className={`wa-bar${wa.missing.length ? ' wa-bar-todo' : ''}`}>
+        <MessageCircle size={18} />
+        <div>
+          <strong>
+            WhatsApp API · <span className={wa.missing.length ? 'wa-bar-bad' : 'wa-bar-ok'}>{wa.missing.length ? 'not set up' : 'ready'}</span>
+          </strong>
+          <span className="muted small">
+            {wa.missing.length
+              ? `Still missing: ${wa.missing.join(', ')}`
+              : `Today ${wa.sentToday} of ${s.dailyLimit} intros · this month ${wa.month.templates} sent, ${wa.month.replied} replied · ${inr(wa.month.usd)} of $${s.monthlyBudgetUsd}`}
+          </span>
+        </div>
+        <button className={`btn btn-sm ${wa.missing.length ? 'btn-primary' : 'btn-soft'}`} onClick={() => setOpen(true)}>
+          <Settings2 size={15} /> {wa.missing.length ? 'Set up' : 'Settings'}
+        </button>
+      </section>
+      {open && (
+        <Sheet title="WhatsApp settings" wide onClose={() => setOpen(false)}>
+          <WhatsAppSettings api={api} wa={wa} inr={inr} onChanged={onChanged} />
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOverview; inr: (usd: number) => string; onChanged: () => void }) {
   const [form, setForm] = useState(wa.settings);
   const [token, setToken] = useState('');
   const [secret, setSecret] = useState('');
@@ -118,13 +154,7 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
     info.source === 'panel' ? `set here, ending …${info.last4}` : info.source === 'env' ? `from ${env} in the server’s .env, ending …${info.last4}` : 'not set';
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2>
-          <MessageCircle size={18} /> WhatsApp API
-        </h2>
-        <span className={`badge ${wa.missing.length ? 'badge-neutral' : 'badge-plus'}`}>{wa.missing.length ? 'Not set up' : 'Ready'}</span>
-      </div>
+    <div className="wa-settings">
       {wa.missing.length > 0 && <p className="alert alert-error small">Still missing: {wa.missing.join(', ')}.</p>}
       <p className="muted small" style={{ margin: 0 }}>
         Today {wa.sentToday} of {s.dailyLimit} intro messages · this month {wa.month.templates} sent, {wa.month.read} read, {wa.month.replied} replied ·{' '}
@@ -335,7 +365,7 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
         number can message 250 people a day and starts at high quality: keep the daily number low at first, since blocks and reports from shops that didn’t
         expect a message lower the quality rating and can get the number limited.
       </p>
-    </section>
+    </div>
   );
 }
 
@@ -389,14 +419,32 @@ const TICKS: Record<string, ReactNode> = {
   read: <CheckCheck size={13} className="wa-read" />,
 };
 
+/** What WhatsApp sent that isn't text. The file itself isn't downloaded: open WhatsApp on the phone to see it. */
+const MEDIA: Record<string, string> = {
+  image: '📷 Photo',
+  audio: '🎤 Voice message',
+  voice: '🎤 Voice message',
+  video: '🎬 Video',
+  document: '📄 Document',
+  sticker: '🙂 Sticker',
+  location: '📍 Location',
+  contacts: '👤 Contact card',
+  reaction: '👍 Reaction',
+  unsupported: 'A message type WhatsApp doesn’t pass on',
+};
+
 /** One message: theirs on the left, ours on the right with WhatsApp's ticks and what it cost. */
-export function WaBubble({ m }: { m: WaMessage }) {
+export function WaBubble({ m, timeOnly }: { m: WaMessage; timeOnly?: boolean }) {
+  const media = m.body.match(/^\[(\w+)\]$/)?.[1];
+  const time = timeOnly
+    ? new Date(`${m.created_at.replace(' ', 'T')}Z`).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+    : when(m.created_at);
   return (
-    <div className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}`}>
-      <p>{m.body}</p>
+    <div className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}${media ? ' media' : ''}`}>
+      <p>{media ? (MEDIA[media] ?? `[${media}]`) : m.body}</p>
       <span>
         {m.kind === 'template' ? 'intro · ' : ''}
-        {when(m.created_at)}
+        {time}
         {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${m.error ?? ''}` : <> {TICKS[m.status]}</>)}
         {m.cost_usd ? ` · $${m.cost_usd.toFixed(4)}` : ''}
       </span>
