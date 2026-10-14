@@ -31,6 +31,7 @@ export type WaOverview = {
   ready: boolean;
   webhookUrl: string;
   sentToday: number;
+  webhookLog: { at: string; result: string; phoneNumberId: string; messages: number; statuses: number; from: string[] }[];
   month: { usd: number; templates: number; read: number; replied: number };
   suggested: { hi: Suggested; en: Suggested };
 };
@@ -198,6 +199,7 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
       <p className="muted small" style={{ margin: 0 }}>
         In the Meta app: WhatsApp → Configuration → Webhook → paste both, then subscribe to <strong>messages</strong>.
       </p>
+      <WebhookLog log={wa.webhookLog} onRefresh={onChanged} />
 
       <h3 className="wa-step">4. Intro template</h3>
       <p className="small" style={{ margin: 0 }}>
@@ -308,6 +310,50 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
         expect a message lower the quality rating and can get the number limited.
       </p>
     </section>
+  );
+}
+
+const WEBHOOK_RESULT: Record<string, { text: string; ok: boolean }> = {
+  ok: { text: 'Received', ok: true },
+  'other-number': { text: 'Ignored: it was for a different phone number ID than the one saved above', ok: false },
+  'no-secret': { text: 'Refused: no app secret saved', ok: false },
+  'no-signature': { text: 'Refused: the call had no signature from Meta', ok: false },
+  mismatch: { text: 'Refused: the signature didn’t match. The saved app secret isn’t this app’s real one', ok: false },
+};
+
+/** The last calls Meta made to the webhook, and why any was refused: the first place to look when replies don't show up. */
+function WebhookLog({ log, onRefresh }: { log: WaOverview['webhookLog']; onRefresh: () => void }) {
+  return (
+    <div className="wa-hooklog">
+      <div className="card-head">
+        <strong className="small">Recent webhook calls</strong>
+        <button className="btn btn-ghost btn-sm" onClick={onRefresh} aria-label="Refresh webhook calls">
+          <RefreshCw size={14} />
+        </button>
+      </div>
+      {log.length ? (
+        <ul>
+          {log.slice(0, 8).map((h, i) => {
+            const r = WEBHOOK_RESULT[h.result] ?? { text: h.result, ok: false };
+            return (
+              <li key={i} className={r.ok ? 'ok' : 'bad'}>
+                <span>{new Date(h.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</span>
+                <span>
+                  {r.text}
+                  {h.messages ? ` · ${h.messages} message${h.messages > 1 ? 's' : ''}${h.from.length ? ` from +${h.from.join(', +')}` : ''}` : ''}
+                  {h.statuses ? ` · ${h.statuses} status update${h.statuses > 1 ? 's' : ''}` : ''}
+                  {h.phoneNumberId ? ` · number ID ${h.phoneNumberId}` : ''}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="muted small" style={{ margin: 0 }}>
+          Nothing has reached the webhook yet. If Meta shows it sent something, check the Callback URL.
+        </p>
+      )}
+    </div>
   );
 }
 

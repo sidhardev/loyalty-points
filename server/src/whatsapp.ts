@@ -460,13 +460,26 @@ export class WhatsApp {
 
   // ---------------------------------------------------------------- webhook
 
-  /** True if Meta signed this body with our app secret. */
-  verifySignature(raw: Buffer | undefined, header: string | undefined) {
+  /** Whether Meta signed this body with our app secret: 'ok', or why not. */
+  checkSignature(raw: Buffer | undefined, header: string | undefined): 'ok' | 'no-secret' | 'no-signature' | 'mismatch' {
     const secret = this.appSecret();
-    if (!secret || !raw || !header?.startsWith('sha256=')) return false;
+    if (!secret) return 'no-secret';
+    if (!raw || !header?.startsWith('sha256=')) return 'no-signature';
     const expected = Buffer.from(createHmac('sha256', secret).update(raw).digest('hex'));
     const got = Buffer.from(header.slice(7));
-    return expected.length === got.length && timingSafeEqual(expected, got);
+    return expected.length === got.length && timingSafeEqual(expected, got) ? 'ok' : 'mismatch';
+  }
+
+  /** The last 30 webhook calls, so the panel can show whether Meta reaches us and why a call was refused. */
+  logWebhook(entry: { result: string; phoneNumberId: string; messages: number; statuses: number; from: string[] }) {
+    const row = this.db.sql.prepare("SELECT value FROM app_settings WHERE key = 'wa_webhook_log'").get() as { value: string } | undefined;
+    const log = [{ at: new Date().toISOString(), ...entry }, ...(row ? (JSON.parse(row.value) as object[]) : [])].slice(0, 30);
+    this.db.sql.prepare("INSERT INTO app_settings (key, value) VALUES ('wa_webhook_log', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(log));
+  }
+
+  webhookLog() {
+    const row = this.db.sql.prepare("SELECT value FROM app_settings WHERE key = 'wa_webhook_log'").get() as { value: string } | undefined;
+    return row ? (JSON.parse(row.value) as { at: string; result: string; phoneNumberId: string; messages: number; statuses: number; from: string[] }[]) : [];
   }
 
   async handleWebhook(payload: WebhookPayload) {
@@ -559,6 +572,7 @@ export class WhatsAppAdminController {
       ready: this.wa.ready,
       webhookUrl: `${SITE}/api/whatsapp/webhook`,
       sentToday: this.wa.sentToday(),
+      webhookLog: this.wa.webhookLog(),
       month: this.wa.monthCost(),
       suggested: SUGGESTED_TEMPLATES,
     };
@@ -696,11 +710,24 @@ export class WhatsAppWebhookController {
   @Post()
   @HttpCode(200)
   receive(@Req() req: RawBodyRequest<Request>) {
-    if (!this.wa.verifySignature(req.rawBody, req.headers['x-hub-signature-256'] as string | undefined)) {
-      console.error('WhatsApp webhook: bad or missing signature (is the app secret set in Admin → Leads?)');
+    const payload = (req.body ?? {}) as WebhookPayload;
+    const values = (payload.entry ?? []).flatMap((e) => (e.changes ?? []).map((c) => c.value ?? {}));
+    const ours = this.wa.settings().phoneNumberId;
+    let result: string = this.wa.checkSignature(req.rawBody, req.headers['x-hub-signature-256'] as string | undefined);
+    if (result === 'ok' && ours && values.some((v) => v.metadata?.phone_number_id && v.metadata.phone_number_id !== ours)) result = 'other-number';
+    // Phone numbers are only kept for accepted calls: a refused call may not be from Meta at all.
+    this.wa.logWebhook({
+      result,
+      phoneNumberId: String(values[0]?.metadata?.phone_number_id ?? '').slice(0, 30),
+      messages: values.reduce((n, v) => n + (v.messages?.length ?? 0), 0),
+      statuses: values.reduce((n, v) => n + (v.statuses?.length ?? 0), 0),
+      from: result === 'ok' ? values.flatMap((v) => (v.messages ?? []).map((m) => String(m.from).slice(0, 20))).slice(0, 5) : [],
+    });
+    if (result !== 'ok' && result !== 'other-number') {
+      console.error(`WhatsApp webhook refused: ${result} (check the app secret in Admin → Leads → WhatsApp API)`);
       return 'ignored';
     }
-    void this.wa.handleWebhook(req.body as WebhookPayload).catch((e) => console.error('WhatsApp webhook failed:', (e as Error).message));
+    void this.wa.handleWebhook(payload).catch((e) => console.error('WhatsApp webhook failed:', (e as Error).message));
     return 'ok';
   }
 }
