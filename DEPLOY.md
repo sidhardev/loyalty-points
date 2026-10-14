@@ -121,3 +121,10 @@ cd deploy && docker compose up -d                  # restart so the app sees it
 Then open `/admin#/seo`, press **Add 30 suggested** (or type your own kinds of shops), and set pages per day, the
 start time and the monthly budget. Costs are tracked per call; writing stops for the month when the budget is reached.
 On Vercel, `/for/*`, `/hi/for/*` and `/sitemap.xml` are forwarded to the server (see `vercel.json`).
+
+## Lead finder (optional)
+
+Admin → **Leads** finds shops on Google Maps that could use Regularhood and writes a pitch for each with Gemini. It needs
+a Google Maps key with **Places API (New)** turned on in Google Cloud: paste it on that page (stored encrypted), or put
+`GOOGLE_MAPS_API_KEY=...` in `deploy/.env`. The page tracks every search and pitch with its cost; set Google's current
+Text Search Enterprise price, the free searches per month and a monthly budget there (searches stop at the budget).

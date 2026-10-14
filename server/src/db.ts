@@ -297,6 +297,61 @@ const MIGRATIONS: string[] = [
     cost_usd REAL NOT NULL DEFAULT 0
   );
   `,
+
+  // 13: Lead finder (Admin → Leads): shops found on Google Maps (Places API) that could use Regularhood, each with a
+  // status, notes and an AI-written pitch; every search; and every Places call with what it cost.
+  `
+  CREATE TABLE lead_searches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    shop_type TEXT NOT NULL,
+    area TEXT NOT NULL,
+    pages INTEGER NOT NULL DEFAULT 0, -- Places calls made (20 results each)
+    found INTEGER NOT NULL DEFAULT 0,
+    added INTEGER NOT NULL DEFAULT 0, -- not seen in an earlier search
+    cost_usd REAL NOT NULL DEFAULT 0
+  );
+  CREATE TABLE leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    place_id TEXT NOT NULL UNIQUE,
+    search_id INTEGER REFERENCES lead_searches(id) ON DELETE SET NULL, -- the search that first found it
+    name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT '', -- Google's type, e.g. 'Beauty Salon'
+    shop_type TEXT NOT NULL DEFAULT '', -- what was searched for
+    area TEXT NOT NULL DEFAULT '',
+    address TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '', -- +91 98765 43210
+    mobile INTEGER NOT NULL DEFAULT 0, -- 1 = looks like a mobile number, so likely on WhatsApp
+    website TEXT NOT NULL DEFAULT '',
+    maps_url TEXT NOT NULL DEFAULT '',
+    rating REAL,
+    reviews INTEGER NOT NULL DEFAULT 0,
+    lat REAL,
+    lng REAL,
+    score INTEGER NOT NULL DEFAULT 0, -- 0-100, how good a fit (see leads.ts)
+    reasons TEXT NOT NULL DEFAULT '[]', -- JSON list of why
+    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'interested', 'joined', 'not_interested')),
+    notes TEXT NOT NULL DEFAULT '',
+    pitch TEXT, -- JSON written by the model
+    pitch_cost_usd REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    contacted_at TEXT
+  );
+  CREATE INDEX idx_leads_status ON leads (status, score);
+  CREATE TABLE places_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts TEXT NOT NULL DEFAULT (datetime('now')),
+    purpose TEXT NOT NULL,
+    ref_id INTEGER, -- the lead_searches row
+    results INTEGER NOT NULL DEFAULT 0,
+    free INTEGER NOT NULL DEFAULT 0, -- 1 = inside the month's free calls
+    cost_usd REAL NOT NULL DEFAULT 0,
+    ok INTEGER NOT NULL,
+    error TEXT
+  );
+  CREATE INDEX idx_places_usage_ts ON places_usage (ts);
+  `,
 ];
 
 const INDEXES = `
