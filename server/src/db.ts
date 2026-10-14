@@ -283,6 +283,20 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_page_events_day ON page_events (day);
   `,
+
+  // 12: WhatsApp status ideas from Admin → WhatsApp status: each batch with its ready-to-paste image prompts (JSON).
+  `
+  CREATE TABLE status_prompts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    theme TEXT NOT NULL DEFAULT '',
+    shop_type TEXT NOT NULL DEFAULT '',
+    style TEXT NOT NULL,
+    prompt_lang TEXT NOT NULL, -- en | hi: the language of the instructions; the text on the image is always Hindi
+    ideas TEXT NOT NULL, -- [{ angle, headline, subtext, cta, scene, caption, prompt }]
+    cost_usd REAL NOT NULL DEFAULT 0
+  );
+  `,
 ];
 
 const INDEXES = `

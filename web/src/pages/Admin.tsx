@@ -33,6 +33,7 @@ import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { SeoPage } from './AdminSeo';
+import { StatusPage } from './AdminStatus';
 import { VisitsPage, type PageEvent, type PageView } from './Visits';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
@@ -1093,6 +1094,7 @@ const NAV = [
   { path: '/growth', label: 'Growth', icon: Rocket },
   { path: '/follow-up', label: 'Follow up', icon: Phone },
   { path: '/seo', label: 'SEO pages', icon: FileText },
+  { path: '/status', label: 'WhatsApp status', icon: MessageCircle },
   { path: '/visits', label: 'Visits', icon: Globe2 },
   { path: '/log', label: 'Admin log', icon: ScrollText },
 ];
@@ -1161,6 +1163,8 @@ export function AdminApp() {
     <FollowUpPage />
   ) : hash.startsWith('/seo') ? (
     <SeoPage api={adminApi} adminToken={getAdminToken} />
+  ) : hash.startsWith('/status') ? (
+    <StatusPage api={adminApi} />
   ) : hash.startsWith('/visits') ? (
     <VisitsPage fetchViews={fetchViews} />
   ) : hash.startsWith('/log') ? (

@@ -3057,3 +3057,177 @@ circle.trend-views {
   font-size: 12px;
   font-style: normal;
 }
+
+/* ---------------------------------------------------------------- admin: WhatsApp status ideas */
+
+.status-chips {
+  flex-wrap: wrap;
+  margin-top: -6px;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.status-logos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.status-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.status-logo:hover {
+  border-color: var(--brand);
+}
+
+.status-logo img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.status-logo span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.status-logo em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.status-logo > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.status-older {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.status-batch summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.status-batch summary::-webkit-details-marker {
+  display: none;
+}
+
+.status-batch:not([open]) {
+  gap: 0;
+}
+
+.status-ideas {
+  display: grid;
+  gap: 14px;
+}
+
+.status-idea {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* A rough look at the text that goes on the image, on the brand colours. */
+.status-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 9 / 16;
+  align-self: start;
+  padding: 16px 12px;
+  border-radius: 14px;
+  background: linear-gradient(#0b7a52, #0a5e40);
+  color: #eef2ec;
+  text-align: center;
+}
+
+.status-preview strong {
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.status-preview span {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.status-preview em {
+  align-self: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f0a202;
+  color: #0a3d2a;
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.status-body {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.status-prompt {
+  max-height: 260px;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.status-caption {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.status-caption svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .status-idea {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .status-preview {
+    width: 150px;
+  }
+}

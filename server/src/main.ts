@@ -16,6 +16,7 @@ import { LoyaltyService } from './loyalty.service';
 import { PublicController } from './public.controller';
 import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
+import { StatusAdminController } from './status';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
 // on the server the same values come from deploy/.env. Variables already set in the environment win.
@@ -23,7 +24,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController],
+  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController],
   providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore, Gemini, SeoService],
 })
 class AppModule {}
