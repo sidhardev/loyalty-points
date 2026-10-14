@@ -187,6 +187,32 @@ export class WhatsApp {
     return Boolean(s.phoneNumberId && this.token() && s.templateName);
   }
 
+  /** What's still missing, in the panel's words: sending needs the first three, receiving replies the first two and the app secret. */
+  missing() {
+    const s = this.settings();
+    return [
+      !s.phoneNumberId && 'phone number ID',
+      !this.token() && 'access token',
+      !s.templateName && 'an approved intro template (Load templates → Use)',
+      !this.appSecret() && 'app secret (needed to receive replies)',
+    ].filter((x): x is string => Boolean(x));
+  }
+
+  /** Whether our Meta app is subscribed to this WhatsApp account: without it Meta sends no webhooks for its numbers. */
+  async subscription() {
+    const s = this.settings();
+    if (!s.wabaId) throw new BadRequestException('Add the WhatsApp Business Account ID first');
+    const r = await this.graph<{ data?: { whatsapp_business_api_data?: { id?: string; name?: string } }[] }>(`${s.wabaId}/subscribed_apps`);
+    return { apps: (r.data ?? []).map((a) => ({ id: a.whatsapp_business_api_data?.id ?? '', name: a.whatsapp_business_api_data?.name ?? '' })) };
+  }
+
+  async subscribe() {
+    const s = this.settings();
+    if (!s.wabaId) throw new BadRequestException('Add the WhatsApp Business Account ID first');
+    await this.graph<{ success?: boolean }>(`${s.wabaId}/subscribed_apps`, { method: 'POST', body: {} });
+    return this.subscription();
+  }
+
   // ---------------------------------------------------------------- Graph API
 
   private async graph<T>(path: string, init: { method?: string; body?: object; token?: string } = {}): Promise<T> {
@@ -570,6 +596,7 @@ export class WhatsAppAdminController {
       settings: s,
       secrets: this.wa.secretsInfo(),
       ready: this.wa.ready,
+      missing: this.wa.missing(),
       webhookUrl: `${SITE}/api/whatsapp/webhook`,
       sentToday: this.wa.sentToday(),
       webhookLog: this.wa.webhookLog(),
@@ -616,6 +643,19 @@ export class WhatsAppAdminController {
     return this.wa.phoneInfo();
   }
 
+  @Get('subscription')
+  subscription() {
+    return this.wa.subscription();
+  }
+
+  @Post('subscription')
+  @HttpCode(200)
+  async subscribe(@AdminId() adminId: number) {
+    const r = await this.wa.subscribe();
+    this.audit(adminId, 'Subscribed the Meta app to the WhatsApp Business Account (webhooks)');
+    return r;
+  }
+
   @Get('templates')
   templates() {
     return this.wa.templates();
@@ -656,7 +696,7 @@ export class WhatsAppAdminController {
   /** Admin → WhatsApp chats: every conversation, and the number of replies not opened yet (for the menu badge). */
   @Get('chats')
   chats() {
-    return { chats: this.wa.chats(), unread: this.wa.unread(), ready: this.wa.ready };
+    return { chats: this.wa.chats(), unread: this.wa.unread(), ready: this.wa.ready, missing: this.wa.missing() };
   }
 
   @Get('unread')

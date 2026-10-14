@@ -29,6 +29,7 @@ export type WaOverview = {
   settings: WaSettings;
   secrets: { token: SecretInfo; appSecret: SecretInfo };
   ready: boolean;
+  missing: string[];
   webhookUrl: string;
   sentToday: number;
   webhookLog: { at: string; result: string; phoneNumberId: string; messages: number; statuses: number; from: string[] }[];
@@ -58,6 +59,13 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
   const [secret, setSecret] = useState('');
   const [phone, setPhone] = useState<PhoneInfo | null>(null);
   const [templates, setTemplates] = useState<Template[] | null>(null);
+  const [sub, setSub] = useState<{ id: string; name: string }[] | null>(null);
+  const checkSub = () => void run(async () => setSub((await api<{ apps: { id: string; name: string }[] }>('whatsapp/subscription')).apps));
+  const subscribe = () =>
+    void run(async () => {
+      setSub((await api<{ apps: { id: string; name: string }[] }>('whatsapp/subscription', 'POST')).apps);
+      toast('Subscribed: replies will now reach the webhook');
+    });
   const [newLang, setNewLang] = useState<'hi' | 'en'>('hi');
   const [newBody, setNewBody] = useState(wa.suggested.hi.body);
   const { busy, error, setError, run } = useAction();
@@ -115,8 +123,9 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
         <h2>
           <MessageCircle size={18} /> WhatsApp API
         </h2>
-        <span className={`badge ${wa.ready ? 'badge-plus' : 'badge-neutral'}`}>{wa.ready ? 'Ready to send' : 'Not set up'}</span>
+        <span className={`badge ${wa.missing.length ? 'badge-neutral' : 'badge-plus'}`}>{wa.missing.length ? 'Not set up' : 'Ready'}</span>
       </div>
+      {wa.missing.length > 0 && <p className="alert alert-error small">Still missing: {wa.missing.join(', ')}.</p>}
       <p className="muted small" style={{ margin: 0 }}>
         Today {wa.sentToday} of {s.dailyLimit} intro messages · this month {wa.month.templates} sent, {wa.month.read} read, {wa.month.replied} replied ·{' '}
         {inr(wa.month.usd)} of ${s.monthlyBudgetUsd} budget
@@ -199,6 +208,23 @@ export function WhatsAppCard({ api, wa, inr, onChanged }: { api: AdminApi; wa: W
       <p className="muted small" style={{ margin: 0 }}>
         In the Meta app: WhatsApp → Configuration → Webhook → paste both, then subscribe to <strong>messages</strong>.
       </p>
+      <div className="wa-sub">
+        <span className="small">
+          {sub === null
+            ? 'Meta only sends replies if your app is subscribed to this WhatsApp account.'
+            : sub.length
+              ? `Subscribed: ${sub.map((a) => a.name || a.id).join(', ')}. Meta sends this account’s messages to the webhook.`
+              : 'Not subscribed: Meta won’t send any replies to the webhook. Press Subscribe.'}
+        </span>
+        <div className="actions" style={{ margin: 0 }}>
+          <button className="btn btn-soft btn-sm" disabled={busy || !s.wabaId || !wa.secrets.token.source} onClick={checkSub}>
+            Check
+          </button>
+          <button className="btn btn-primary btn-sm" disabled={busy || !s.wabaId || !wa.secrets.token.source} onClick={subscribe}>
+            Subscribe
+          </button>
+        </div>
+      </div>
       <WebhookLog log={wa.webhookLog} onRefresh={onChanged} />
 
       <h3 className="wa-step">4. Intro template</h3>

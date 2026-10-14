@@ -27,7 +27,7 @@ type Chat = {
   opted_out: number;
   window_open: number | null;
 };
-type Data = { chats: Chat[]; unread: number; ready: boolean };
+type Data = { chats: Chat[]; unread: number; ready: boolean; missing: string[] };
 
 /** Fired with the unread count whenever the chats are loaded, so the menu badge updates straight away. */
 export const WA_UNREAD = 'wa-unread';
@@ -82,9 +82,11 @@ export function ChatsPage({ api }: { api: AdminApi }) {
         </div>
       </header>
 
-      {!data.ready && (
+      {data.missing.length > 0 && (
         <p className="alert alert-error">
-          WhatsApp isn’t fully set up yet (number, token and template). Finish it in <a href="#/leads">Leads</a> → WhatsApp API.
+          <span>
+            Still missing: {data.missing.join(', ')}. Add {data.missing.length > 1 ? 'them' : 'it'} in <a href="#/leads">Leads</a> → WhatsApp API.
+          </span>
         </p>
       )}
 
