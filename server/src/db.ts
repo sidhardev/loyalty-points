@@ -377,6 +377,18 @@ const MIGRATIONS: string[] = [
   ALTER TABLE leads ADD COLUMN wa_opted_out INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE leads ADD COLUMN last_inbound_at TEXT; -- their last WhatsApp message: free-form replies are allowed for 24 hours after it
   `,
+
+  // 15: Admin → WhatsApp chats: which received messages the admin has opened, and numbers (lead or not) that asked not
+  // to be messaged.
+  `
+  ALTER TABLE wa_messages ADD COLUMN seen INTEGER NOT NULL DEFAULT 0; -- received messages: 1 once opened in the chats
+  CREATE TABLE wa_optouts (
+    phone TEXT PRIMARY KEY, -- digits with country code
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  INSERT OR IGNORE INTO wa_optouts (phone)
+    SELECT replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') FROM leads WHERE wa_opted_out = 1 AND phone != '';
+  `,
 ];
 
 const INDEXES = `

@@ -317,6 +317,21 @@ const TICKS: Record<string, ReactNode> = {
   read: <CheckCheck size={13} className="wa-read" />,
 };
 
+/** One message: theirs on the left, ours on the right with WhatsApp's ticks and what it cost. */
+export function WaBubble({ m }: { m: WaMessage }) {
+  return (
+    <div className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}`}>
+      <p>{m.body}</p>
+      <span>
+        {m.kind === 'template' ? 'intro · ' : ''}
+        {when(m.created_at)}
+        {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${m.error ?? ''}` : <> {TICKS[m.status]}</>)}
+        {m.cost_usd ? ` · $${m.cost_usd.toFixed(4)}` : ''}
+      </span>
+    </div>
+  );
+}
+
 /** The WhatsApp chat with one lead, inside the lead's sheet. */
 export function WaThread({
   api,
@@ -365,15 +380,7 @@ export function WaThread({
       {messages?.length ? (
         <div className="wa-thread">
           {messages.map((m) => (
-            <div key={m.id} className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}`}>
-              <p>{m.body}</p>
-              <span>
-                {m.kind === 'template' ? 'intro · ' : ''}
-                {when(m.created_at)}
-                {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${m.error ?? ''}` : <> {TICKS[m.status]}</>)}
-                {m.cost_usd ? ` · $${m.cost_usd.toFixed(4)}` : ''}
-              </span>
-            </div>
+            <WaBubble key={m.id} m={m} />
           ))}
         </div>
       ) : (

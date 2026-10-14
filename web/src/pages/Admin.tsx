@@ -10,6 +10,7 @@ import {
   Link2,
   Mail,
   MessageCircle,
+  MessagesSquare,
   Rocket,
   IndianRupee,
   KeyRound,
@@ -36,6 +37,7 @@ import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toa
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
+import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageEvent, type PageView } from './Visits';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
@@ -1096,6 +1098,7 @@ const NAV = [
   { path: '/growth', label: 'Growth', icon: Rocket },
   { path: '/follow-up', label: 'Follow up', icon: Phone },
   { path: '/leads', label: 'Leads', icon: Target },
+  { path: '/chats', label: 'Chats', icon: MessagesSquare },
   { path: '/seo', label: 'SEO pages', icon: FileText },
   { path: '/status', label: 'WhatsApp status', icon: MessageCircle },
   { path: '/visits', label: 'Visits', icon: Globe2 },
@@ -1106,6 +1109,16 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
   const hash = useAdminHash();
   const theme = useTheme();
   const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
+  // WhatsApp replies not opened yet, on the Chats menu item.
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    const check = () => void adminApi<{ unread: number }>('whatsapp/unread').then((r) => setUnread(r.unread), () => {});
+    check();
+    const timer = setInterval(check, 30_000);
+    const onChats = (e: Event) => setUnread((e as CustomEvent<number>).detail);
+    addEventListener(WA_UNREAD, onChats);
+    return () => (clearInterval(timer), removeEventListener(WA_UNREAD, onChats));
+  }, [hash]);
   return (
     <div className="admin">
       <header className="admin-bar">
@@ -1116,6 +1129,7 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
           {NAV.map(({ path, label, icon: Icon }) => (
             <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
               <Icon size={17} /> <span>{label}</span>
+              {path === '/chats' && unread > 0 && <em className="nav-badge">{unread}</em>}
             </a>
           ))}
         </nav>
@@ -1166,6 +1180,8 @@ export function AdminApp() {
     <FollowUpPage />
   ) : hash.startsWith('/seo') ? (
     <SeoPage api={adminApi} adminToken={getAdminToken} />
+  ) : hash.startsWith('/chats') ? (
+    <ChatsPage api={adminApi} />
   ) : hash.startsWith('/leads') ? (
     <LeadsPage api={adminApi} />
   ) : hash.startsWith('/status') ? (

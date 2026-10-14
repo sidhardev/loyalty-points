@@ -292,8 +292,21 @@ export class WhatsApp {
       .run(m.leadId, m.phone, m.direction, m.wamid ?? null, m.kind, m.body.slice(0, 4000), m.status, m.error?.slice(0, 500) ?? null);
   }
 
-  windowOpen(l: Pick<LeadLite, 'last_inbound_at'>) {
-    return Boolean(l.last_inbound_at && Date.now() - Date.parse(`${l.last_inbound_at.replace(' ', 'T')}Z`) < 24 * 3_600_000);
+  leadByPhone(phone: string) {
+    return this.db.sql
+      .prepare("SELECT * FROM leads WHERE replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') = ? ORDER BY id LIMIT 1")
+      .get(phone) as LeadLite | undefined;
+  }
+
+  optedOut(phone: string) {
+    return Boolean(this.db.sql.prepare('SELECT 1 FROM wa_optouts WHERE phone = ?').get(phone));
+  }
+
+  /** Free-form messages are allowed for 24 hours after the number last wrote to us. */
+  chatWindowOpen(phone: string) {
+    return Boolean(
+      this.db.sql.prepare("SELECT 1 FROM wa_messages WHERE phone = ? AND direction = 'in' AND created_at >= datetime('now', '-1 day')").get(phone),
+    );
   }
 
   /** The intro template to one lead. Refuses opted-out leads, landlines, and anything past the daily cap or budget. */
@@ -301,7 +314,7 @@ export class WhatsApp {
     const s = this.settings();
     const l = this.lead(leadId);
     if (!this.ready) throw new BadRequestException('Set up WhatsApp first: number, token and a template');
-    if (l.wa_opted_out) throw new BadRequestException(`${l.name} asked not to be messaged`);
+    if (l.wa_opted_out || this.optedOut(waDigits(l.phone))) throw new BadRequestException(`${l.name} asked not to be messaged`);
     if (!l.mobile) throw new BadRequestException(`${l.name} has no mobile number`);
     if (this.sentToday() >= s.dailyLimit) throw new BadRequestException(`Today's limit of ${s.dailyLimit} messages is reached (change it in WhatsApp settings)`);
     if (this.monthCost().usd + s.marketingPriceUsd > s.monthlyBudgetUsd + 1e-9) throw new BadRequestException(`This month's WhatsApp budget ($${s.monthlyBudgetUsd}) is used up`);
@@ -341,14 +354,19 @@ export class WhatsApp {
 
   /** A free-form message: only allowed for 24 hours after the lead's last message. */
   async sendText(leadId: number, text: string) {
-    const s = this.settings();
     const l = this.lead(leadId);
+    if (l.wa_opted_out) throw new BadRequestException(`${l.name} asked not to be messaged`);
+    await this.sendTextTo(waDigits(l.phone), text, leadId);
+  }
+
+  /** A free-form message to any number that wrote to us in the last 24 hours (a lead or not). */
+  async sendTextTo(phone: string, text: string, leadId = this.leadByPhone(phone)?.id ?? null) {
+    const s = this.settings();
     const body = text.trim().slice(0, 4000);
     if (!body) throw new BadRequestException('Write a message');
     if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Set up WhatsApp first');
-    if (l.wa_opted_out) throw new BadRequestException(`${l.name} asked not to be messaged`);
-    if (!this.windowOpen(l)) throw new BadRequestException('WhatsApp only allows free messages within 24 hours of their last reply. Send the template instead.');
-    const phone = waDigits(l.phone);
+    if (this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
+    if (!this.chatWindowOpen(phone)) throw new BadRequestException('WhatsApp only allows free messages within 24 hours of their last reply. Send the template instead.');
     try {
       const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
         method: 'POST',
@@ -398,6 +416,44 @@ export class WhatsApp {
     return { sent, tried: ids.length, error };
   }
 
+  /** Every conversation, newest first: who, the last message, unread replies, and whether free replies are allowed. */
+  chats() {
+    return this.db.sql
+      .prepare(
+        `SELECT m.phone,
+           MAX(m.id) AS last_id,
+           MAX(m.created_at) AS last_at,
+           COUNT(*) AS messages,
+           SUM(CASE WHEN m.direction = 'in' AND m.seen = 0 THEN 1 ELSE 0 END) AS unread,
+           MAX(CASE WHEN m.direction = 'in' THEN m.created_at END) AS last_in,
+           (SELECT body FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_body,
+           (SELECT direction FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_direction,
+           (SELECT status FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.id DESC LIMIT 1) AS last_status,
+           l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status,
+           EXISTS (SELECT 1 FROM wa_optouts o WHERE o.phone = m.phone) AS opted_out,
+           MAX(CASE WHEN m.direction = 'in' THEN m.created_at END) >= datetime('now', '-1 day') AS window_open
+         FROM wa_messages m
+         LEFT JOIN leads l ON l.id = (SELECT id FROM leads WHERE replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') = m.phone ORDER BY id LIMIT 1)
+         GROUP BY m.phone
+         ORDER BY last_id DESC
+         LIMIT 300`,
+      )
+      .all();
+  }
+
+  /** One conversation, oldest first. Opening it marks the replies as seen. */
+  chat(phone: string) {
+    this.db.sql.prepare("UPDATE wa_messages SET seen = 1 WHERE phone = ? AND direction = 'in' AND seen = 0").run(phone);
+    return this.db.sql
+      .prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE phone = ? ORDER BY id DESC LIMIT 500')
+      .all(phone)
+      .reverse();
+  }
+
+  unread() {
+    return (this.db.sql.prepare("SELECT COUNT(*) AS n FROM wa_messages WHERE direction = 'in' AND seen = 0").get() as { n: number }).n;
+  }
+
   thread(leadId: number) {
     return this.db.sql.prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE lead_id = ? ORDER BY id').all(leadId);
   }
@@ -437,17 +493,21 @@ export class WhatsApp {
         for (const m of v.messages ?? []) {
           const phone = m.from;
           const text = m.button?.text ?? m.interactive?.button_reply?.title ?? m.text?.body ?? `[${m.type}]`;
-          const lead = this.db.sql
-            .prepare("SELECT * FROM leads WHERE replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') = ? ORDER BY id LIMIT 1")
-            .get(phone) as LeadLite | undefined;
+          const lead = this.leadByPhone(phone);
           this.record({ leadId: lead?.id ?? null, phone, direction: 'in', wamid: m.id, kind: m.type, body: text, status: 'received' });
+          const said = text.trim();
+          // STOP (or "not now") from anyone stops our messages; START lets them be messaged again.
+          if (NO.test(said)) this.db.sql.prepare('INSERT OR IGNORE INTO wa_optouts (phone) VALUES (?)').run(phone);
+          else if (/^start$/i.test(said)) {
+            this.db.sql.prepare('DELETE FROM wa_optouts WHERE phone = ?').run(phone);
+            if (lead) this.db.sql.prepare('UPDATE leads SET wa_opted_out = 0 WHERE id = ?').run(lead.id);
+          }
           if (!lead) continue;
           this.db.sql.prepare("UPDATE leads SET last_inbound_at = datetime('now'), updated_at = datetime('now') WHERE id = ?").run(lead.id);
 
-          const said = text.trim();
           if (NO.test(said)) {
             this.db.sql.prepare("UPDATE leads SET wa_opted_out = 1, status = CASE WHEN status = 'joined' THEN status ELSE 'not_interested' END WHERE id = ?").run(lead.id);
-          } else {
+          } else if (!this.optedOut(phone)) {
             this.db.sql.prepare("UPDATE leads SET status = 'interested' WHERE id = ? AND status IN ('new', 'contacted')").run(lead.id);
             // The first "yes" (or any first reply) gets the pitch with the sign-up link, once.
             const pitched = this.db.sql.prepare("SELECT 1 FROM wa_messages WHERE lead_id = ? AND direction = 'out' AND kind = 'text' AND status != 'failed'").get(lead.id);
@@ -577,6 +637,35 @@ export class WhatsAppAdminController {
   async sendPitch(@Param('id', ParseIntPipe) id: number, @Body() body: { lang?: 'hinglish' | 'hindi' }) {
     await this.wa.sendPitch(id, body?.lang);
     return this.wa.thread(id);
+  }
+
+  /** Admin → WhatsApp chats: every conversation, and the number of replies not opened yet (for the menu badge). */
+  @Get('chats')
+  chats() {
+    return { chats: this.wa.chats(), unread: this.wa.unread(), ready: this.wa.ready };
+  }
+
+  @Get('unread')
+  unread() {
+    return { unread: this.wa.unread() };
+  }
+
+  @Get('chats/:phone')
+  chat(@Param('phone') phone: string) {
+    return this.wa.chat(this.digits(phone));
+  }
+
+  @Post('chats/:phone/text')
+  @HttpCode(200)
+  async chatText(@Param('phone') phone: string, @Body() body: { text?: string }) {
+    const p = this.digits(phone);
+    await this.wa.sendTextTo(p, String(body?.text ?? ''));
+    return this.wa.chat(p);
+  }
+
+  private digits(phone: string) {
+    if (!/^\d{8,15}$/.test(phone)) throw new BadRequestException('Not a phone number');
+    return phone;
   }
 
   @Post('bulk')
