@@ -51,6 +51,9 @@ async function bootstrap() {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
       // Server-rendered SEO pages and the live sitemap (seo.ts).
       if (/^\/(hi\/)?for(\/|$)/.test(req.path) || req.path === '/sitemap.xml') return next();
+      // Well-known files we don't publish (ard.json, ai-catalog.json…) are a 404, not the app page, so crawlers and
+      // AI agents don't read HTML as a manifest.
+      if (req.path.startsWith('/.well-known/')) return next();
       if (req.path === '/') return res.type('html').send(home);
       // A wallet's "Add to Home Screen" should open that wallet, so it gets its own manifest.
       const wallet = req.path.match(/^\/w\/([\w-]+)/)?.[1];

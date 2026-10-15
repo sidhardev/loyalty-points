@@ -19,7 +19,7 @@
     { "source": "/for/:path*", "destination": "https://api-habiturn.sidhar.me/for/:path*" },
     { "source": "/hi/for", "destination": "https://api-habiturn.sidhar.me/hi/for" },
     { "source": "/hi/for/:path*", "destination": "https://api-habiturn.sidhar.me/hi/for/:path*" },
-    { "source": "/(.*)", "destination": "/shell.html" }
+    { "source": "/((?!\\.well-known/).*)", "destination": "/shell.html" }
   ],
   "headers": [
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

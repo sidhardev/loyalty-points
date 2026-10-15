@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { AnimatePresence, motion, useInView, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
+import { AnimatePresence, domAnimation, LazyMotion, m, type MotionValue, useInView, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import {
   ArrowRight,
   CakeSlice,
@@ -34,7 +34,7 @@ import '../landing.css';
 // English and Hindi; prerendered in English (scripts/prerender.mjs). Everything is readable without JavaScript and at
 // rest; animations replay what the product does, and stop for reduced motion.
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap';
+export const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap';
 const SIGNUP = '/app#signup';
 
 function useFonts() {
@@ -356,45 +356,51 @@ function Nav({ c, lang }: { c: Copy; lang: Lang }) {
   const [signedIn, setSignedIn] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => setSignedIn(Boolean(getToken())), []); // after hydrating: the prerendered page is signed out
+  // Scrolled past 24px: a 1px marker at y = 24 has left the screen. Watching it (rather than reading scrollY on
+  // every scroll) never makes the browser lay the page out early.
+  const marker = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    const onScroll = () => setScrolled(scrollY > 24);
-    onScroll();
-    addEventListener('scroll', onScroll, { passive: true });
-    return () => removeEventListener('scroll', onScroll);
+    if (!marker.current || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting));
+    io.observe(marker.current);
+    return () => io.disconnect();
   }, []);
   return (
-    <header className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
-      <div className="lp-wrap">
-        <a className="lp-logo" href="/" aria-label="Regularhood home">
-          <LogoMark size={32} />
-          <span>Regularhood</span>
-        </a>
-        <div className="lp-nav-end">
-          <div className="lp-lang" role="group" aria-label="Language">
-            <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} data-track="nav: English">
-              EN
-            </button>
-            <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi" data-track="nav: Hindi">
-              हिं
-            </button>
+    <>
+      <span className="lp-nav-marker" ref={marker} aria-hidden="true" />
+      <header className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
+        <div className="lp-wrap">
+          <a className="lp-logo" href="/" aria-label="Regularhood home">
+            <LogoMark size={32} />
+            <span>Regularhood</span>
+          </a>
+          <div className="lp-nav-end">
+            <div className="lp-lang" role="group" aria-label="Language">
+              <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} data-track="nav: English">
+                EN
+              </button>
+              <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi" data-track="nav: Hindi">
+                हिं
+              </button>
+            </div>
+            {signedIn ? (
+              <a className="lp-btn lp-btn-glow lp-btn-sm" href="/app" data-track="nav: Open your shop">
+                {c.open}
+              </a>
+            ) : (
+              <>
+                <a className="lp-login" href="/app" data-track="nav: Log in">
+                  {c.login}
+                </a>
+                <a className="lp-btn lp-btn-glow lp-btn-sm" href={SIGNUP} data-track="nav: Start free">
+                  {c.start}
+                </a>
+              </>
+            )}
           </div>
-          {signedIn ? (
-            <a className="lp-btn lp-btn-glow lp-btn-sm" href="/app" data-track="nav: Open your shop">
-              {c.open}
-            </a>
-          ) : (
-            <>
-              <a className="lp-login" href="/app" data-track="nav: Log in">
-                {c.login}
-              </a>
-              <a className="lp-btn lp-btn-glow lp-btn-sm" href={SIGNUP} data-track="nav: Start free">
-                {c.start}
-              </a>
-            </>
-          )}
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
 
@@ -403,14 +409,43 @@ function Nav({ c, lang }: { c: Copy; lang: Lang }) {
 /** Shop picker: every section of the page follows it. */
 function ShopPicker({ lang, className = '' }: { lang: Lang; className?: string }) {
   const { ex, pick } = useExample();
+  const ref = useRef<HTMLDivElement>(null);
+  // Where each button sits, read when ResizeObserver reports (just after a layout, so reading costs nothing). The
+  // green pill then slides from the old button to the new one without measuring anything when the pick changes.
+  const boxes = useRef<Partial<Record<ExKey, { x: number; y: number; w: number; h: number }>>>({});
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !('ResizeObserver' in window)) return;
+    const buttons = [...el.children] as HTMLElement[];
+    const ro = new ResizeObserver(() => {
+      for (const b of buttons) boxes.current[b.dataset.key as ExKey] = { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight };
+    });
+    ro.observe(el);
+    buttons.forEach((b) => ro.observe(b));
+    return () => ro.disconnect();
+  }, []);
+  const shown = useRef(ex.key);
+  useEffect(() => {
+    const from = boxes.current[shown.current];
+    const to = boxes.current[ex.key];
+    shown.current = ex.key;
+    const pill = ref.current?.querySelector<HTMLElement>('.on > .lp-picker-bg');
+    if (!from || !to || from === to || !pill?.animate) return;
+    // The pill fills its button's border box (inset -1px); start it over the old button.
+    const start = { left: from.x - to.x - 1, top: from.y - to.y - 1, right: to.x + to.w - from.x - from.w - 1, bottom: to.y + to.h - from.y - from.h - 1 };
+    pill.animate(
+      [Object.fromEntries(Object.entries(start).map(([k, v]) => [k, `${v}px`])), { left: '-1px', top: '-1px', right: '-1px', bottom: '-1px' }],
+      { duration: 380, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
+  }, [ex.key]);
   return (
-    <div className={`lp-picker ${className}`} role="tablist" aria-label="Example shop">
+    <div className={`lp-picker ${className}`} role="tablist" aria-label="Example shop" ref={ref}>
       {EXAMPLES.map((e) => {
         const Icon = e.icon;
         const on = e.key === ex.key;
         return (
-          <button key={e.key} role="tab" aria-selected={on} className={on ? 'on' : ''} onClick={() => pick(e.key)} data-track={`picker: ${e.key}`}>
-            {on && <motion.span layoutId={`pick-${className}`} className="lp-picker-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+          <button key={e.key} role="tab" aria-selected={on} className={on ? 'on' : ''} onClick={() => pick(e.key)} data-key={e.key} data-track={`picker: ${e.key}`}>
+            {on && <span className="lp-picker-bg" />}
             <Icon size={16} />
             <span>{e[lang].type}</span>
           </button>
@@ -471,7 +506,7 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
         py.set(0);
       }}
     >
-      <motion.div className="lp-phone" style={{ rotateX: rx, rotateY: ry }}>
+      <m.div className="lp-phone" style={{ rotateX: rx, rotateY: ry }}>
         <div className="lp-phone-notch" />
         <div className="lp-phone-screen">
           <div className="lp-phone-head">
@@ -480,7 +515,7 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
           </div>
           <AnimatePresence mode="wait" initial={false}>
             {shown === 'reward' ? (
-              <motion.div key="reward" className="lp-phone-result reward" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="reward" className="lp-phone-result reward" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
                 <Confetti />
                 <span className="lp-phone-icon">
                   <Gift size={30} />
@@ -497,18 +532,18 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
                 >
                   <Check size={18} strokeWidth={3} /> {c.demoGiven}
                 </button>
-              </motion.div>
+              </m.div>
             ) : shown === 'visit' ? (
-              <motion.div key="visit" className="lp-phone-result" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="visit" className="lp-phone-result" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
                 <span className="lp-phone-icon">
                   <Check size={30} strokeWidth={3} />
                 </span>
                 <strong>{c.demoVisit(stamps, ex.needed)}</strong>
                 <Stamps on={stamps} of={ex.needed} size={ex.needed > 8 ? 18 : 24} pop={stamps - 1} />
                 <span className="lp-phone-small">{c.demoLeft(ex.needed - stamps, t.short)}</span>
-              </motion.div>
+              </m.div>
             ) : (
-              <motion.div key="keypad" className="lp-phone-keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="keypad" className="lp-phone-keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="lp-phone-number">98765 43210</div>
                 <div className="lp-phone-keys" aria-hidden="true">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''].map((k, i) => (
@@ -518,17 +553,17 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
                 <button className="lp-phone-btn" onClick={add} data-track="demo: Add visit">
                   <Check size={18} strokeWidth={3} /> {c.demoAdd}
                 </button>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </m.div>
 
       <AnimatePresence>
         {sent && (
-          <motion.div className="lp-float lp-float-wa" initial={{ opacity: 0, y: 16, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }}>
+          <m.div className="lp-float lp-float-wa" initial={{ opacity: 0, y: 16, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }}>
             <MessageCircle size={16} /> {c.floatSent}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
       <div className="lp-float lp-float-visit" aria-hidden="true">
@@ -565,8 +600,8 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
           <h1>
             <span className="lp-h1-line">{c.h1(ex.needed)}</span>
             <span className="lp-h1-swap">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
+              <AnimatePresence initial={false}>
+                <m.span
                   key={`${ex.key}-${lang}`}
                   className="lp-h1-reward"
                   initial={{ y: '0.6em', opacity: 0, filter: 'blur(8px)' }}
@@ -575,7 +610,7 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
                   transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
                 >
                   {ex[lang].reward}
-                </motion.span>
+                </m.span>
               </AnimatePresence>
             </span>
           </h1>
@@ -699,12 +734,12 @@ function Film({ c, lang }: { c: Copy; lang: Lang }) {
 
           <div className="lp-film-stage">
             <div className="lp-film-caption">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div key={`${scene}-${lang}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
+              <AnimatePresence initial={false}>
+                <m.div key={`${scene}-${lang}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
                   <span className="lp-film-step">{String(scene + 1).padStart(2, '0')}</span>
                   <h3>{c.scenes[scene][0]}</h3>
                   <p>{c.scenes[scene][1]}</p>
-                </motion.div>
+                </m.div>
               </AnimatePresence>
             </div>
 
@@ -736,13 +771,13 @@ function Film({ c, lang }: { c: Copy; lang: Lang }) {
                           <i />
                         </span>
                       ) : (
-                        <motion.div className="lp-wa-msg" initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
+                        <m.div className="lp-wa-msg" initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
                           {c.bubble(ex.shop, before, ex.needed, t.short)}
                           <div className="lp-wa-card">
                             <small>{c.waName}</small>
                             <Stamps on={before} of={ex.needed} size={ex.needed > 8 ? 13 : 17} />
                           </div>
-                        </motion.div>
+                        </m.div>
                       )}
                     </div>
                   </div>
@@ -809,23 +844,33 @@ function Film({ c, lang }: { c: Copy; lang: Lang }) {
 
 // ---------------------------------------------------------------- the card that fills as you scroll
 
+/** Copies how far the page has scrolled through `target` (0..1) into `to`. */
+function ScrollProgress({ target, to }: { target: RefObject<HTMLElement | null>; to: MotionValue<number> }) {
+  const { scrollYProgress } = useScroll({ target, offset: ['start start', 'end end'] });
+  useMotionValueEvent(scrollYProgress, 'change', (p) => to.set(p));
+  return null;
+}
+
 function ScrollCard({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
   const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  // Scroll tracking measures the section, so it starts only when the section comes near, not while the page loads.
+  const near = useInView(ref, { once: true, margin: '50% 0px' });
+  const progress = useMotionValue(0);
   const [k, setK] = useState(ex.needed);
   const [moved, setMoved] = useState(false);
-  useMotionValueEvent(scrollYProgress, 'change', (p) => {
+  useMotionValueEvent(progress, 'change', (p) => {
     setMoved(true);
     setK(Math.min(ex.needed, Math.floor(p * (ex.needed + 0.6))));
   });
   // At rest (prerendered, or before any scroll) the card shows full.
   const on = moved ? k : ex.needed;
   const done = on >= ex.needed;
-  const glow = useTransform(scrollYProgress, [0, 1], [0.15, 1]);
+  const glow = useTransform(progress, [0, 1], [0.15, 1]);
 
   return (
     <section className="lp-scroll" ref={ref} data-section="why-card">
+      {near && <ScrollProgress target={ref} to={progress} />}
       <div className="lp-scroll-sticky">
         <div className="lp-wrap lp-scroll-grid">
           <div>
@@ -834,7 +879,7 @@ function ScrollCard({ c, lang }: { c: Copy; lang: Lang }) {
             <p className="lp-sub">{c.scrollSub}</p>
           </div>
           <div className="lp-scroll-card-wrap">
-            <motion.div className="lp-scroll-glow" style={{ opacity: glow }} aria-hidden="true" />
+            <m.div className="lp-scroll-glow" style={{ opacity: glow }} aria-hidden="true" />
             <div className={`lp-card big ${done ? 'done' : ''}`}>
               <span className="lp-card-shop">
                 <LogoMark size={26} /> {ex.shop}
@@ -842,10 +887,10 @@ function ScrollCard({ c, lang }: { c: Copy; lang: Lang }) {
               <span className="lp-card-rule">{c.rule(ex.needed, ex[lang].short)}</span>
               <Stamps on={on} of={ex.needed} size={ex.needed > 8 ? 30 : 44} pop={on - 1} />
               <div className="lp-scroll-count">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.strong key={`${on}-${done}-${lang}`} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }}>
+                <AnimatePresence initial={false}>
+                  <m.strong key={`${on}-${done}-${lang}`} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }}>
                     {done ? c.scrollDone(ex[lang].short) : on === 0 ? c.scrollStart : c.scrollVisit(on)}
-                  </motion.strong>
+                  </m.strong>
                 </AnimatePresence>
               </div>
             </div>
@@ -1054,58 +1099,62 @@ export function Landing() {
   }, [lang]);
 
   return (
-    <ExampleContext.Provider value={example}>
-      <div className="lp" lang={lang}>
-        <Nav c={c} lang={lang} />
-        <main>
-          <Hero c={c} lang={lang} />
-          <Marquee lang={lang} />
-          <Film c={c} lang={lang} />
-          <How c={c} />
-          <ScrollCard c={c} lang={lang} />
-          <EveryShop c={c} lang={lang} />
-          <ForCustomers c={c} lang={lang} />
-          <Why c={c} />
-          <Pricing c={c} />
-          <Faq c={c} lang={lang} />
-          <section className="lp-final" data-section="final">
-            <div className="lp-aurora" aria-hidden="true">
-              <span />
-              <span />
-            </div>
+    // Animations without motion's layout features (nothing here animates layout): smaller, and nothing measures the
+    // page while it loads.
+    <LazyMotion features={domAnimation} strict>
+      <ExampleContext.Provider value={example}>
+        <div className="lp" lang={lang}>
+          <Nav c={c} lang={lang} />
+          <main>
+            <Hero c={c} lang={lang} />
+            <Marquee lang={lang} />
+            <Film c={c} lang={lang} />
+            <How c={c} />
+            <ScrollCard c={c} lang={lang} />
+            <EveryShop c={c} lang={lang} />
+            <ForCustomers c={c} lang={lang} />
+            <Why c={c} />
+            <Pricing c={c} />
+            <Faq c={c} lang={lang} />
+            <section className="lp-final" data-section="final">
+              <div className="lp-aurora" aria-hidden="true">
+                <span />
+                <span />
+              </div>
+              <div className="lp-wrap">
+                <h2 className="rv">{c.finalTitle}</h2>
+                <p className="rv">{c.finalSub}</p>
+                <a className="lp-btn lp-btn-glow rv" href={SIGNUP} data-track="final: Start free">
+                  {c.start} <ArrowRight size={18} />
+                </a>
+              </div>
+            </section>
+          </main>
+          <footer className="lp-foot" data-section="footer">
             <div className="lp-wrap">
-              <h2 className="rv">{c.finalTitle}</h2>
-              <p className="rv">{c.finalSub}</p>
-              <a className="lp-btn lp-btn-glow rv" href={SIGNUP} data-track="final: Start free">
-                {c.start} <ArrowRight size={18} />
+              <a className="lp-logo" href="/" aria-label="Regularhood home">
+                <LogoMark size={28} />
+                <span>Regularhood</span>
               </a>
+              <nav aria-label="Footer">
+                <a href="#how" data-track="footer: How it works">
+                  {c.footer.how}
+                </a>
+                <a href="#pricing" data-track="footer: Pricing">
+                  {c.footer.price}
+                </a>
+                <a href="/for" data-track="footer: For your kind of shop">
+                  {c.footer.shops}
+                </a>
+                <a href="/app" data-track="footer: Shop log in">
+                  {c.footer.login}
+                </a>
+              </nav>
+              <small>{c.footer.tag}</small>
             </div>
-          </section>
-        </main>
-        <footer className="lp-foot" data-section="footer">
-          <div className="lp-wrap">
-            <a className="lp-logo" href="/" aria-label="Regularhood home">
-              <LogoMark size={28} />
-              <span>Regularhood</span>
-            </a>
-            <nav aria-label="Footer">
-              <a href="#how" data-track="footer: How it works">
-                {c.footer.how}
-              </a>
-              <a href="#pricing" data-track="footer: Pricing">
-                {c.footer.price}
-              </a>
-              <a href="/for" data-track="footer: For your kind of shop">
-                {c.footer.shops}
-              </a>
-              <a href="/app" data-track="footer: Shop log in">
-                {c.footer.login}
-              </a>
-            </nav>
-            <small>{c.footer.tag}</small>
-          </div>
-        </footer>
-      </div>
-    </ExampleContext.Provider>
+          </footer>
+        </div>
+      </ExampleContext.Provider>
+    </LazyMotion>
   );
 }

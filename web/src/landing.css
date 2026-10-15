@@ -191,6 +191,16 @@
   transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
+.lp-nav-marker {
+  /* 24px down the page, beside the fixed header (Nav watches it to tell when the page has scrolled) */
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
 .lp-nav.scrolled {
   background: rgba(238, 242, 236, 0.88);
   box-shadow: 0 1px 0 var(--line);
@@ -381,6 +391,15 @@
   position: relative;
   display: block;
   min-height: 2.08em;
+}
+
+/* Swapped text (hero reward, film caption, card count): the leaving copy comes first and is lifted out of the flow,
+   so the new one takes its place without measuring anything. */
+.lp-h1-swap > :not(:last-child),
+.lp-film-caption > :not(:last-child),
+.lp-scroll-count > :not(:last-child) {
+  position: absolute;
+  inset: 0 0 auto 0;
 }
 
 /* the reward in green with a marigold highlighter under it, as on the live page */
@@ -926,6 +945,7 @@ button.lp-phone-btn:not(.orange) {
 }
 
 .lp-film-caption {
+  position: relative;
   min-height: 170px;
 }
 
