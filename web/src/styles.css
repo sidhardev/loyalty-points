@@ -3274,6 +3274,31 @@ circle.trend-views {
   gap: 0;
 }
 
+.insta-posts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.insta-post {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  font-size: 14px;
+}
+
+.insta-post img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+
+.insta-post .actions {
+  margin: 0;
+}
+
 .status-ideas {
   display: grid;
   gap: 14px;

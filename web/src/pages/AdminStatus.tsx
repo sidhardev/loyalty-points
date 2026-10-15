@@ -29,6 +29,71 @@ const LOGOS = [
   { file: 'regularhood-logo.svg', label: 'Logo (vector)', size: 'SVG, any size' },
 ];
 
+// The 9 launch posts in web/public/brand/instagram (made from brand/instagram; captions from brand/instagram/captions.md).
+const INSTA_TAGS = '#Regularhood #StampCard #LoyaltyProgram #SmallBusinessIndia #LocalShops #KiranaStore #CafeOwner #SalonBusiness #CustomerLoyalty #DukaanDigital #VocalForLocal';
+const INSTA_POSTS = [
+  {
+    file: 'post-1',
+    title: 'Intro',
+    caption: `Meet Regularhood 🏪
+A stamp card for local shops: chai stalls, cafés, salons, bakeries, kirana stores and more.
+Every 5th visit, a free chai (or whatever reward you choose). Turn first-time customers into regulars, all from the phone you already have.
+Free to start → link in bio.`,
+  },
+  {
+    file: 'post-2',
+    title: 'The problem',
+    caption: `A new customer pays, smiles and walks out. Will they come back? Right now, that's left to luck. 🎲
+Regularhood counts every visit for you and gives them a reason to return.`,
+  },
+  {
+    file: 'post-3',
+    title: 'Old way vs new way',
+    caption: `Paper stamp cards get lost, forgotten at home, or thrown away.
+With Regularhood the card is just your customer's phone number, so it can't be lost, and you can see who hasn't been back in a while.`,
+  },
+  {
+    file: 'post-4',
+    title: 'How it works',
+    caption: `Three steps, one button:
+1️⃣ Set your one rule, e.g. every 5 visits → free chai
+2️⃣ Type the customer's number and tap Add visit
+3️⃣ On the 5th visit the screen turns orange: give the reward, and the card starts again
+Setup takes about a minute.`,
+  },
+  {
+    file: 'post-5',
+    title: 'No app, nothing to scan',
+    caption: `No app to download. Nothing to scan. No password to remember.
+Your customer just says their phone number at the counter. Their card opens from a WhatsApp link and can sit on their home screen like any app. 📱`,
+  },
+  {
+    file: 'post-6',
+    title: 'WhatsApp',
+    caption: `After a visit, send the customer their card on WhatsApp with one tap: how many visits they have and how many more until their reward. 💬
+A small reminder that brings them back.`,
+  },
+  {
+    file: 'post-7',
+    title: 'No smartphone',
+    caption: `Not every customer has a smartphone, and that's fine.
+A customer is just a phone number: no names, no sign-up, nothing to scan. Type the number, tap Add visit, and they're one stamp closer to their reward.`,
+  },
+  {
+    file: 'post-8',
+    title: 'Hindi',
+    caption: `आपके ग्राहक, उनकी भाषा में। 🇮🇳
+The customer's card, the WhatsApp message and your shop app all work in English or Hindi.`,
+  },
+  {
+    file: 'post-9',
+    title: 'Call to action',
+    caption: `Free to start. Set up in a minute. ✅
+Your customers stay yours: we never sell or share their details, and you can download your customer list and visit history any time.
+Start today → link in bio (www.regularhood.in)`,
+  },
+];
+
 const copy = (text: string, what: string) =>
   navigator.clipboard.writeText(text).then(
     () => toast(`${what} copied`),
@@ -77,6 +142,8 @@ export function StatusPage({ api }: { api: AdminApi }) {
         <GenerateCard api={api} disabled={!data.keySet} onDone={load} />
         <LogosCard />
       </div>
+
+      <InstagramPostsCard />
 
       {latest ? <BatchCard batch={latest} onDelete={() => void remove(latest)} open /> : <EmptyState icon={Image} title="No ideas yet" text="Pick a theme and press Write ideas." />}
 
@@ -207,6 +274,45 @@ function LogosCard() {
         </a>
       </div>
     </section>
+  );
+}
+
+function InstagramPostsCard() {
+  return (
+    <details className="card status-batch">
+      <summary className="card-head">
+        <h2>
+          <Image size={18} /> Instagram launch posts
+        </h2>
+        <span className="muted small">9 posts · 1080 × 1080 PNG</span>
+      </summary>
+      <p className="muted small" style={{ margin: 0 }}>
+        Post in reverse order (post 9 first, post 1 last): Instagram puts the newest post top-left, so the grid ends with post 1 top-left. Copy caption
+        includes the hashtags.
+      </p>
+      <div className="insta-posts">
+        {INSTA_POSTS.map((p, i) => (
+          <article key={p.file} className="insta-post">
+            <a href={`/brand/instagram/${p.file}.png`} target="_blank" rel="noreferrer">
+              <img src={`/brand/instagram/${p.file}.png`} alt={p.title} loading="lazy" width={1080} height={1080} />
+            </a>
+            <strong>
+              {i + 1}. {p.title}
+            </strong>
+            <div className="actions">
+              <a className="btn btn-soft btn-sm" href={`/brand/instagram/${p.file}.png`} download={`regularhood-${p.file}.png`}>
+                <Download size={15} /> Image
+              </a>
+              <button className="btn btn-soft btn-sm" onClick={() => void copy(`${p.caption}
+
+${INSTA_TAGS}`, 'Caption')}>
+                <Copy size={15} /> Caption
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </details>
   );
 }
 
