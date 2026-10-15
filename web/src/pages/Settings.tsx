@@ -4,7 +4,7 @@ import { api, download, type Merchant } from '../api';
 import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
 import '../poster.css';
-import { ShareCard } from '../share';
+import { ReferralCard, ShareCard } from '../share';
 import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { Stamps, messageLang } from './Counter';
@@ -235,6 +235,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
           <Poster merchant={merchant} />
           <ShareCard merchant={merchant} />
+          <ReferralCard merchant={merchant} />
           <YourData />
           <section className="card">
             <div className="card-head">

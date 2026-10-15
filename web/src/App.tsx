@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { Download, Settings as SettingsIcon, Stamp, Users } from 'lucide-react';
+import { Download, LogOut, Settings as SettingsIcon, Stamp, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { enableTranslation, LangToggle, t, useLang } from './i18n';
 import { AdminApp } from './pages/Admin';
@@ -9,8 +9,9 @@ import { Customers } from './pages/Customers';
 import { Counter } from './pages/Counter';
 import { ActivityLog } from './pages/ActivityLog';
 import { Join, OldLink, Wallet } from './pages/Public';
+import { Referral } from './pages/Referral';
 import { Settings } from './pages/Settings';
-import { ConfirmHost, Logo, Toaster, InstallButton } from './ui';
+import { ConfirmHost, confirmDialog, Logo, Toaster, InstallButton } from './ui';
 
 // The homepage and its animation library load on their own, so the shop app doesn't download them.
 const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
@@ -39,7 +40,7 @@ const NAV = [
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-function Shell({ merchant, children }: { merchant: Merchant; children: ReactNode }) {
+function Shell({ merchant, onLogout, children }: { merchant: Merchant; onLogout: () => void; children: ReactNode }) {
   useLang(); // the nav follows the chosen language
   const hash = useHash();
   const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
@@ -60,6 +61,15 @@ function Shell({ merchant, children }: { merchant: Merchant; children: ReactNode
           <InstallButton className="side-link">
             <Download size={19} /> {t('Install app')}
           </InstallButton>
+          <button
+            type="button"
+            className="side-link"
+            onClick={async () => {
+              if (await confirmDialog({ title: t('Log out?'), confirm: t('Log out'), cancel: t('Cancel') })) onLogout();
+            }}
+          >
+            <LogOut size={19} /> {t('Log out')}
+          </button>
         </div>
       </aside>
 
@@ -118,7 +128,7 @@ function ShopApp() {
   else page = <Counter merchant={merchant} onSaved={setMerchant} />;
 
   return (
-    <Shell merchant={merchant}>
+    <Shell merchant={merchant} onLogout={logout}>
       {page}
     </Shell>
   );
@@ -128,12 +138,13 @@ function Route() {
   if (location.pathname === '/admin') return <AdminApp />;
   const reset = location.pathname.match(/^\/reset\/([^/]+)/)?.[1];
   if (reset) return <ResetPassword token={decodeURIComponent(reset)} />;
-  const [, kind, id] = location.pathname.match(/^\/(w|join|c)\/([^/]+)/) ?? [];
+  const [, kind, id] = location.pathname.match(/^\/(w|join|c|r)\/([^/]+)/) ?? [];
   if (kind || location.pathname === '/login') enableTranslation(); // customer pages can switch to Hindi
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
   // Bill QRs and PIN logins are gone: nothing to scan or remember, the shop types the number.
   if (kind === 'c' || location.pathname === '/login') return <OldLink />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;
+  if (kind === 'r') return <Referral code={decodeURIComponent(id)} />;
   if (location.pathname === '/app' || location.pathname.startsWith('/app/')) return <ShopApp />;
   // The shop app used to live at "/": send old bookmarks like /#/customers to /app.
   if (location.hash.startsWith('#/')) {
