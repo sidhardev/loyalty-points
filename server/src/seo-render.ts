@@ -14,7 +14,8 @@ export type SeoContent = {
   steps: { title: string; text: string }[];
   billShopName: string;
   billItems: { name: string; price: number }[];
-  rewards: { name: string; points: number }[];
+  // Pages written before the stamp card have `points` instead of `visits`; they show the usual 5 visits.
+  rewards: { name: string; visits?: number; points?: number }[];
   tips: string[];
   faqs: { q: string; a: string }[];
 };
@@ -38,13 +39,12 @@ const T = {
     perks: ['Free to start', 'No app for customers', 'English & Hindi'],
     bill: 'Example bill',
     total: 'Total',
-    points: 'points',
-    perHundred: (n: number) => `${n} points on every ₹100`,
+    stampLine: 'Every visit = 1 stamp',
+    stamp: (n: number, of: number) => `Visit ${n} of ${of} ✓`,
     problems: 'Why customers drift away',
     steps: 'How it works at your counter',
     rewards: 'Reward ideas',
-    pts: 'pts',
-    spend: (r: number) => `after about ₹${inr(r)} of shopping`,
+    every: (n: number) => `Every ${n} visits`,
     tips: 'Ways to bring them back more often',
     faq: 'Questions',
     ctaTitle: 'Your next regular walks in today.',
@@ -52,7 +52,7 @@ const T = {
     others: 'Regularhood for other shops',
     twin: 'हिंदी में पढ़ें',
     hubTitle: 'Loyalty programs for every kind of shop',
-    hubIntro: 'Regularhood gives points on every bill and brings customers back. Pick a shop like yours to see how it works there.',
+    hubIntro: 'Regularhood is a stamp card on the customer’s phone number: every few visits, a free reward. Pick a shop like yours to see how it works there.',
     hubEmpty: 'Pages for each kind of shop are on their way.',
     notFound: 'This page doesn’t exist (yet).',
     footer: 'From first visit to “the usual”.',
@@ -66,13 +66,12 @@ const T = {
     perks: ['शुरू करना मुफ़्त', 'ग्राहकों को ऐप नहीं चाहिए', 'हिंदी और English'],
     bill: 'उदाहरण बिल',
     total: 'कुल',
-    points: 'पॉइंट्स',
-    perHundred: (n: number) => `हर ₹100 पर ${n} पॉइंट्स`,
+    stampLine: 'हर विज़िट = 1 स्टैम्प',
+    stamp: (n: number, of: number) => `विज़िट ${n} / ${of} ✓`,
     problems: 'ग्राहक वापस क्यों नहीं आते',
     steps: 'आपके काउंटर पर ऐसे काम करता है',
     rewards: 'इनाम के आइडिया',
-    pts: 'पॉइंट्स',
-    spend: (r: number) => `लगभग ₹${inr(r)} की खरीदारी के बाद`,
+    every: (n: number) => `हर ${n} विज़िट पर`,
     tips: 'ग्राहकों को बार-बार बुलाने के तरीके',
     faq: 'सवाल-जवाब',
     ctaTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
@@ -192,12 +191,12 @@ ${BEACON}
 </html>`;
 }
 
-export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?: PageRef; others: PageRef[]; pointsPer100: number }) {
+export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?: PageRef; others: PageRef[] }) {
   const lang = row.lang;
   const t = T[lang];
   const here = path(lang, row.slug);
   const total = c.billItems.reduce((n, i) => n + i.price, 0);
-  const points = Math.floor((total * o.pointsPer100) / 100);
+  const needed = c.rewards[0]?.visits ?? 5;
   const alternates = [{ lang, path: here }, ...(o.twin ? [{ lang: o.twin.lang, path: path(o.twin.lang, o.twin.slug) }] : [])];
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -238,12 +237,12 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
     c.billItems.length
       ? `<div class="receipt" aria-label="${esc(t.bill)}">
     <h3>${esc(c.billShopName || row.topic)}</h3>
-    <div class="c">${esc(t.bill)} · ${esc(t.perHundred(o.pointsPer100))}</div>
+    <div class="c">${esc(t.bill)} · ${esc(t.stampLine)}</div>
     <hr>
     ${c.billItems.map((i) => `<div class="r"><span>${esc(i.name)}</span><span>₹${inr(i.price)}</span></div>`).join('')}
     <hr>
     <div class="r t"><span>${t.total}</span><span>₹${inr(total)}</span></div>
-    <span class="stamp">+${inr(points)} ${t.points}</span>
+    <span class="stamp">${esc(t.stamp(Math.max(1, needed - 2), needed))}</span>
   </div>`
       : ''
   }
@@ -264,7 +263,7 @@ ${
     ? `<section><div class="wrap">
   <h2>${t.rewards}</h2>
   <div class="rewards">${c.rewards
-    .map((r) => `<div class="reward"><strong>${inr(r.points)} ${t.pts}</strong><b>${esc(r.name)}</b><span>${esc(t.spend(Math.round((r.points * 100) / o.pointsPer100)))}</span></div>`)
+    .map((r) => `<div class="reward"><strong>${esc(t.every(r.visits ?? 5))}</strong><b>${esc(r.name)}</b></div>`)
     .join('')}</div>
 </div></section>`
     : ''

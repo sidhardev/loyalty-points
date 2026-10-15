@@ -4,50 +4,27 @@ export type Merchant = {
   id: number;
   name: string;
   email: string;
-  pointsPer100: number;
-  joinCode: string;
-  welcomeBonus: number;
-  birthdayBonus: number;
-  goldThreshold: number;
-  goldMultiplier: number;
-  inactiveDays: number;
-  maxVisitsPerDay: number; // per customer in 24 hours, 0 = no limit
-  largeBill: number; // bills above this ask to confirm, 0 = off
+  joinCode: string; // public: the shop's share link /r/<code> and old counter-poster QRs /join/<code>
+  inactiveDays: number; // "not seen" after this many days
   phone: string; // owner's WhatsApp number, '' = not given
+  visitsNeeded: number; // every this many visits…
+  rewardName: string; // …the customer gets this ('' until the shop sets it up)
 };
 
-export type Tier = { name: 'Gold' | 'Member'; multiplier: number; toGold: number };
-
+/** A customer is just a phone number with stamps: one per visit, the reward at `merchant.visitsNeeded`. */
 export type Customer = {
   id: number;
-  name: string;
+  name: string; // '' unless they had one from before the stamp card
   phone: string;
-  points: number;
-  lifetimePoints: number;
-  birthday: string | null; // MM-DD
+  stamps: number;
+  rewardDue: boolean;
   lastVisit: string | null;
   walletToken: string;
-  hasPin: boolean;
   createdAt: string;
-  tier: Tier;
 };
 
-export type Reward = { id: number; name: string; points_cost: number };
-
-export type Transaction = {
-  id: number;
-  type: 'earn' | 'redeem' | 'bonus' | 'adjust';
-  points: number; // signed
-  amount: number | null;
-  note: string | null;
-  reversed?: number;
-  reversal_of?: number | null;
-  created_at: string;
-  customer_id?: number;
-  customer_name?: string;
-};
-
-export type Bonus = { label: string; points: number };
+/** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
+export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer };
 
 const TOKEN = 'lp_token';
 
@@ -92,10 +69,6 @@ export async function download(path: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** About how much more someone has to spend to earn `points`, rounded up to ₹10. */
-export const spendFor = (points: number, pointsPer100: number, multiplier = 1) =>
-  points <= 0 ? 0 : Math.ceil((points * 100) / (pointsPer100 * multiplier) / 10) * 10;
-
 export const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 export const num = (n: number) => n.toLocaleString('en-IN');
 
@@ -105,41 +78,33 @@ export const when = (sqlTime: string) =>
   parseTime(sqlTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 export const daysAgo = (sqlTime: string) => Math.floor((Date.now() - parseTime(sqlTime).getTime()) / 86_400_000);
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-export const birthdayLabel = (mmdd: string) => `${Number(mmdd.slice(3))} ${MONTHS[Number(mmdd.slice(0, 2)) - 1]}`;
 
 // ---- links customers open ----
 
 export const walletUrl = (token: string) => `${location.origin}/w/${token}`;
 export const joinUrl = (code: string) => `${location.origin}/join/${code}`;
-export const claimUrl = (code: string) => `${location.origin}/c/${code}`;
 
-// Wallets opened on this phone, so a bill QR can be claimed with one tap.
-export type SavedWallet = { token: string; shopId: number; shop: string; name: string };
-const WALLETS = 'lp_wallets';
+/** "98765 43210" for a 10-digit number; anything else as stored. */
+export const phoneLabel = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(0, 5)} ${phone.slice(5)}` : phone);
 
-export function savedWallets(): SavedWallet[] {
-  try {
-    return JSON.parse(localStorage.getItem(WALLETS) || '[]') as SavedWallet[];
-  } catch {
-    return [];
+/** The customer's card message the shop sends on WhatsApp after a visit (`given`: right after handing over the reward). */
+export function cardMessage(m: Merchant, c: Customer, lang: 'en' | 'hi' = 'hi', given = false) {
+  const left = Math.max(0, m.visitsNeeded - c.stamps);
+  const url = walletUrl(c.walletToken);
+  if (lang === 'hi') {
+    if (given) return `${m.name}: आपका ${m.rewardName} 🎉 धन्यवाद! नया कार्ड शुरू — ${m.visitsNeeded} विज़िट पर फिर से।
+आपका कार्ड: ${url}`;
+    if (c.rewardDue) return `${m.name}: आपका इनाम तैयार है — ${m.rewardName} 🎁
+आपका कार्ड: ${url}`;
+    return `${m.name}: विज़िट ${c.stamps}/${m.visitsNeeded} ✓ बस ${left} और विज़िट, फिर ${m.rewardName}! 🎁
+आपका कार्ड: ${url}`;
   }
-}
-
-export function rememberWallet(w: SavedWallet) {
-  try {
-    localStorage.setItem(WALLETS, JSON.stringify([w, ...savedWallets().filter((x) => x.token !== w.token)].slice(0, 20)));
-  } catch {
-    // Without storage the customer just types their number next time.
-  }
-}
-
-export function forgetWallet(token: string) {
-  try {
-    localStorage.setItem(WALLETS, JSON.stringify(savedWallets().filter((x) => x.token !== token)));
-  } catch {
-    // Nothing saved to forget.
-  }
+  if (given) return `${m.name}: enjoy your ${m.rewardName} 🎉 Thank you! A new card starts — again after ${m.visitsNeeded} visits.
+Your card: ${url}`;
+  if (c.rewardDue) return `${m.name}: your reward is ready — ${m.rewardName} 🎁
+Your card: ${url}`;
+  return `${m.name}: visit ${c.stamps} of ${m.visitsNeeded} ✓ ${left} more for ${m.rewardName}! 🎁
+Your card: ${url}`;
 }
 
 /** wa.me link with the message filled in; 10-digit numbers are treated as Indian (+91). */

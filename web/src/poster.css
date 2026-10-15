@@ -86,3 +86,74 @@
     height: 297mm;
   }
 }
+
+/* Share your shop (share.tsx): the status / post image preview, links and the Dashboard card. */
+.share-preview.is-status {
+  max-width: 270px;
+}
+
+.share-preview.is-post {
+  max-width: 360px;
+}
+
+.share-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.share-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.share-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.share-link code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.share-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--brand-soft);
+  border-color: transparent;
+}
+
+.share-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.share-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 52ch;
+}

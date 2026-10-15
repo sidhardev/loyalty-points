@@ -1,7 +1,7 @@
 # Regularhood
 
-Turn walk-ins into regulars. A simple loyalty program for neighbourhood shops: give customers points on every bill and
-let them spend the points on rewards. Live at [www.regularhood.in](https://www.regularhood.in) (formerly Habiturn,
+Turn walk-ins into regulars. A simple loyalty program for neighbourhood shops: a stamp card on the customer's phone
+number — every few visits, a free reward. Live at [www.regularhood.in](https://www.regularhood.in) (formerly Habiturn,
 at habiturn.sidhar.me, which now redirects there).
 
 - **server/** – NestJS API, data in one SQLite file (`server/data/loyalty.db`, Node's built-in `node:sqlite`)
@@ -9,32 +9,38 @@ at habiturn.sidhar.me, which now redirects there).
 
 ## Features
 
-- **Sign up / log in** – each shop has its own account (email + password, 7-day login token)
-- **Give points** – phone + bill amount; first-time customers are created on the spot. A **Send on WhatsApp** button opens WhatsApp with the points message and the customer's wallet link
-- **Bill QR** – the shop types the bill and shows a QR; the customer scans it with their phone camera (`/c/<code>`) and the points land in their wallet — one tap if their card is saved on that phone, otherwise phone number (+ name if they're new, which also signs them up). Codes work once and expire after 3 minutes; the shop's screen switches to "Points added" by itself
-- **Scan card** – the wallet's **My card** button shows a member QR; the shop scans it in Give points instead of typing the number (needs the camera, so the app must be opened over https or on localhost)
-- **Customer wallet** – `/w/<link>`: the customer's points, Gold progress, rewards and history, no app or login needed. Progress is shown in rupees ("Shop for ₹600 more → Free Coffee"), with confetti when a reward unlocks, Gold is reached or a reward is handed over
-- **Reward codes** – the customer taps **Get it** on a reward in their wallet and gets a 4-digit code (10 minutes); the shop types it in Give points → **Reward code**, sees who and what, and confirms. Points are only taken then, and the wallet updates by itself
-- **English / हिंदी** – customer pages (wallet, bill QR, join, login) switch language with one tap; the choice is remembered on that phone. The shop's screens stay English
-- **Forgot PIN** – cards opened on a phone are remembered, so `/login` lists them to open without a PIN (and set a new one)
-- **Safety** – a limit on how many times one customer can get points in 24 hours (default 3), and a "are you sure?" check for bills above an amount (default ₹5,000). Both in Settings
-- **Activity log** – Settings → Activity log: undos, adjustments, deletes, edits, PIN resets, setting and reward changes, redeemed codes, blocked and large bills, with who did it (shop or customer)
-- **Export** – Settings → Your data: customers and full points history as CSV (opens in Excel / Google Sheets)
-- **Installable app (PWA)** – the shop app and each customer wallet can be added to the home screen; a wallet installed this way opens straight to that wallet. Works offline as far as opening the app (the API is never cached)
-- **Counter QR** – printable poster (Settings) that opens `/join/<code>`, where customers sign up themselves and choose a PIN
-- **Customer login** – `/login` with phone + 4-digit PIN opens their wallet (or a list, if they're a member of several shops). PINs are hashed; 5 wrong PINs lock that number for 15 minutes. Shops can reset a forgotten PIN; customers set a new one from their wallet link
-- **Customers** – search, add, edit, delete; full history with **Undo** per entry and manual **Adjust** with a reason
-- **Rewards** – create rewards and redeem them from a customer's page
-- **Bonuses & tiers** – welcome bonus, birthday bonus (on their visit within a week of the birthday, once a year), and ★ Gold after a lifetime-points threshold with a points multiplier
-- **Win-back** – list of customers who haven't visited in N days, each with a ready "we miss you" WhatsApp message
-- **Insights** – visits per day (new vs returning), top customers, repeat rate, sales and average bill
+A digital stamp card: **every N visits → one reward** (e.g. every 5 visits → free chai). A customer is just a phone
+number — no names, QR codes, points, PINs or sign-up.
+
+- **Sign up / log in** – each shop has its own account (email + password, 7-day login token). The first screen asks
+  for the one rule: how many visits, and what the customer gets
+- **Add visit** – the shop's home screen is a keypad: type the customer's number (known numbers are suggested after 4
+  digits) and tap **Add visit**. New numbers become customers on the spot. One visit per number per day counts
+- **Reward** – on the Nth visit the screen turns orange: **Give Free chai now** → **Given**, and the card starts again.
+  "Not now" keeps it waiting for next time
+- **Send card on WhatsApp** – opens WhatsApp with the customer's progress and their card link (Hindi or English, set
+  in Settings)
+- **Customer card** – `/w/<link>`: their stamps, what's left to the reward and their visits; English / हिंदी, no app
+  or login. Old counter-poster QRs (`/join/<code>`) show the shop's rule; old bill QR and PIN login links explain
+  there's nothing to scan any more
+- **Undo** – "Wrong number? Undo" right after a visit, and Undo on any visit or reward in a customer's history
+- **Customers** – search by number, "Reward waiting", and "Not seen in N days" with a ready "we miss you" WhatsApp
+- **Activity log and export** – Settings: rewards given, undos, deletes and changes; customers and visit history as CSV
+- **Installable app (PWA)** – the shop app and each customer card can be added to the home screen
+- **English / हिंदी everywhere** – the homepage, the shop app (switch in the top bar or Settings → Account) and the
+  customer card; the choice is remembered on that phone
+- **Counter poster and share image** – Settings: an A4 poster and a WhatsApp status / Instagram image with the shop's
+  rule ("Every 5 visits → Free chai") and "just tell your phone number at the counter". No QR codes
+
+Shops from before the stamp card keep their customers: each customer's past bills became stamps (up to one short of
+the reward, so their next visit earns it), and the shop's cheapest reward became its one reward.
 
 ## Superadmin
 
 `/admin` is the platform owner's panel: every shop's health (active / sleeping / new / never started / paused), a
-"needs a call" list of shops that went quiet, and per-shop numbers (customers, bills, sales, how much returning
-customers spent). Support actions: a one-time password reset link (24 hours), pausing a shop (no logins, joins or
-bill QRs — customer wallets still open) and notes. Every admin action is in the admin log. Admins see counts and
+"needs a call" list of shops that went quiet or never set up their card, and per-shop numbers (their card rule,
+customers, visits and rewards given, customers who came back, rewards waiting). Support actions: a one-time password
+reset link (24 hours), pausing a shop (no logins or new visits — customers' cards still open) and notes. Every admin action is in the admin log. Admins see counts and
 totals only, never customers' names or phone numbers.
 
 Admins are created only on the server — never from the website:
@@ -79,32 +85,19 @@ All routes except signup/login need `Authorization: Bearer <token>`.
 | --- | --- | --- |
 | POST | `/api/auth/signup` | `{ name, email, password }` → `{ token, merchant }` |
 | POST | `/api/auth/login` | `{ email, password }` → `{ token, merchant }` |
-| GET / PATCH | `/api/me` | shop details / update `{ name, pointsPer100 }` |
-| GET | `/api/dashboard` | totals and recent activity |
-| GET / POST | `/api/customers` | list (`?q=` search) / add `{ name, phone }` |
-| GET | `/api/customers/:id` | customer with history |
-| POST | `/api/points/earn` | `{ phone, amount, name? }` |
-| POST | `/api/points/redeem` | `{ customerId, rewardId }` |
-| GET / POST | `/api/rewards` | list / add `{ name, pointsCost }` |
-| DELETE | `/api/rewards/:id` | remove a reward |
-| PATCH / DELETE | `/api/customers/:id` | edit `{ name, phone, birthday }` / delete with history |
-| POST | `/api/customers/:id/adjust` | `{ points, reason }` (negative removes) |
-| POST | `/api/transactions/:id/undo` | reverse one entry |
-| GET | `/api/customers?filter=inactive` | customers who haven't visited recently |
-| GET | `/api/insights?days=30&tz=330` | daily visits, top customers, repeat rate |
-| GET | `/api/public/wallet/:token` | customer wallet (no login) |
-| GET / POST | `/api/public/join/:code` | counter QR sign-up `{ name, phone, pin, birthday? }` (no login) |
-| POST | `/api/public/wallet/:token/pin` | set or change the customer's PIN |
-| POST | `/api/public/login` | `{ phone, pin }` → `{ wallets }` |
-| POST | `/api/customers/:id/reset-pin` | shop clears a forgotten PIN |
-| POST | `/api/claims` | `{ amount }` → bill QR `{ code, expiresAt }` |
-| GET / DELETE | `/api/claims/:code` | `waiting` / `claimed` (with the earn result) / `expired` · cancel |
-| GET | `/api/customers/scan?code=` | scanned member card (`lp-card:…`) or wallet link → customer |
-| GET / POST | `/api/public/claim/:code` | bill QR details / claim `{ walletToken }` or `{ phone, name? }` (no login) |
-| GET | `/api/public/wallet/:token/manifest` | per-wallet app manifest for "Add to Home Screen" |
-| POST | `/api/public/wallet/:token/redeem` | `{ rewardId }` → 4-digit reward code (no login) |
-| GET / POST | `/api/redeem-codes/:code` | see whose code it is / redeem it |
+| GET / PATCH | `/api/me` | shop details / update `{ name, phone, visitsNeeded, rewardName, inactiveDays }` |
+| POST | `/api/visits` | `{ phone, tz }` → one visit (once a day per number); `{ already, isNew, visitId, customer }` |
+| POST | `/api/customers/:id/reward` | the shop handed over the reward; the card starts again |
+| POST | `/api/transactions/:id/undo` | take back one visit or reward |
+| GET | `/api/today?tz=330` | today's visits and rewards |
+| GET | `/api/customers` | list (`?q=` search, `?filter=reward` or `inactive`) |
+| GET | `/api/customers/suggest?digits=` | known numbers starting with these digits (4+) |
+| GET / PATCH / DELETE | `/api/customers/:id` | customer with visit history / change number `{ phone }` / delete with history |
+| GET | `/api/share` | customers and referrals, for the share image |
 | GET | `/api/activity?limit=200` | activity log |
 | GET | `/api/export/customers.csv`, `/api/export/transactions.csv` | spreadsheet downloads |
+| GET | `/api/public/wallet/:token` | the customer's stamp card (no login) |
+| GET | `/api/public/wallet/:token/manifest` | per-card app manifest for "Add to Home Screen" |
+| GET | `/api/public/join/:code` | the shop's rule, for old counter-poster QR codes (no login) |
 
 The database schema upgrades itself on start (`PRAGMA user_version`), keeping existing data.

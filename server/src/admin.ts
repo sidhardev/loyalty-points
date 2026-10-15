@@ -73,9 +73,11 @@ type ShopRow = {
   suspended_at: string | null;
   suspended_reason: string | null;
   customers: number;
-  bills30: number;
-  sales30: number;
-  last_bill: string | null;
+  visits30: number;
+  rewards30: number;
+  last_visit: string | null;
+  reward_name: string;
+  visits_needed: number;
   phone: string | null;
   signup_source: string;
   signup_medium: string;
@@ -94,10 +96,11 @@ const SHOP_SELECT = `
   SELECT m.id, m.name, m.email, m.created_at, m.last_seen_at, m.suspended_at, m.suspended_reason,
          (SELECT COUNT(*) FROM customers c WHERE c.merchant_id = m.id) AS customers,
          (SELECT COUNT(*) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0
-            AND t.created_at >= datetime('now', '-30 days')) AS bills30,
-         (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0
-            AND t.created_at >= datetime('now', '-30 days')) AS sales30,
-         (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_bill,
+            AND t.created_at >= datetime('now', '-30 days')) AS visits30,
+         (SELECT COUNT(*) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'redeem' AND t.reversed = 0
+            AND t.created_at >= datetime('now', '-30 days')) AS rewards30,
+         (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_visit,
+         m.reward_name, m.visits_needed,
          m.phone, m.signup_source, m.signup_medium, m.signup_campaign, m.signup_ref, m.signup_landing, m.referred_by,
          (SELECT r.name FROM merchants r WHERE r.id = m.referred_by) AS referred_by_name,
          (SELECT COUNT(*) FROM merchants r WHERE r.referred_by = m.id) AS referrals,
@@ -105,12 +108,12 @@ const SHOP_SELECT = `
          (SELECT detail FROM admin_log l WHERE l.merchant_id = m.id AND l.action = 'contact' ORDER BY id DESC LIMIT 1) AS last_contact_detail
   FROM merchants m`;
 
-/** active: a bill in the last 7 days · sleeping: bills before, none for 7+ days · new: joined in the last 7 days · never: no bill yet. */
+/** active: a visit added in the last 7 days · sleeping: visits before, none for 7+ days · new: joined in the last 2 days · never: no visit yet. */
 function status(s: ShopRow) {
   if (s.suspended_at) return 'paused';
   const daysSince = (t: string | null) => (t ? (Date.now() - Date.parse(`${t.replace(' ', 'T')}Z`)) / 86_400_000 : Infinity);
-  if (daysSince(s.last_bill) <= 7) return 'active';
-  if (s.last_bill) return 'sleeping';
+  if (daysSince(s.last_visit) <= 7) return 'active';
+  if (s.last_visit) return 'sleeping';
   return daysSince(s.created_at) <= 2 ? 'new' : 'never';
 }
 
@@ -170,16 +173,16 @@ export class AdminController {
               AND created_at >= datetime('now', '-7 days')) AS activeShops,
            (SELECT COUNT(*) FROM customers) AS customers,
            (SELECT COUNT(*) FROM customers WHERE created_at >= datetime('now', '-7 days')) AS newCustomers,
-           (SELECT COUNT(*) FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-1 day')) AS bills24h,
-           (SELECT COUNT(*) FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-30 days')) AS bills30,
-           (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'earn' AND reversed = 0
-              AND created_at >= datetime('now', '-30 days')) AS sales30`,
+           (SELECT COUNT(*) FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-1 day')) AS visits24h,
+           (SELECT COUNT(*) FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-30 days')) AS visits30,
+           (SELECT COUNT(*) FROM transactions WHERE type = 'redeem' AND reversed = 0 AND created_at >= datetime('now', '-30 days')) AS rewards30,
+           (SELECT COUNT(*) FROM merchants WHERE reward_name = '') AS notSetUp`,
       )
       .get();
     const shops = (sql.prepare(SHOP_SELECT).all() as ShopRow[]).map(shopView);
     const attention = shops
       .filter((s) => s.status === 'sleeping' || s.status === 'never')
-      .sort((a, b) => (b.bills30 || 0) - (a.bills30 || 0) || a.created_at.localeCompare(b.created_at))
+      .sort((a, b) => (b.visits30 || 0) - (a.visits30 || 0) || a.created_at.localeCompare(b.created_at))
       .slice(0, 20);
     return { totals, attention };
   }
@@ -204,21 +207,23 @@ export class AdminController {
     const m = this.loyalty.merchant(id);
     const daily = sql
       .prepare(
-        `SELECT date(created_at, '+330 minutes') AS day, COUNT(*) AS bills, COALESCE(SUM(amount), 0) AS sales
-         FROM transactions WHERE merchant_id = ? AND type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-30 days')
+        `SELECT date(created_at, '+330 minutes') AS day, SUM(type = 'earn') AS visits, SUM(type = 'redeem') AS rewards
+         FROM transactions WHERE merchant_id = ? AND type IN ('earn', 'redeem') AND reversed = 0 AND created_at >= datetime('now', '-30 days')
          GROUP BY day ORDER BY day`,
       )
       .all(id);
     const counts = sql
       .prepare(
         `SELECT
-           (SELECT COUNT(*) FROM rewards WHERE merchant_id = :m AND active = 1) AS rewards,
-           (SELECT COUNT(*) FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0) AS billsAllTime,
-           (SELECT COUNT(*) FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0) AS redemptions,
-           (SELECT COUNT(*) FROM customers WHERE merchant_id = :m AND pin_hash IS NOT NULL) AS customersWithPin,
-           (SELECT COUNT(*) FROM activity WHERE merchant_id = :m AND action = 'limit_blocked' AND created_at >= datetime('now', '-30 days')) AS blocked30`,
+           (SELECT COUNT(*) FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0) AS visitsAllTime,
+           (SELECT COUNT(*) FROM transactions WHERE merchant_id = :m AND type = 'redeem' AND reversed = 0) AS rewardsAllTime,
+           (SELECT COUNT(*) FROM customers WHERE merchant_id = :m AND points >= :needed) AS rewardsWaiting,
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE merchant_id = :m AND type = 'earn' AND reversed = 0
+              GROUP BY customer_id HAVING COUNT(*) >= 2)) AS cameBack,
+           (SELECT COUNT(*) FROM customers WHERE merchant_id = :m
+              AND COALESCE(last_visit, created_at) < datetime('now', :inactive)) AS notSeen`,
       )
-      .get({ m: id });
+      .get({ m: id, needed: m.visits_needed, inactive: `-${m.inactive_days} days` });
     const notes = sql
       .prepare(
         `SELECT n.id, n.note, n.created_at, a.email AS admin FROM admin_notes n JOIN admins a ON a.id = n.admin_id
@@ -231,13 +236,9 @@ export class AdminController {
     return {
       shop: shopView(row),
       settings: {
-        pointsPer100: m.points_per_100,
-        welcomeBonus: m.welcome_bonus,
-        birthdayBonus: m.birthday_bonus,
-        goldThreshold: m.gold_threshold,
-        goldMultiplier: m.gold_multiplier,
-        maxVisitsPerDay: m.max_visits_per_day,
-        largeBill: m.large_bill,
+        visitsNeeded: m.visits_needed,
+        rewardName: m.reward_name,
+        inactiveDays: m.inactive_days,
       },
       counts,
       comeback: { current: this.loyalty.comeback(m, 0), previous: this.loyalty.comeback(m, 30) },
@@ -306,8 +307,8 @@ export class AdminController {
   }
 
   /**
-   * The growth funnel for the last `days` days, per source: homepage visitors → sign-ups → shops that gave their first
-   * points → shops active in the last 7 days. Also which shops' customer cards brought visitors and sign-ups.
+   * The growth funnel for the last `days` days, per source: homepage visitors → sign-ups → shops that added their first
+   * visit → shops active in the last 7 days. Also which shops' customer cards brought visitors and sign-ups.
    */
   @Get('growth')
   @UseGuards(AdminGuard)
@@ -346,7 +347,7 @@ export class AdminController {
     for (const s of shops) {
       const r = row(s.source);
       r.signups++;
-      if (s.last_bill) r.started++;
+      if (s.last_visit) r.started++;
       if (s.status === 'active') r.active++;
     }
 

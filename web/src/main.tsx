@@ -5,6 +5,10 @@ import { App } from './App';
 import { rememberArrival } from './attribution';
 import './styles.css';
 
+// A shop's share link (/r/<join code>). The server redirects it; this covers the dev server.
+const shared = location.pathname.match(/^\/r\/([\w-]{1,40})\/?$/)?.[1];
+if (shared) history.replaceState(null, '', `/?utm_source=shop&utm_medium=referral&utm_campaign=${shared}`);
+
 // The homepage arrives prerendered (scripts/prerender.mjs), so React takes over that HTML instead of redrawing it.
 const root = document.getElementById('root')!;
 if (root.hasChildNodes()) hydrateRoot(root, <App />);

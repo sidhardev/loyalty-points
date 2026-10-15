@@ -1,15 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, BarChart3, Coins, Gift, MessageCircle } from 'lucide-react';
+import { Gift, MessageCircle, Phone, UserX } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
 import { trackEvent } from '../analytics';
 import { arrival } from '../attribution';
 import { ErrorText, Logo, useAction } from '../ui';
 
 const FEATURES = [
-  { icon: Coins, text: 'Points on every bill, by phone number' },
-  { icon: Gift, text: 'Rewards and a Gold tier that bring regulars back' },
-  { icon: MessageCircle, text: 'One-tap WhatsApp messages and reminders' },
-  { icon: BarChart3, text: 'See who comes back, and how often' },
+  { icon: Phone, text: 'Type the phone number, tap “Add visit”' },
+  { icon: Gift, text: 'Every 5th visit, the app says “Give the reward”' },
+  { icon: MessageCircle, text: 'Their card goes on WhatsApp in one tap' },
+  { icon: UserX, text: 'See who stopped coming and remind them' },
 ];
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
@@ -40,7 +40,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
           <Logo /> <span>Regularhood</span>
         </span>
         <h1>From first visit to “the usual”.</h1>
-        <p>Regularhood turns walk-ins into regulars — points, rewards and reminders for your shop, with nothing for your customers to install.</p>
+        <p>A stamp card on the customer’s phone number. No app, no QR codes, no points — for you or your customers.</p>
         <ul>
           {FEATURES.map(({ icon: Icon, text }) => (
             <li key={text}>
@@ -51,9 +51,6 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
             </li>
           ))}
         </ul>
-        <a className="customer-link" href="/login">
-          Customer? Check your points <ArrowRight size={16} />
-        </a>
       </section>
 
       <div className="auth-form-wrap">

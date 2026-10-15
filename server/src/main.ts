@@ -52,6 +52,9 @@ async function bootstrap() {
       // Server-rendered SEO pages and the live sitemap (seo.ts).
       if (/^\/(hi\/)?for(\/|$)/.test(req.path) || req.path === '/sitemap.xml') return next();
       if (req.path === '/') return res.type('html').send(home);
+      // A shop's share link: the homepage, counted as that shop's referral (growth.ts, SHOP_SOURCE).
+      const shared = req.path.match(/^\/r\/([\w-]{1,40})\/?$/)?.[1];
+      if (shared) return res.redirect(302, `/?utm_source=shop&utm_medium=referral&utm_campaign=${shared}`);
       // A wallet's "Add to Home Screen" should open that wallet, so it gets its own manifest.
       const wallet = req.path.match(/^\/w\/([\w-]+)/)?.[1];
       res.type('html').send(wallet ? page.replace('/manifest.webmanifest', `/api/public/wallet/${wallet}/manifest`) : page);

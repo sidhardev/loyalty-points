@@ -398,6 +398,22 @@ const MIGRATIONS: string[] = [
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+
+  // 17: a stamp card instead of points: "every N visits → one reward". customers.points now holds the customer's
+  // stamps (visits since their last reward); a visit is an 'earn' of 1 with no amount, a reward a 'redeem' of -N with
+  // no reward_id. Each customer's past bills become stamps, up to one short of the reward, so their next visit earns it.
+  // The shop's cheapest reward becomes its one reward, and a phone number counts once a day.
+  `
+  ALTER TABLE merchants ADD COLUMN visits_needed INTEGER NOT NULL DEFAULT 5;
+  ALTER TABLE merchants ADD COLUMN reward_name TEXT NOT NULL DEFAULT '';
+  UPDATE merchants SET
+    max_visits_per_day = 1,
+    reward_name = COALESCE((SELECT name FROM rewards r WHERE r.merchant_id = merchants.id AND r.active = 1 ORDER BY r.points_cost LIMIT 1), '');
+  UPDATE customers SET points = MIN(
+    (SELECT COUNT(*) FROM transactions t WHERE t.customer_id = customers.id AND t.type = 'earn' AND t.reversed = 0),
+    (SELECT visits_needed - 1 FROM merchants m WHERE m.id = customers.merchant_id)
+  );
+  `,
 ];
 
 const INDEXES = `
@@ -445,6 +461,15 @@ export class Db implements OnModuleDestroy {
 
   private migrate() {
     const { user_version: version } = this.sql.prepare('PRAGMA user_version').get() as { user_version: number };
+    // An existing database that's about to be upgraded is copied first (kept, never pruned), so data changed by an
+    // upgrade can always be recovered. If the copy fails, nothing is upgraded.
+    if (version > 0 && version < MIGRATIONS.length) {
+      mkdirSync(BACKUP_DIR, { recursive: true });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const file = join(BACKUP_DIR, `before-v${MIGRATIONS.length}-${stamp}.db`);
+      this.sql.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+      console.log(`Database copied to ${file} before upgrading from v${version} to v${MIGRATIONS.length}`);
+    }
     for (let v = version; v < MIGRATIONS.length; v++) {
       this.transaction(() => {
         this.sql.exec(MIGRATIONS[v]);

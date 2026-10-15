@@ -1,0 +1,408 @@
+/* The counter: keypad, result screens, stamps and the one-sentence card setup. */
+
+.counter {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.counter-rule {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+.counter-rule b {
+  color: var(--ink);
+}
+
+.phone-display {
+  display: grid;
+  place-items: center;
+  height: 72px;
+  padding: 0 12px;
+  border: 2px solid var(--brand);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: clamp(28px, 9vw, 38px);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.phone-display.empty {
+  border-color: var(--line-strong);
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 0;
+}
+
+.suggestion {
+  display: grid;
+  gap: 1px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.suggestion span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.keypad button {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 650;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.08s, background-color 0.12s;
+}
+
+.keypad button:active {
+  background: var(--brand-soft);
+  transform: scale(0.96);
+}
+
+.keypad .key-soft {
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.btn.btn-xl {
+  width: 100%;
+  min-height: 64px;
+  border-radius: 16px;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.btn-primary.add-visit:disabled {
+  opacity: 0.45;
+}
+
+.counter-today {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.counter-today b {
+  color: var(--ink);
+}
+
+/* ---- after "Add visit" ---- */
+
+.result {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px 18px 22px;
+  border-radius: 24px;
+  background: var(--brand-soft);
+  text-align: center;
+  animation: page-in 0.3s var(--ease);
+}
+
+.result > .btn {
+  width: 100%;
+}
+
+.result h1 {
+  margin: 0;
+  font-size: clamp(26px, 8vw, 34px);
+  line-height: 1.15;
+}
+
+.result p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.result .result-phone {
+  color: var(--muted);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-icon {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.result-already {
+  background: var(--surface-2);
+}
+
+.result-already .result-icon {
+  background: var(--muted);
+}
+
+.result-reward {
+  background: var(--gold-soft);
+}
+
+.result-reward .result-icon {
+  background: #d97706;
+  color: #fff;
+  animation: pop 0.5s var(--ease);
+}
+
+.btn.btn-reward {
+  border-color: transparent;
+  background: #d97706;
+  color: #fff;
+}
+
+.btn.btn-reward:hover {
+  border-color: transparent;
+  filter: brightness(1.06);
+}
+
+.countdown {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---- stamps ---- */
+
+.stamps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stamp {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px dashed var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.stamps-lg .stamp {
+  width: 42px;
+  height: 42px;
+}
+
+.stamp.on {
+  border: 2px solid var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.stamp.last {
+  border-color: #d97706;
+  color: #d97706;
+}
+
+.stamp.last.on {
+  background: #d97706;
+  color: #fff;
+}
+
+/* ---- "Every N visits → reward" ---- */
+
+.setup {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.setup h1 {
+  margin: 0;
+}
+
+.setup p {
+  margin: 0;
+}
+
+.setup-compact {
+  max-width: none;
+  text-align: left;
+}
+
+.setup-compact .stamps {
+  justify-content: flex-start;
+}
+
+.setup-line {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.setup-compact .setup-line {
+  justify-items: start;
+}
+
+.seg-big button {
+  min-width: 44px;
+  padding: 10px 12px;
+  font-size: 18px;
+}
+
+.setup-reward {
+  min-height: 56px;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.setup-compact .setup-reward {
+  text-align: left;
+}
+
+/* ---- customer list ---- */
+
+.stamp-count {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.reward-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bottom-nav.nav-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ---- the customer's card (/w/<token>) ---- */
+
+.stamp-card {
+  gap: 12px;
+}
+
+.stamp-card .stamps {
+  justify-content: flex-start;
+  margin: 6px 0 2px;
+}
+
+.stamp-card .stamp {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stamp-card .stamp.on {
+  border-color: #fff;
+  background: #fff;
+  color: #047857;
+}
+
+.stamp-card .stamp.last {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.stamp-card .stamp.last.on {
+  background: #fbbf24;
+  color: #5c3a03;
+}
+
+.stamp-card-status {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.settings-section .stamps {
+  justify-content: flex-start;
+}
+
+/* ---- app shell: language switch, account rows ---- */
+
+.topbar .lang-toggle {
+  margin-left: 6px;
+}
+
+.side-foot .lang-toggle {
+  justify-self: start;
+  margin: 0 0 8px 10px;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.card > .btn-ghost.danger {
+  justify-self: start;
+}

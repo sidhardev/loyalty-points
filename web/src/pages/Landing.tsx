@@ -1,44 +1,41 @@
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
-import QRCode from 'qrcode';
-import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { AnimatePresence, motion, useInView, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import {
   ArrowRight,
+  CakeSlice,
+  Candy,
   Check,
-  Database,
-  Download,
+  Coffee,
+  Delete,
+  Dumbbell,
   Gift,
-  Languages,
   Lock,
   MessageCircle,
+  Pause,
   Phone,
-  QrCode,
-  ScanLine,
+  Play,
+  RotateCcw,
   Scissors,
-  ScrollText,
-  ShieldCheck,
   ShoppingBasket,
-  Coffee,
-  Cake,
-  Pill,
   Smartphone,
-  Ticket,
-  TrendingUp,
+  Sparkles,
+  UserX,
 } from 'lucide-react';
 import { watchSections } from '../analytics';
 import { getToken } from '../api';
+import { setLang, useLang, type Lang } from '../i18n';
 import { LogoMark } from '../ui';
 import '../landing.css';
 
 // regularhood.in — the homepage for shop owners. The shop app itself lives at /app.
-// The story is told with an example shop the visitor picks (a salon or a kirana store); see EXAMPLES. Its phone screens are real
-// screenshots of the app with demo data, and figures on the drawn dashboard card are marked as examples.
-// Motion: everything is readable at rest; animations only replay what the product does, and stop for reduced motion.
-// CSS plays the one-off moments; Motion (springs, scroll progress) drives anything that follows the pointer or the scroll.
+// One idea: a stamp card on the customer's phone number ("every 5th visit, a free cappuccino"). The page is told with
+// one example shop at a time — a café to start — and the visitor can switch to a salon, kirana, bakery, gym or sweet
+// shop; every section follows the pick, which shows the same two taps work for any shop.
+// English and Hindi; prerendered in English (scripts/prerender.mjs). Everything is readable without JavaScript and at
+// rest; animations replay what the product does, and stop for reduced motion.
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Martian+Mono:wght@400;600&display=swap';
+const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap';
 const SIGNUP = '/app#signup';
-
-const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function useFonts() {
   useEffect(() => {
@@ -47,119 +44,320 @@ function useFonts() {
   }, []);
 }
 
-/** True once the element has scrolled into view (and stays true). */
-function useInView<T extends Element>(threshold = 0.35) {
-  const ref = useRef<T>(null);
-  const [seen, setSeen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || seen) return;
-    if (!('IntersectionObserver' in window)) return setSeen(true);
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [seen, threshold]);
-  return [ref, seen] as const;
+/** The visitor's language, shared with the customer pages (i18n.tsx). English until hydrated, like the prerendered page. */
+function usePageLang(): Lang {
+  const stored = useLang();
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  return ready ? stored : 'en';
 }
 
-/** True while the media query matches. The prerendered page (see scripts/prerender.mjs) is the narrow layout, so it
- * starts false while hydrating and switches right after. */
-function useMedia(query: string) {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mq = matchMedia(query);
-      mq.addEventListener('change', onChange);
-      return () => mq.removeEventListener('change', onChange);
-    },
-    () => matchMedia(query).matches,
-    () => false,
+/** Scroll reveals: `.rv` elements start hidden only once JavaScript runs, and show as they come into view. */
+function useReveals() {
+  useEffect(() => {
+    const root = document.querySelector('.lp');
+    if (!root) return;
+    root.classList.add('lp-js');
+    if (!('IntersectionObserver' in window)) return root.classList.remove('lp-js');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries)
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+    );
+    root.querySelectorAll('.rv').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
+// ---------------------------------------------------------------- the example shops
+
+type ExKey = 'cafe' | 'salon' | 'kirana' | 'bakery' | 'gym' | 'sweets';
+type ExText = { type: string; reward: string; short: string; line: string };
+type Example = { key: ExKey; icon: typeof Coffee; shop: string; needed: number; en: ExText; hi: ExText };
+
+const EXAMPLES: Example[] = [
+  {
+    key: 'cafe',
+    icon: Coffee,
+    shop: 'Brew & Bean Café',
+    needed: 5,
+    en: { type: 'Café', reward: 'a free cappuccino.', short: 'Free cappuccino', line: 'Regulars who come for their morning coffee' },
+    hi: { type: 'कैफ़े', reward: 'मुफ़्त कैपुचीनो।', short: 'मुफ़्त कैपुचीनो', line: 'सुबह की कॉफ़ी वाले पक्के ग्राहक' },
+  },
+  {
+    key: 'salon',
+    icon: Scissors,
+    shop: 'Style Studio Salon',
+    needed: 4,
+    en: { type: 'Salon', reward: 'a free head massage.', short: 'Free head massage', line: 'Clients who come back every few weeks' },
+    hi: { type: 'सैलून', reward: 'मुफ़्त हेड मसाज।', short: 'मुफ़्त हेड मसाज', line: 'हर कुछ हफ़्ते में लौटने वाले ग्राहक' },
+  },
+  {
+    key: 'kirana',
+    icon: ShoppingBasket,
+    shop: 'Gupta Kirana Store',
+    needed: 10,
+    en: { type: 'Kirana', reward: '₹50 off the bill.', short: '₹50 off', line: 'Families who shop with you every week' },
+    hi: { type: 'किराना', reward: 'बिल पर ₹50 की छूट।', short: '₹50 की छूट', line: 'हर हफ़्ते सामान लेने वाले परिवार' },
+  },
+  {
+    key: 'bakery',
+    icon: CakeSlice,
+    shop: 'Sweet Crumbs Bakery',
+    needed: 6,
+    en: { type: 'Bakery', reward: 'a free pastry.', short: 'Free pastry', line: 'The evening snack crowd' },
+    hi: { type: 'बेकरी', reward: 'मुफ़्त पेस्ट्री।', short: 'मुफ़्त पेस्ट्री', line: 'शाम के नाश्ते वाले ग्राहक' },
+  },
+  {
+    key: 'gym',
+    icon: Dumbbell,
+    shop: 'Iron House Gym',
+    needed: 12,
+    en: { type: 'Gym', reward: 'a free protein shake.', short: 'Free protein shake', line: 'Members who show up — so they keep showing up' },
+    hi: { type: 'जिम', reward: 'मुफ़्त प्रोटीन शेक।', short: 'मुफ़्त प्रोटीन शेक', line: 'रोज़ आने वाले मेंबर — ताकि आते रहें' },
+  },
+  {
+    key: 'sweets',
+    icon: Candy,
+    shop: 'Sharma Sweets',
+    needed: 8,
+    en: { type: 'Sweet shop', reward: '250g kaju katli, free.', short: 'Free kaju katli', line: 'Festival rush and the daily regulars' },
+    hi: { type: 'मिठाई', reward: '250g काजू कतली मुफ़्त।', short: 'मुफ़्त काजू कतली', line: 'त्योहार की भीड़ और रोज़ के ग्राहक' },
+  },
+];
+
+type ExampleState = { ex: Example; pick: (key: ExKey) => void; picked: boolean };
+const ExampleContext = createContext<ExampleState>({ ex: EXAMPLES[0], pick: () => {}, picked: false });
+const useExample = () => useContext(ExampleContext);
+
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+
+// ---------------------------------------------------------------- copy
+
+const COPY = {
+  en: {
+    login: 'Log in',
+    start: 'Start free',
+    open: 'Open your shop',
+    eyebrow: 'The loyalty card for every local shop',
+    h1: (n: number) => `Every ${ordinal(n)} visit,`,
+    sub: 'A stamp card on the customer’s phone number. Type the number, tap “Add visit” — the app tells you when to give the reward. No app for customers, no QR codes, no points.',
+    watch: 'Watch it work',
+    note: 'Free · No card needed · Ready in 1 minute',
+    pickLabel: 'Pick a shop like yours',
+    demoHint: 'Try it — tap “Add visit”',
+    demoAdd: 'Add visit',
+    demoVisit: (n: number, of: number) => `Visit ${n} of ${of}`,
+    demoLeft: (n: number, r: string) => `${n} more for ${r}`,
+    demoGive: (r: string) => `Give ${r} now`,
+    demoGiven: 'Given',
+    demoAgain: 'Start again',
+    floatSent: 'Card sent on WhatsApp',
+    floatVisit: '+1 visit',
+    rule: (n: number, r: string) => `Every ${n} visits → ${r}`,
+    filmKicker: 'See it at the counter',
+    filmTitle: '15 seconds. Two taps. A customer for life.',
+    scenes: [
+      ['The customer says their number', 'No app to open, no QR to scan. Regulars pop up after 4 digits.'],
+      ['You tap “Add visit”', 'One big button. A stamp lands on their card.'],
+      ['Their card arrives on WhatsApp', 'They see how many visits are left — in Hindi or English.'],
+      ['On the last visit, the app tells you', '“Give the reward now.” Tap Given, the card starts again.'],
+    ],
+    filmPlay: 'Play',
+    filmPause: 'Pause',
+    filmReplay: 'Replay',
+    customerSays: 'My number is',
+    waName: 'Your card',
+    scrollKicker: 'Why it works',
+    scrollTitle: 'People come back for a card that’s almost full.',
+    scrollSub: 'Every stamp is a reason to choose you again tomorrow — over the shop next door.',
+    scrollVisit: (k: number) => `Visit ${k}`,
+    scrollStart: 'First visit',
+    scrollDone: (r: string) => `${r}!`,
+    howKicker: 'How it works',
+    howTitle: 'Three steps. Nothing to learn.',
+    steps: [
+      ['Set one rule', 'Pick how many visits and what they get. That’s your whole loyalty program.'],
+      ['Type the number, tap Add visit', 'Any phone, tablet or computer at the counter. Your staff learn it in a minute.'],
+      ['Give the reward when the app says', 'The screen turns orange on the last visit. Tap Given — done.'],
+    ],
+    everyKicker: 'Not just cafés',
+    everyTitle: 'One card. Every kind of shop.',
+    everySub: 'If people visit you again and again, it works for you. You choose the rule — here are some ideas.',
+    everyRule: (n: number) => `Every ${n} visits`,
+    everyTry: 'See it for this shop',
+    custKicker: 'For your customers',
+    custTitle: 'Nothing to download. Nothing to remember.',
+    custSub: 'Their card lives on their phone number. One tap sends it on WhatsApp; it opens in any browser and shows exactly how close they are.',
+    bubble: (shop: string, x: number, n: number, r: string) => `${shop}: visit ${x} of ${n} ✓ ${n - x} more for ${r}! 🎁`,
+    cardLeft: (n: number, r: string) => `${n} more visits for ${r}`,
+    whyKicker: 'Why shops pick it',
+    why: [
+      ['Anyone at the counter can use it', 'A keypad and one button. No training, no manual.', Smartphone],
+      ['Works for every customer', 'Only a phone number. No sign-up, no app, no QR, no PIN.', Phone],
+      ['Bring back the ones who stopped', 'See who hasn’t come in 30 days and send a “we miss you” in one tap.', UserX],
+      ['Your customers stay yours', 'We never sell or message them. Download everything anytime.', Lock],
+    ] as const,
+    priceKicker: 'Price',
+    priceTitle: 'Free to start.',
+    priceSub: 'Sign up, set your rule and add your first visit today.',
+    priceList: ['Unlimited customers and visits', 'Customer cards in Hindi and English', 'WhatsApp card and reminder messages', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
+    create: 'Create your shop',
+    faqKicker: 'Questions',
+    faqTitle: 'Asked at the counter.',
+    finalTitle: 'Your next regular walks in today.',
+    finalSub: 'Set up takes one minute. Their first stamp can land today.',
+    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', login: 'Shop log in', tag: 'From first visit to “the usual”.' },
+  },
+  hi: {
+    login: 'लॉग इन',
+    start: 'मुफ़्त शुरू करें',
+    open: 'अपनी दुकान खोलें',
+    eyebrow: 'हर लोकल दुकान के लिए लॉयल्टी कार्ड',
+    h1: (n: number) => `हर ${n}वीं विज़िट पर`,
+    sub: 'ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड। नंबर लिखें, “विज़िट जोड़ें” दबाएँ — इनाम कब देना है, ऐप खुद बताएगा। ग्राहक को न ऐप, न QR, न पॉइंट्स।',
+    watch: 'देखें कैसे चलता है',
+    note: 'मुफ़्त · कोई कार्ड नहीं चाहिए · 1 मिनट में तैयार',
+    pickLabel: 'अपनी जैसी दुकान चुनें',
+    demoHint: 'आज़माएँ — “विज़िट जोड़ें” दबाएँ',
+    demoAdd: 'विज़िट जोड़ें',
+    demoVisit: (n: number, of: number) => `विज़िट ${n} / ${of}`,
+    demoLeft: (n: number, r: string) => `बस ${n} और, फिर ${r}`,
+    demoGive: (r: string) => `अभी ${r} दें`,
+    demoGiven: 'दे दिया',
+    demoAgain: 'फिर से',
+    floatSent: 'WhatsApp पर कार्ड गया',
+    floatVisit: '+1 विज़िट',
+    rule: (n: number, r: string) => `हर ${n} विज़िट पर → ${r}`,
+    filmKicker: 'काउंटर पर देखें',
+    filmTitle: '15 सेकंड। दो टैप। ग्राहक हमेशा के लिए।',
+    scenes: [
+      ['ग्राहक अपना नंबर बताता है', 'न ऐप खोलना, न QR स्कैन। पुराने ग्राहक 4 अंक में दिख जाते हैं।'],
+      ['आप “विज़िट जोड़ें” दबाते हैं', 'एक बड़ा बटन। कार्ड पर एक स्टैम्प लग जाता है।'],
+      ['कार्ड WhatsApp पर पहुँचता है', 'ग्राहक देखता है कितनी विज़िट बाकी हैं — हिंदी या English में।'],
+      ['आखिरी विज़िट पर ऐप बताता है', '“अभी इनाम दें।” “दे दिया” दबाएँ, कार्ड फिर शुरू।'],
+    ],
+    filmPlay: 'चलाएँ',
+    filmPause: 'रोकें',
+    filmReplay: 'फिर से',
+    customerSays: 'मेरा नंबर है',
+    waName: 'आपका कार्ड',
+    scrollKicker: 'यह क्यों काम करता है',
+    scrollTitle: 'लगभग भरा हुआ कार्ड ग्राहक को वापस लाता है।',
+    scrollSub: 'हर स्टैम्प एक वजह है कि कल भी ग्राहक आपके पास आए — बगल वाली दुकान पर नहीं।',
+    scrollVisit: (k: number) => `विज़िट ${k}`,
+    scrollStart: 'पहली विज़िट',
+    scrollDone: (r: string) => `${r}!`,
+    howKicker: 'कैसे काम करता है',
+    howTitle: 'तीन कदम। सीखने को कुछ नहीं।',
+    steps: [
+      ['एक नियम तय करें', 'कितनी विज़िट और क्या इनाम — बस यही आपका पूरा लॉयल्टी प्रोग्राम है।'],
+      ['नंबर लिखें, विज़िट जोड़ें', 'काउंटर पर कोई भी फ़ोन, टैबलेट या कंप्यूटर। स्टाफ़ एक मिनट में सीख जाता है।'],
+      ['ऐप बताए तब इनाम दें', 'आखिरी विज़िट पर स्क्रीन नारंगी हो जाती है। “दे दिया” दबाएँ — हो गया।'],
+    ],
+    everyKicker: 'सिर्फ़ कैफ़े नहीं',
+    everyTitle: 'एक कार्ड। हर तरह की दुकान।',
+    everySub: 'अगर ग्राहक आपके पास बार-बार आते हैं, तो यह आपके लिए है। नियम आप चुनें — ये रहे कुछ आइडिया।',
+    everyRule: (n: number) => `हर ${n} विज़िट पर`,
+    everyTry: 'इस दुकान के लिए देखें',
+    custKicker: 'आपके ग्राहकों के लिए',
+    custTitle: 'न कुछ डाउनलोड। न कुछ याद रखना।',
+    custSub: 'कार्ड उनके फ़ोन नंबर पर है। एक टैप में WhatsApp पर पहुँचता है, किसी भी ब्राउज़र में खुलता है और दिखाता है कि इनाम कितना पास है।',
+    bubble: (shop: string, x: number, n: number, r: string) => `${shop}: विज़िट ${x}/${n} ✓ बस ${n - x} और, फिर ${r}! 🎁`,
+    cardLeft: (n: number, r: string) => `बस ${n} और विज़िट, फिर ${r}`,
+    whyKicker: 'दुकानदार इसे क्यों चुनते हैं',
+    why: [
+      ['काउंटर पर कोई भी चला ले', 'एक कीपैड और एक बटन। न ट्रेनिंग, न मैनुअल।', Smartphone],
+      ['हर ग्राहक के लिए', 'सिर्फ़ फ़ोन नंबर। न साइन-अप, न ऐप, न QR, न PIN।', Phone],
+      ['रुके हुए ग्राहकों को वापस लाएँ', 'देखें कौन 30 दिन से नहीं आया और एक टैप में “आपकी याद आई” भेजें।', UserX],
+      ['आपके ग्राहक आपके ही रहें', 'हम न उन्हें बेचते हैं, न मैसेज करते हैं। कभी भी सब डाउनलोड करें।', Lock],
+    ] as const,
+    priceKicker: 'कीमत',
+    priceTitle: 'शुरू करना मुफ़्त है।',
+    priceSub: 'साइन अप करें, नियम तय करें और आज ही पहली विज़िट जोड़ें।',
+    priceList: ['जितने चाहें ग्राहक और विज़िट', 'हिंदी और English में ग्राहक कार्ड', 'WhatsApp पर कार्ड और याद दिलाने वाले मैसेज', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
+    create: 'अपनी दुकान बनाएँ',
+    faqKicker: 'सवाल',
+    faqTitle: 'काउंटर पर पूछे गए सवाल।',
+    finalTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
+    finalSub: 'सेटअप में एक मिनट। पहला स्टैम्प आज ही लग सकता है।',
+    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', login: 'दुकान लॉग इन', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
+  },
+};
+
+type Copy = (typeof COPY)['en'] | (typeof COPY)['hi'];
+
+// Also published (in English) as FAQPage structured data by scripts/prerender.mjs.
+export const FAQ = [
+  ['Does it work for my kind of shop?', 'If the same people come back to you — a café, salon, kirana, bakery, gym, sweet shop, pharmacy or tiffin service — yes. You choose the number of visits and the reward.'],
+  ['Do my customers need an app?', 'No. You add their visit with their phone number. Their card opens from a WhatsApp link in any browser — nothing to install.'],
+  ['What if a customer doesn’t have a smartphone?', 'It still works. Visits are counted on their phone number, and the app tells you at the counter when their reward is due.'],
+  ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
+  ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
+  ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
+] as const;
+
+const FAQ_HI = [
+  ['क्या यह मेरी तरह की दुकान के लिए है?', 'अगर वही लोग बार-बार आते हैं — कैफ़े, सैलून, किराना, बेकरी, जिम, मिठाई की दुकान, मेडिकल या टिफ़िन — तो हाँ। विज़िट की संख्या और इनाम आप चुनते हैं।'],
+  ['क्या ग्राहकों को ऐप चाहिए?', 'नहीं। आप उनके फ़ोन नंबर से विज़िट जोड़ते हैं। उनका कार्ड WhatsApp लिंक से किसी भी ब्राउज़र में खुलता है — कुछ इंस्टॉल नहीं करना।'],
+  ['अगर ग्राहक के पास स्मार्टफ़ोन नहीं है?', 'तब भी चलेगा। विज़िट उनके फ़ोन नंबर पर गिनी जाती हैं, और इनाम कब देना है यह ऐप काउंटर पर ही बता देता है।'],
+  ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
+  ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
+  ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
+] as const;
+
+// ---------------------------------------------------------------- small pieces
+
+function Stamps({ on, of, size = 34, pop = -1 }: { on: number; of: number; size?: number; pop?: number }) {
+  return (
+    <div className="lp-stamps" style={{ '--s': `${size}px` } as CSSProperties}>
+      {Array.from({ length: of }, (_, i) => (
+        <span key={i} className={`${i < on ? 'on' : ''} ${i === of - 1 ? 'last' : ''} ${i === pop ? 'pop' : ''}`} style={{ '--k': i } as CSSProperties}>
+          {i === of - 1 ? <Gift size={size * 0.46} /> : i < on ? <Check size={size * 0.46} strokeWidth={3} /> : null}
+        </span>
+      ))}
+    </div>
   );
 }
 
-/** A number that counts from `from` to `to` once `run` turns true. Shows the final value at rest. */
-function CountUp({ from = 0, to, run, delay = 0, ms = 1100, format = (n: number) => n.toLocaleString('en-IN') }: {
-  from?: number;
-  to: number;
-  run: boolean;
-  delay?: number;
-  ms?: number;
-  format?: (n: number) => string;
-}) {
-  const [value, setValue] = useState(to);
-  useEffect(() => {
-    // At rest (and when the example shop changes without animating) it shows the final value.
-    if (!run || reducedMotion()) return setValue(to);
-    let frame = 0;
-    const timer = setTimeout(() => {
-      const start = performance.now();
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - start) / ms);
-        const eased = 1 - Math.pow(1 - p, 3);
-        setValue(Math.round(from + (to - from) * eased));
-        if (p < 1) frame = requestAnimationFrame(tick);
-      };
-      setValue(from);
-      frame = requestAnimationFrame(tick);
-    }, delay);
-    return () => {
-      clearTimeout(timer);
-      cancelAnimationFrame(frame);
-    };
-  }, [run, from, to, delay, ms]);
-  return <span className="lp-num">{format(value)}</span>;
+/** Confetti pieces with fixed positions (no randomness, so the prerendered page and the browser agree). */
+const CONFETTI = Array.from({ length: 22 }, (_, i) => ({
+  x: ((i * 37) % 100) - 50,
+  d: 0.05 * (i % 7),
+  r: (i * 47) % 360,
+  c: ['#f59e0b', '#10b981', '#f43f5e', '#6366f1', '#fde68a'][i % 5],
+}));
+
+function Confetti() {
+  return (
+    <div className="lp-confetti" aria-hidden="true">
+      {CONFETTI.map((p, i) => (
+        <i key={i} style={{ '--x': `${p.x * 3}px`, '--d': `${p.d}s`, '--r': `${p.r}deg`, background: p.c } as CSSProperties} />
+      ))}
+    </div>
+  );
 }
 
-/** A drawn QR-like pattern for the illustrations — deliberately not scannable. */
-function FakeQr({ seed }: { seed: number }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    const n = 25;
-    const s = canvas.width / n;
-    let x = seed;
-    const rand = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#0f2e24';
-    for (let i = 0; i < n; i++)
-      for (let j = 0; j < n; j++) {
-        const finder = (i < 8 && j < 8) || (i > n - 9 && j < 8) || (i < 8 && j > n - 9);
-        if (!finder && rand() > 0.52) ctx.fillRect(i * s, j * s, s, s);
-      }
-    for (const [cx, cy] of [
-      [0, 0],
-      [n - 7, 0],
-      [0, n - 7],
-    ]) {
-      ctx.fillRect(cx * s, cy * s, 7 * s, 7 * s);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect((cx + 1) * s, (cy + 1) * s, 5 * s, 5 * s);
-      ctx.fillStyle = '#0f2e24';
-      ctx.fillRect((cx + 2) * s, (cy + 2) * s, 3 * s, 3 * s);
-    }
-  }, [seed]);
-  return <canvas ref={ref} width={175} height={175} aria-hidden="true" />;
-}
+/** A soft light that follows the pointer across a card. */
+const spotlight = (e: PointerEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+};
 
 // ---------------------------------------------------------------- nav
 
-function Nav() {
-  const [scrolled, setScrolled] = useState(false);
-  // Read after hydrating: the prerendered page is the signed-out one.
+function Nav({ c, lang }: { c: Copy; lang: Lang }) {
   const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => setSignedIn(Boolean(getToken())), []);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => setSignedIn(Boolean(getToken())), []); // after hydrating: the prerendered page is signed out
   useEffect(() => {
-    const onScroll = () => setScrolled(scrollY > 8);
+    const onScroll = () => setScrolled(scrollY > 24);
     onScroll();
     addEventListener('scroll', onScroll, { passive: true });
     return () => removeEventListener('scroll', onScroll);
@@ -168,40 +366,29 @@ function Nav() {
     <header className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
       <div className="lp-wrap">
         <a className="lp-logo" href="/" aria-label="Regularhood home">
-          <span className="lp-logo-mark" aria-hidden="true">
-            <LogoMark />
-          </span>
-          Regularhood
+          <LogoMark size={32} />
+          <span>Regularhood</span>
         </a>
-        <nav className="lp-nav-links" aria-label="Sections">
-          <a href="#how" data-track="nav: How it works">
-            How it works
-          </a>
-          <a href="#app" data-track="nav: The app">
-            The app
-          </a>
-          <a href="#counter" data-track="nav: At the counter">
-            At the counter
-          </a>
-          <a href="#pricing" data-track="nav: Pricing">
-            Pricing
-          </a>
-          <a href="#faq" data-track="nav: FAQ">
-            FAQ
-          </a>
-        </nav>
         <div className="lp-nav-end">
+          <div className="lp-lang" role="group" aria-label="Language">
+            <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} data-track="nav: English">
+              EN
+            </button>
+            <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi" data-track="nav: Hindi">
+              हिं
+            </button>
+          </div>
           {signedIn ? (
-            <a className="lp-btn lp-btn-ink" href="/app" data-track="nav: Open your shop">
-              Open your shop <ArrowRight size={16} />
+            <a className="lp-btn lp-btn-glow lp-btn-sm" href="/app" data-track="nav: Open your shop">
+              {c.open}
             </a>
           ) : (
             <>
               <a className="lp-login" href="/app" data-track="nav: Log in">
-                Log in
+                {c.login}
               </a>
-              <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="nav: Start free">
-                Start free
+              <a className="lp-btn lp-btn-glow lp-btn-sm" href={SIGNUP} data-track="nav: Start free">
+                {c.start}
               </a>
             </>
           )}
@@ -211,1021 +398,596 @@ function Nav() {
   );
 }
 
-// ---------------------------------------------------------------- the example shop
+// ---------------------------------------------------------------- hero
 
-// The page tells its story with one made-up shop at a time, and the visitor picks one like theirs: a salon (a visit every
-// few weeks, bigger bills), a kirana store (near-daily), a café, a sweet shop (festival spikes) or a pharmacy (monthly refills). The phone screens are real screenshots of the app with each
-// shop's demo data; the drawn bill, card, messages and figures match them.
-type ExampleKey = 'salon' | 'kirana' | 'cafe' | 'sweets' | 'pharmacy';
-type Example = {
-  key: ExampleKey;
-  label: string;
-  icon: typeof Scissors;
-  shop: string;
-  time: string;
-  customer: string;
-  bill: readonly (readonly [string, number])[];
-  total: number;
-  points: number; // for this bill
-  before: number; // the customer's points before it
-  after: number;
-  reward: string; // the next reward on their card
-  toReward: number; // ₹ more to get it
-  meter: string;
-  place: string; // "Here it is at …"
-  habit: {
-    visits: number[][]; // days of the week with a visit, for 12 weeks
-    first: [number, number];
-    today: [number, number];
-    label: string;
-    milestones: readonly (readonly [string, string])[];
-    firstVisit: string;
-    said: string;
-  };
-  later: string;
-  proof: { sales: number; customers: number; visits: number; trend: number; share: number; wonBack: number; rewards: number };
-};
-
-const EXAMPLES: Record<ExampleKey, Example> = {
-  salon: {
-    key: 'salon',
-    label: 'Salon',
-    icon: Scissors,
-    shop: 'Kesh Unisex Salon',
-    time: '6:10 pm',
-    customer: 'Priya',
-    bill: [
-      ['Haircut', 350],
-      ['Hair spa', 600],
-      ['Threading', 50],
-    ],
-    total: 1000,
-    points: 100,
-    before: 220,
-    after: 320,
-    reward: 'Free haircut',
-    toReward: 800,
-    meter: '80%',
-    place: 'at a salon',
-    habit: {
-      visits: [[2], [], [], [4], [], [], [2, 6], [], [], [3], [], [1, 5]],
-      first: [0, 2],
-      today: [11, 5],
-      label: 'Priya at the salon · each dot is a visit · Aug → Oct',
-      milestones: [
-        ['Week 1', 'First haircut. Scans the bill QR and gets welcome points.'],
-        ['Week 7', 'Back for threading, then a hair spa. A free haircut is close, and the card shows it.'],
-        ['Week 12', 'Every three weeks, same chair. Doesn’t try the salon next door.'],
-      ],
-      firstVisit: 'a ₹350 haircut',
-      said: '“Same as last time, didi.”',
-    },
-    later: '5 weeks later',
-    proof: { sales: 124600, customers: 86, visits: 131, trend: 18, share: 46, wonBack: 12, rewards: 19 },
-  },
-  kirana: {
-    key: 'kirana',
-    label: 'Kirana store',
-    icon: ShoppingBasket,
-    shop: 'Gupta General Store',
-    time: '7:25 pm',
-    customer: 'Ravi',
-    bill: [
-      ['Atta 5 kg', 265],
-      ['Toor dal 1 kg', 165],
-      ['Oil 1 L', 150],
-      ['Milk ×4', 68],
-    ],
-    total: 648,
-    points: 32,
-    before: 236,
-    after: 268,
-    reward: 'Free 1 L oil',
-    toReward: 640,
-    meter: '89%',
-    place: 'at a kirana store',
-    habit: {
-      visits: [[2], [], [5], [1, 5], [3], [1, 4, 6], [0, 3, 5], [1, 2, 4, 6], [0, 2, 3, 5], [0, 1, 3, 4, 6], [0, 1, 2, 4, 5, 6], [0, 1, 2, 3, 4, 5]],
-      first: [0, 2],
-      today: [11, 5],
-      label: 'Ravi at the store · each dot is a day · Aug → Oct',
-      milestones: [
-        ['Week 1', 'Milk and bread. Scans the bill QR and gets welcome points.'],
-        ['Week 6', 'Buys the monthly ration here too. Free oil is close, and the card shows it.'],
-        ['Week 12', 'Sends his list on WhatsApp and picks it up on the way home.'],
-      ],
-      firstVisit: '₹68 of milk',
-      said: '“Bhaiya, the usual list.”',
-    },
-    later: '31 days later',
-    proof: { sales: 218400, customers: 152, visits: 1640, trend: 11, share: 58, wonBack: 9, rewards: 31 },
-  },
-  cafe: {
-    key: 'cafe',
-    label: 'Café',
-    icon: Coffee,
-    shop: 'Little Bean Café',
-    time: '4:40 pm',
-    customer: 'Aditi',
-    bill: [
-      ['Cold coffee', 180],
-      ['Sandwich', 160],
-      ['Brownie', 110],
-    ],
-    total: 450,
-    points: 45,
-    before: 120,
-    after: 165,
-    reward: 'Free cold coffee',
-    toReward: 350,
-    meter: '82%',
-    place: 'at a café',
-    habit: {
-      visits: [[4], [], [5], [], [2, 5], [5], [1, 5], [3, 5], [5, 6], [2, 5], [1, 3, 5], [2, 5]],
-      first: [0, 4],
-      today: [11, 5],
-      label: 'Aditi at the café · each dot is a visit · Aug → Oct',
-      milestones: [
-        ['Week 1', 'First cold coffee. Scans the bill QR and gets welcome points.'],
-        ['Week 5', 'Fridays with friends now. A free cold coffee is close, and the card shows it.'],
-        ['Week 12', 'Has a usual table and a usual order.'],
-      ],
-      firstVisit: 'a ₹180 cold coffee',
-      said: '“One cold coffee, less sugar.”',
-    },
-    later: '3 weeks later',
-    proof: { sales: 96800, customers: 210, visits: 320, trend: 14, share: 52, wonBack: 15, rewards: 44 },
-  },
-  sweets: {
-    key: 'sweets',
-    label: 'Sweets & bakery',
-    icon: Cake,
-    shop: 'Mishra Sweets & Bakery',
-    time: '8:05 pm',
-    customer: 'Sunil',
-    bill: [
-      ['Kaju katli', 450],
-      ['Cake ½ kg', 350],
-      ['Samosa ×4', 80],
-    ],
-    total: 880,
-    points: 88,
-    before: 212,
-    after: 300,
-    reward: 'Free ½ kg cake',
-    toReward: 1000,
-    meter: '75%',
-    place: 'at a sweet shop',
-    habit: {
-      visits: [[6], [], [6], [], [3, 6], [], [6], [1, 3, 4, 5], [6], [], [6], [2, 6]],
-      first: [0, 6],
-      today: [11, 6],
-      label: 'Sunil at the sweet shop · each dot is a visit · Aug → Oct',
-      milestones: [
-        ['Week 1', 'Sunday samosas. Scans the bill QR and gets welcome points.'],
-        ['Week 8', 'Every Diwali box for the family, from here. A free cake is close.'],
-        ['Week 12', 'Every birthday cake in the family comes from here now.'],
-      ],
-      firstVisit: '₹80 of samosas',
-      said: '“Bhaiya, the usual box.”',
-    },
-    later: '4 weeks later',
-    proof: { sales: 148200, customers: 260, visits: 690, trend: 31, share: 49, wonBack: 22, rewards: 38 },
-  },
-  pharmacy: {
-    key: 'pharmacy',
-    label: 'Pharmacy',
-    icon: Pill,
-    shop: 'City Care Pharmacy',
-    time: '10:15 am',
-    customer: 'Kamla',
-    bill: [
-      ['BP tablets', 420],
-      ['Test strips', 550],
-      ['Vitamin D3', 130],
-    ],
-    total: 1100,
-    points: 55,
-    before: 145,
-    after: 200,
-    reward: '₹100 off your bill',
-    toReward: 1000,
-    meter: '80%',
-    place: 'at a pharmacy',
-    habit: {
-      visits: [[1], [], [], [], [1, 5], [], [], [], [1], [], [3], [1]],
-      first: [0, 1],
-      today: [11, 1],
-      label: 'Kamla at the pharmacy · each dot is a visit · Aug → Oct',
-      milestones: [
-        ['Week 1', 'Her monthly BP medicine. Scans the bill QR and gets welcome points.'],
-        ['Week 5', 'Back on the same date for the refill. ₹100 off is close, and the card shows it.'],
-        ['Week 12', 'Every refill comes from here, and her son’s cough syrup too.'],
-      ],
-      firstVisit: 'a ₹420 refill',
-      said: '“Same as last month, beta.”',
-    },
-    later: '5 weeks later',
-    proof: { sales: 212000, customers: 180, visits: 410, trend: 9, share: 63, wonBack: 11, rewards: 27 },
-  },
-};
-
-const ExampleContext = createContext<{ ex: Example; pick: (key: ExampleKey) => void }>({ ex: EXAMPLES.salon, pick: () => {} });
-const useExample = () => useContext(ExampleContext);
-
-/** The chosen example: ?shop=kirana in the link, then the visitor's last pick. The prerendered page is the salon. */
-function ExampleProvider({ children }: { children: ReactNode }) {
-  const [key, setKey] = useState<ExampleKey>('salon');
-  useEffect(() => {
-    let saved: string | null = null;
-    try {
-      saved = new URLSearchParams(location.search).get('shop') ?? localStorage.getItem('lp_example');
-    } catch {
-      // No storage: stay on the salon.
-    }
-    if (saved && saved in EXAMPLES) setKey(saved as ExampleKey);
-  }, []);
-  const pick = (k: ExampleKey) => {
-    setKey(k);
-    try {
-      localStorage.setItem('lp_example', k);
-    } catch {
-      // Just not remembered.
-    }
-  };
-  return <ExampleContext.Provider value={{ ex: EXAMPLES[key], pick }}>{children}</ExampleContext.Provider>;
-}
-
-/** "Pick a shop like yours": the examples, and a line saying they're only examples. */
-function ExamplePicker({ className = '' }: { className?: string }) {
+/** Shop picker: every section of the page follows it. */
+function ShopPicker({ lang, className = '' }: { lang: Lang; className?: string }) {
   const { ex, pick } = useExample();
   return (
-    <div className={`lp-pick ${className}`}>
-      <span className="lp-pick-label" id={`lp-pick-${className || 'hero'}`}>
-        Pick a shop like yours
-      </span>
-      <div className="lp-pick-row" role="group" aria-labelledby={`lp-pick-${className || 'hero'}`}>
-        {Object.values(EXAMPLES).map((e) => (
-          <button
-            key={e.key}
-            className={e.key === ex.key ? 'on' : ''}
-            aria-pressed={e.key === ex.key}
-            onClick={() => pick(e.key)}
-            data-track={`example: ${e.label}`}
-          >
-            <e.icon size={15} /> {e.label}
+    <div className={`lp-picker ${className}`} role="tablist" aria-label="Example shop">
+      {EXAMPLES.map((e) => {
+        const Icon = e.icon;
+        const on = e.key === ex.key;
+        return (
+          <button key={e.key} role="tab" aria-selected={on} className={on ? 'on' : ''} onClick={() => pick(e.key)} data-track={`picker: ${e.key}`}>
+            {on && <motion.span layoutId={`pick-${className}`} className="lp-picker-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+            <Icon size={16} />
+            <span>{e[lang].type}</span>
           </button>
-        ))}
-      </div>
-      <small>Works for any shop that gives a bill: gyms, boutiques, tiffin services, juice bars…</small>
+        );
+      })}
     </div>
   );
 }
 
-const inr = (n: number) => n.toLocaleString('en-IN');
-
-// ---------------------------------------------------------------- hero
-
-
-/** Offset of one piece of the hero scene: follows the pointer by `k` px and drifts by `drift` px as the hero scrolls away. */
-function useDepth(px: MotionValue<number>, py: MotionValue<number>, scroll: MotionValue<number>, k: number, drift: number) {
-  const x = useTransform(px, (v) => v * k);
-  const y = useTransform(() => py.get() * k + scroll.get() * drift);
-  return { x, y };
-}
-
-function Hero() {
+/** The shop's counter screen, drawn small: tap "Add visit" and the stamps fill; the last visit asks for the reward. */
+function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
-  const [qr, setQr] = useState('');
-  const [started, setStarted] = useState(false);
-  const still = useReducedMotion();
-  const ref = useRef<HTMLElement>(null);
+  const t = ex[lang];
+  const start = Math.max(1, ex.needed - 3);
+  const [stamps, setStamps] = useState(start);
+  const [shown, setShown] = useState<'keypad' | 'visit' | 'reward'>('keypad');
+  const [sent, setSent] = useState(false);
   useEffect(() => {
-    QRCode.toDataURL(`${location.origin}${SIGNUP}`, { width: 360, margin: 1, color: { dark: '#0f2e24' } }).then(setQr);
-    const t = setTimeout(() => setStarted(true), 80);
-    return () => clearTimeout(t);
-  }, []);
+    setStamps(Math.max(1, ex.needed - 3));
+    setShown('keypad');
+  }, [ex]);
+  useEffect(() => {
+    if (shown !== 'visit') return;
+    setSent(true);
+    const a = setTimeout(() => setShown('keypad'), 1700);
+    const b = setTimeout(() => setSent(false), 2600);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, [shown, stamps]);
 
-  // Pointer position over the hero, -0.5 … 0.5 from the centre, eased by a spring.
-  const spring = { stiffness: 110, damping: 18, mass: 0.7 };
-  const px = useSpring(useMotionValue(0), spring);
-  const py = useSpring(useMotionValue(0), spring);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-  const scroll = useTransform(scrollYProgress, (v) => (still ? 0 : v));
-  const rotateY = useTransform(px, (v) => v * 14);
-  const rotateX = useTransform(() => py.get() * -10 + scroll.get() * 8);
-  const receipt = useDepth(px, py, scroll, -22, 70);
-  const standee = useDepth(px, py, scroll, 14, -30);
-  const card = useDepth(px, py, scroll, 30, -110);
+  const add = () => {
+    const next = stamps + 1;
+    setStamps(next);
+    setShown(next >= ex.needed ? 'reward' : 'visit');
+  };
 
-  const onMove = (e: PointerEvent<HTMLElement>) => {
-    if (still || e.pointerType !== 'mouse') return;
+  // A gentle 3D tilt toward the pointer.
+  const reduce = useReducedMotion();
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+  const rx = useSpring(useTransform(py, [-0.5, 0.5], [7, -7]), { stiffness: 120, damping: 18 });
+  const ry = useSpring(useTransform(px, [-0.5, 0.5], [-9, 9]), { stiffness: 120, damping: 18 });
+  const move = (e: PointerEvent<HTMLDivElement>) => {
+    if (reduce || e.pointerType !== 'mouse') return;
     const r = e.currentTarget.getBoundingClientRect();
     px.set((e.clientX - r.left) / r.width - 0.5);
     py.set((e.clientY - r.top) / r.height - 0.5);
   };
-  const onLeave = () => {
-    px.set(0);
-    py.set(0);
-  };
 
   return (
-    <section
-      ref={ref}
-      className={`lp-wrap lp-hero ${started ? 'play' : ''}`}
-      onPointerMove={onMove}
-      onPointerLeave={onLeave}
-      data-section="hero"
+    <div
+      className="lp-demo"
+      onPointerMove={move}
+      onPointerLeave={() => {
+        px.set(0);
+        py.set(0);
+      }}
     >
-      <div className="lp-hero-bg" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="lp-hero-copy">
-        <p className="lp-eyebrow">Loyalty for neighbourhood shops</p>
-        <h1>
-          <span className="lp-h1-line">
-            <span>From first</span>
-          </span>{' '}
-          <span className="lp-h1-line">
-            <span>visit to</span>
-          </span>{' '}
-          <em className="lp-h1-line">
-            <span>“the&nbsp;usual”.</span>
-          </em>
-        </h1>
-        <p className="lp-lede">
-          Regularhood turns walk-ins into regulars. Points on every bill, rewards your customers can see on their phone, and a nudge when they
-          haven’t been back. Nothing for them to install.
-        </p>
-        <div className="lp-cta">
-          <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="hero: Start free">
-            Start free <ArrowRight size={18} />
-          </a>
-          <a className="lp-btn lp-btn-line" href="#how" data-track="hero: See how it works">
-            See how it works
-          </a>
-        </div>
-        <ul className="lp-hero-meta">
-          <li>
-            <Check size={16} /> Free to start
-          </li>
-          <li>
-            <Check size={16} /> Set up in two minutes
-          </li>
-          <li>
-            <Check size={16} /> Any phone with a camera
-          </li>
-        </ul>
-        <ExamplePicker />
-      </div>
-
-      <motion.div
-        className="lp-scene"
-        role="img"
-        aria-label={`A ₹${inr(ex.total)} bill at ${ex.shop} stamped with ${ex.points} points, the counter QR standee, and ${ex.customer}'s points card showing ${ex.after} points`}
-        style={{ rotateX, rotateY, transformPerspective: 1100 }}
-      >
-        <motion.div className="lp-receipt" aria-hidden="true" style={receipt}>
-          <h4>{ex.shop.toUpperCase()}</h4>
-          <div className="lp-c">Today · {ex.time}</div>
-          <hr />
-          {ex.bill.map(([item, price], i) => (
-            <div className="lp-row lp-line" style={{ '--i': i } as CSSProperties} key={`${ex.key}-${item}`}>
-              <span>{item}</span>
-              <span>₹{inr(price)}</span>
-            </div>
-          ))}
-          <hr />
-          <div className="lp-row lp-total">
-            <span>TOTAL</span>
-            <span>
-              ₹<CountUp to={ex.total} run={started} delay={700} ms={700} />
-            </span>
+      <motion.div className="lp-phone" style={{ rotateX: rx, rotateY: ry }}>
+        <div className="lp-phone-notch" />
+        <div className="lp-phone-screen">
+          <div className="lp-phone-head">
+            <span className="lp-phone-shop">{ex.shop}</span>
+            <span className="lp-phone-rule">{c.rule(ex.needed, t.short)}</span>
           </div>
-          <div className="lp-stamp">+{ex.points} POINTS</div>
-        </motion.div>
-        <motion.div className="lp-standee" style={standee}>
-          <b>Scan to try Regularhood</b>
-          <div className="lp-qr-wrap">{qr ? <img src={qr} alt="QR code that opens Regularhood sign-up on your phone" /> : <FakeQr seed={11} />}</div>
-          <span>Opens sign-up on your phone</span>
-        </motion.div>
-        <motion.div className="lp-walletcard" aria-hidden="true" style={card}>
-          <small>
-            {ex.shop} · {ex.customer}
-          </small>
-          <strong>
-            <CountUp from={ex.before} to={ex.after} run={started} delay={2250} ms={800} />
-          </strong>
-          <p>
-            Shop for ₹{inr(ex.toReward)} more → <b>{ex.reward}</b>
-          </p>
-          <div className="lp-meter">
-            <i style={{ width: ex.meter }} />
-          </div>
-        </motion.div>
-        {/* the stamp's points fly over to the customer's card */}
-        <div className="lp-coins" aria-hidden="true">
-          {Array.from({ length: 6 }, (_, i) => (
-            <i key={i} style={{ '--i': i } as CSSProperties} />
-          ))}
+          <AnimatePresence mode="wait" initial={false}>
+            {shown === 'reward' ? (
+              <motion.div key="reward" className="lp-phone-result reward" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                <Confetti />
+                <span className="lp-phone-icon">
+                  <Gift size={30} />
+                </span>
+                <strong>{c.demoGive(t.short)}</strong>
+                <Stamps on={ex.needed} of={ex.needed} size={ex.needed > 8 ? 18 : 24} />
+                <button
+                  className="lp-phone-btn orange"
+                  onClick={() => {
+                    setStamps(0);
+                    setShown('keypad');
+                  }}
+                  data-track="demo: Given"
+                >
+                  <Check size={18} strokeWidth={3} /> {c.demoGiven}
+                </button>
+              </motion.div>
+            ) : shown === 'visit' ? (
+              <motion.div key="visit" className="lp-phone-result" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                <span className="lp-phone-icon">
+                  <Check size={30} strokeWidth={3} />
+                </span>
+                <strong>{c.demoVisit(stamps, ex.needed)}</strong>
+                <Stamps on={stamps} of={ex.needed} size={ex.needed > 8 ? 18 : 24} pop={stamps - 1} />
+                <span className="lp-phone-small">{c.demoLeft(ex.needed - stamps, t.short)}</span>
+              </motion.div>
+            ) : (
+              <motion.div key="keypad" className="lp-phone-keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="lp-phone-number">98765 43210</div>
+                <div className="lp-phone-keys" aria-hidden="true">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''].map((k, i) => (
+                    <span key={i}>{k || (i === 11 ? <Delete size={15} /> : '')}</span>
+                  ))}
+                </div>
+                <button className="lp-phone-btn" onClick={add} data-track="demo: Add visit">
+                  <Check size={18} strokeWidth={3} /> {c.demoAdd}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
-    </section>
-  );
-}
 
-const SHOPS = ['Chai stalls', 'Bakeries', 'Salons', 'Sweet shops', 'Kirana stores', 'Cafés', 'Juice bars', 'Pharmacies', 'Gyms', 'Tiffin services'];
-
-function ShopTypes() {
-  // Two copies side by side; the strip slides by exactly one copy and starts over.
-  const run = [...SHOPS, ...SHOPS];
-  return (
-    <div className="lp-marquee" aria-label={`Made for ${SHOPS.join(', ')}`}>
-      <div className="lp-marquee-track" aria-hidden="true">
-        {run.map((s, i) => (
-          <span key={i}>
-            {s}
-            <i>★</i>
-          </span>
-        ))}
+      <AnimatePresence>
+        {sent && (
+          <motion.div className="lp-float lp-float-wa" initial={{ opacity: 0, y: 16, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }}>
+            <MessageCircle size={16} /> {c.floatSent}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="lp-float lp-float-visit" aria-hidden="true">
+        <Sparkles size={15} /> {c.floatVisit}
       </div>
+      <p className="lp-demo-hint">
+        {shown === 'reward' ? (
+          <button className="lp-link" onClick={() => setShown('keypad')}>
+            <RotateCcw size={14} /> {c.demoAgain}
+          </button>
+        ) : (
+          c.demoHint
+        )}
+      </p>
     </div>
   );
 }
 
-// ---------------------------------------------------------------- why + the habit
-
-function Problem() {
+function Hero({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
-  const { habit } = ex;
-  const ref = useRef<HTMLDivElement>(null);
-  // Scroll progress through the card → --p (0 … 1); CSS fills the dots and milestones from it (1 until the script sets it).
-  // It moves only as fast as the visitor scrolls, so it stays on under reduced motion (as fades; see the CSS).
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.7'] });
-  useMotionValueEvent(scrollYProgress, 'change', (v) => ref.current?.style.setProperty('--p', v.toFixed(3)));
-  useEffect(() => ref.current?.style.setProperty('--p', String(scrollYProgress.get())), [scrollYProgress]);
-  let n = 0;
   return (
-    <section className="lp-section lp-wrap" id="why" data-section="why">
-      <div className="lp-problem lp-reveal">
-        <div>
-          <p className="lp-kicker">Why it matters</p>
-          <h2 className="lp-h2">A new customer pays, smiles and walks out. Whether they come back is left to luck.</h2>
-        </div>
-        <ul className="lp-today">
-          <li>
-            <b>Punch cards</b>
-            <span>get lost in a wallet, or never come out of it.</span>
-          </li>
-          <li>
-            <b>Discounts</b>
-            <span>bring people once and cut into every bill after.</span>
-          </li>
-          <li>
-            <b>Memory</b>
-            <span>knows faces, not who hasn’t been in for a month.</span>
-          </li>
-          <li className="lp-us">
-            <b>Regularhood</b>
-            <span>remembers every customer for you, and gives them a reason to return.</span>
-          </li>
-        </ul>
+    <section className="lp-hero" data-section="hero">
+      <div className="lp-aurora" aria-hidden="true">
+        <span />
+        <span />
+        <span />
       </div>
-
-      <div ref={ref} className="lp-habit lp-reveal" style={{ '--n': habit.visits.flat().length } as CSSProperties}>
-        <div className="lp-habit-head">
-          <h3>What a regular looks like</h3>
-          <span className="lp-mono">{habit.label}</span>
-        </div>
-        <div className="lp-habit-body">
-          <div className="lp-cal" role="img" aria-label={`Twelve weeks of ${ex.customer}'s visits: ${habit.visits.flat().length} in all, from the first one to a habit`}>
-            {habit.visits.map((days, w) => (
-              <div className="lp-week" key={w}>
-                {Array.from({ length: 7 }, (_, d) => {
-                  const on = days.includes(d);
-                  const at = (p: [number, number]) => w === p[0] && d === p[1];
-                  const cls = ['lp-d', on && 'on', at(habit.first) && 'first', at(habit.today) && 'today'].filter(Boolean).join(' ');
-                  return <span key={d} className={cls} style={on ? ({ '--i': n++ } as CSSProperties) : undefined} />;
-                })}
-              </div>
-            ))}
-          </div>
-          <ol className="lp-milestones">
-            {habit.milestones.map(([when, what]) => (
-              <li key={`${ex.key}-${when}`}>
-                <b>{when}</b>
-                <span>{what}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className="lp-habit-foot">
-          <span>
-            <b>First visit</b> · {habit.firstVisit}
-          </span>
-          <span className="lp-said">{habit.said}</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------- how it works
-
-function BillTimer({ run }: { run: boolean }) {
-  const [left, setLeft] = useState(161);
-  useEffect(() => {
-    if (!run || reducedMotion()) return;
-    setLeft(179);
-    const t = setInterval(() => setLeft((s) => (s > 120 ? s - 1 : 179)), 1000);
-    return () => clearInterval(t);
-  }, [run]);
-  return (
-    <span className="lp-num">
-      {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
-    </span>
-  );
-}
-
-const STEPS = [
-  { title: 'Show the bill QR', text: 'Type the bill amount and turn your phone around. The customer scans it with their camera. New customers join right there.' },
-  { title: 'Points land on their phone', text: 'Their card opens from a link: balance, the next reward in rupees, their history, and a QR for next time.' },
-  { title: 'They come back', text: 'A reward to aim for, a birthday treat, and a one-tap WhatsApp message when someone has been away for a month.' },
-];
-
-/** The picture for one step. `play` replays what that step does on screen. */
-function StepArt({ step, play }: { step: number; play: boolean }) {
-  const { ex } = useExample();
-  if (step === 0)
-    return (
-      <div className="lp-mini" aria-label={`Bill QR screen: ₹${inr(ex.total)}, ${ex.points} points, waiting for the customer to scan`}>
-        <small>Bill QR · {ex.shop}</small>
-        <span className="lp-big">
-          +<CountUp to={ex.points} run={play} ms={800} />
-        </span>
-        <small>points for ₹{inr(ex.total)}</small>
-        <div className="lp-qr-wrap lp-qr-mini">
-          <FakeQr seed={41} />
-        </div>
-        <span className="lp-wait">
-          <i /> Waiting for scan · <BillTimer run={play} />
-        </span>
-      </div>
-    );
-  if (step === 1)
-    return (
-      <div className="lp-mini" aria-label={`Customer's points card: ${ex.after} points, ₹${inr(ex.toReward)} more to ${ex.reward.toLowerCase()}`}>
-        <small>Hi {ex.customer}</small>
-        <div className="lp-mini-card">
-          <small>{ex.shop} · Member</small>
-          <strong>
-            <CountUp from={ex.before} to={ex.after} run={play} delay={200} />
-          </strong>
-          <div className="lp-meter">
-            <i style={{ width: ex.meter }} />
-          </div>
-          <p>
-            Shop for ₹{inr(ex.toReward)} more → {ex.reward}
+      <div className="lp-grain" aria-hidden="true" />
+      <div className="lp-wrap lp-hero-grid">
+        <div className="lp-hero-text">
+          <p className="lp-eyebrow">
+            <span className="lp-dot" /> {c.eyebrow}
           </p>
+          <h1>
+            <span className="lp-h1-line">{c.h1(ex.needed)}</span>
+            <span className="lp-h1-swap">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={`${ex.key}-${lang}`}
+                  className="lp-h1-reward"
+                  initial={{ y: '0.6em', opacity: 0, filter: 'blur(8px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: '-0.5em', opacity: 0, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                >
+                  {ex[lang].reward}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          </h1>
+          <p className="lp-sub">{c.sub}</p>
+          <div className="lp-cta">
+            <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="hero: Start free">
+              {c.start} <ArrowRight size={18} />
+            </a>
+            <a className="lp-btn lp-btn-ghost" href="#film" data-track="hero: Watch it work">
+              <Play size={16} fill="currentColor" /> {c.watch}
+            </a>
+          </div>
+          <p className="lp-note">{c.note}</p>
+          <div className="lp-pick-wrap">
+            <span className="lp-pick-label">{c.pickLabel}</span>
+            <ShopPicker lang={lang} className="hero" />
+          </div>
         </div>
-        <span className="lp-mini-btn">My card</span>
+        <DemoPhone c={c} lang={lang} />
       </div>
-    );
+    </section>
+  );
+}
+
+function Marquee({ lang }: { lang: Lang }) {
+  const items = [...EXAMPLES.map((e) => e[lang].type), ...(lang === 'hi' ? ['मेडिकल', 'टिफ़िन', 'जूस बार', 'चाय की दुकान', 'लॉन्ड्री'] : ['Pharmacy', 'Tiffin', 'Juice bar', 'Chai stall', 'Laundry'])];
+  const row = (
+    <div className="lp-marquee-row">
+      {items.map((s, i) => (
+        <span key={i}>
+          <Check size={14} strokeWidth={3} /> {s}
+        </span>
+      ))}
+    </div>
+  );
   return (
-    <div className="lp-chat" aria-label="WhatsApp messages to the customer">
-      <div className="lp-bubble lp-b1">
-        Hi {ex.customer}! 🎉 You earned {ex.points} points at {ex.shop}. Your balance: {ex.after} points. <a href="#how">regularhood.in/w/…</a>
-        <time>5:43 pm</time>
-      </div>
-      <div className="lp-chat-gap">{ex.later}</div>
-      <div className="lp-typing" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="lp-bubble lp-b2">
-        We miss you at {ex.shop}! You have {ex.after} points waiting — your {ex.reward.toLowerCase()} is close.
-        <time>11:02 am</time>
+    <div className="lp-marquee" aria-hidden="true">
+      <div className="lp-marquee-track">
+        {row}
+        {row}
       </div>
     </div>
   );
 }
 
-function StepsHead() {
-  return (
-    <>
-      <p className="lp-kicker">How it works</p>
-      <h2 className="lp-h2">Three steps, all on the phone you already have.</h2>
-    </>
-  );
-}
+// ---------------------------------------------------------------- the film
 
-/** Narrow screens: the three steps stacked, each playing as it scrolls in. */
-function StepCard({ step }: { step: number }) {
-  const [ref, seen] = useInView<HTMLDivElement>(0.4);
-  return (
-    <article className="lp-step lp-reveal">
-      <div ref={ref} className={`lp-step-art ${seen ? 'play' : ''}`}>
-        <StepArt step={step} play={seen} />
-      </div>
-      <div className="lp-step-text">
-        <b>STEP {step + 1}</b>
-        <h3>{STEPS[step].title}</h3>
-        <p>{STEPS[step].text}</p>
-      </div>
-    </article>
-  );
-}
+const SCENE_MS = [3400, 2800, 3200, 3600];
 
-/** Wide screens: the section pins while you scroll, and one big screen walks through the three steps. */
-function StepsStory() {
-  const track = useRef<HTMLDivElement>(null);
-  const [inView, seen] = useInView<HTMLDivElement>(0.3);
-  const [active, setActive] = useState(0);
-  const { scrollYProgress } = useScroll({ target: track, offset: ['start start', 'end end'] });
-  useMotionValueEvent(scrollYProgress, 'change', (v) => setActive(Math.min(STEPS.length - 1, Math.floor(v * STEPS.length))));
+/** "Watch it work": a 13-second film of the counter, drawn live so it follows the picked shop and language. */
+function Film({ c, lang }: { c: Copy; lang: Lang }) {
+  const { ex } = useExample();
+  const t = ex[lang];
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useInView(ref, { amount: 0.45 });
+  const [scene, setScene] = useState(0);
+  const [progress, setProgress] = useState(0); // 0..1 within the scene
+  const [playing, setPlaying] = useState(false);
+  const [userPaused, setUserPaused] = useState(false);
 
-  // Clicking a step scrolls to the middle of its stretch of the track.
-  const goTo = (i: number) => {
-    const el = track.current;
-    if (!el) return;
-    const top = el.getBoundingClientRect().top + scrollY;
-    scrollTo({ top: top + ((i + 0.5) / STEPS.length) * (el.offsetHeight - innerHeight), behavior: 'smooth' });
+  // Autoplays in a loop whenever it's on screen, like a muted video, until the visitor pauses it. It plays even with
+  // "reduce motion" on: it's the page's main explainer, and the pause button is always there.
+  useEffect(() => {
+    setPlaying(visible && !userPaused);
+  }, [visible, userPaused]);
+
+  // The loop reads and writes refs, so a jump to another scene while playing is picked up straight away.
+  const at = useRef({ scene: 0, progress: 0 });
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const a = at.current;
+      a.progress += (now - last) / SCENE_MS[a.scene];
+      last = now;
+      if (a.progress >= 1) {
+        a.progress = 0;
+        a.scene = (a.scene + 1) % SCENE_MS.length;
+        setScene(a.scene);
+      }
+      setProgress(a.progress);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]);
+
+  const jump = (i: number) => {
+    at.current = { scene: i, progress: 0 };
+    setScene(i);
+    setProgress(0);
+  };
+  const toggle = () => {
+    setUserPaused(playing);
+    setPlaying(!playing);
   };
 
+  const before = ex.needed - 1;
+  // Paused at the start of a scene (stepping through it, or less motion): show how the scene ends.
+  const p = playing || progress > 0 ? progress : 1;
+  const typed = '9876543210'.slice(0, Math.min(10, Math.floor(p * 14)));
+  const shown = typed.length > 5 ? `${typed.slice(0, 5)} ${typed.slice(5)}` : typed;
+  const pressed = scene === 1 && p < 0.25;
+  const elapsed = SCENE_MS.slice(0, scene).reduce((a, b) => a + b, 0) + progress * SCENE_MS[scene];
+
   return (
-    <div ref={track} className="lp-story">
-      <div ref={inView} className="lp-story-pin">
-        <div className="lp-story-side">
-          <StepsHead />
-          <ol className="lp-story-steps">
-            <motion.i className="lp-story-rail" style={{ scaleY: scrollYProgress }} aria-hidden="true" />
-            {STEPS.map((s, i) => (
-              <li key={s.title} className={i === active ? 'on' : i < active ? 'done' : ''} onClick={() => goTo(i)}>
-                <b>STEP {i + 1}</b>
-                <h3>{s.title}</h3>
-                <div className="lp-story-more">
-                  <p>{s.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className="lp-stage" data-step={active}>
-          <span className="lp-stage-count" aria-hidden="true">
-            0{active + 1}
-            <small> / 0{STEPS.length}</small>
-          </span>
-          {STEPS.map((s, i) => (
-            <div
-              key={s.title}
-              className={`lp-step-art ${i === active ? 'on' : i < active ? 'past' : ''} ${seen && i === active ? 'play' : ''}`}
-              aria-hidden={i !== active}
-            >
-              <StepArt step={i} play={seen && i === active} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Steps() {
-  const wide = useMedia('(min-width: 861px)');
-  return (
-    <section className="lp-section lp-wrap" id="how" data-section="how">
-      {wide ? (
-        <StepsStory />
-      ) : (
-        <>
-          <div className="lp-reveal">
-            <StepsHead />
-          </div>
-          <div className="lp-steps">
-            {STEPS.map((s, i) => (
-              <StepCard key={s.title} step={i} />
-            ))}
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------- the real app
-
-const screens = (ex: Example) => [
-  {
-    src: `/landing/${ex.key}/dashboard.webp`,
-    alt: `Regularhood dashboard ${ex.place}: today’s visits and sales, and what returning customers spent in 30 days`,
-    title: 'Your day at a glance',
-    text: 'Today’s visits and sales, and what returning customers spent this month.',
-  },
-  {
-    src: `/landing/${ex.key}/give-points.webp`,
-    alt: 'Give points sheet with Bill QR, Scan card, Reward code and phone search',
-    title: 'One button at the counter',
-    text: 'Bill QR, scan their card, a reward code, or their phone number.',
-  },
-  {
-    src: `/landing/${ex.key}/bill-qr.webp`,
-    alt: `Bill QR for a ₹${inr(ex.total)} bill worth ${ex.points} points, waiting for the customer to scan`,
-    title: 'The bill QR',
-    text: 'The customer scans, and your screen says “Points added” by itself.',
-  },
-];
-
-function AppScreens() {
-  const { ex } = useExample();
-  return (
-    <section className="lp-section lp-screens" id="app" data-section="app">
+    <section className="lp-film-sec" id="film" data-section="film">
       <div className="lp-wrap">
-        <div className="lp-reveal">
-          <p className="lp-kicker">The app</p>
-          <h2 className="lp-h2">This is what you’ll use. Real screens, not mock-ups.</h2>
-          <p className="lp-sub">Regularhood runs in the browser on your phone and installs to the home screen. Here it is {ex.place}.</p>
-          <ExamplePicker className="lp-pick-sm" />
-        </div>
-        <div className="lp-phones">
-          {screens(ex).map((s, i) => (
-            <figure className="lp-shot lp-reveal" key={s.src} style={{ '--i': i } as CSSProperties}>
-              <div className="lp-device">
-                <img src={s.src} alt={s.alt} width={390} height={844} loading="lazy" decoding="async" />
-              </div>
-              <figcaption>
-                <b>{s.title}</b>
-                <span>{s.text}</span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------- counter
-
-function Counter() {
-  return (
-    <section className="lp-section lp-wrap" id="counter" data-section="counter">
-      <div className="lp-reveal">
-        <p className="lp-kicker">At the counter</p>
-        <h2 className="lp-h2">Built for a queue, not a demo.</h2>
-        <p className="lp-sub">Four ways to give points or a reward. Use whichever is fastest for the customer in front of you.</p>
-      </div>
-      <div className="lp-ways lp-reveal">
-        <div className="lp-way">
-          <span className="lp-way-icon">
-            <QrCode size={24} />
-          </span>
-          <div>
-            <h3>Bill QR</h3>
-            <p>You type the amount, they scan. If they saved their card before, it takes one tap on their side.</p>
-          </div>
-        </div>
-        <div className="lp-way">
-          <span className="lp-way-icon">
-            <ScanLine size={24} />
-          </span>
-          <div>
-            <h3>Scan their card</h3>
-            <p>The customer opens “My card”. You point your camera at it and their name comes up.</p>
-          </div>
-        </div>
-        <div className="lp-way">
-          <span className="lp-way-icon">
-            <Phone size={24} />
-          </span>
-          <div>
-            <h3>Phone number</h3>
-            <p>No smartphone, no problem. Type their number and the bill, and they still collect points.</p>
-          </div>
-        </div>
-        <div className="lp-way">
-          <span className="lp-way-icon">
-            <Ticket size={24} />
-          </span>
-          <div>
-            <h3>Reward code</h3>
-            <p>They tap “Get it” on a reward and read you a code. You check who it is, then hand it over.</p>
-            <span className="lp-ticket">
-              1403 <small>10:00</small>
+        <p className="lp-kicker rv">{c.filmKicker}</p>
+        <h2 className="lp-h2 rv">{c.filmTitle}</h2>
+        <div className="lp-film rv" ref={ref}>
+          <div className="lp-film-top">
+            <span className="lp-film-live">
+              <span className="lp-dot" /> {ex.shop}
+            </span>
+            <span className="lp-film-time">
+              0:{String(Math.floor(elapsed / 1000)).padStart(2, '0')} / 0:{String(Math.round(SCENE_MS.reduce((a, b) => a + b) / 1000)).padStart(2, '0')}
             </span>
           </div>
-        </div>
-      </div>
-      <div className="lp-guard lp-reveal" aria-label="Safety checks">
-        <span>
-          <ShieldCheck size={16} /> A daily limit per customer
-        </span>
-        <span>
-          <ShieldCheck size={16} /> “Are you sure?” on very large bills
-        </span>
-        <span>
-          <ShieldCheck size={16} /> Undo for any mistake
-        </span>
-        <span>
-          <ShieldCheck size={16} /> Every change in an activity log
-        </span>
-      </div>
-    </section>
-  );
-}
 
-// ---------------------------------------------------------------- the customer's card (real screenshots, EN / हिं)
+          <div className="lp-film-stage">
+            <div className="lp-film-caption">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.div key={`${scene}-${lang}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
+                  <span className="lp-film-step">{String(scene + 1).padStart(2, '0')}</span>
+                  <h3>{c.scenes[scene][0]}</h3>
+                  <p>{c.scenes[scene][1]}</p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-function Customer() {
-  const { ex } = useExample();
-  const [lang, setLang] = useState<'en' | 'hi'>('en');
-  return (
-    <section className="lp-section lp-wrap" id="customers" data-section="customers">
-      <div className="lp-customer">
-        <div className="lp-reveal">
-          <p className="lp-kicker">For your customers</p>
-          <h2 className="lp-h2">Their card lives on their phone.</h2>
-          <p className="lp-sub">No app to download and no password to remember. A link opens their card, and it can sit on the home screen like any app.</p>
-          <ul className="lp-points-list">
-            <li>
-              <Gift size={18} />
-              <span>The next reward shown in rupees, so “₹{inr(ex.toReward)} more” means something.</span>
-            </li>
-            <li>
-              <Languages size={18} />
-              <span>English or Hindi, one tap. Try it on the card.</span>
-            </li>
-            <li>
-              <Smartphone size={18} />
-              <span>A phone number and 4-digit PIN open it from any other phone.</span>
-            </li>
-            <li>
-              <MessageCircle size={18} />
-              <span>Every bill can be sent to them on WhatsApp, with their card link.</span>
-            </li>
-          </ul>
-        </div>
-        <div className="lp-card-demo lp-reveal">
-          <div className="lp-lang" role="group" aria-label="Show the card in">
-            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} data-track="card language: English">
-              English
+            <div className="lp-film-screen">
+              {scene === 0 && (
+                <div className="lp-film-say">
+                  <span className="lp-film-bubble-say">
+                    {c.customerSays} <b>98765 43210</b>
+                  </span>
+                </div>
+              )}
+              <div className={`lp-mini-phone ${scene === 2 ? 'customer' : ''}`}>
+                {scene === 2 ? (
+                  <div className="lp-wa">
+                    <div className="lp-wa-head">
+                      <span className="lp-wa-avatar">
+                        <LogoMark size={22} />
+                      </span>
+                      <span>
+                        <b>{ex.shop}</b>
+                        <small>WhatsApp</small>
+                      </span>
+                    </div>
+                    <div className="lp-wa-body">
+                      {p < 0.22 ? (
+                        <span className="lp-wa-typing">
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                      ) : (
+                        <motion.div className="lp-wa-msg" initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
+                          {c.bubble(ex.shop, before, ex.needed, t.short)}
+                          <div className="lp-wa-card">
+                            <small>{c.waName}</small>
+                            <Stamps on={before} of={ex.needed} size={ex.needed > 8 ? 13 : 17} />
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                ) : scene === 3 ? (
+                  <div className="lp-phone-result reward film">
+                    {p > 0.12 && <Confetti />}
+                    <span className="lp-phone-icon">
+                      <Gift size={26} />
+                    </span>
+                    <strong>{c.demoGive(t.short)}</strong>
+                    <Stamps on={ex.needed} of={ex.needed} size={ex.needed > 8 ? 13 : 18} pop={ex.needed - 1} />
+                    <span className={`lp-phone-btn orange ${playing && p > 0.7 ? 'tap' : ''}`}>
+                      <Check size={16} strokeWidth={3} /> {c.demoGiven}
+                    </span>
+                  </div>
+                ) : scene === 1 && !pressed ? (
+                  <div className="lp-phone-result film">
+                    <span className="lp-phone-icon">
+                      <Check size={26} strokeWidth={3} />
+                    </span>
+                    <strong>{c.demoVisit(before, ex.needed)}</strong>
+                    <Stamps on={before} of={ex.needed} size={ex.needed > 8 ? 13 : 18} pop={before - 1} />
+                    <span className="lp-phone-small">{c.demoLeft(1, t.short)}</span>
+                  </div>
+                ) : (
+                  <div className="lp-phone-keypad film">
+                    <div className="lp-phone-number">{shown || <span className="lp-caret" />}</div>
+                    <div className="lp-phone-keys" aria-hidden="true">
+                      {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''].map((k, i) => (
+                        <span key={i} className={scene === 0 && k && typed.endsWith(k) && p < 0.72 ? 'hit' : ''}>
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                    <span className={`lp-phone-btn ${pressed ? 'tap' : ''} ${typed.length < 10 && scene === 0 ? 'dim' : ''}`}>
+                      <Check size={16} strokeWidth={3} /> {c.demoAdd}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="lp-film-bar">
+            <button className="lp-film-play" onClick={toggle} aria-label={playing ? c.filmPause : c.filmPlay} data-track="film: play/pause">
+              {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
             </button>
-            <button
-              className={lang === 'hi' ? 'on' : ''}
-              onClick={() => setLang('hi')}
-              aria-pressed={lang === 'hi'}
-              lang="hi"
-              data-track="card language: Hindi"
-            >
-              हिंदी
+            <div className="lp-film-segs">
+              {SCENE_MS.map((_, i) => (
+                <button key={i} onClick={() => jump(i)} aria-label={c.scenes[i][0]} data-track={`film: scene ${i + 1}`}>
+                  <span style={{ transform: `scaleX(${i < scene ? 1 : i === scene ? progress : 0})` }} />
+                </button>
+              ))}
+            </div>
+            <button className="lp-film-play" onClick={() => jump(0)} aria-label={c.filmReplay} data-track="film: replay">
+              <RotateCcw size={16} />
             </button>
           </div>
-          <div className="lp-device lp-device-lg">
-            <img
-              className={lang === 'en' ? 'on' : ''}
-              src={`/landing/${ex.key}/wallet-en.webp`}
-              alt={`${ex.customer}'s card at ${ex.shop}: ${ex.after} points, shop for ₹${inr(ex.toReward)} more for ${ex.reward.toLowerCase()}`}
-              width={390}
-              height={844}
-              loading="lazy"
-            />
-            <img
-              className={lang === 'hi' ? 'on' : ''}
-              src={`/landing/${ex.key}/wallet-hi.webp`}
-              alt="The same card in Hindi"
-              width={390}
-              height={844}
-              loading="lazy"
-              aria-hidden={lang !== 'hi'}
-            />
-          </div>
         </div>
       </div>
     </section>
   );
 }
 
-// ---------------------------------------------------------------- proof
+// ---------------------------------------------------------------- the card that fills as you scroll
 
-function Proof() {
+function ScrollCard({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
-  const { proof } = ex;
-  const [ref, seen] = useInView<HTMLDivElement>(0.5);
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const [k, setK] = useState(ex.needed);
+  const [moved, setMoved] = useState(false);
+  useMotionValueEvent(scrollYProgress, 'change', (p) => {
+    setMoved(true);
+    setK(Math.min(ex.needed, Math.floor(p * (ex.needed + 0.6))));
+  });
+  // At rest (prerendered, or before any scroll) the card shows full.
+  const on = moved ? k : ex.needed;
+  const done = on >= ex.needed;
+  const glow = useTransform(scrollYProgress, [0, 1], [0.15, 1]);
+
   return (
-    <section className="lp-section lp-proof" id="proof" data-section="proof">
-      <div className="lp-wrap lp-proof-grid">
-        <div className="lp-reveal">
-          <p className="lp-kicker">On your dashboard</p>
-          <h2 className="lp-h2">Know if it’s working, in rupees.</h2>
-          <p className="lp-sub">
-            Every day your dashboard shows what customers who came back spent in the last 30 days, how that compares with the month before,
-            and who returned after a month away.
-          </p>
-        </div>
-        <div ref={ref} className={`lp-dash lp-reveal ${seen ? 'play' : ''}`}>
-          <div className="lp-dash-head">
-            <span>Customers who came back</span>
-            <span>Last 30 days</span>
+    <section className="lp-scroll" ref={ref} data-section="why-card">
+      <div className="lp-scroll-sticky">
+        <div className="lp-wrap lp-scroll-grid">
+          <div>
+            <p className="lp-kicker">{c.scrollKicker}</p>
+            <h2 className="lp-h2">{c.scrollTitle}</h2>
+            <p className="lp-sub">{c.scrollSub}</p>
           </div>
-          <strong>
-            ₹<CountUp to={proof.sales} run={seen} ms={1400} />
-          </strong>
-          <p className="lp-dash-sub">
-            spent by <CountUp to={proof.customers} run={seen} ms={1400} /> returning customers on <CountUp to={proof.visits} run={seen} ms={1400} /> repeat
-            visits
-          </p>
-          <span className="lp-trend">
-            <TrendingUp size={15} /> +{proof.trend}% vs the 30 days before
-          </span>
-          <div className="lp-dash-facts">
-            <div>
-              <b>{proof.share}%</b>
-              <span>of sales</span>
-            </div>
-            <div>
-              <b>{proof.wonBack}</b>
-              <span>back after 30+ days</span>
-            </div>
-            <div>
-              <b>{proof.rewards}</b>
-              <span>rewards given</span>
+          <div className="lp-scroll-card-wrap">
+            <motion.div className="lp-scroll-glow" style={{ opacity: glow }} aria-hidden="true" />
+            <div className={`lp-card big ${done ? 'done' : ''}`}>
+              <span className="lp-card-shop">
+                <LogoMark size={26} /> {ex.shop}
+              </span>
+              <span className="lp-card-rule">{c.rule(ex.needed, ex[lang].short)}</span>
+              <Stamps on={on} of={ex.needed} size={ex.needed > 8 ? 30 : 44} pop={on - 1} />
+              <div className="lp-scroll-count">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.strong key={`${on}-${done}-${lang}`} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }}>
+                    {done ? c.scrollDone(ex[lang].short) : on === 0 ? c.scrollStart : c.scrollVisit(on)}
+                  </motion.strong>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
-          <p className="lp-example">Example figures {ex.place}</p>
         </div>
       </div>
     </section>
   );
 }
 
-// ---------------------------------------------------------------- trust, pricing, faq
+// ---------------------------------------------------------------- sections
 
-function Trust() {
+function How({ c }: { c: Copy }) {
   return (
-    <section className="lp-section lp-wrap" id="trust" data-section="trust">
-      <div className="lp-reveal">
-        <p className="lp-kicker">Your customers stay yours</p>
-        <h2 className="lp-h2">Built so you can trust it with your regulars.</h2>
-      </div>
-      <div className="lp-trust lp-reveal">
-        <div>
-          <Lock size={22} />
-          <h3>Never sold or shared</h3>
-          <p>Your customers’ names and numbers are yours. We don’t sell them, share them or message them ourselves.</p>
-        </div>
-        <div>
-          <Download size={22} />
-          <h3>Take it with you</h3>
-          <p>Download your customers and full points history as a spreadsheet whenever you like.</p>
-        </div>
-        <div>
-          <Database size={22} />
-          <h3>Saved every day</h3>
-          <p>A copy of your data is kept every day, so a bad day doesn’t cost you your customers.</p>
-        </div>
-        <div>
-          <ScrollText size={22} />
-          <h3>Mistakes are easy to catch</h3>
-          <p>Limits, big-bill checks and an activity log show who changed what, and when.</p>
+    <section className="lp-section lp-wrap" id="how" data-section="how">
+      <p className="lp-kicker rv">{c.howKicker}</p>
+      <h2 className="lp-h2 rv">{c.howTitle}</h2>
+      <ol className="lp-steps">
+        {c.steps.map(([title, text], i) => (
+          <li key={title} className="rv" style={{ '--i': i } as CSSProperties} onPointerMove={spotlight}>
+            <span className="lp-step-n">{i + 1}</span>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function EveryShop({ c, lang }: { c: Copy; lang: Lang }) {
+  const { ex, pick } = useExample();
+  return (
+    <section className="lp-section lp-every" id="every" data-section="every">
+      <div className="lp-wrap">
+        <p className="lp-kicker rv">{c.everyKicker}</p>
+        <h2 className="lp-h2 rv">{c.everyTitle}</h2>
+        <p className="lp-sub rv">{c.everySub}</p>
+        <div className="lp-every-grid">
+          {EXAMPLES.map((e, i) => {
+            const Icon = e.icon;
+            return (
+              <button
+                key={e.key}
+                className={`lp-every-card rv ${e.key === ex.key ? 'on' : ''}`}
+                style={{ '--i': i } as CSSProperties}
+                onPointerMove={spotlight}
+                onClick={() => {
+                  pick(e.key);
+                  document.getElementById('film')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                data-track={`every: ${e.key}`}
+              >
+                <span className="lp-every-icon">
+                  <Icon size={22} />
+                </span>
+                <span className="lp-every-type">{e[lang].type}</span>
+                <strong>{c.everyRule(e.needed)}</strong>
+                <span className="lp-every-reward">→ {e[lang].short}</span>
+                <Stamps on={e.needed - 1} of={e.needed} size={e.needed > 8 ? 14 : 18} />
+                <span className="lp-every-line">{e[lang].line}</span>
+                <span className="lp-every-try">
+                  {c.everyTry} <ArrowRight size={14} />
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function Pricing() {
+function ForCustomers({ c, lang }: { c: Copy; lang: Lang }) {
+  const { ex } = useExample();
+  const x = ex.needed - 2;
+  return (
+    <section className="lp-section lp-band" id="customers" data-section="customers">
+      <div className="lp-wrap lp-split">
+        <div>
+          <p className="lp-kicker rv">{c.custKicker}</p>
+          <h2 className="lp-h2 rv">{c.custTitle}</h2>
+          <p className="lp-sub rv">{c.custSub}</p>
+        </div>
+        <div className="lp-cust-art rv">
+          <div className="lp-bubble">
+            <MessageCircle size={16} />
+            <span>{c.bubble(ex.shop, x, ex.needed, ex[lang].short)}</span>
+          </div>
+          <div className="lp-card">
+            <span className="lp-card-shop">
+              <LogoMark size={24} /> {ex.shop}
+            </span>
+            <span className="lp-card-rule">{c.rule(ex.needed, ex[lang].short)}</span>
+            <Stamps on={x} of={ex.needed} size={ex.needed > 8 ? 26 : 36} />
+            <strong>{c.cardLeft(ex.needed - x, ex[lang].short)}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Why({ c }: { c: Copy }) {
+  return (
+    <section className="lp-section lp-wrap" id="why" data-section="why">
+      <p className="lp-kicker rv">{c.whyKicker}</p>
+      <div className="lp-why">
+        {c.why.map(([title, text, Icon], i) => (
+          <div key={title} className="rv" style={{ '--i': i } as CSSProperties} onPointerMove={spotlight}>
+            <span className="lp-why-icon">
+              <Icon size={20} />
+            </span>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Pricing({ c }: { c: Copy }) {
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <div className="lp-price">
-        <div className="lp-reveal">
-          <p className="lp-kicker">Pricing</p>
-          <h2 className="lp-h2">Free to start.</h2>
-          <p className="lp-sub">Sign up, print your counter QR and give your first points today. No card needed.</p>
+        <div>
+          <p className="lp-kicker rv">{c.priceKicker}</p>
+          <h2 className="lp-h2 rv">{c.priceTitle}</h2>
+          <p className="lp-sub rv">{c.priceSub}</p>
         </div>
-        <div className="lp-price-card lp-reveal">
-          <div className="lp-price-tag">
-            <strong>₹0</strong>
-            <span>to get started</span>
-          </div>
+        <div className="lp-price-card rv">
+          <strong className="lp-price-tag">₹0</strong>
           <ul>
-            {[
-              'Bill QR, card scan and phone-number points',
-              'Rewards, Gold tier, welcome and birthday bonuses',
-              'Customer cards in English and Hindi',
-              'WhatsApp messages and “we miss you” reminders',
-              'Dashboard with what returning customers spent',
-              'Spreadsheet export and daily backups',
-            ].map((f) => (
+            {c.priceList.map((f) => (
               <li key={f}>
-                <Check size={18} />
-                <span>{f}</span>
+                <Check size={18} /> {f}
               </li>
             ))}
           </ul>
-          <a className="lp-btn lp-btn-ink" href={SIGNUP} data-track="pricing: Create your shop">
-            Create your shop <ArrowRight size={18} />
+          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Create your shop">
+            {c.create} <ArrowRight size={18} />
           </a>
         </div>
       </div>
@@ -1233,32 +995,19 @@ function Pricing() {
   );
 }
 
-// Also published as FAQPage structured data by scripts/prerender.mjs.
-export const FAQ = [
-  ['Do my customers need to download an app?', 'No. Their card opens from a link in the browser. They can add it to their home screen if they like, but they never have to install anything.'],
-  ['What if a customer doesn’t have a smartphone?', 'Type their phone number and the bill amount. They collect points the same way, and you can redeem rewards for them from their page.'],
-  ['What do I need at the counter?', 'Any phone with a camera and internet. Open Regularhood in the browser or install it on your home screen. A printed QR poster helps new customers join on their own.'],
-  ['Can staff give extra points to friends?', 'You set a limit on how many times one customer can get points in 24 hours, and very large bills ask for a second confirmation. Every undo, adjustment and deletion is recorded in the activity log.'],
-  ['What happens if a customer forgets their PIN?', 'If they’ve opened their card on that phone before, it opens without the PIN and they can set a new one. Otherwise, send them their card link from your customer list.'],
-  ['Can I get my data out?', 'Yes. Settings → Your data downloads your customers and full points history as spreadsheets that open in Excel or Google Sheets.'],
-] as const;
-
-function Faq() {
+function Faq({ c, lang }: { c: Copy; lang: Lang }) {
+  const list = lang === 'hi' ? FAQ_HI : FAQ;
   return (
     <section className="lp-section lp-wrap" id="faq" data-section="faq">
-      <div className="lp-faq">
-        <div className="lp-reveal">
-          <p className="lp-kicker">Questions</p>
-          <h2 className="lp-h2">Asked at the counter.</h2>
-        </div>
-        <div className="lp-faq-list lp-reveal">
-          {FAQ.map(([q, a], i) => (
-            <details key={q} open={i === 0}>
-              <summary data-track={`faq: ${q}`}>{q}</summary>
-              <p>{a}</p>
-            </details>
-          ))}
-        </div>
+      <p className="lp-kicker rv">{c.faqKicker}</p>
+      <h2 className="lp-h2 rv">{c.faqTitle}</h2>
+      <div className="lp-faq rv">
+        {list.map(([q, a], i) => (
+          <details key={q} open={i === 0}>
+            <summary data-track={`faq: ${FAQ[i][0]}`}>{q}</summary>
+            <p>{a}</p>
+          </details>
+        ))}
       </div>
     </section>
   );
@@ -1266,38 +1015,69 @@ function Faq() {
 
 // ---------------------------------------------------------------- page
 
+/** Cycles the example shop in the hero until the visitor picks one, only while the hero is on screen. */
+function useExampleTour() {
+  const [key, setKey] = useState<ExKey>('cafe');
+  const [picked, setPicked] = useState(false);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (picked || reduce) return;
+    let heroVisible = true;
+    const hero = document.querySelector('.lp-hero');
+    const io = hero ? new IntersectionObserver(([e]) => (heroVisible = e.isIntersecting), { threshold: 0.3 }) : null;
+    if (hero) io!.observe(hero);
+    const timer = setInterval(() => {
+      if (!heroVisible || document.hidden) return;
+      setKey((k) => EXAMPLES[(EXAMPLES.findIndex((e) => e.key === k) + 1) % EXAMPLES.length].key);
+    }, 4200);
+    return () => {
+      clearInterval(timer);
+      io?.disconnect();
+    };
+  }, [picked, reduce]);
+  const pick = useCallback((k: ExKey) => {
+    setPicked(true);
+    setKey(k);
+  }, []);
+  return { ex: EXAMPLES.find((e) => e.key === key)!, pick, picked };
+}
+
 export function Landing() {
   useFonts();
+  useReveals();
   useEffect(() => watchSections(), []);
+  const lang = usePageLang();
+  const c = COPY[lang];
+  const example = useExampleTour();
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   return (
-    <ExampleProvider>
-      <div className="lp">
-        <Nav />
+    <ExampleContext.Provider value={example}>
+      <div className="lp" lang={lang}>
+        <Nav c={c} lang={lang} />
         <main>
-          <Hero />
-          <ShopTypes />
-          <Problem />
-          <hr className="lp-tear" />
-          <Steps />
-          <AppScreens />
-          <Counter />
-          <hr className="lp-tear" />
-          <Customer />
-          <Proof />
-          <Trust />
-          <hr className="lp-tear" />
-          <Pricing />
-          <hr className="lp-tear" />
-          <Faq />
+          <Hero c={c} lang={lang} />
+          <Marquee lang={lang} />
+          <Film c={c} lang={lang} />
+          <How c={c} />
+          <ScrollCard c={c} lang={lang} />
+          <EveryShop c={c} lang={lang} />
+          <ForCustomers c={c} lang={lang} />
+          <Why c={c} />
+          <Pricing c={c} />
+          <Faq c={c} lang={lang} />
           <section className="lp-final" data-section="final">
+            <div className="lp-aurora" aria-hidden="true">
+              <span />
+              <span />
+            </div>
             <div className="lp-wrap">
-              <div className="lp-reveal">
-                <h2>Your next regular walks in today.</h2>
-                <p>Set up takes two minutes. Your first points can go out with the next bill.</p>
-              </div>
-              <a className="lp-btn lp-btn-paper" href={SIGNUP} data-track="final: Start free">
-                Start free <ArrowRight size={18} />
+              <h2 className="rv">{c.finalTitle}</h2>
+              <p className="rv">{c.finalSub}</p>
+              <a className="lp-btn lp-btn-glow rv" href={SIGNUP} data-track="final: Start free">
+                {c.start} <ArrowRight size={18} />
               </a>
             </div>
           </section>
@@ -1305,32 +1085,27 @@ export function Landing() {
         <footer className="lp-foot" data-section="footer">
           <div className="lp-wrap">
             <a className="lp-logo" href="/" aria-label="Regularhood home">
-              <span className="lp-logo-mark" aria-hidden="true">
-                <LogoMark />
-              </span>
-              Regularhood
+              <LogoMark size={28} />
+              <span>Regularhood</span>
             </a>
             <nav aria-label="Footer">
               <a href="#how" data-track="footer: How it works">
-                How it works
+                {c.footer.how}
               </a>
               <a href="#pricing" data-track="footer: Pricing">
-                Pricing
+                {c.footer.price}
               </a>
               <a href="/for" data-track="footer: For your kind of shop">
-                For your kind of shop
+                {c.footer.shops}
               </a>
               <a href="/app" data-track="footer: Shop log in">
-                Shop log in
-              </a>
-              <a href="/login" data-track="footer: Customer: check your points">
-                Customer: check your points
+                {c.footer.login}
               </a>
             </nav>
-            <small>From first visit to “the usual”.</small>
+            <small>{c.footer.tag}</small>
           </div>
         </footer>
       </div>
-    </ExampleProvider>
+    </ExampleContext.Provider>
   );
 }

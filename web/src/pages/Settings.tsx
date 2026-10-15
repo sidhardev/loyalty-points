@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Bell, ChevronRight, Coins, Crown, Database, Download, ExternalLink, FileSpreadsheet, Gift, Printer, QrCode, ScrollText, ShieldCheck, Store } from 'lucide-react';
-import { api, download, joinUrl, num, rupees, type Merchant } from '../api';
+import { Bell, ChevronRight, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
+import { api, download, type Merchant } from '../api';
+import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
 import '../poster.css';
-import { ErrorText, toast, useAction } from '../ui';
+import { ShareCard } from '../share';
+import { LangToggle, t, useLang } from '../i18n';
+import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
+import { Stamps, messageLang } from './Counter';
 
-/** The counter poster: customers scan it to join and see their points. Prints on A4 or saves as a PNG. */
-function JoinQr({ merchant }: { merchant: Merchant }) {
-  const url = joinUrl(merchant.joinCode);
+/** The counter poster: tells customers the rule and that they only need to say their number. Prints on A4 or saves as a PNG. */
+function Poster({ merchant }: { merchant: Merchant }) {
   const [theme, setTheme] = useState<PosterTheme>(() => (localStorage.getItem('lp_poster_theme') as PosterTheme) || 'green');
   const [hindi, setHindi] = useState(() => localStorage.getItem('lp_poster_hi') !== '0');
   const [saving, setSaving] = useState(false);
@@ -21,7 +24,7 @@ function JoinQr({ merchant }: { merchant: Merchant }) {
     }
   }, [theme, hindi]);
 
-  const poster = { shop: merchant.name, url, pointsPer100: merchant.pointsPer100, welcomeBonus: merchant.welcomeBonus, theme, hindi };
+  const poster = { shop: merchant.name, visitsNeeded: merchant.visitsNeeded, rewardName: merchant.rewardName, theme, hindi };
 
   const save = async () => {
     const svg = ref.current?.querySelector('svg');
@@ -40,24 +43,23 @@ function JoinQr({ merchant }: { merchant: Merchant }) {
     <section className="card">
       <div className="card-head">
         <h2>
-          <QrCode size={18} /> Counter poster
+          <Printer size={18} /> {t('Counter poster')}
         </h2>
       </div>
       <p className="muted small" style={{ margin: 0 }}>
-        Put it where people pay. Customers scan it, enter their name, phone and a PIN, and join your program
-        {merchant.welcomeBonus ? ` with ${num(merchant.welcomeBonus)} welcome points` : ''}.
+        {t('Put it where people pay, so customers know about your card and tell you their number.')}
       </p>
       <div className="poster-options">
         <div className="seg" role="group" aria-label="Poster colour">
           <button type="button" className={theme === 'green' ? 'active' : ''} onClick={() => setTheme('green')}>
-            Green
+            {t('Green')}
           </button>
           <button type="button" className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>
-            Light (saves ink)
+            {t('Light (saves ink)')}
           </button>
         </div>
         <label className="poster-check">
-          <input type="checkbox" checked={hindi} onChange={(e) => setHindi(e.target.checked)} /> Hindi lines
+          <input type="checkbox" checked={hindi} onChange={(e) => setHindi(e.target.checked)} /> {t('Hindi lines')}
         </label>
       </div>
       <div className="poster-sheet" ref={ref}>
@@ -66,32 +68,24 @@ function JoinQr({ merchant }: { merchant: Merchant }) {
       <PosterPrint {...poster} />
       <div className="actions">
         <button className="btn btn-primary" onClick={() => print()}>
-          <Printer size={17} /> Print (A4)
+          <Printer size={17} /> {t('Print (A4)')}
         </button>
         <button className="btn btn-soft" onClick={() => void save()} disabled={saving}>
-          <Download size={17} /> {saving ? 'Saving…' : 'Download PNG'}
+          <Download size={17} /> {saving ? t('Saving…') : t('Download PNG')}
         </button>
-        <a className="btn btn-ghost" href={url} target="_blank" rel="noreferrer">
-          <ExternalLink size={17} /> Open
-        </a>
       </div>
-      {location.hostname === 'localhost' && (
-        <p className="alert alert-error small">
-          This QR points to localhost, which customers' phones can't open. Open the app from its public address and print it from there.
-        </p>
-      )}
     </section>
   );
 }
 
 /** Activity log and spreadsheet downloads. */
-function YourData({ merchant }: { merchant: Merchant }) {
+function YourData() {
   const [busy, setBusy] = useState('');
   const save = async (path: string, file: string) => {
     setBusy(path);
     try {
       await download(path, file);
-      toast('Downloaded');
+      toast(t('Downloaded'));
     } catch (err) {
       toast((err as Error).message, 'error');
     } finally {
@@ -103,77 +97,71 @@ function YourData({ merchant }: { merchant: Merchant }) {
     <section className="card">
       <div className="card-head">
         <h2>
-          <Database size={18} /> Your data
+          <Database size={18} /> {t('Your data')}
         </h2>
       </div>
       <a className="row-item link-row" href="#/activity">
         <ScrollText size={19} />
         <span className="row-main">
-          <strong>Activity log</strong>
-          <span>Undos, adjustments, deletes, blocked and large bills{merchant.largeBill ? ` (above ${rupees(merchant.largeBill)})` : ''}</span>
+          <strong>{t('Activity log')}</strong>
+          <span>{t('Rewards given, undos, deleted customers and changes')}</span>
         </span>
         <ChevronRight size={18} />
       </a>
       <p className="muted small" style={{ margin: 0 }}>
-        Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.
+        {t('Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.')}
       </p>
       <div className="actions">
         <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/customers.csv', `customers-${date}.csv`)}>
-          <FileSpreadsheet size={17} /> {busy === 'export/customers.csv' ? 'Preparing…' : 'Customers'}
+          <FileSpreadsheet size={17} /> {busy === 'export/customers.csv' ? t('Preparing…') : t('Customers')}
         </button>
-        <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/transactions.csv', `points-history-${date}.csv`)}>
-          <FileSpreadsheet size={17} /> {busy === 'export/transactions.csv' ? 'Preparing…' : 'Points history'}
+        <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/transactions.csv', `visit-history-${date}.csv`)}>
+          <FileSpreadsheet size={17} /> {busy === 'export/transactions.csv' ? t('Preparing…') : t('Visit history')}
         </button>
       </div>
     </section>
   );
 }
 
-export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (m: Merchant) => void }) {
+const VISITS = [3, 4, 5, 6, 8, 10];
+
+export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; onSaved: (m: Merchant) => void; onLogout: () => void }) {
+  useLang();
+  const theme = useTheme();
   const [form, setForm] = useState({
     name: merchant.name,
     phone: merchant.phone,
-    pointsPer100: String(merchant.pointsPer100),
-    welcomeBonus: String(merchant.welcomeBonus),
-    birthdayBonus: String(merchant.birthdayBonus),
-    goldThreshold: String(merchant.goldThreshold),
-    goldMultiplier: String(merchant.goldMultiplier),
+    visitsNeeded: merchant.visitsNeeded,
+    rewardName: merchant.rewardName,
     inactiveDays: String(merchant.inactiveDays),
-    maxVisitsPerDay: String(merchant.maxVisitsPerDay),
-    largeBill: String(merchant.largeBill),
   });
+  const [lang, setLang] = useState(messageLang);
   const { busy, error, run } = useAction();
 
-  const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
+  const set = (key: 'name' | 'phone' | 'rewardName' | 'inactiveDays') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
+
+  const chooseLang = (l: 'hi' | 'en') => {
+    setLang(l);
+    try {
+      localStorage.setItem('lp_msg_lang', l);
+    } catch {
+      // Just not remembered.
+    }
+  };
 
   const save = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      onSaved(
-        await api<Merchant>('me', 'PATCH', {
-          name: form.name,
-          phone: form.phone,
-          pointsPer100: Number(form.pointsPer100),
-          welcomeBonus: Number(form.welcomeBonus),
-          birthdayBonus: Number(form.birthdayBonus),
-          goldThreshold: Number(form.goldThreshold),
-          goldMultiplier: Number(form.goldMultiplier),
-          inactiveDays: Number(form.inactiveDays),
-          maxVisitsPerDay: Number(form.maxVisitsPerDay),
-          largeBill: Number(form.largeBill),
-        }),
-      );
-      toast('Settings saved');
+      onSaved(await api<Merchant>('me', 'PATCH', { ...form, inactiveDays: Number(form.inactiveDays) }));
+      toast(t('Settings saved'));
     });
   };
-
-  const rate = Number(form.pointsPer100) || 0;
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Settings</h1>
+          <h1>{t('Settings')}</h1>
           <p>{merchant.email}</p>
         </div>
       </header>
@@ -181,104 +169,99 @@ export function Settings({ merchant, onSaved }: { merchant: Merchant; onSaved: (
         <form className="card" onSubmit={save}>
           <div className="settings-section">
             <h3>
-              <Store size={17} /> Shop
+              <Gift size={17} /> {t('Your card')}
+            </h3>
+            <div className="setup-line" style={{ justifyItems: 'start' }}>
+              <span>{t('Every')}</span>
+              <div className="seg seg-big" role="group" aria-label="Visits">
+                {VISITS.map((n) => (
+                  <button type="button" key={n} className={form.visitsNeeded === n ? 'active' : ''} onClick={() => setForm({ ...form, visitsNeeded: n })}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <span>{t('visits, the customer gets')}</span>
+            </div>
+            <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('Free chai')} maxLength={60} required aria-label="Reward" />
+            <Stamps stamps={form.visitsNeeded - 1} needed={form.visitsNeeded} />
+            <span className="hint">{t("Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.")}</span>
+          </div>
+
+          <div className="settings-section">
+            <h3>
+              <Store size={17} /> {t('Shop')}
             </h3>
             <label>
-              Shop name
+              {t('Shop name')}
               <input value={form.name} onChange={set('name')} required />
             </label>
             <label>
-              Your WhatsApp number
+              {t('Your WhatsApp number')}
               <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
-              <span className="hint">Only for Regularhood support. Customers don't see it.</span>
+              <span className="hint">{t("Only for Regularhood support. Customers don't see it.")}</span>
             </label>
           </div>
 
           <div className="settings-section">
             <h3>
-              <Coins size={17} /> Earning
+              <MessageCircle size={17} /> {t('WhatsApp message to customers')}
+            </h3>
+            <div className="seg" role="group" aria-label="Message language">
+              <button type="button" className={lang === 'hi' ? 'active' : ''} onClick={() => chooseLang('hi')} lang="hi">
+                हिंदी
+              </button>
+              <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => chooseLang('en')}>
+                English
+              </button>
+            </div>
+            <span className="hint">{t('Saved on this phone right away.')}</span>
+          </div>
+
+          <div className="settings-section">
+            <h3>
+              <Bell size={17} /> {t('Reminders')}
             </h3>
             <label>
-              Points for every ₹100 spent
-              <input type="number" min="1" max="1000" step="1" value={form.pointsPer100} onChange={set('pointsPer100')} required />
-              <span className="hint">A ₹450 bill gives {num(Math.floor(4.5 * rate))} points.</span>
-            </label>
-          </div>
-
-          <div className="settings-section">
-            <h3>
-              <Gift size={17} /> Bonuses
-            </h3>
-            <div className="form-row">
-              <label>
-                Welcome bonus
-                <input type="number" min="0" step="1" value={form.welcomeBonus} onChange={set('welcomeBonus')} required />
-                <span className="hint">When a customer joins. 0 = off.</span>
-              </label>
-              <label>
-                Birthday bonus
-                <input type="number" min="0" step="1" value={form.birthdayBonus} onChange={set('birthdayBonus')} required />
-                <span className="hint">On a visit within a week of their birthday, once a year.</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <h3>
-              <Crown size={17} /> Gold tier
-            </h3>
-            <div className="form-row">
-              <label>
-                Gold after earning
-                <input type="number" min="1" step="1" value={form.goldThreshold} onChange={set('goldThreshold')} required />
-                <span className="hint">Lifetime points.</span>
-              </label>
-              <label>
-                Gold members earn ×
-                <input type="number" min="1" max="5" step="0.1" value={form.goldMultiplier} onChange={set('goldMultiplier')} required />
-                <span className="hint">
-                  ₹450 → {num(Math.floor(4.5 * rate * (Number(form.goldMultiplier) || 1)))} points for Gold.
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <h3>
-              <Bell size={17} /> Reminders
-            </h3>
-            <label>
-              Days without a visit before a customer counts as inactive
+              {t('Days without a visit before a customer counts as “not seen”')}
               <input type="number" min="7" max="365" step="1" value={form.inactiveDays} onChange={set('inactiveDays')} required />
             </label>
           </div>
 
-          <div className="settings-section">
-            <h3>
-              <ShieldCheck size={17} /> Safety
-            </h3>
-            <div className="form-row">
-              <label>
-                Visits per customer in 24 hours
-                <input type="number" min="0" max="50" step="1" value={form.maxVisitsPerDay} onChange={set('maxVisitsPerDay')} required />
-                <span className="hint">More are blocked and logged. 0 = no limit.</span>
-              </label>
-              <label>
-                Double-check bills above ₹
-                <input type="number" min="0" step="1" value={form.largeBill} onChange={set('largeBill')} required />
-                <span className="hint">Asks “are you sure?” and logs it. 0 = off.</span>
-              </label>
-            </div>
-          </div>
-
           <ErrorText text={error} />
           <button className="btn btn-primary btn-lg" disabled={busy}>
-            {busy ? 'Saving…' : 'Save settings'}
+            {busy ? t('Saving…') : t('Save settings')}
           </button>
         </form>
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
-          <JoinQr merchant={merchant} />
-          <YourData merchant={merchant} />
+          <Poster merchant={merchant} />
+          <ShareCard merchant={merchant} />
+          <YourData />
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <UserCog size={18} /> {t('Account')}
+              </h2>
+            </div>
+            <div className="account-row">
+              <span>{t('App language')}</span>
+              <LangToggle />
+            </div>
+            <div className="account-row">
+              <span>{t('Dark mode')}</span>
+              <button type="button" className="btn btn-soft btn-sm" onClick={theme.toggle}>
+                <theme.Icon size={16} /> {theme.theme === 'dark' ? t('Turn off') : t('Turn on')}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost danger"
+              onClick={async () => {
+                if (await confirmDialog({ title: t('Log out?'), confirm: t('Log out'), cancel: t('Cancel') })) onLogout();
+              }}
+            >
+              <LogOut size={17} /> {t('Log out')}
+            </button>
+          </section>
         </div>
       </div>
     </>

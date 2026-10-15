@@ -80,7 +80,7 @@ export const SHOP_TYPES = [
   'Mobile repair shop', 'Boutique', 'Optical store', 'Fruit & vegetable shop',
 ];
 
-/** Google types where the same customers come back every week or month: the best fit for points and rewards. */
+/** Google types where the same customers come back every week or month: the best fit for a stamp card. */
 const REPEAT_TYPES = new Set([
   'beauty_salon', 'hair_salon', 'hair_care', 'barber_shop', 'nail_salon', 'spa', 'cafe', 'coffee_shop', 'tea_house', 'bakery',
   'confectionery', 'dessert_shop', 'ice_cream_shop', 'juice_shop', 'grocery_store', 'convenience_store', 'food_store', 'pharmacy',
@@ -188,7 +188,7 @@ const PITCH_SCHEMA = S('OBJECT', {
     ),
     callOpener: str('What to say in the first 20 seconds of a phone call or a visit to the shop, in Roman Hindi, 2 or 3 sentences, speaking as "hum" (never "main")'),
     talkingPoints: S('ARRAY', { items: str('one point in Hinglish, specific to this kind of shop'), minItems: 3, maxItems: 4 }),
-    rewardIdeas: S('ARRAY', { items: str('a reward this shop could offer (a free item or service, or money off), with the points it needs, in Hinglish. Not the Gold tier.'), minItems: 2, maxItems: 3 }),
+    rewardIdeas: S('ARRAY', { items: str('a stamp-card rule this shop could use, in Hinglish, e.g. "Har 5 visit par ek free chai"'), minItems: 2, maxItems: 3 }),
     objections: S('ARRAY', {
       items: S('OBJECT', { properties: { q: str('what the owner might say, in Hinglish'), a: str('a short honest answer in Hinglish') }, required: ['q', 'a'] }),
       minItems: 3,
@@ -202,7 +202,7 @@ const PITCH_SCHEMA = S('OBJECT', {
 });
 
 function pitchPrompt(l: LeadRow) {
-  return `You help the founder of Regularhood, a loyalty and rewards app for small neighbourhood shops in India, reach out to shop owners.
+  return `You help the founder of Regularhood, a simple loyalty stamp card app for small neighbourhood shops in India, reach out to shop owners.
 Write a pitch for this shop. The founder will send it on WhatsApp or use it on a call or visit.
 
 The shop (from Google Maps):
@@ -213,16 +213,16 @@ The shop (from Google Maps):
 - Website: ${l.website ? 'yes' : 'none'}
 
 What Regularhood does (use only these facts):
-- The shop gives points on every bill: 10 points per ₹100 by default (the shop can change it).
-- The customer scans a QR at the counter, or the shop types their phone number (works for customers without a smartphone).
-- The customer's loyalty card opens in the phone's browser: no app to install. In Hindi and English.
-- Rewards the shop chooses; welcome bonus, birthday bonus, a Gold tier for regulars.
-- WhatsApp messages the shop sends with one tap (nothing is sent automatically): points earned after a bill, and "we miss you" reminders to customers who haven't come back.
-- A dashboard showing what returning customers spent this month.
-- Works on any phone. Free to start, set up in two minutes.
+- A digital stamp card on the customer's phone number. The shop sets one rule: every N visits, one reward, e.g. "har 5 visit par ek free chai".
+- At the counter the shop types the customer's phone number and taps "Add visit". That's all. The app says when to give the reward.
+- No app, no QR code, no points and no sign-up for customers. Works for customers without a smartphone, only their number is needed.
+- One tap sends the customer their card on WhatsApp (nothing is sent automatically): their stamps and how many visits are left, in Hindi and English.
+- A list of customers who haven't come back, with a ready "we miss you" WhatsApp message.
+- A printable counter poster with the shop's rule.
+- Works on any phone. Free to start, set up in one minute.
 
 Language:
-- "Hinglish" means Hindi sentences written in Latin letters, the way people in India text on WhatsApp. Example: "Namaste ji, hum Regularhood se hain. Aapke salon ke regular customers ko har bill par points milein, toh woh baar baar aayenge." It is NOT English: only common words like shop, customer, points, free, QR, app, link stay in English.
+- "Hinglish" means Hindi sentences written in Latin letters, the way people in India text on WhatsApp. Example: "Namaste ji, hum Regularhood se hain. Aapke salon ke customers ko har 5 visit par ek free service mile, toh woh baar baar aayenge." It is NOT English: only common words like shop, customer, visit, free, app, link stay in English.
 - Write as "hum" (we, the Regularhood team), never "main", so the text works for whoever sends it.
 
 Rules:
@@ -230,7 +230,7 @@ Rules:
 - The founder has not visited the shop: never claim you met them, ate there or are a customer. You may say you found the shop on Google Maps and saw its good reviews (only if the rating is 4 or more).
 - No statistics, percentages or made-up results, no fake urgency, no competitor names. The only price is "free to start".
 - Put [link] where the sign-up link goes; it is replaced with the real link.
-- Reward points must fit 10 points per ₹100 and real prices at this kind of shop.
+- Rewards must suit real prices at this kind of shop (a free small item or service every few visits). Never mention points, QR codes, tiers or bonuses.
 - No markdown, at most one emoji per message.`;
 }
 

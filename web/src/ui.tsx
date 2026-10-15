@@ -2,34 +2,25 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
-  Coins,
-  Crown,
   Download,
-  Gift,
   Info,
   Moon,
   MoreVertical,
   Share,
-  SlidersHorizontal,
   Smartphone,
-  Sparkles,
-
   Sun,
-  Undo2,
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { birthdayLabel, num, rupees, when, type Tier, type Transaction } from './api';
-import { t, t as tr, withIcon } from './i18n';
+import { t, withIcon } from './i18n';
 
 // Shared building blocks: feedback (toasts, confirm dialogs), sheets, and small display pieces.
 
 // ---------------------------------------------------------------- app-wide events
 
 const DATA_CHANGED = 'lp-data-changed';
-const OPEN_GIVE = 'lp-open-give';
 
-/** Tell every page that points/customers changed (e.g. after giving points from the sheet). */
+/** Tell every page that visits/customers changed. */
 export const dataChanged = () => dispatchEvent(new Event(DATA_CHANGED));
 
 /** A number that goes up whenever data changes; add it to a load effect's dependencies. */
@@ -41,17 +32,6 @@ export function useDataVersion() {
     return () => removeEventListener(DATA_CHANGED, bump);
   }, []);
   return version;
-}
-
-/** Opens the "Give points" sheet, optionally for a known customer phone. */
-export const openGivePoints = (phone?: string) => dispatchEvent(new CustomEvent(OPEN_GIVE, { detail: phone ?? '' }));
-
-export function useGivePointsRequests(onOpen: (phone: string) => void) {
-  useEffect(() => {
-    const handler = (e: Event) => onOpen((e as CustomEvent<string>).detail);
-    addEventListener(OPEN_GIVE, handler);
-    return () => removeEventListener(OPEN_GIVE, handler);
-  }, [onOpen]);
 }
 
 // ---------------------------------------------------------------- install as an app (PWA)
@@ -303,7 +283,7 @@ export function ConfirmHost() {
         {pending.body && <p>{pending.body}</p>}
         <div className="actions">
           <button className="btn btn-ghost" onClick={() => close(false)}>
-            {pending.cancel ?? 'Cancel'}
+            {pending.cancel ?? t('Cancel')}
           </button>
           <button className={`btn ${pending.danger ? 'btn-danger' : 'btn-primary'}`} onClick={() => close(true)} autoFocus>
             {pending.confirm ?? 'Confirm'}
@@ -383,61 +363,9 @@ export function useAction() {
 export const ErrorText = ({ text }: { text: string }) =>
   text ? (
     <p className="alert alert-error" role="alert">
-      <AlertTriangle size={16} /> {text}
+      <AlertTriangle size={16} /> {t(text)}
     </p>
   ) : null;
-
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/** Birthday as MM-DD (no year needed). */
-export function BirthdayInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [m, d] = value ? value.split('-') : ['', ''];
-  const set = (month: string, day: string) => onChange(month && day ? `${month}-${day}` : '');
-  return (
-    <span className="birthday">
-      <select value={m} onChange={(e) => set(e.target.value, d || '01')} aria-label="Birthday month">
-        <option value="">Month</option>
-        {MONTH_NAMES.map((name, i) => (
-          <option key={name} value={String(i + 1).padStart(2, '0')}>
-            {name}
-          </option>
-        ))}
-      </select>
-      <select value={d} onChange={(e) => set(m || '01', e.target.value)} aria-label="Birthday day">
-        <option value="">Day</option>
-        {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((day) => (
-          <option key={day} value={day}>
-            {Number(day)}
-          </option>
-        ))}
-      </select>
-      {value && (
-        <button type="button" className="icon-btn" onClick={() => onChange('')} aria-label="Clear birthday">
-          <X size={16} />
-        </button>
-      )}
-    </span>
-  );
-}
-
-/** 4-digit PIN field (numeric keypad on phones, hidden as it's typed). */
-export function PinInput({ value, onChange, autoFocus }: { value: string; onChange: (v: string) => void; autoFocus?: boolean }) {
-  return (
-    <input
-      className="pin"
-      type="password"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      pattern="[0-9]{4}"
-      maxLength={4}
-      placeholder="••••"
-      value={value}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
-      autoFocus={autoFocus}
-      required
-    />
-  );
-}
 
 // ---------------------------------------------------------------- display
 
@@ -516,13 +444,6 @@ export function Avatar({ name, size }: { name: string; size?: 'lg' }) {
   );
 }
 
-export const TierBadge = ({ tier }: { tier: Tier }) =>
-  tier.name === 'Gold' ? (
-    <span className="badge tier-gold">
-      <Crown size={12} /> Gold
-    </span>
-  ) : null;
-
 export const Skeleton = ({ h = 16, w = '100%' }: { h?: number; w?: number | string }) => (
   <span className="skeleton" style={{ display: 'block', height: h, width: w }} />
 );
@@ -555,74 +476,3 @@ export function EmptyState({ icon: Icon, title, text, action }: { icon: LucideIc
     </div>
   );
 }
-
-export function describe(tx: Transaction) {
-  switch (tx.type) {
-    case 'earn':
-      return `${tr('Bill of {amount}', { amount: rupees(tx.amount ?? 0) })}${tx.note ? ` · ${tx.note}` : ''}`;
-    case 'redeem':
-      return tr('Redeemed {reward}', { reward: tx.note ?? '' });
-    case 'bonus':
-      return tr(tx.note ?? 'Bonus');
-    default:
-      return tx.note ? tr(tx.note) : tr('Adjustment');
-  }
-}
-
-const TYPE_ICON: Record<Transaction['type'], LucideIcon> = { earn: Coins, redeem: Gift, bonus: Sparkles, adjust: SlidersHorizontal };
-
-export function Activity({
-  items,
-  showCustomer = true,
-  onUndo,
-}: {
-  items: Transaction[];
-  showCustomer?: boolean;
-  onUndo?: (t: Transaction) => void;
-}) {
-  return (
-    <ul className="rows">
-      {items.map((t) => {
-        const Icon = TYPE_ICON[t.type];
-        return (
-          <li key={t.id} className={t.reversed ? 'is-reversed' : ''}>
-            <div className="row-item">
-              <span className={`activity-icon ${t.type}`}>
-                <Icon size={17} />
-              </span>
-              <div className="row-main">
-                <strong>
-                  {showCustomer && t.customer_id ? (
-                    <a href={`#/customers/${t.customer_id}`} style={{ color: 'inherit' }}>
-                      {t.customer_name}
-                    </a>
-                  ) : (
-                    describe(t)
-                  )}
-                </strong>
-                <span>
-                  {showCustomer ? `${describe(t)} · ` : ''}
-                  {when(t.created_at)}
-                  {t.reversed ? ` · ${tr('undone')}` : ''}
-                </span>
-              </div>
-              <div className="row-end">
-                <span className={`badge ${t.points >= 0 ? 'badge-plus' : 'badge-minus'}`}>
-                  {t.points >= 0 ? '+' : '−'}
-                  {num(Math.abs(t.points))}
-                </span>
-                {onUndo && !t.reversed && !t.reversal_of && (
-                  <button className="link tiny" onClick={() => onUndo(t)}>
-                    <Undo2 size={12} /> Undo
-                  </button>
-                )}
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-export const birthdayText = (b: string | null) => (b ? birthdayLabel(b) : '');

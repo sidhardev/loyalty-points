@@ -5,6 +5,8 @@ import { BadRequestException } from '@nestjs/common';
 
 /** Tracking links and customer cards use these sources; anything else is shown as typed. */
 export const CARD_SOURCE = 'card';
+/** A shop's own share link (/r/<join code>), from its status images and WhatsApp messages. */
+export const SHOP_SOURCE = 'shop';
 
 export type Attribution = { source: string; medium: string; campaign: string; ref: string; landing: string };
 

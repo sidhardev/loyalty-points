@@ -21,7 +21,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Db, randomToken } from './db';
-import { CARD_SOURCE, readAttribution, readPhone } from './growth';
+import { CARD_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with email + password and get a token the website sends with every request.
@@ -43,29 +43,19 @@ export const publicMerchant = (m: MerchantRow) => ({
   id: m.id,
   name: m.name,
   email: m.email,
-  pointsPer100: m.points_per_100,
   joinCode: m.join_code,
-  welcomeBonus: m.welcome_bonus,
-  birthdayBonus: m.birthday_bonus,
-  goldThreshold: m.gold_threshold,
-  goldMultiplier: m.gold_multiplier,
   inactiveDays: m.inactive_days,
-  maxVisitsPerDay: m.max_visits_per_day,
-  largeBill: m.large_bill,
   phone: m.phone ?? '',
+  visitsNeeded: m.visits_needed,
+  rewardName: m.reward_name,
 });
 
 type Settings = {
   name?: string;
   phone?: string;
-  pointsPer100?: number;
-  welcomeBonus?: number;
-  birthdayBonus?: number;
-  goldThreshold?: number;
-  goldMultiplier?: number;
+  visitsNeeded?: number;
+  rewardName?: string;
   inactiveDays?: number;
-  maxVisitsPerDay?: number;
-  largeBill?: number;
 };
 
 function wholeNumber(value: unknown, label: string, min: number, max: number) {
@@ -141,10 +131,10 @@ export class AuthController {
     const exists = this.db.sql.prepare('SELECT id FROM merchants WHERE email = ?').get(email);
     if (exists) throw new ConflictException('An account with this email already exists');
 
-    // Where they came from; a customer card's link names the shop by its (public) join code.
+    // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
     const from = readAttribution(body?.attribution);
     const referrer =
-      from.source === CARD_SOURCE && from.campaign
+      (from.source === CARD_SOURCE || from.source === SHOP_SOURCE) && from.campaign
         ? (this.db.sql.prepare('SELECT id FROM merchants WHERE join_code = ?').get(from.campaign) as { id: number } | undefined)
         : undefined;
 
@@ -205,41 +195,28 @@ export class AuthController {
     return publicMerchant(this.find(req.merchantId));
   }
 
-  /** Shop settings: name, earning rate, bonuses, Gold tier and when a customer counts as inactive. */
+  /** Shop settings: name, the stamp card ("every N visits → reward") and when a customer counts as inactive. */
   @Patch('me')
   @UseGuards(AuthGuard)
   update(@Req() req: { merchantId: number }, @Body() body: Settings) {
     const m = this.find(req.merchantId);
     const b = body ?? {};
-    const name = b.name?.trim() || m.name;
+    const name = (b.name?.trim() || m.name).slice(0, 80);
     const phone = b.phone === undefined ? (m.phone ?? '') : readPhone(b.phone);
-    const rate = wholeNumber(b.pointsPer100 ?? m.points_per_100, 'Points per ₹100', 1, 1000);
-    const welcome = wholeNumber(b.welcomeBonus ?? m.welcome_bonus, 'Welcome bonus', 0, 100_000);
-    const birthday = wholeNumber(b.birthdayBonus ?? m.birthday_bonus, 'Birthday bonus', 0, 100_000);
-    const threshold = wholeNumber(b.goldThreshold ?? m.gold_threshold, 'Gold tier points', 1, 10_000_000);
+    const needed = wholeNumber(b.visitsNeeded ?? m.visits_needed, 'Visits', 2, 50);
+    const reward = (b.rewardName === undefined ? m.reward_name : String(b.rewardName)).trim().slice(0, 60);
+    if (b.rewardName !== undefined && !reward) throw new BadRequestException('Write what the customer gets, e.g. Free chai');
     const inactive = wholeNumber(b.inactiveDays ?? m.inactive_days, 'Inactive days', 7, 365);
-    const maxVisits = wholeNumber(b.maxVisitsPerDay ?? m.max_visits_per_day, 'Visits per day', 0, 50);
-    const largeBill = wholeNumber(b.largeBill ?? m.large_bill, 'Large bill amount', 0, 10_000_000);
-    const multiplier = Number(b.goldMultiplier ?? m.gold_multiplier);
-    if (!(multiplier >= 1 && multiplier <= 5)) throw new BadRequestException('Gold multiplier must be between 1 and 5');
     this.db.sql
-      .prepare(
-        `UPDATE merchants SET name = ?, points_per_100 = ?, welcome_bonus = ?, birthday_bonus = ?,
-         gold_threshold = ?, gold_multiplier = ?, inactive_days = ?, max_visits_per_day = ?, large_bill = ?, phone = ? WHERE id = ?`,
-      )
-      .run(name.slice(0, 80), rate, welcome, birthday, threshold, multiplier, inactive, maxVisits, largeBill, phone || null, m.id);
+      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, inactive_days = ?, phone = ? WHERE id = ?')
+      .run(name, needed, reward, inactive, phone || null, m.id);
 
     const changed = (
       [
-        ['shop name', m.name, name.slice(0, 80)],
-        ['points per ₹100', m.points_per_100, rate],
-        ['welcome bonus', m.welcome_bonus, welcome],
-        ['birthday bonus', m.birthday_bonus, birthday],
-        ['Gold after', m.gold_threshold, threshold],
-        ['Gold ×', m.gold_multiplier, multiplier],
+        ['shop name', m.name, name],
+        ['visits for a reward', m.visits_needed, needed],
+        ['reward', m.reward_name, reward],
         ['inactive days', m.inactive_days, inactive],
-        ['visits per day', m.max_visits_per_day, maxVisits],
-        ['large bill check ₹', m.large_bill, largeBill],
       ] as const
     ).filter(([, before, after]) => before !== after);
     if (changed.length) {

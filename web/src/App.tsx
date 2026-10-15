@@ -1,25 +1,22 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, Download, Gift, LayoutDashboard, LogOut, Plus, Settings as SettingsIcon, Users } from 'lucide-react';
+import { Download, Settings as SettingsIcon, Stamp, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
-import { enableTranslation } from './i18n';
+import { enableTranslation, LangToggle, t, useLang } from './i18n';
 import { AdminApp } from './pages/Admin';
 import { AuthPage, ResetPassword } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
 import { Customers } from './pages/Customers';
-import { Dashboard } from './pages/Dashboard';
-import { GivePointsHost } from './pages/GivePoints';
+import { Counter } from './pages/Counter';
 import { ActivityLog } from './pages/ActivityLog';
-import { Insights } from './pages/Insights';
-import { Claim, CustomerLogin, Join, Wallet } from './pages/Public';
-import { Rewards } from './pages/Rewards';
+import { Join, OldLink, Wallet } from './pages/Public';
 import { Settings } from './pages/Settings';
-import { ConfirmHost, Logo, Toaster, confirmDialog, InstallButton, openGivePoints, useTheme } from './ui';
+import { ConfirmHost, Logo, Toaster, InstallButton } from './ui';
 
 // The homepage and its animation library load on their own, so the shop app doesn't download them.
 const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
 
-// Real paths: / (homepage), /app (the shop app), /admin, and customer pages (/w/<token>, /join/<code>, /c/<bill code>,
-// /login) so their links are clean to share.
+// Real paths: / (homepage), /app (the shop app), /admin, and customer pages (/w/<token>, /join/<code>) so their links
+// are clean to share.
 // The shop's own screens are picked from the URL hash (#/customers/3), so no router library is needed.
 
 function useHash() {
@@ -35,21 +32,17 @@ function useHash() {
   return hash;
 }
 
+// Three places: the counter (add a visit), customers, settings.
 const NAV = [
-  { path: '/', label: 'Home', icon: LayoutDashboard },
+  { path: '/', label: 'Add visit', icon: Stamp },
   { path: '/customers', label: 'Customers', icon: Users },
-  { path: '/rewards', label: 'Rewards', icon: Gift },
-  { path: '/insights', label: 'Insights', icon: BarChart3 },
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-function Shell({ merchant, children, onLogout }: { merchant: Merchant; children: ReactNode; onLogout: () => void }) {
+function Shell({ merchant, children }: { merchant: Merchant; children: ReactNode }) {
+  useLang(); // the nav follows the chosen language
   const hash = useHash();
-  const theme = useTheme();
   const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
-  const logout = async () => {
-    if (await confirmDialog({ title: 'Log out?', confirm: 'Log out' })) onLogout();
-  };
 
   return (
     <div className="app">
@@ -57,24 +50,16 @@ function Shell({ merchant, children, onLogout }: { merchant: Merchant; children:
         <a href="#/" className="brand">
           <Logo /> <span>{merchant.name}</span>
         </a>
-        <button className="btn btn-primary btn-lg" onClick={() => openGivePoints()}>
-          <Plus size={20} /> Give points
-        </button>
         {NAV.map(({ path, label, icon: Icon }) => (
           <a key={path} href={`#${path}`} className={`side-link ${active(path) ? 'active' : ''}`}>
-            <Icon size={19} /> {label === 'Home' ? 'Dashboard' : label}
+            <Icon size={19} /> {t(label)}
           </a>
         ))}
         <div className="side-foot">
+          <LangToggle />
           <InstallButton className="side-link">
-            <Download size={19} /> Install app
+            <Download size={19} /> {t('Install app')}
           </InstallButton>
-          <button className="side-link" onClick={theme.toggle}>
-            <theme.Icon size={19} /> {theme.theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button className="side-link" onClick={logout}>
-            <LogOut size={19} /> Log out
-          </button>
         </div>
       </aside>
 
@@ -83,40 +68,22 @@ function Shell({ merchant, children, onLogout }: { merchant: Merchant; children:
           <Logo /> <span>{merchant.name}</span>
         </a>
         <InstallButton className="btn btn-soft btn-sm">
-          <Download size={16} /> Install
+          <Download size={16} /> {t('Install')}
         </InstallButton>
-        <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
-          <theme.Icon size={20} />
-        </button>
-        <a className="icon-btn" href="#/settings" aria-label="Settings">
-          <SettingsIcon size={20} />
-        </a>
-        <button className="icon-btn" onClick={logout} aria-label="Log out">
-          <LogOut size={20} />
-        </button>
+        <LangToggle />
       </header>
 
       <main className="page" key={hash.split('?')[0]}>
         {children}
       </main>
 
-      <nav className="bottom-nav" aria-label="Main">
-        {NAV.slice(0, 2).map(({ path, label, icon: Icon }) => (
+      <nav className="bottom-nav nav-3" aria-label="Main">
+        {NAV.map(({ path, label, icon: Icon }) => (
           <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
-            <Icon size={21} /> {label}
-          </a>
-        ))}
-        <button className="fab" onClick={() => openGivePoints()} aria-label="Give points">
-          <Plus size={26} strokeWidth={2.5} />
-        </button>
-        {NAV.slice(2, 4).map(({ path, label, icon: Icon }) => (
-          <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
-            <Icon size={21} /> {label}
+            <Icon size={21} /> {t(label)}
           </a>
         ))}
       </nav>
-
-      <GivePointsHost merchant={merchant} />
     </div>
   );
 }
@@ -134,6 +101,7 @@ function ShopApp() {
 
   if (merchant === undefined) return null;
   if (!merchant) return <AuthPage onAuthed={setMerchant} />;
+  enableTranslation(); // the shop's screens can switch to Hindi too
 
   const logout = () => {
     setToken(null);
@@ -145,14 +113,12 @@ function ShopApp() {
   let page: ReactNode;
   if (customerId) page = <CustomerPage key={customerId} id={Number(customerId)} merchant={merchant} />;
   else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} />;
-  else if (hash.startsWith('/rewards')) page = <Rewards />;
-  else if (hash.startsWith('/insights')) page = <Insights />;
   else if (hash.startsWith('/activity')) page = <ActivityLog />;
-  else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} />;
-  else page = <Dashboard merchant={merchant} />;
+  else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} onLogout={logout} />;
+  else page = <Counter merchant={merchant} onSaved={setMerchant} />;
 
   return (
-    <Shell merchant={merchant} onLogout={logout}>
+    <Shell merchant={merchant}>
       {page}
     </Shell>
   );
@@ -164,9 +130,9 @@ function Route() {
   if (reset) return <ResetPassword token={decodeURIComponent(reset)} />;
   const [, kind, id] = location.pathname.match(/^\/(w|join|c)\/([^/]+)/) ?? [];
   if (kind || location.pathname === '/login') enableTranslation(); // customer pages can switch to Hindi
-  if (location.pathname === '/login') return <CustomerLogin />;
   if (kind === 'w') return <Wallet token={decodeURIComponent(id)} />;
-  if (kind === 'c') return <Claim code={decodeURIComponent(id)} />;
+  // Bill QRs and PIN logins are gone: nothing to scan or remember, the shop types the number.
+  if (kind === 'c' || location.pathname === '/login') return <OldLink />;
   if (kind === 'join') return <Join code={decodeURIComponent(id)} />;
   if (location.pathname === '/app' || location.pathname.startsWith('/app/')) return <ShopApp />;
   // The shop app used to live at "/": send old bookmarks like /#/customers to /app.

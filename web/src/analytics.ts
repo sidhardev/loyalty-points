@@ -36,13 +36,12 @@ function send(body: object) {
 /** Homepage sections in page order, as marked with data-section in Landing.tsx; Admin → Visits shows how far people read. */
 export const LANDING_SECTIONS: [string, string][] = [
   ['hero', 'Top of the page'],
-  ['why', 'Why regulars matter'],
+  ['film', 'The film'],
   ['how', 'How it works'],
-  ['app', 'The app'],
-  ['counter', 'At the counter'],
+  ['why-card', 'Card that fills as you scroll'],
+  ['every', 'Every kind of shop'],
   ['customers', 'Customer card'],
-  ['proof', 'Dashboard'],
-  ['trust', 'Trust and data'],
+  ['why', 'Why shops pick it'],
   ['pricing', 'Pricing'],
   ['faq', 'FAQ'],
   ['final', 'Last call to sign up'],

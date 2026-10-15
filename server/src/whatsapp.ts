@@ -66,17 +66,18 @@ const DEFAULTS: WaSettings = {
   verifyToken: '',
 };
 
-/** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop. */
+/** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop.
+ * Named for the stamp card, so templates approved earlier (regularhood_intro_*) keep working until these are. */
 export const SUGGESTED_TEMPLATES = {
   hi: {
-    name: 'regularhood_intro_hi',
-    body: 'नमस्ते {{1}} जी 🙏\nहम Regularhood से हैं, छोटी दुकानों के लिए लॉयल्टी पॉइंट्स और रिवॉर्ड्स ऐप।\nआपके {{2}} के रेगुलर कस्टमर्स को हर बिल पर पॉइंट्स मिलें, तो वो बार-बार आते हैं। कस्टमर को कोई ऐप नहीं चाहिए, और शुरू करना फ्री है।\nक्या 2 मिनट में देखना चाहेंगे?',
+    name: 'regularhood_stamp_hi',
+    body: 'नमस्ते {{1}} जी 🙏\nहम Regularhood से हैं, छोटी दुकानों के लिए आसान लॉयल्टी कार्ड।\nआपके {{2}} में ग्राहक को हर 5 विज़िट पर एक चीज़ फ्री मिले, तो वो बार-बार आते हैं। बस ग्राहक का नंबर लिखिए और एक बटन दबाइए, कोई ऐप या QR नहीं। शुरू करना फ्री है।\nक्या 2 मिनट में देखना चाहेंगे?',
     yes: 'हाँ, बताइए',
     no: 'अभी नहीं',
   },
   en: {
-    name: 'regularhood_intro_hinglish',
-    body: 'Namaste {{1}} ji 🙏\nHum Regularhood se hain, chhoti dukaanon ke liye loyalty points aur rewards app.\nAapke {{2}} ke regular customers ko har bill par points milein, to woh baar-baar aate hain. Customer ko koi app nahi chahiye, aur shuru karna free hai.\nKya 2 minute mein dekhna chahenge?',
+    name: 'regularhood_stamp_hinglish',
+    body: 'Namaste {{1}} ji 🙏\nHum Regularhood se hain, chhoti dukaanon ke liye aasaan loyalty card.\nAapke {{2}} mein customer ko har 5 visit par ek cheez free mile, to woh baar-baar aate hain. Bas customer ka number likhiye aur ek button dabaiye, koi app ya QR nahi. Shuru karna free hai.\nKya 2 minute mein dekhna chahenge?',
     yes: 'Haan, batao',
     no: 'Abhi nahi',
   },

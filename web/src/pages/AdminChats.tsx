@@ -46,7 +46,7 @@ const utc = (t: string) => new Date(`${t.replace(' ', 'T')}Z`);
 /** Ready-made replies, in the Hinglish shop owners text in. "{link}" becomes their sign-up link. */
 const QUICK = [
   { label: 'Sign-up link', text: 'Yahan se 2 minute mein free shuru kar sakte hain: {link}' },
-  { label: 'Free hai', text: 'Regularhood shuru karna bilkul free hai. Customers ko koi app nahi chahiye: bas QR scan karein ya aap unka phone number daal dein.' },
+  { label: 'Free hai', text: 'Regularhood shuru karna bilkul free hai. Customers ko koi app nahi chahiye: bas unka phone number likhiye aur "Add visit" dabaiye. Har 5 visit par unhe ek cheez free milti hai.' },
   { label: 'Demo', text: 'Hum aapko 2 minute ka demo dikha sakte hain. Kab call karein?' },
   { label: 'Call time', text: 'Aapse baat karne ka sahi time kya rahega?' },
   { label: 'Thanks', text: 'Dhanyavaad! Koi bhi sawaal ho to yahin message karein 🙏' },

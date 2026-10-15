@@ -55,7 +55,6 @@ const SUGGESTED = [
   'Hardware store', 'Electronics shop', 'Book store', 'Toy shop', 'Footwear store', 'Jewellery shop',
 ];
 
-const POINTS_PER_100 = 10;
 export const SITE = (process.env.SITE_URL || 'https://www.regularhood.in').replace(/\/$/, '');
 
 export const slugify = (text: string) =>
@@ -100,7 +99,7 @@ const SCHEMA = S('OBJECT', {
     steps: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'How Regularhood works at this kind of shop, in order'),
     billShopName: str('A made-up, ordinary shop name for the example bill (not a real brand or chain)'),
     billItems: list(S('OBJECT', { properties: { name: str('item, at most 14 characters'), price: S('INTEGER', { description: 'realistic price in rupees' }) }, required: ['name', 'price'] }), 2, 4, 'A typical bill at this kind of shop'),
-    rewards: list(S('OBJECT', { properties: { name: str('the reward'), points: S('INTEGER', { description: `points needed, at ${POINTS_PER_100} points per ₹100 spent` }) }, required: ['name', 'points'] }), 3, 4, 'Reward ideas, cheapest first'),
+    rewards: list(S('OBJECT', { properties: { name: str('the reward, e.g. a free item or service'), visits: S('INTEGER', { description: 'visits needed to get it, from 3 to 10' }) }, required: ['name', 'visits'] }), 3, 4, 'Reward ideas: what a shop like this could give every few visits, fewest visits first'),
     tips: list(str('one practical sentence'), 3, 5, 'Practical tips to get more repeat customers at this kind of shop'),
     faqs: list(S('OBJECT', { properties: { q: str('question'), a: str('answer, two or three sentences') }, required: ['q', 'a'] }), 4, 6, 'Questions an owner of this kind of shop would ask'),
   },
@@ -108,25 +107,25 @@ const SCHEMA = S('OBJECT', {
 });
 
 function prompt(topic: string, lang: SeoLang, notes: string) {
-  return `You write landing pages for Regularhood, a loyalty and rewards app for small neighbourhood shops in India.
+  return `You write landing pages for Regularhood, a simple loyalty stamp card app for small neighbourhood shops in India.
 Write one page for owners of this kind of shop: "${topic}".${notes ? `\nExtra notes from the editor: ${notes}` : ''}
 
 Language: ${
     lang === 'hi'
-      ? 'Hindi, written in Devanagari script (हिंदी), the way shop owners speak. Every sentence must be in Devanagari: never write Hindi in Latin letters (no "ke liye", no Hinglish). Only brand and tech words may stay in Latin letters: Regularhood, QR, WhatsApp. Write the shop type in Hindi too (for example सैलून, किराना स्टोर, जिम), and use पॉइंट्स, इनाम, लॉयल्टी.'
+      ? 'Hindi, written in Devanagari script (हिंदी), the way shop owners speak. Every sentence must be in Devanagari: never write Hindi in Latin letters (no "ke liye", no Hinglish). Only brand and tech words may stay in Latin letters: Regularhood, WhatsApp. Write the shop type in Hindi too (for example सैलून, किराना स्टोर, जिम), and use विज़िट, स्टैम्प कार्ड, इनाम, लॉयल्टी.'
       : 'Simple Indian English. Short sentences.'
   }
 
 What Regularhood does (use only these facts):
-- The shop gives points on every bill: ${POINTS_PER_100} points per ₹100 by default (the shop can change it).
-- Three ways to give points at the counter: show a bill QR the customer scans with their phone camera, scan the customer's card QR, or type their phone number (works for customers without a smartphone).
-- The customer's card opens from a link in the browser: no app to install. It shows the balance, the next reward in rupees ("₹350 more for a free haircut"), history, and works in English and Hindi.
-- Rewards the shop sets; customers get a 4-digit code to claim one at the counter.
-- Welcome bonus, birthday bonus, and a Gold tier: after enough points, a customer earns 1.5× points on every bill (the shop can change this). Never say double points.
-- One-tap WhatsApp messages: points earned after a bill, and "we miss you" reminders to customers who haven't come back for a while.
-- A dashboard showing what returning customers spent this month.
-- Safety: a limit on points per customer per day, a check on very large bills, undo, and an activity log.
-- Export customers and history to a spreadsheet. Works on any phone with a camera. Free to start, set up in two minutes.
+- It's a digital stamp card on the customer's phone number. The shop sets one rule: every N visits (3 to 10), one reward it chooses, e.g. every 5 visits a free chai.
+- At the counter the shop types the customer's phone number and taps "Add visit". That's the whole job. Regulars' numbers are suggested after 4 digits. New numbers become customers on the spot.
+- On the Nth visit the app says "Give the reward now"; the shop taps "Given" and the card starts again.
+- A phone number counts once a day. Any visit or reward can be undone.
+- No app, no QR codes, no points, no sign-up and no PIN for customers. Works for customers without a smartphone, because only their number is needed.
+- One tap sends the customer their card on WhatsApp: their stamps and how many visits are left, in Hindi or English, opening in the browser.
+- A list of customers who haven't come back for a while, with a ready "we miss you" WhatsApp message.
+- A printable counter poster and a WhatsApp status image with the shop's rule.
+- Export customers and visits to a spreadsheet. Works on any phone, tablet or computer with internet. Free to start, set up in one minute.
 
 Rules:
 - Be specific to "${topic}": its customers, the services or products they buy, how often they visit, typical bills and good rewards. Name real things that shop sells.
@@ -134,7 +133,7 @@ Rules:
 - Friendly and practical, like advice from another shop owner. Never say customers are forced or pressured to come back.
 - Every FAQ question ends with a question mark.
 - No statistics, percentages or research claims, no testimonials, no quotes from people, no competitor names, no prices for Regularhood except "free to start".
-- Prices on the example bill and the reward points must be realistic in India today. Reward points must fit ${POINTS_PER_100} points per ₹100.
+- Prices on the example bill must be realistic in India today. Rewards must be worth it for the shop at that number of visits (a free small item, not a free full bill). Never mention points, QR codes, tiers, bonuses or PINs.
 - No markdown, no emoji, no exclamation marks in the headline.`;
 }
 
@@ -299,7 +298,7 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     if (!row.content) throw new NotFoundException('This page has not been written yet');
     const others = this.published(row.lang).filter((p) => p.slug !== row.slug);
     const twin = this.db.sql.prepare("SELECT * FROM seo_pages WHERE slug = ? AND lang != ? AND status = 'published'").get(row.slug, row.lang) as SeoPageRow | undefined;
-    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others, pointsPer100: POINTS_PER_100 });
+    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others });
   }
 }
 
@@ -323,9 +322,9 @@ function clean(d: SeoContent, lang: SeoLang): SeoContent {
       .filter((i) => i.name),
     rewards: (Array.isArray(d.rewards) ? d.rewards : [])
       .slice(0, 4)
-      .map((r) => ({ name: t(r?.name, 60), points: Math.max(1, Math.round(Number(r?.points) || 0)) }))
+      .map((r) => ({ name: t(r?.name, 60), visits: Math.min(10, Math.max(3, Math.round(Number(r?.visits) || 5))) }))
       .filter((r) => r.name)
-      .sort((a, b) => a.points - b.points),
+      .sort((a, b) => a.visits - b.visits),
     tips: (Array.isArray(d.tips) ? d.tips : []).slice(0, 5).map((x) => t(x, 300)).filter(Boolean),
     faqs: (Array.isArray(d.faqs) ? d.faqs : [])
       .slice(0, 6)

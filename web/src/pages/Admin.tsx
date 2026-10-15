@@ -12,14 +12,14 @@ import {
   MessageCircle,
   MessagesSquare,
   Rocket,
-  IndianRupee,
+  Gift,
   KeyRound,
   LayoutDashboard,
   LogOut,
   Pause,
   Phone,
   Play,
-  Receipt,
+  Stamp,
   ScrollText,
   Search,
   ShieldCheck,
@@ -30,7 +30,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { daysAgo, num, rupees, when, whatsapp } from '../api';
+import { daysAgo, num, when, whatsapp } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
@@ -88,9 +88,11 @@ type Shop = {
   suspended_at: string | null;
   suspended_reason: string | null;
   customers: number;
-  bills30: number;
-  sales30: number;
-  last_bill: string | null;
+  visits30: number;
+  rewards30: number;
+  last_visit: string | null;
+  reward_name: string; // '' = hasn't set up their card yet
+  visits_needed: number;
   status: Status;
   phone: string | null;
   source: string;
@@ -105,13 +107,13 @@ type Shop = {
   last_contact: string | null;
   last_contact_detail: string | null;
 };
-type Comeback = { customers: number; visits: number; sales: number; wonBack: number; allSales: number; rewards: number };
+type Comeback = { customers: number; visits: number; wonBack: number; allVisits: number; rewards: number };
 
 const STATUS: Record<Status, { label: string; hint: string }> = {
-  active: { label: 'Active', hint: 'Gave points in the last 7 days' },
+  active: { label: 'Active', hint: 'Added visits in the last 7 days' },
   sleeping: { label: 'Sleeping', hint: 'Used it before, nothing for 7+ days' },
   new: { label: 'New', hint: 'Joined in the last 2 days' },
-  never: { label: 'Never started', hint: 'Signed up but never gave points' },
+  never: { label: 'Never started', hint: 'Signed up but never added a visit' },
   paused: { label: 'Paused', hint: 'Turned off by an admin' },
 };
 
@@ -129,7 +131,12 @@ const ago = (t: string | null) => {
 
 /** Why a shop is on the "needs a call" list. */
 const reason = (s: Shop) =>
-  s.status === 'sleeping' ? `No bills for ${daysAgo(s.last_bill!)} days — had ${num(s.bills30)} in the last 30` : `Joined ${ago(s.created_at)}, never gave points`;
+  s.status === 'sleeping'
+    ? `No visits for ${daysAgo(s.last_visit!)} days — had ${num(s.visits30)} in the last 30`
+    : `Joined ${ago(s.created_at)}, never added a visit${s.reward_name ? '' : ' (card not set up)'}`;
+
+/** The shop's one rule, as the panel shows it. */
+const cardRule = (s: Pick<Shop, 'reward_name' | 'visits_needed'>) => (s.reward_name ? `Every ${s.visits_needed} visits → ${s.reward_name}` : 'Not set up yet');
 
 /** How a source label reads in the panel. */
 const SOURCE_NAMES: Record<string, string> = {
@@ -150,9 +157,9 @@ const sourceName = (s: string) => SOURCE_NAMES[s] ?? s;
 /** A ready message for a shop that needs a nudge. */
 function nudge(s: Shop) {
   if (s.status === 'sleeping') {
-    return `Hi! This is the Regularhood team. ${s.name} gave ${num(s.bills30)} bills with points last month, and your regulars still have points waiting. Is anything making it hard at the counter? Happy to help on a quick call.`;
+    return `Hi! This is the Regularhood team. ${s.name} added ${num(s.visits30)} visits last month, and your regulars are still collecting stamps. Is anything making it hard at the counter? Happy to help on a quick call.`;
   }
-  return `Hi! This is the Regularhood team, thanks for signing up ${s.name}. Can we help you give your first points? Print your counter poster from Settings, put it where people pay, and the next customer can join in 10 seconds. Happy to set it up with you on a call.`;
+  return `Hi! This is the Regularhood team, thanks for signing up ${s.name}. Can we help you add your first visit? Just type the customer's phone number and tap Add visit — and print your counter poster from Settings so customers know about your card. Happy to set it up with you on a call.`;
 }
 
 /** WhatsApp / call / email buttons for a shop; using one records the contact in the admin log. */
@@ -249,9 +256,10 @@ type Overview = {
     activeShops: number;
     customers: number;
     newCustomers: number;
-    bills24h: number;
-    bills30: number;
-    sales30: number;
+    visits24h: number;
+    visits30: number;
+    rewards30: number;
+    notSetUp: number;
   };
   attention: Shop[];
 };
@@ -289,11 +297,11 @@ function OverviewPage() {
           icon={TrendingUp}
           label="Active this week"
           value={t && num(t.activeShops)}
-          sub={t && (t.shops ? `${Math.round((t.activeShops / t.shops) * 100)}% of shops gave points` : '')}
+          sub={t && (t.shops ? `${Math.round((t.activeShops / t.shops) * 100)}% of shops added visits` : '')}
         />
         <Stat icon={Users} label="Customers" value={t && num(t.customers)} sub={t && `${num(t.newCustomers)} new this week`} />
-        <Stat icon={Receipt} label="Bills, 30 days" value={t && num(t.bills30)} sub={t && `${num(t.bills24h)} in the last 24 hours`} />
-        <Stat icon={IndianRupee} label="Shop sales, 30 days" value={t && rupees(t.sales30)} sub="through the app" />
+        <Stat icon={Stamp} label="Visits, 30 days" value={t && num(t.visits30)} sub={t && `${num(t.visits24h)} in the last 24 hours`} />
+        <Stat icon={Gift} label="Rewards given, 30 days" value={t && num(t.rewards30)} sub={t && (t.notSetUp ? `${num(t.notSetUp)} shops haven't set up their card` : 'every shop has its card set up')} />
       </section>
 
       <section className="card">
@@ -386,10 +394,11 @@ function ShopsPage() {
                 <tr>
                   <th>Shop</th>
                   <th>Status</th>
+                  <th>Card</th>
                   <th className="num">Customers</th>
-                  <th className="num">Bills (30d)</th>
-                  <th className="num">Sales (30d)</th>
-                  <th>Last bill</th>
+                  <th className="num">Visits (30d)</th>
+                  <th className="num">Rewards (30d)</th>
+                  <th>Last visit</th>
                   <th>Joined</th>
                   <th>From</th>
                 </tr>
@@ -406,10 +415,11 @@ function ShopsPage() {
                     <td>
                       <StatusBadge status={s.status} />
                     </td>
+                    <td className={s.reward_name ? '' : 'muted'}>{cardRule(s)}</td>
                     <td className="num">{num(s.customers)}</td>
-                    <td className="num">{num(s.bills30)}</td>
-                    <td className="num">{rupees(s.sales30)}</td>
-                    <td>{ago(s.last_bill)}</td>
+                    <td className="num">{num(s.visits30)}</td>
+                    <td className="num">{num(s.rewards30)}</td>
+                    <td>{ago(s.last_visit)}</td>
                     <td>{ago(s.created_at)}</td>
                     <td>
                       <span className="source-chip">{sourceName(s.source)}</span>
@@ -431,26 +441,31 @@ function ShopsPage() {
 
 type ShopDetail = {
   shop: Shop;
-  settings: { pointsPer100: number; welcomeBonus: number; birthdayBonus: number; goldThreshold: number; goldMultiplier: number; maxVisitsPerDay: number; largeBill: number };
-  counts: { rewards: number; billsAllTime: number; redemptions: number; customersWithPin: number; blocked30: number };
+  settings: { visitsNeeded: number; rewardName: string; inactiveDays: number };
+  counts: { visitsAllTime: number; rewardsAllTime: number; rewardsWaiting: number; cameBack: number; notSeen: number };
   comeback: { current: Comeback; previous: Comeback };
-  daily: { day: string; bills: number; sales: number }[];
+  daily: { day: string; visits: number; rewards: number }[];
   notes: { id: number; note: string; created_at: string; admin: string }[];
   log: { id: number; action: string; detail: string; created_at: string; admin: string }[];
 };
 
-/** Bills per day for the last 30 days, as simple bars. */
+/** Visits per day for the last 30 days, as simple bars. */
 function DailyBars({ daily }: { daily: ShopDetail['daily'] }) {
   const byDay = new Map(daily.map((d) => [d.day, d]));
   const days = Array.from({ length: 30 }, (_, i) => {
     const d = new Date(Date.now() + 330 * 60_000 - (29 - i) * 86_400_000).toISOString().slice(0, 10);
-    return { day: d, bills: byDay.get(d)?.bills ?? 0, sales: byDay.get(d)?.sales ?? 0 };
+    return { day: d, visits: byDay.get(d)?.visits ?? 0, rewards: byDay.get(d)?.rewards ?? 0 };
   });
-  const max = Math.max(1, ...days.map((d) => d.bills));
+  const max = Math.max(1, ...days.map((d) => d.visits));
   return (
-    <div className="bars" role="img" aria-label={`Bills per day for 30 days, up to ${max} a day`}>
+    <div className="bars" role="img" aria-label={`Visits per day for 30 days, up to ${max} a day`}>
       {days.map((d) => (
-        <span key={d.day} style={{ height: `${Math.max(3, (d.bills / max) * 100)}%` }} className={d.bills ? '' : 'zero'} title={`${d.day}: ${d.bills} bills, ${rupees(d.sales)}`} />
+        <span
+          key={d.day}
+          style={{ height: `${Math.max(3, (d.visits / max) * 100)}%` }}
+          className={d.visits ? '' : 'zero'}
+          title={`${d.day}: ${d.visits} visits${d.rewards ? `, ${d.rewards} rewards given` : ''}`}
+        />
       ))}
     </div>
   );
@@ -481,7 +496,7 @@ function ShopPage({ id }: { id: number }) {
   }
 
   const { shop, settings, counts, comeback } = data;
-  const change = comeback.previous.sales > 0 ? Math.round(((comeback.current.sales - comeback.previous.sales) / comeback.previous.sales) * 100) : null;
+  const change = comeback.previous.visits > 0 ? Math.round(((comeback.current.visits - comeback.previous.visits) / comeback.previous.visits) * 100) : null;
 
   const makeResetLink = () =>
     void action.run(async () => {
@@ -508,7 +523,7 @@ function ShopPage({ id }: { id: number }) {
     });
   };
   const resume = async () => {
-    if (!(await confirmDialog({ title: `Turn ${shop.name} back on?`, body: 'They can log in and give points again.', confirm: 'Turn on' }))) return;
+    if (!(await confirmDialog({ title: `Turn ${shop.name} back on?`, body: 'They can log in and add visits again.', confirm: 'Turn on' }))) return;
     void action.run(async () => {
       await adminApi(`shops/${id}/unsuspend`, 'POST');
       toast(`${shop.name} is back on`);
@@ -560,14 +575,14 @@ function ShopPage({ id }: { id: number }) {
       )}
 
       <section className="stats">
-        <Stat icon={Users} label="Customers" value={num(shop.customers)} sub={`${num(counts.customersWithPin)} set a PIN`} />
-        <Stat icon={Receipt} label="Bills, 30 days" value={num(shop.bills30)} sub={`${num(counts.billsAllTime)} all time · last ${ago(shop.last_bill)}`} />
-        <Stat icon={IndianRupee} label="Sales, 30 days" value={rupees(shop.sales30)} />
+        <Stat icon={Users} label="Customers" value={num(shop.customers)} sub={`${num(counts.cameBack)} came back at least once`} />
+        <Stat icon={Stamp} label="Visits, 30 days" value={num(shop.visits30)} sub={`${num(counts.visitsAllTime)} all time · last ${ago(shop.last_visit)}`} />
+        <Stat icon={Gift} label="Rewards given, 30 days" value={num(shop.rewards30)} sub={`${num(counts.rewardsAllTime)} all time · ${num(counts.rewardsWaiting)} waiting`} />
         <Stat
           icon={change !== null && change < 0 ? TrendingDown : TrendingUp}
           label="Came back, 30 days"
-          value={rupees(comeback.current.sales)}
-          sub={`${num(comeback.current.customers)} returning customers${change !== null ? ` · ${change >= 0 ? '+' : ''}${num(change)}%` : ''}`}
+          value={num(comeback.current.customers)}
+          sub={`${num(comeback.current.visits)} repeat visits${change !== null ? ` · ${change >= 0 ? '+' : ''}${num(change)}%` : ''}`}
         />
       </section>
 
@@ -575,46 +590,30 @@ function ShopPage({ id }: { id: number }) {
         <section className="card">
           <div className="card-head">
             <h2>
-              <Receipt size={18} /> Bills per day
+              <Stamp size={18} /> Visits per day
             </h2>
             <span className="muted small">last 30 days</span>
           </div>
           <DailyBars daily={data.daily} />
           <dl className="facts">
             <div>
-              <dt>Points per ₹100</dt>
-              <dd>{settings.pointsPer100}</dd>
+              <dt>Card</dt>
+              <dd>{cardRule({ reward_name: settings.rewardName, visits_needed: settings.visitsNeeded })}</dd>
             </div>
             <div>
-              <dt>Rewards</dt>
-              <dd>
-                {num(counts.rewards)} · {num(counts.redemptions)} redeemed
-              </dd>
+              <dt>Rewards waiting</dt>
+              <dd>{num(counts.rewardsWaiting)} customers have a full card</dd>
             </div>
             <div>
-              <dt>Welcome / birthday bonus</dt>
-              <dd>
-                {settings.welcomeBonus} / {settings.birthdayBonus}
-              </dd>
+              <dt>Won back, 30 days</dt>
+              <dd>{num(comeback.current.wonBack)} came back after {settings.inactiveDays}+ days</dd>
             </div>
             <div>
-              <dt>Gold</dt>
-              <dd>
-                after {num(settings.goldThreshold)} · ×{settings.goldMultiplier}
-              </dd>
-            </div>
-            <div>
-              <dt>Visit limit / bill check</dt>
-              <dd>
-                {settings.maxVisitsPerDay || 'none'} / {settings.largeBill ? rupees(settings.largeBill) : 'off'}
-              </dd>
-            </div>
-            <div>
-              <dt>Blocked bills, 30 days</dt>
-              <dd>{num(counts.blocked30)}</dd>
+              <dt>Not seen in {settings.inactiveDays} days</dt>
+              <dd>{num(counts.notSeen)} customers</dd>
             </div>
           </dl>
-          {counts.rewards === 0 && <p className="alert alert-error small">No rewards set up — customers have nothing to aim for. Worth mentioning on a call.</p>}
+          {!settings.rewardName && <p className="alert alert-error small">Hasn't set up their card yet — customers have nothing to aim for. Worth a call.</p>}
         </section>
 
         <section className="card">
@@ -647,7 +646,7 @@ function ShopPage({ id }: { id: number }) {
             <div className="support-action">
               <div>
                 <strong>Shop is paused</strong>
-                <span className="muted small">They can't log in; new joins and bill QRs are refused. Customer wallets still open.</span>
+                <span className="muted small">They can't log in or add visits. Customers' cards still open.</span>
               </div>
               <button className="btn btn-primary" disabled={action.busy} onClick={() => void resume()}>
                 <Play size={17} /> Turn on
@@ -672,7 +671,7 @@ function ShopPage({ id }: { id: number }) {
             <div className="support-action">
               <div>
                 <strong>Pause this shop</strong>
-                <span className="muted small">Stops logins and new points. Nothing is deleted; you can turn it back on.</span>
+                <span className="muted small">Stops logins and new visits. Nothing is deleted; you can turn it back on.</span>
               </div>
               <button className="btn btn-ghost" onClick={() => setPausing(true)}>
                 <Pause size={17} /> Pause
@@ -817,7 +816,7 @@ function GrowthPage() {
     ? [
         { label: 'Homepage visitors', value: t.visitors, note: 'people on the homepage' },
         { label: 'Signed up', value: t.signups, note: `${pct(t.signups, t.visitors)} of visitors` },
-        { label: 'Gave first points', value: t.started, note: `${pct(t.started, t.signups)} of sign-ups` },
+        { label: 'Added first visit', value: t.started, note: `${pct(t.started, t.signups)} of sign-ups` },
         { label: 'Active this week', value: t.active, note: `${pct(t.active, t.started)} of those who started` },
       ]
     : [];
@@ -917,7 +916,7 @@ function GrowthPage() {
             </h2>
           </div>
           <p className="muted small" style={{ margin: 0 }}>
-            Customers see a small “Run a shop? Get it free” link on their points card. These shops' customers clicked it.
+            Customers see a small “Run a shop? Get it free” link on their stamp card. These shops' customers clicked it.
           </p>
           {!data ? (
             <SkeletonRows count={2} />
@@ -997,7 +996,7 @@ function FollowUpPage() {
   const inTab = (s: Shop, tab: typeof show) => (tab === 'start' ? needsStart(s) : s.status === 'sleeping');
   const list = (shops ?? [])
     .filter((s) => inTab(s, show))
-    .sort((a, b) => Number(recent(a)) - Number(recent(b)) || (show === 'start' ? b.created_at.localeCompare(a.created_at) : b.bills30 - a.bills30));
+    .sort((a, b) => Number(recent(a)) - Number(recent(b)) || (show === 'start' ? b.created_at.localeCompare(a.created_at) : b.visits30 - a.visits30));
   const count = (tab: typeof show) => (shops ?? []).filter((s) => inTab(s, tab)).length;
 
   return (
@@ -1039,7 +1038,7 @@ function FollowUpPage() {
           ))}
         </div>
       ) : (
-        <EmptyState icon={ShieldCheck} title="Nobody to chase" text={show === 'start' ? 'Every new shop has started giving points.' : 'No shop has gone quiet.'} />
+        <EmptyState icon={ShieldCheck} title="Nobody to chase" text={show === 'start' ? 'Every new shop has added its first visit.' : 'No shop has gone quiet.'} />
       )}
     </>
   );

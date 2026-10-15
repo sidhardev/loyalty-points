@@ -15,9 +15,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { api, when } from '../api';
+import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows } from '../ui';
 
-// Who changed what: undos, adjustments, deletes, PIN resets, settings, blocked and unusually large bills.
+// Who changed what: rewards given, undos, deleted customers, number and setting changes, exports. Entries from the
+// points system (adjustments, PIN resets, blocked and large bills) stay in the list with their own icons.
 
 type Entry = {
   id: number;
@@ -46,9 +48,10 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 /** Entries worth a second look. */
-const ATTENTION = new Set(['limit_blocked', 'large_bill', 'adjust', 'undo', 'delete_customer', 'reset_pin', 'settings', 'export']);
+const ATTENTION = new Set(['undo', 'delete_customer', 'edit_customer', 'settings', 'export', 'limit_blocked', 'large_bill', 'adjust', 'reset_pin']);
 
 export function ActivityLog() {
+  useLang();
   const [items, setItems] = useState<Entry[] | null>(null);
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
 
@@ -59,22 +62,22 @@ export function ActivityLog() {
   return (
     <>
       <a href="#/settings" className="back">
-        <ArrowLeft size={16} /> Settings
+        <ArrowLeft size={16} /> {t('Settings')}
       </a>
       <header className="page-head">
         <div>
-          <h1>Activity log</h1>
-          <p>Every change, undo and blocked attempt — by your shop or by customers.</p>
+          <h1>{t('Activity log')}</h1>
+          <p>{t('Every reward, undo and change — by your shop or by Regularhood support.')}</p>
         </div>
       </header>
 
       <section className="card">
         <div className="seg" style={{ justifySelf: 'start' }}>
           <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>
-            All
+            {t('All')}
           </button>
           <button className={filter === 'attention' ? 'active' : ''} onClick={() => setFilter('attention')}>
-            Needs a look
+            {t('Needs a look')}
           </button>
         </div>
 
@@ -98,14 +101,14 @@ export function ActivityLog() {
                             {e.customer_name}
                           </a>
                         ) : (
-                          (e.customer_name ?? 'Shop')
+                          (e.customer_name ?? t('Shop'))
                         )}
                       </strong>
                       <span className="log-detail">{e.detail}</span>
                       <span>{when(e.created_at)}</span>
                     </div>
                     <span className={`badge ${e.actor === 'customer' ? 'badge-plus' : ''}`}>
-                      {e.actor === 'customer' ? 'Customer' : e.actor === 'admin' ? 'Support' : 'Shop'}
+                      {e.actor === 'customer' ? t('Customer') : e.actor === 'admin' ? t('Support') : t('Shop')}
                     </span>
                   </div>
                 </li>
@@ -113,7 +116,7 @@ export function ActivityLog() {
             })}
           </ul>
         ) : (
-          <EmptyState icon={ScrollText} title="Nothing here yet" text="Undos, adjustments, deletes, PIN resets, setting changes and blocked bills show up here." />
+          <EmptyState icon={ScrollText} title={t('Nothing here yet')} text={t('Rewards given, undos, deleted customers and setting changes show up here.')} />
         )}
       </section>
     </>

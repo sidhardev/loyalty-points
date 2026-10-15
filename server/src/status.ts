@@ -71,23 +71,23 @@ const schema = (count: number, lang: PromptLang) =>
   });
 
 function brief(input: { theme: string; shopType: string; style: StatusStyle; count: number; lang: PromptLang }, recent: string[]) {
-  return `You plan WhatsApp status images in Hindi for Regularhood, a loyalty and rewards app for small neighbourhood shops in India.
+  return `You plan WhatsApp status images in Hindi for Regularhood, a simple loyalty stamp card app for small neighbourhood shops in India.
 The statuses are posted by Regularhood's founder; the people who see them are shop owners (kirana, chai stall, salon, café, sweet shop, pharmacy, gym and so on). The goal: make a shop owner curious enough to try Regularhood.
 
 Write ${input.count} different ideas. Each one becomes one 9:16 image.
-${input.theme ? `Theme or occasion for this batch: "${input.theme}". Every idea should fit it.` : 'Pick varied angles: the problem of customers not coming back, how simple it is, festivals, free to start, a day in a shop owner\'s life, WhatsApp reminders, rewards customers love.'}
+${input.theme ? `Theme or occasion for this batch: "${input.theme}". Every idea should fit it.` : 'Pick varied angles: the problem of customers not coming back, how simple it is, festivals, free to start, a day in a shop owner\'s life, WhatsApp reminders, the free reward on the 5th visit.'}
 ${input.shopType ? `Aim them at this kind of shop: "${input.shopType}". Show that kind of shop and its products.` : 'Show different kinds of Indian neighbourhood shops across the ideas.'}
 Visual style: ${STYLES[input.style].brief}.
 
 What Regularhood does (use only these facts):
-- Points on every bill (10 points per ₹100 by default). The customer scans a QR at the counter, or the shop types their phone number.
-- The customer's loyalty card opens in the phone's browser: no app to install. Works in Hindi and English.
-- Rewards set by the shop, welcome and birthday bonus, a Gold tier for regulars.
-- One-tap WhatsApp messages: points earned, and "we miss you" reminders to customers who haven't come back.
-- Works on any phone. Free to start, set up in two minutes. Website: www.regularhood.in
+- A loyalty stamp card on the customer's phone number: every few visits (the shop picks, e.g. 5), one free reward (e.g. a free chai).
+- At the counter the shop just types the customer's number and taps one button, "Add visit". The app says when to give the reward.
+- No app, no QR code, no points and no sign-up for customers. Their card arrives on WhatsApp and works in Hindi and English.
+- One-tap "we miss you" WhatsApp reminders to customers who haven't come back.
+- Works on any phone. Free to start, set up in one minute. Website: www.regularhood.in
 
 Rules:
-- All Hindi in Devanagari script, the everyday Hindi shop owners speak. Simple common English words are fine written in Devanagari (कस्टमर, पॉइंट्स, QR, WhatsApp may stay as is). Never write Hindi in Latin letters.
+- All Hindi in Devanagari script, the everyday Hindi shop owners speak. Simple common English words are fine written in Devanagari (कस्टमर, विज़िट, WhatsApp may stay as is). Never write Hindi in Latin letters.
 - Headlines are short and punchy: something a shop owner reads in one second.
 - No statistics or percentages, no made-up testimonials or quotes, no competitor names, no price except "फ्री".
 - The scene never contains written words, signboards with text, or logos: the text is added separately.

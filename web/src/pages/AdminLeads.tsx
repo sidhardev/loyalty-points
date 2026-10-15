@@ -727,7 +727,7 @@ function PitchSheet({
                 <li key={i}>{t}</li>
               ))}
             </ul>
-            <h3>Reward ideas for them</h3>
+            <h3>Card ideas for them</h3>
             <ul className="small">
               {p.rewardIdeas.map((t, i) => (
                 <li key={i}>{t}</li>
