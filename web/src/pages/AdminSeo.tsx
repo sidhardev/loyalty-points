@@ -35,6 +35,7 @@ type Page = {
   generated_at: string | null;
   published_at: string | null;
   views: number;
+  stale: number; // 1 = written for the points system; being rewritten in place
 };
 type Usage = { id: number; ts: string; purpose: string; model: string; input_tokens: number; output_tokens: number; cost_usd: number; ok: number; error: string | null };
 type Cost = { usd: number; calls: number };
@@ -215,6 +216,12 @@ export function SeoPage({ api, adminToken }: { api: AdminApi; adminToken: () => 
                     </td>
                     <td>
                       <span className={`status seo-${p.status}`}>{STATUS[p.status]}</span>
+                      {p.stale ? (
+                        <span className="muted small" title="Written for the points system. It stays live and is rewritten for the stamp card shortly after the server starts.">
+                          {' '}
+                          · old text, rewriting
+                        </span>
+                      ) : null}
                     </td>
                     <td className="num">{num(p.views)}</td>
                     <td className="num">{p.cost_usd ? inr(p.cost_usd) : '–'}</td>

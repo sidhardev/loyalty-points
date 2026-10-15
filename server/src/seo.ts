@@ -82,6 +82,7 @@ export type SeoPageRow = {
   created_at: string;
   generated_at: string | null;
   published_at: string | null;
+  stale: number; // 1 = written for an older version of the product, waiting to be rewritten
 };
 
 /** What Gemini must return (Gemini's OpenAPI-style schema). */
@@ -153,6 +154,38 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     this.timer = setInterval(() => void this.tick(), 10 * 60_000);
     this.timer.unref();
     setTimeout(() => void this.tick(), 30_000).unref();
+    setTimeout(() => void this.rewriteStale(), 60_000).unref();
+  }
+
+  /**
+   * Rewrites every stale page (written for an older version of the product) with the current prompt, one after
+   * another, right after the server starts — not at the few-a-day pace of new pages. Each page keeps its address and
+   * stays live with its old text until the new one is in; a page that fails keeps its old text and is tried again on
+   * the next start. Stops when the month's AI budget is used up.
+   */
+  async rewriteStale() {
+    if (!this.gemini.configured) return;
+    const ids = (
+      this.db.sql.prepare("SELECT id FROM seo_pages WHERE stale = 1 AND content IS NOT NULL ORDER BY status = 'published' DESC, id").all() as { id: number }[]
+    ).map((r) => r.id);
+    if (!ids.length) return;
+    console.log(`SEO: rewriting ${ids.length} pages written for the points system`);
+    let done = 0;
+    for (const id of ids) {
+      if (this.gemini.monthSpend() >= this.settings().monthlyBudgetUsd) {
+        console.log(`SEO: AI budget used up — ${ids.length - done} pages left for next month`);
+        break;
+      }
+      while (this.running) await new Promise((r) => setTimeout(r, 5_000));
+      try {
+        await this.generate(id, true);
+        done++;
+      } catch (error) {
+        console.error(`SEO: rewrite of page ${id} failed:`, (error as Error).message);
+      }
+      await new Promise((r) => setTimeout(r, 20_000));
+    }
+    console.log(`SEO: rewrote ${done} of ${ids.length} pages`);
   }
 
   onModuleDestroy() {
@@ -260,7 +293,7 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
       const status = s.autoPublish || page.status === 'published' ? 'published' : 'draft';
       this.db.sql
         .prepare(
-          `UPDATE seo_pages SET status = ?, content = ?, title = ?, description = ?, error = NULL, cost_usd = cost_usd + ?,
+          `UPDATE seo_pages SET status = ?, content = ?, title = ?, description = ?, error = NULL, cost_usd = cost_usd + ?, stale = 0,
              generated_at = datetime('now'), published_at = CASE WHEN ? = 'published' THEN COALESCE(published_at, datetime('now')) ELSE published_at END
            WHERE id = ?`,
         )
@@ -361,7 +394,7 @@ export class SeoAdminController {
       this.db.sql.prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS usd, COUNT(*) AS calls FROM ai_usage WHERE ${where}`).get(...args) as { usd: number; calls: number };
     const pages = this.db.sql
       .prepare(
-        `SELECT p.id, p.slug, p.lang, p.topic, p.notes, p.status, p.title, p.description, p.error, p.cost_usd, p.created_at, p.generated_at, p.published_at,
+        `SELECT p.id, p.slug, p.lang, p.topic, p.notes, p.status, p.title, p.description, p.error, p.cost_usd, p.created_at, p.generated_at, p.published_at, p.stale,
            (SELECT COUNT(*) FROM page_views v WHERE v.path = CASE p.lang WHEN 'hi' THEN '/hi/for/' ELSE '/for/' END || p.slug) AS views
          FROM seo_pages p ORDER BY CASE p.status WHEN 'queued' THEN 1 ELSE 0 END, COALESCE(p.generated_at, p.created_at) DESC, p.id`,
       )

@@ -414,6 +414,13 @@ const MIGRATIONS: string[] = [
     (SELECT visits_needed - 1 FROM merchants m WHERE m.id = customers.merchant_id)
   );
   `,
+
+  // 18: SEO pages written before the stamp card describe points. They're marked stale and rewritten in place with the
+  // new prompt (seo.ts), keeping their address and staying live until the new text is in.
+  `
+  ALTER TABLE seo_pages ADD COLUMN stale INTEGER NOT NULL DEFAULT 0;
+  UPDATE seo_pages SET stale = 1 WHERE content IS NOT NULL;
+  `,
 ];
 
 const INDEXES = `
