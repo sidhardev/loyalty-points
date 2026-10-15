@@ -27,6 +27,7 @@ import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
 import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
+import { rewardsDue, UPI_AMOUNT } from './referrals';
 
 // Superadmin: the platform owner's view of every shop — how the business is doing, which shops need a call,
 // and support actions (reset links, pausing a shop, notes). Admins are created only from the server's terminal
@@ -375,6 +376,30 @@ export class AdminController {
       cards,
       signups: shops.slice(0, 50),
     };
+  }
+
+  /** Referral rewards earned but not sent yet, and the last ones sent (referrals.ts). */
+  @Get('referral-rewards')
+  @UseGuards(AdminGuard)
+  referralRewards() {
+    const sent = this.db.sql
+      .prepare(
+        `SELECT r.merchant_id AS shopId, m.name, r.kind, r.n, r.sent_at FROM referral_rewards r
+         JOIN merchants m ON m.id = r.merchant_id ORDER BY r.id DESC LIMIT 30`,
+      )
+      .all();
+    return { due: rewardsDue(this.db), sent, upiAmount: UPI_AMOUNT };
+  }
+
+  @Post('referral-rewards')
+  @UseGuards(AdminGuard)
+  markRewardSent(@AdminId() adminId: number, @Body() body: { shopId?: number; kind?: string; n?: number }) {
+    const due = rewardsDue(this.db).find((d) => d.shopId === Number(body?.shopId) && d.kind === body?.kind && d.n === Number(body?.n));
+    if (!due) throw new BadRequestException('This reward is not due, or was already marked sent');
+    this.db.sql.prepare('INSERT INTO referral_rewards (merchant_id, kind, n, admin_id) VALUES (?, ?, ?, ?)').run(due.shopId, due.kind, due.n, adminId);
+    const what = due.kind === 'standee' ? 'a counter standee' : `₹${UPI_AMOUNT} on UPI`;
+    this.audit(adminId, due.shopId, 'referral_reward', `Sent ${due.name} ${what} for bringing shops`);
+    return { ok: true };
   }
 
   /** Every admin action across all shops. */

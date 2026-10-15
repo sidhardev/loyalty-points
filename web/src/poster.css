@@ -157,3 +157,88 @@
   font-size: 14px;
   max-width: 52ch;
 }
+
+.share-card .share-card-reward {
+  margin-top: 6px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.referral-rewards {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.referral-rewards li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.referral-rewards em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--brand-ink);
+}
+
+.referral-icon {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.referral-shops {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.referral-shops li {
+  display: grid;
+  gap: 6px;
+}
+
+.referral-shops li > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.referral-shops b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referral-shops small {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.referral-bar {
+  display: block;
+  height: 6px;
+  border-radius: 6px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.referral-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}

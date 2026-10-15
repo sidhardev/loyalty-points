@@ -976,8 +976,92 @@ function GrowthPage() {
         </section>
       </div>
 
+      <ReferralRewardsCard />
+
       <LinkBuilder />
     </>
+  );
+}
+
+type RewardDue = { shopId: number; name: string; phone: string | null; kind: 'standee' | 'upi'; n: number; active: number; selfActive: boolean };
+type RewardSent = { shopId: number; name: string; kind: 'standee' | 'upi'; n: number; sent_at: string };
+
+/** Shops that earned a referral reward (server/src/referrals.ts): message them for an address or UPI ID, send it, mark it sent. */
+function ReferralRewardsCard() {
+  const [data, setData] = useState<{ due: RewardDue[]; sent: RewardSent[]; upiAmount: number } | null>(null);
+  const [error, setError] = useState('');
+  const { busy, run } = useAction();
+  const load = useCallback(() => void adminApi<typeof data>('referral-rewards').then(setData, (e) => setError((e as Error).message)), []);
+  useEffect(load, [load]);
+
+  const what = (kind: RewardDue['kind']) => (kind === 'standee' ? 'Counter standee' : `₹${data?.upiAmount ?? 100} on UPI`);
+  const why = (d: RewardDue) =>
+    d.kind === 'upi' ? `${d.n * 3} shops brought` : d.active > 0 ? 'brought their first shop' : 'joined from a shop’s link and started';
+  const ask = (d: RewardDue) =>
+    d.kind === 'standee'
+      ? `Namaste! ${d.active > 0 ? `${d.name} ne Regularhood pe ek nayi dukaan jodi hai` : `${d.name} ne Regularhood pe 20 visits poori kar li hain`}, isliye aapko ek free counter standee milega 🎉 Kripya apna poora address (pincode ke saath) bhejiye.`
+      : `Namaste! ${d.name} se aayi dukaanon ke liye aapko ₹${data?.upiAmount ?? 100} milenge 🎉 Kripya apna UPI ID bhejiye.`;
+  const markSent = (d: RewardDue) =>
+    run(async () => {
+      if (!(await confirmDialog({ title: `Mark ${what(d.kind).toLowerCase()} sent to ${d.name}?`, confirm: 'Mark sent' }))) return;
+      await adminApi('referral-rewards', 'POST', { shopId: d.shopId, kind: d.kind, n: d.n });
+      toast('Marked sent');
+      load();
+    });
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <Gift size={18} /> Referral rewards to send
+        </h2>
+        <span className="muted small">standee for the first shop · ₹{data?.upiAmount ?? 100} per 3 shops</span>
+      </div>
+      <p className="muted small" style={{ margin: 0 }}>
+        A brought shop counts once it adds 20 visits on 3 different days. Message the shop for an address or UPI ID, send the reward, then mark it sent.
+      </p>
+      <ErrorText text={error} />
+      {!data ? (
+        <SkeletonRows count={2} />
+      ) : data.due.length ? (
+        <ul className="rows">
+          {data.due.map((d) => (
+            <li key={`${d.shopId}-${d.kind}-${d.n}`}>
+              <div className="row-item">
+                <span className="row-main">
+                  <strong>
+                    <a href={`#/shops/${d.shopId}`}>{d.name}</a> · {what(d.kind)}
+                  </strong>
+                  <span>{why(d)}</span>
+                </span>
+                {d.phone && (
+                  <a className="btn btn-sm btn-whatsapp" href={whatsapp(d.phone, ask(d))} target="_blank" rel="noreferrer">
+                    <MessageCircle size={15} /> Ask
+                  </a>
+                )}
+                <button className="btn btn-sm btn-soft" disabled={busy} onClick={() => void markSent(d)}>
+                  <Check size={15} /> Sent
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted small">Nothing to send right now.</p>
+      )}
+      {data && data.sent.length > 0 && (
+        <details>
+          <summary className="small muted">Sent before ({data.sent.length})</summary>
+          <ul className="rows">
+            {data.sent.map((r) => (
+              <li key={`${r.shopId}-${r.kind}-${r.n}`} className="small">
+                <a href={`#/shops/${r.shopId}`}>{r.name}</a> · {what(r.kind)} · {ago(r.sent_at)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
   );
 }
 

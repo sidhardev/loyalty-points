@@ -421,6 +421,20 @@ const MIGRATIONS: string[] = [
   ALTER TABLE seo_pages ADD COLUMN stale INTEGER NOT NULL DEFAULT 0;
   UPDATE seo_pages SET stale = 1 WHERE content IS NOT NULL;
   `,
+
+  // 19: shops that bring shops: the rewards (a counter standee, ₹100 on UPI) the admin has sent, so each goes out once
+  // (referrals.ts).
+  `
+  CREATE TABLE referral_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    kind TEXT NOT NULL CHECK (kind IN ('standee', 'upi')),
+    n INTEGER NOT NULL,
+    admin_id INTEGER,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (merchant_id, kind, n)
+  );
+  `,
 ];
 
 const INDEXES = `

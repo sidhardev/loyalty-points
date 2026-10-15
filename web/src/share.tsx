@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Download, Image as ImageIcon, MessageCircle, Share2, Store, Users } from 'lucide-react';
+import { Check, Copy, Download, Gift, Image as ImageIcon, MessageCircle, Share2, Store, Users } from 'lucide-react';
 import { api, num, type Merchant } from './api';
 import { Awning, C, DISPLAY, fit, HINDI, saveFile, StampRow, Star, svgToPng } from './poster';
 import './poster.css';
@@ -14,7 +14,18 @@ import { LogoMark, Sheet, toast } from './ui';
 export type ShareLang = 'hi' | 'en';
 export type ShareFormat = 'status' | 'post';
 
-export type ShareData = { customers: number; referrals: number };
+type Earned = { earned: number; sent: number };
+export type ShareData = {
+  customers: number;
+  referrals: number;
+  invited: { name: string; visits: number; days: number; active: boolean }[];
+  active: number;
+  referred: boolean;
+  own: { visits: number; days: number };
+  standee: Earned;
+  upi: Earned;
+  rules: { visits: number; days: number; upiEvery: number; upiAmount: number };
+};
 
 export const shareUrl = (code: string) => `${location.origin}/r/${code}`;
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '');
@@ -205,7 +216,7 @@ export function ShareSheet({ merchant, onClose }: { merchant: Merchant; onClose:
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api<ShareData>('share').then(setData).catch(() => setData({ customers: 0, referrals: 0 }));
+    api<ShareData>('share').then(setData).catch(() => setData(NO_DATA));
   }, []);
   useEffect(() => {
     try {
@@ -306,24 +317,95 @@ export function ShareSheet({ merchant, onClose }: { merchant: Merchant; onClose:
             {copied ? <Check size={16} /> : <Copy size={16} />} {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
-        <p className="muted small" style={{ margin: 0 }}>
-          {data && data.referrals > 0 ? (
-            <>
-              <b>
-                {num(data.referrals)} shop{data.referrals === 1 ? '' : 's'}
-              </b>{' '}
-              joined Regularhood from your links. Thank you! 🙏
-            </>
-          ) : (
-            'Shops that sign up from this link or your image are counted here.'
-          )}
-        </p>
+
       </div>
+
+      {data && <ReferralRewards data={data} />}
 
       {location.hostname === 'localhost' && (
         <p className="alert alert-error small">These links point to localhost. Open the app from its public address to share them.</p>
       )}
     </Sheet>
+  );
+}
+
+const NO_DATA: ShareData = {
+  customers: 0,
+  referrals: 0,
+  invited: [],
+  active: 0,
+  referred: false,
+  own: { visits: 0, days: 0 },
+  standee: { earned: 0, sent: 0 },
+  upi: { earned: 0, sent: 0 },
+  rules: { visits: 20, days: 3, upiEvery: 3, upiAmount: 100 },
+};
+
+/** What the shop gets for bringing shops, and how far each shop it brought is from counting (server/src/referrals.ts). */
+function ReferralRewards({ data }: { data: ShareData }) {
+  const { rules } = data;
+  const rule = t('A shop counts once it adds {visits} visits on {days} different days.')
+    .replace('{visits}', String(rules.visits))
+    .replace('{days}', String(rules.days));
+  const toNextUpi = rules.upiEvery - (data.active % rules.upiEvery);
+  const status = (e: Earned) => (e.sent >= e.earned && e.earned > 0 ? t('Sent ✓') : e.earned > e.sent ? t('On its way 🎉') : '');
+  return (
+    <div className="share-section">
+      <h3>
+        <Gift size={17} /> {t('Bring shops, get rewards')}
+      </h3>
+      <ul className="referral-rewards">
+        <li>
+          <span className="referral-icon" aria-hidden>
+            🪧
+          </span>
+          <span>
+            <b>{t('A counter standee')}</b> {t('with your shop name and rule, for the first shop you bring')}
+            {status(data.standee) && <em>{status(data.standee)}</em>}
+          </span>
+        </li>
+        <li>
+          <span className="referral-icon" aria-hidden>
+            💸
+          </span>
+          <span>
+            <b>{t('₹{amount} on UPI').replace('{amount}', String(rules.upiAmount))}</b>{' '}
+            {t('for every {n} shops you bring').replace('{n}', String(rules.upiEvery))}
+            {data.upi.earned > 0 ? <em>{t('{n} earned').replace('{n}', num(data.upi.earned))}</em> : null}
+            {data.active > 0 && <em>{t('{n} more shops for the next ₹{amount}').replace('{n}', String(toNextUpi)).replace('{amount}', String(rules.upiAmount))}</em>}
+          </span>
+        </li>
+      </ul>
+      <p className="muted small" style={{ margin: 0 }}>
+        {rule} {t('We message you on WhatsApp to send your reward.')}
+      </p>
+
+      {data.invited.length > 0 ? (
+        <ul className="referral-shops">
+          {data.invited.map((s, i) => (
+            <li key={i}>
+              <span>
+                <b>{s.name}</b>
+                <small>{s.active ? t('Counts ✓') : t('{x} of {n} visits').replace('{x}', num(Math.min(s.visits, rules.visits))).replace('{n}', String(rules.visits))}</small>
+              </span>
+              <i className="referral-bar">
+                <i style={{ width: `${s.active ? 100 : Math.min(99, (Math.min(s.visits, rules.visits) / rules.visits) * 100)}%` }} />
+              </i>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted small" style={{ margin: 0 }}>
+          {t('Shops that sign up from your link or your image show up here.')}
+        </p>
+      )}
+
+      {data.referred && data.standee.earned === 0 && (
+        <p className="alert alert-ok small" style={{ margin: 0 }}>
+          {t('You joined from another shop’s link: you get a counter standee too once you add {visits} visits.').replace('{visits}', String(rules.visits))}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -337,6 +419,7 @@ export function ShareCard({ merchant }: { merchant: Merchant }) {
           <Share2 size={18} /> {t('Tell customers about your card')}
         </h2>
         <p>{t('A ready image for your WhatsApp status and Instagram, in Hindi or English.')}</p>
+        <p className="share-card-reward">🎁 {t('Bring other shops: a free counter standee, and ₹100 for every 3 shops.')}</p>
       </div>
       <button className="btn btn-primary" onClick={() => setOpen(true)}>
         <Share2 size={17} /> {t('Share')}

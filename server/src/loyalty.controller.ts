@@ -15,6 +15,7 @@ import {
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { LoyaltyService, cleanPhone, tzShift, type CustomerRow } from './loyalty.service';
+import { ACTIVE_DAYS, ACTIVE_VISITS, rewardsFor, UPI_AMOUNT, UPI_EVERY } from './referrals';
 
 /** One CSV cell; text that looks like a formula is prefixed so spreadsheets don't run it. */
 const cell = (v: unknown) => {
@@ -69,13 +70,21 @@ export class LoyaltyController {
 
   // ---- share ----
 
-  /** How many customers the shop has, and how many shops signed up from its share links. */
+  /** How many customers the shop has, the shops it brought, and the rewards that earned it (referrals.ts). */
   @Get('share')
   share(@MerchantId() merchantId: number) {
     const count = (sql: string) => (this.db.sql.prepare(sql).get(merchantId) as { n: number }).n;
+    const r = rewardsFor(this.db, merchantId);
     return {
       customers: count('SELECT COUNT(*) AS n FROM customers WHERE merchant_id = ?'),
-      referrals: count('SELECT COUNT(*) AS n FROM merchants WHERE referred_by = ?'),
+      referrals: r.invited.length,
+      invited: r.invited.map(({ name, visits, days, active }) => ({ name, visits, days, active })),
+      active: r.active,
+      referred: r.referred,
+      own: r.own,
+      standee: r.standee,
+      upi: r.upi,
+      rules: { visits: ACTIVE_VISITS, days: ACTIVE_DAYS, upiEvery: UPI_EVERY, upiAmount: UPI_AMOUNT },
     };
   }
 
