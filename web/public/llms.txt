@@ -1,0 +1,21 @@
+# Regularhood
+
+> Regularhood is a free loyalty stamp card for small local shops in India — chai stalls, cafés, salons, bakeries, kirana stores, gyms and sweet shops. The shop types a customer's phone number and taps "Add visit"; every Nth visit (the shop picks N and the reward) the app says the reward is due. Customers need no app, QR code or points: their card opens from a WhatsApp link in any browser. English and Hindi.
+
+## How it works
+
+- The shop sets a rule, for example "every 5th visit, a free cappuccino".
+- At the counter: type the customer's phone number, tap Add visit. A number counts once a day, and any visit or reward can be undone.
+- When the reward is due, the app shows it at the counter; customers can also see their card on WhatsApp.
+- Works on any phone, tablet or computer with internet, in the browser or added to the home screen.
+
+## Price
+
+Free to start: unlimited customers and visits, customer cards in Hindi and English, WhatsApp card and reminder messages, a counter poster and WhatsApp status image, spreadsheet export and daily backups.
+
+## Pages
+
+- [Homepage](https://www.regularhood.in/): what Regularhood is, how the stamp card works, price and FAQ (English and Hindi)
+- [Sign up](https://www.regularhood.in/app#signup): create a shop account and set the stamp card rule
+- [Shop log in](https://www.regularhood.in/app): the shop app (counter, customers, settings)
+- [Loyalty cards by kind of shop](https://www.regularhood.in/sitemap.xml): sitemap listing pages for each kind of shop, in English (/for/...) and Hindi (/hi/for/...)

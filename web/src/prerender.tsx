@@ -3,7 +3,7 @@
 import { prerenderToNodeStream } from 'react-dom/static';
 import { App } from './App';
 
-export { FAQ } from './pages/Landing';
+export { FAQ, FONTS } from './pages/Landing';
 
 /** The homepage as HTML. The caller sets `location` to the homepage, since App picks the page from the URL. */
 export async function renderHome() {
