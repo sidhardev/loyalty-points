@@ -1,6 +1,6 @@
 // Makes the app installable and quick to open: pages come from the network when online and from the
 // cached app page (shell.html) when offline; built files (hashed names) are cached for good. The API is never cached.
-const CACHE = 'lp-v2';
+const CACHE = 'lp-v3';
 const SHELL = ['/shell.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {

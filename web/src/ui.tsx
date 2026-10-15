@@ -369,7 +369,8 @@ export const ErrorText = ({ text }: { text: string }) =>
 
 // ---------------------------------------------------------------- display
 
-/** The Regularhood mark: a shopfront drawn from QR modules — striped awning, finder-square windows, and the member ★ on the door. */
+/** The Regularhood mark: a shopfront with a striped awning, a stamp card on the wall (four stamps, the fifth still to earn), two windows,
+ * and the member ★ on the door. */
 export function LogoMark({ size = 34 }: { size?: number }) {
   // Its own gradient id: with a shared one, a logo inside a hidden part of the page (the sidebar on phones)
   // takes the gradient with it and every other logo loses its green.
@@ -395,22 +396,22 @@ export function LogoMark({ size = 34 }: { size?: number }) {
       <circle cx="54" cy="26" r="6" fill="#eef2ec" />
       <circle cx="66" cy="26" r="6" fill="#f0a202" />
       <circle cx="78" cy="26" r="6" fill="#eef2ec" />
-      <g fill="none" stroke="#eef2ec" strokeWidth="3.5">
-        <rect x="15.75" y="39.75" width="14.5" height="14.5" rx="2" />
-        <rect x="65.75" y="39.75" width="14.5" height="14.5" rx="2" />
-      </g>
-      <rect x="20" y="44" width="6" height="6" fill="#eef2ec" />
-      <rect x="70" y="44" width="6" height="6" fill="#eef2ec" />
       <g fill="#eef2ec">
-        <rect x="38" y="40" width="5" height="5" />
-        <rect x="47" y="44" width="5" height="5" />
-        <rect x="53" y="38" width="5" height="5" />
-        <rect x="16" y="62" width="5" height="5" />
-        <rect x="25" y="70" width="5" height="5" />
-        <rect x="16" y="78" width="5" height="5" />
-        <rect x="75" y="62" width="5" height="5" />
-        <rect x="66" y="70" width="5" height="5" />
-        <rect x="75" y="78" width="5" height="5" />
+        <circle cx="20" cy="46" r="5.5" />
+        <circle cx="34" cy="46" r="5.5" />
+        <circle cx="48" cy="46" r="5.5" />
+        <circle cx="62" cy="46" r="5.5" />
+      </g>
+      <circle cx="76" cy="46" r="4.5" fill="none" stroke="#f0a202" strokeWidth="2.2" />
+      <g fill="#eef2ec">
+        <rect x="15" y="64" width="16" height="16" rx="2" />
+        <rect x="65" y="64" width="16" height="16" rx="2" />
+      </g>
+      <g fill="#0a6544">
+        <rect x="22.25" y="64" width="1.5" height="16" />
+        <rect x="15" y="71.25" width="16" height="1.5" />
+        <rect x="72.25" y="64" width="1.5" height="16" />
+        <rect x="65" y="71.25" width="16" height="1.5" />
       </g>
       <path d="M38 84 V67 Q38 57 48 57 Q58 57 58 67 V84 Z" fill="#f0a202" />
       <polygon

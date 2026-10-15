@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "web"
+      ],
+      "port": 4000
+    },
+    {
+      "name": "web-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "-w",
+        "web",
+        "--",
+        "--port",
+        "4010"
+      ],
+      "port": 4010
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "server"
+      ],
+      "port": 4001
+    }
+  ]
+}
