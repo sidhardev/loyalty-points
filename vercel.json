@@ -19,6 +19,10 @@
     { "source": "/for/:path*", "destination": "https://api-habiturn.sidhar.me/for/:path*" },
     { "source": "/hi/for", "destination": "https://api-habiturn.sidhar.me/hi/for" },
     { "source": "/hi/for/:path*", "destination": "https://api-habiturn.sidhar.me/hi/for/:path*" },
+    { "source": "/guide", "destination": "https://api-habiturn.sidhar.me/guide" },
+    { "source": "/guide/:path*", "destination": "https://api-habiturn.sidhar.me/guide/:path*" },
+    { "source": "/hi/guide", "destination": "https://api-habiturn.sidhar.me/hi/guide" },
+    { "source": "/hi/guide/:path*", "destination": "https://api-habiturn.sidhar.me/hi/guide/:path*" },
     { "source": "/((?!\\.well-known/).*)", "destination": "/shell.html" }
   ],
   "headers": [

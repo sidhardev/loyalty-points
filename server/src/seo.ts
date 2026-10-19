@@ -20,7 +20,8 @@ import type { Response } from 'express';
 import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { AiBudgetError, Gemini, type AiSettings } from './gemini';
-import { render404, renderHub, renderPage, renderSitemap, type SeoContent, type SeoLang } from './seo-render';
+import { GUIDES, guide } from './guides';
+import { render404, renderGuide, renderGuideHub, renderHub, renderPage, renderSitemap, type SeoContent, type SeoLang } from './seo-render';
 
 // AI-written landing pages for each kind of shop: /for/<slug> in English and /hi/for/<slug> in Hindi. The superadmin
 // queues shop types (Admin → SEO pages); a timer writes a few pages a day with Gemini, publishes them (or keeps them as
@@ -563,9 +564,36 @@ export class SeoPublicController {
     this.one('hi', slug, res);
   }
 
+  @Get('guide')
+  guidesEn(@Res() res: Response) {
+    this.send(res, renderGuideHub(SITE, 'en', GUIDES.en, GUIDES.hi.length > 0));
+  }
+
+  @Get('hi/guide')
+  guidesHi(@Res() res: Response) {
+    this.send(res, renderGuideHub(SITE, 'hi', GUIDES.hi, GUIDES.en.length > 0));
+  }
+
+  @Get('guide/:slug')
+  guideEn(@Param('slug') slug: string, @Res() res: Response) {
+    this.oneGuide('en', slug, res);
+  }
+
+  @Get('hi/guide/:slug')
+  guideHi(@Param('slug') slug: string, @Res() res: Response) {
+    this.oneGuide('hi', slug, res);
+  }
+
+  private oneGuide(lang: SeoLang, slug: string, res: Response) {
+    const g = guide(lang, slug);
+    if (!g) return this.send(res, render404(SITE, lang), 404);
+    const twin = guide(lang === 'en' ? 'hi' : 'en', slug);
+    this.send(res, renderGuide(SITE, lang, g, { twin, others: GUIDES[lang].filter((x) => x.slug !== slug) }));
+  }
+
   /** The homepage plus every published page, with its other-language twin. Updates as pages are published. */
   @Get('sitemap.xml')
   sitemap(@Res() res: Response) {
-    res.type('application/xml').set(NO_CACHE).send(renderSitemap(SITE, this.seo.published()));
+    res.type('application/xml').set(NO_CACHE).send(renderSitemap(SITE, this.seo.published(), GUIDES));
   }
 }

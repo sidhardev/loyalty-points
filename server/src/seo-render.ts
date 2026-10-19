@@ -2,6 +2,8 @@
 // Plain server-rendered HTML in the landing page's look, so it's readable without JavaScript. Every piece of text
 // written by the AI is escaped here: it's treated as text, never as markup.
 
+import type { Guide, GuideBlock } from './guides';
+
 export type SeoLang = 'en' | 'hi';
 
 export type SeoContent = {
@@ -26,6 +28,7 @@ const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const inr = (n: number) => n.toLocaleString('en-IN');
 const path = (lang: SeoLang, slug = '') => `${lang === 'hi' ? '/hi' : ''}/for${slug ? `/${slug}` : ''}`;
+const guidePath = (lang: SeoLang, slug = '') => `${lang === 'hi' ? '/hi' : ''}/guide${slug ? `/${slug}` : ''}`;
 /** Sign-up link that Admin → Growth counts under "seo". */
 const signup = (campaign: string) => `/app?utm_source=seo&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}#signup`;
 
@@ -56,6 +59,12 @@ const T = {
     hubEmpty: 'Pages for each kind of shop are on their way.',
     notFound: 'This page doesn’t exist (yet).',
     footer: 'From first visit to “the usual”.',
+    guides: 'Guides',
+    guidesTitle: 'Guides for shop owners: loyalty and repeat customers',
+    guidesIntro: 'Practical guides on loyalty cards, rewards and bringing customers back, written for small shops in India.',
+    updated: 'Updated',
+    moreGuides: 'More guides',
+    forShops: 'Loyalty for your kind of shop',
   },
   hi: {
     home: 'होम',
@@ -79,10 +88,16 @@ const T = {
     others: 'दूसरी दुकानों के लिए Regularhood',
     twin: 'Read in English',
     hubTitle: 'हर तरह की दुकान के लिए लॉयल्टी प्रोग्राम',
-    hubIntro: 'Regularhood हर बिल पर पॉइंट्स देता है और ग्राहकों को वापस लाता है। अपनी जैसी दुकान चुनें और देखें कि वहाँ यह कैसे काम करता है।',
+    hubIntro: 'Regularhood ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड है: हर कुछ विज़िट पर एक मुफ़्त इनाम। अपनी जैसी दुकान चुनें और देखें कि वहाँ यह कैसे काम करता है।',
     hubEmpty: 'हर तरह की दुकान के पेज जल्द आ रहे हैं।',
     notFound: 'यह पेज मौजूद नहीं है।',
     footer: 'पहली बार से “रोज़ का ग्राहक” तक।',
+    guides: 'गाइड',
+    guidesTitle: 'दुकानदारों के लिए गाइड: लॉयल्टी और पक्के ग्राहक',
+    guidesIntro: 'लॉयल्टी कार्ड, इनाम और ग्राहकों को वापस बुलाने पर काम की गाइड, भारत की छोटी दुकानों के लिए।',
+    updated: 'अपडेट',
+    moreGuides: 'और गाइड',
+    forShops: 'आपकी तरह की दुकान के लिए लॉयल्टी',
   },
 };
 
@@ -98,7 +113,7 @@ header .wrap{display:flex;align-items:center;gap:18px;height:64px}
 .logo{display:flex;align-items:center;gap:10px;font:800 21px/1 Archivo,Inter,sans-serif;color:var(--ink);text-decoration:none;margin-right:auto}
 .logo img{width:32px;height:32px}
 header nav{display:flex;gap:16px;align-items:center;font-size:15px;font-weight:600}
-header nav a{color:var(--ink2);text-decoration:none}
+header nav a{color:var(--ink2);text-decoration:none;white-space:nowrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:12px;background:var(--ink);color:var(--paper)!important;font-weight:700;text-decoration:none;border:2px solid var(--ink)}
 .btn.line{background:transparent;color:var(--ink)!important}
 .btn.sm{min-height:40px;padding:0 16px;font-size:15px}
@@ -142,6 +157,18 @@ details p{margin:10px 0 0;color:var(--ink2)}
 .hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
 .hub a{display:block;background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:18px 20px;color:var(--ink);text-decoration:none}
 .hub a b{display:block;font-size:18px}.hub a span{color:var(--soft);font-size:14px}
+.article{max-width:760px}
+.article p{margin:0 0 16px;color:var(--ink2)}
+.article ul{margin:0;padding-left:22px;display:grid;gap:10px;color:var(--ink2)}
+.gsec{padding:28px 0}
+.meta{color:var(--soft);font-size:14px;margin:0 0 22px}
+.crumbs{font-size:14px;color:var(--soft);margin:0 0 18px}.crumbs a{color:var(--soft)}
+.tbl{overflow-x:auto;background:var(--sheet);border:1px solid var(--line);border-radius:14px}
+.tbl table{border-collapse:collapse;width:100%;font-size:15px}
+.tbl th,.tbl td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl thead th{background:var(--mint)}.tbl tr:last-child th,.tbl tr:last-child td{border-bottom:0}
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.steps .card{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:start}.steps .num{margin:0;grid-row:span 2}
 footer{border-top:1px solid var(--line);padding:30px 0 40px;color:var(--soft);font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
 @media (max-width:820px){.hero{grid-template-columns:1fr;padding-top:40px}.grid3{grid-template-columns:1fr}header nav .hide{display:none}.final{padding:30px}}
@@ -182,10 +209,10 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 <body class="${o.lang}">
 <header><div class="wrap">
 <a class="logo" href="/"><img src="/favicon.svg" alt="" width="32" height="32">Regularhood</a>
-<nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
+<nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a class="hide" href="${guidePath(o.lang)}">${t.guides}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a></span></div></footer>
 ${BEACON}
 </body>
 </html>`;
@@ -312,7 +339,7 @@ export function renderHub(site: string, lang: SeoLang, pages: PageRef[], hasTwin
   <h1>${t.hubTitle}</h1>
   <p class="intro">${t.hubIntro}</p>
   ${items.length ? `<div class="hub">${items.join('')}</div>` : `<p>${t.hubEmpty}</p>`}
-  ${hasTwin ? `<p style="margin-top:28px"><a href="${path(lang === 'en' ? 'hi' : 'en')}">${t.twin}</a></p>` : ''}
+  <p style="margin-top:28px"><a href="${guidePath(lang)}">${t.guides} →</a>${hasTwin ? ` · <a href="${path(lang === 'en' ? 'hi' : 'en')}">${t.twin}</a>` : ''}</p>
 </div></main>`;
   const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: path('en') }, { lang: 'hi', path: path('hi') }] : [{ lang, path: here }];
   return shell({ lang, site, path: here, title: `${t.hubTitle} · Regularhood`, description: t.hubIntro, alternates, body, noindex: !items.length });
@@ -331,7 +358,7 @@ export function render404(site: string, lang: SeoLang) {
   });
 }
 
-export function renderSitemap(site: string, pages: PageRef[]) {
+export function renderSitemap(site: string, pages: PageRef[], guides: Record<SeoLang, Guide[]> = { en: [], hi: [] }) {
   const day = (t?: string | null) => (t ? t.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const bySlug = new Map<string, PageRef[]>();
   for (const p of pages) bySlug.set(p.slug, [...(bySlug.get(p.slug) ?? []), p]);
@@ -346,5 +373,110 @@ export function renderSitemap(site: string, pages: PageRef[]) {
   if (pages.some((p) => p.lang === 'en')) urls.push(url(path('en'), latest));
   if (pages.some((p) => p.lang === 'hi')) urls.push(url(path('hi'), latest));
   for (const p of pages) urls.push(url(path(p.lang, p.slug), day(p.generated_at ?? p.published_at), bySlug.get(p.slug)));
+  // Hand-written guides, each with its other-language twin.
+  const gUrl = (loc: string, lastmod: string, alts: { lang: SeoLang; path: string }[]) =>
+    `  <url>\n    <loc>${site}${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n${alts
+      .map((a) => `    <xhtml:link rel="alternate" hreflang="${a.lang === 'hi' ? 'hi-IN' : 'en-IN'}" href="${site}${a.path}"/>\n`)
+      .join('')}  </url>`;
+  const langs = (['en', 'hi'] as SeoLang[]).filter((l) => guides[l].length);
+  for (const lang of langs) {
+    const newest = guides[lang].reduce((m, g) => (g.updated > m ? g.updated : m), '');
+    urls.push(gUrl(guidePath(lang), newest, langs.length > 1 ? langs.map((l) => ({ lang: l, path: guidePath(l) })) : []));
+    for (const g of guides[lang]) {
+      const twins = langs.filter((l) => guides[l].some((x) => x.slug === g.slug));
+      urls.push(gUrl(guidePath(lang, g.slug), g.updated, twins.length > 1 ? twins.map((l) => ({ lang: l, path: guidePath(l, g.slug) })) : []));
+    }
+  }
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+function block(b: GuideBlock) {
+  const parts = [`<h2>${esc(b.h2)}</h2>`];
+  for (const p of b.p ?? []) parts.push(`<p>${esc(p)}</p>`);
+  if (b.list?.length) parts.push(`<ul>${b.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`);
+  if (b.steps?.length)
+    parts.push(`<ol class="steps">${b.steps.map((x, i) => `<li class="card"><span class="num">${i + 1}</span><h3>${esc(x.title)}</h3><p>${esc(x.text)}</p></li>`).join('')}</ol>`);
+  if (b.table)
+    parts.push(
+      `<div class="tbl"><table><thead><tr>${b.table.head.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.table.rows
+        .map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row">${esc(c)}</th>` : `<td>${esc(c)}</td>`)).join('')}</tr>`)
+        .join('')}</tbody></table></div>`,
+    );
+  return `<section class="gsec"><div class="wrap"><div class="article">${parts.join('\n')}</div></div></section>`;
+}
+
+/** One hand-written guide (/guide/<slug>, /hi/guide/<slug>). */
+export function renderGuide(site: string, lang: SeoLang, g: Guide, o: { twin?: Guide; others: Guide[] }) {
+  const t = T[lang];
+  const here = guidePath(lang, g.slug);
+  const other: SeoLang = lang === 'en' ? 'hi' : 'en';
+  const alternates = [{ lang, path: here }, ...(o.twin ? [{ lang: other, path: guidePath(other, g.slug) }] : [])];
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        headline: g.h1,
+        description: g.description,
+        url: `${site}${here}`,
+        mainEntityOfPage: `${site}${here}`,
+        inLanguage: lang === 'hi' ? 'hi-IN' : 'en-IN',
+        image: `${site}/og.png`,
+        datePublished: g.updated,
+        dateModified: g.updated,
+        author: { '@type': 'Organization', name: 'Regularhood', url: `${site}/` },
+        publisher: { '@type': 'Organization', name: 'Regularhood', logo: { '@type': 'ImageObject', url: `${site}/icon-512.png` } },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${site}/` },
+          { '@type': 'ListItem', position: 2, name: t.guides, item: `${site}${guidePath(lang)}` },
+          { '@type': 'ListItem', position: 3, name: g.name, item: `${site}${here}` },
+        ],
+      },
+      { '@type': 'FAQPage', mainEntity: g.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+    ],
+  };
+  const body = `<main>
+<div class="wrap" style="padding-top:40px">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Regularhood</a> › <a href="${guidePath(lang)}">${t.guides}</a> › ${esc(g.name)}</nav>
+  <div class="article">
+    <p class="eyebrow">${esc(g.eyebrow)}</p>
+    <h1>${esc(g.h1)}</h1>
+    <p class="meta">${t.updated}: <time datetime="${g.updated}">${g.updated}</time>${o.twin ? ` · <a href="${guidePath(other, g.slug)}" hreflang="${other}">${t.twin}</a>` : ''}</p>
+    <p class="intro">${esc(g.intro)}</p>
+    <div class="cta"><a class="btn" href="${signup(here)}">${t.start} →</a><a class="btn line" href="/#how">${t.how}</a></div>
+  </div>
+</div>
+${g.blocks.map(block).join('\n')}
+<section><div class="wrap"><div class="article">
+  <h2>${t.faq}</h2>
+  ${g.faqs.map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
+</div></div></section>
+<section><div class="wrap">
+  <div class="final"><div><h2>${t.ctaTitle}</h2><p>${t.ctaText}</p></div><a class="btn" href="${signup(here)}">${t.start} →</a></div>
+</div></section>
+<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${t.moreGuides}</h2>
+  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a></div>
+</div></section>
+</main>`;
+  return shell({ lang, site, path: here, title: g.title, description: g.description, alternates, jsonLd, body });
+}
+
+/** /guide and /hi/guide: every guide in that language. */
+export function renderGuideHub(site: string, lang: SeoLang, guides: Guide[], hasTwin: boolean) {
+  const t = T[lang];
+  const here = guidePath(lang);
+  const other: SeoLang = lang === 'en' ? 'hi' : 'en';
+  const body = `<main><div class="wrap" style="padding:56px 20px">
+  <p class="eyebrow">Regularhood</p>
+  <h1>${t.guidesTitle}</h1>
+  <p class="intro">${t.guidesIntro}</p>
+  <div class="hub">${guides.map((g) => `<a href="${guidePath(lang, g.slug)}"><b>${esc(g.h1)}</b><span>${esc(g.description)}</span></a>`).join('')}</div>
+  <p style="margin-top:28px"><a href="${path(lang)}">${t.forShops} →</a>${hasTwin ? ` · <a href="${guidePath(other)}" hreflang="${other}">${t.twin}</a>` : ''}</p>
+</div></main>`;
+  const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: guidePath('en') }, { lang: 'hi', path: guidePath('hi') }] : [{ lang, path: here }];
+  return shell({ lang, site, path: here, title: `${t.guidesTitle} · Regularhood`, description: t.guidesIntro, alternates, body, noindex: !guides.length });
 }
