@@ -1,0 +1,94 @@
+=== A) Question hook ===
+
+10 new customers walked into your shop this month.
+
+How many came back?
+
+Most local shop owners don't know. Not because they don't care, but because nobody is keeping count, and nobody is reminding the customer to come back.
+
+Big chains fixed this years ago with loyalty apps. Local shops tried too:
+
+❌ Paper stamp cards: lost in a wallet, forgotten at home
+❌ Apps: "Please download our app" … and the customer is already out the door
+❌ QR codes and points: nobody wants that with a queue at the counter
+
+So we built Regularhood, a stamp card that lives on WhatsApp.
+
+The customer says their phone number.
+The shop taps "Add visit".
+That's it.
+
+Every 5th visit → a free gift 🎁 (the shop picks the number and the reward)
+And WhatsApp sends a nudge: "Just 1 more visit!"
+
+No app for the customer. No QR. No paper. Free, with a 1-minute setup.
+
+It works for any shop people come back to: cafés, salons, bakeries, kirana stores, gyms.
+
+👉 www.regularhood.in
+
+Know someone who runs a shop? Tag them below 👇
+
+#SmallBusiness #CustomerLoyalty #LocalBusiness #BuildInPublic #Startups
+
+
+=== B) Build-in-public ===
+
+Our first version had points, QR codes, PINs and bill tracking.
+
+We deleted almost all of it.
+
+Here's why.
+
+We were building a loyalty program for local shops: salons, bakeries, kirana stores, gyms. Every feature made sense on a whiteboard.
+
+Then we watched a real counter at rush hour.
+
+The person at the counter has about 5 seconds per customer. There's a queue. Someone is asking for change. Nobody is scanning a QR code or explaining how points work.
+
+So we asked one question of every feature:
+"Can someone learn this in 10 seconds, with a queue in front of them?"
+
+Most features failed.
+
+What survived:
+→ The customer says their phone number
+→ The shop taps "Add visit"
+→ Every 5th visit is a free gift 🎁
+→ The stamp card reaches the customer on WhatsApp
+
+One keypad. One button. The screen turns orange when a reward is due.
+
+That's Regularhood. Free, unlimited customers, works on any phone.
+
+👉 www.regularhood.in
+
+The lesson I keep relearning: adding features is easy. Deleting them takes courage.
+
+What's a feature you were glad you cut? 👇
+
+#BuildInPublic #ProductDesign #Startups #SmallBusiness #Simplicity
+
+
+=== C) Short and punchy ===
+
+Your customers won't download your app.
+
+But they'll happily tell you their phone number.
+
+That's the whole idea behind Regularhood:
+
+📱 Customer says their number
+👆 You tap "Add visit"
+🎁 Every 5th visit, a free gift
+💬 Their stamp card arrives on WhatsApp
+
+No app. No QR codes. No points maths. No paper cards to lose.
+
+Plus a ready "we miss you" WhatsApp for customers who haven't been back in a while, and a counter poster made for you.
+
+Built for any local shop with regulars. Free to use.
+
+👉 www.regularhood.in
+
+#SmallBusiness #CustomerLoyalty #LocalShops #Startups

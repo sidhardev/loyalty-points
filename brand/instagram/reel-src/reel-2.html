@@ -1,0 +1,227 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+:root{--g:#0b7a52;--g2:#063b2a;--amber:#f0a202;--cream:#f6efdc;--orange:#ea7a0c;--mint:#34d399}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#04261b;font-family:"Segoe UI","Nirmala UI","Segoe UI Emoji",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(900px 900px at var(--gx,30%) var(--gy,25%),rgba(16,185,129,.35),transparent 70%),radial-gradient(800px 800px at var(--ax,80%) var(--ay,80%),rgba(240,162,2,.22),transparent 70%),linear-gradient(180deg,#063b2a,#04261b)}
+#grain{position:absolute;inset:0;opacity:.09;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E")}
+#world{position:absolute;inset:0}
+.scene{position:absolute;inset:0;opacity:0}
+.a{position:absolute;left:40px;right:40px;text-align:center;will-change:transform,opacity}
+.big{font-size:118px;font-weight:900;line-height:1.02;letter-spacing:-2px}
+.mid{font-size:80px;font-weight:800;line-height:1.1;letter-spacing:-1px}
+.sub{font-size:52px;font-weight:600;line-height:1.3;color:#cfe9dd}
+.amber{color:var(--amber)} .mint{color:var(--mint)} .red{color:#ff6b5b}
+.w{display:inline-block}
+.hl{background:var(--amber);color:#04261b;padding:0 24px;border-radius:18px}
+.av{position:absolute;width:170px;height:200px}
+.av .ring{position:absolute;left:5px;top:-5px;width:160px;height:160px;border-radius:50%;border:8px solid var(--mint);opacity:0}
+.av .badge{position:absolute;right:-6px;top:-14px;width:64px;height:64px;border-radius:50%;background:var(--amber);color:#04261b;font-size:38px;font-weight:900;display:flex;align-items:center;justify-content:center;opacity:0}
+/* stamp card */
+.card{position:absolute;left:90px;top:900px;width:900px;height:520px;border-radius:36px;background:linear-gradient(160deg,#fbf5e6,#efe3c4);box-shadow:0 50px 90px rgba(0,0,0,.45);color:#5a4420;overflow:hidden}
+.card .ttl{position:absolute;left:60px;top:44px;font-size:46px;font-weight:800;color:#0b5e40}
+.card .rw{position:absolute;right:60px;top:52px;font-size:36px;font-weight:700;color:#a0742a}
+.slot{position:absolute;top:230px;width:140px;height:140px;border-radius:50%;border:6px dashed #c8ad7a;display:flex;align-items:center;justify-content:center;font-size:60px}
+.ink{position:absolute;top:220px;width:160px;height:160px;border-radius:50%;border:12px solid #0b7a52;color:#0b7a52;display:flex;align-items:center;justify-content:center;font-size:84px;font-weight:900;opacity:0;mix-blend-mode:multiply}
+.ink.gold{border-color:#e06a00;color:#e06a00;font-size:40px;letter-spacing:1px}
+.card .foot{position:absolute;left:60px;right:60px;bottom:44px;font-size:34px;font-weight:600;color:#8a6d3b;text-align:center}
+.dot{position:absolute;border-radius:50%;background:#0b7a52;opacity:0;mix-blend-mode:multiply}
+#rubber{position:absolute;width:260px;height:400px;left:0;top:0}
+/* phone */
+.phone{position:absolute;left:200px;top:500px;width:680px;height:1160px;border-radius:84px;background:#0b0f0d;padding:20px;box-shadow:0 60px 120px rgba(0,0,0,.55),0 0 0 4px #1f2a25 inset}
+.lock{position:relative;height:100%;border-radius:66px;overflow:hidden;background:radial-gradient(500px 600px at 20% 10%,#1d6b52,transparent 70%),radial-gradient(500px 600px at 90% 90%,#7a4a06,transparent 70%),#0d1f19}
+.clock{position:absolute;left:0;right:0;top:120px;text-align:center;font-size:170px;font-weight:300;letter-spacing:-4px}
+.date{position:absolute;left:0;right:0;top:330px;text-align:center;font-size:38px;font-weight:500;opacity:.85}
+.notif{position:absolute;left:30px;right:30px;border-radius:40px;background:rgba(245,248,246,.94);color:#0d1f19;padding:28px 32px;opacity:0;box-shadow:0 20px 40px rgba(0,0,0,.35)}
+.notif .hd{display:flex;align-items:center;gap:16px;font-size:30px;color:#5b6b65;font-weight:600}
+.notif .ic{width:54px;height:54px;border-radius:14px;background:#25d366;display:flex;align-items:center;justify-content:center;font-size:32px}
+.notif .hd .tm{margin-left:auto}
+.notif .t1{font-size:38px;font-weight:800;margin-top:14px}
+.notif .t2{font-size:38px;line-height:1.3;margin-top:6px}
+.url{display:inline-block;background:var(--amber);color:#04261b;font-weight:900;font-size:70px;padding:32px 64px;border-radius:100px;box-shadow:0 0 0 0 rgba(240,162,2,.5)}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+canvas{position:absolute;inset:0}
+.burst{position:absolute;left:540px;top:720px;width:10px;height:10px;border-radius:50%;border:10px solid var(--amber);opacity:0;transform:translate(-50%,-50%)}
+</style></head>
+<body>
+<div id="bg"></div>
+<div id="world">
+
+<!-- S1-2: the hook -->
+<section class="scene" data-s="0" data-e="5.3">
+  <div class="a big" style="top:300px" data-in="0.05" data-out="1.9" data-fx="slam"><span class="amber">10</span> naye customer</div>
+  <div class="a big" style="top:430px" data-in="0.45" data-out="1.9" data-fx="slam">aaye 🛍️</div>
+  <div class="a big" style="top:330px" data-in="2.0" data-out="3.35" data-fx="slam">Kitne <span class="hl">wapas</span><br>aaye? 🤔</div>
+  <div class="a" style="top:300px;font-size:240px;font-weight:900;line-height:1" data-in="3.45" data-fx="slam"><span class="red">Sirf 3.</span></div>
+  <div id="crowd1"></div>
+  <div class="a sub" style="top:1420px" data-in="4.0" data-fx="up">Baaki 7? Bhool gaye. 😬</div>
+</section>
+
+<!-- S3: the why -->
+<section class="scene" data-s="5.3" data-e="7.5">
+  <div class="a mid" style="top:640px" data-in="5.4" data-fx="slam">Galti unki nahi.</div>
+  <div class="a big" style="top:820px" data-in="6.0" data-fx="slam">Unhe <span class="amber">yaad dilane</span><br>wala koi nahi tha.</div>
+</section>
+
+<!-- S4: reveal -->
+<section class="scene" data-s="7.5" data-e="9.6">
+  <div class="burst" id="b1"></div><div class="burst" id="b2"></div>
+  <img id="logo" src="logo.svg" style="position:absolute;left:390px;top:570px;width:300px;height:300px">
+  <div class="a" style="top:930px;font-size:132px;font-weight:900;letter-spacing:-2px" id="word"></div>
+  <div class="a sub" style="top:1120px" data-in="8.5" data-fx="up">Har customer ko <b class="amber">regular</b> banao</div>
+</section>
+
+<!-- S5-6: stamp slams -->
+<section class="scene" data-s="9.6" data-e="16.6">
+  <div class="a mid" style="top:240px" data-in="9.7" data-out="13.2" data-fx="slam">Har visit = <span class="amber">ek thappa</span> 👊</div>
+  <div class="a mid" style="top:240px" data-in="13.3" data-fx="slam">5th visit pe…</div>
+  <div class="a" style="top:420px;font-size:150px;font-weight:900;letter-spacing:-3px" id="counter"></div>
+  <div class="card" id="card">
+    <div class="ttl">🏪 Sharma Store</div><div class="rw">5 visit = free gift</div>
+    <div class="slot" style="left:60px"></div><div class="slot" style="left:220px"></div><div class="slot" style="left:380px"></div><div class="slot" style="left:540px"></div><div class="slot" style="left:700px;border-color:#e0a24a">🎁</div>
+    <div class="ink" style="left:50px">✓</div><div class="ink" style="left:210px">✓</div><div class="ink" style="left:370px">✓</div><div class="ink" style="left:530px">✓</div><div class="ink gold" style="left:690px">FREE</div>
+    <div id="dots"></div>
+    <div class="foot">Customer ka card = sirf unka phone number</div>
+  </div>
+  <svg id="rubber" viewBox="0 0 260 400">
+    <defs><linearGradient id="wd" x1="0" x2="1"><stop offset="0" stop-color="#8a4b1c"/><stop offset=".5" stop-color="#c47a3a"/><stop offset="1" stop-color="#7a3f14"/></linearGradient></defs>
+    <ellipse cx="130" cy="70" rx="70" ry="62" fill="url(#wd)"/>
+    <rect x="100" y="110" width="60" height="160" rx="12" fill="url(#wd)"/>
+    <rect x="30" y="262" width="200" height="70" rx="16" fill="#1c2a24"/>
+    <rect x="40" y="326" width="180" height="40" rx="8" fill="#0b7a52"/>
+  </svg>
+  <div class="a" style="top:1490px;font-size:150px;font-weight:900;letter-spacing:-3px" data-in="13.55" data-fx="slam"><span style="color:var(--amber)">FREE GIFT</span> 🎁</div>
+  <div class="a sub" style="top:1670px" data-in="14.2" data-fx="up">App khud bolta hai: <b>reward do!</b></div>
+</section>
+
+<!-- S7: WhatsApp reminders -->
+<section class="scene" data-s="16.6" data-e="20.0">
+  <div class="a mid" style="top:220px" data-in="16.7" data-fx="slam">Yaad dilao <span class="mint">WhatsApp</span> pe 💬</div>
+  <div class="phone" id="phone"><div class="lock">
+    <div class="clock">10:42</div><div class="date">Monday, 19 October</div>
+    <div class="notif" id="n1" style="top:470px"><div class="hd"><div class="ic">💬</div>WhatsApp<span class="tm">now</span></div>
+      <div class="t1">Sharma Store 🏪</div><div class="t2">Aapki 4th visit ho gayi ✅ Bas <b>1 aur</b>, phir <b>free gift!</b></div></div>
+    <div class="notif" id="n2" style="top:760px"><div class="hd"><div class="ic">💬</div>WhatsApp<span class="tm">now</span></div>
+      <div class="t1">Sharma Store 🏪</div><div class="t2">Kaafi din ho gaye! 🙏 Aaj aaiye, aapka card wait kar raha hai.</div></div>
+  </div></div>
+</section>
+
+<!-- S8: they come back -->
+<section class="scene" data-s="20.0" data-e="23.0">
+  <div class="a mid" style="top:300px" data-in="20.1" data-fx="slam">Pehli visit se…</div>
+  <div class="a" style="top:430px;font-size:68px;font-weight:900;letter-spacing:-1px" data-in="20.6" data-fx="slam"><span class="hl">“Bhaiya, main phir aa gaya!”</span></div>
+  <div id="crowd2"></div>
+</section>
+
+<!-- S9: end card -->
+<section class="scene" data-s="23.0" data-e="99">
+  <img id="logo2" src="logo.svg" style="position:absolute;left:400px;top:330px;width:280px;height:280px">
+  <div class="a" style="top:680px;font-size:110px;font-weight:900;letter-spacing:-2px" data-in="23.3" data-fx="up">Regularhood</div>
+  <div class="a" style="top:830px;font-size:170px;font-weight:900;letter-spacing:-4px;line-height:1" data-in="23.7" data-fx="slam"><span class="amber">Free</span> hai.</div>
+  <div class="a sub" style="top:1040px;font-size:46px" data-in="24.2" data-fx="up">1 minute setup · Na app · Na QR</div>
+  <div class="a" style="top:1210px" data-in="24.6" data-fx="slam"><span class="url" id="url">www.regularhood.in</span></div>
+  <div class="a sub" style="top:1420px;font-size:44px" data-in="25.1" data-fx="up">Café · Salon · Bakery · Kirana · Gym</div>
+</section>
+
+</div>
+<canvas id="cv" width="1080" height="1920"></canvas>
+<div class="flash" id="flash"></div>
+<div id="grain"></div>
+
+<script>
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eo=x=>1-Math.pow(1-x,3);
+const back=x=>{const c=2;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const prog=(t,s,d=.45)=>clamp((t-s)/d);
+const $=id=>document.getElementById(id);
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+
+// people
+const SKIN=['#f1c27d','#e0ac69','#c68642','#8d5524','#f5d0a9'],SHIRT=['#f0a202','#34d399','#60a5fa','#f472b6','#a78bfa','#fb923c','#e2e8f0','#facc15','#22d3ee','#f87171'];
+const HAIR=['#1f1300','#3b2414','#111','#4a2c17','#222'];
+function person(i){return `<svg viewBox="0 0 170 200" width="170" height="200"><circle cx="85" cy="75" r="62" fill="rgba(255,255,255,.06)"/><path d="M30 200 Q30 130 85 130 Q140 130 140 200Z" fill="${SHIRT[i%10]}"/><circle cx="85" cy="78" r="42" fill="${SKIN[i%5]}"/><path d="M43 74 Q45 30 85 32 Q125 30 127 74 Q112 52 85 54 Q58 52 43 74Z" fill="${HAIR[i%5]}"/><circle cx="71" cy="82" r="5" fill="#2b1a0e"/><circle cx="99" cy="82" r="5" fill="#2b1a0e"/><path d="M72 98 Q85 108 98 98" stroke="#2b1a0e" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`}
+const pos=i=>({x:75+(i%5)*190,y:i<5?800:1060});
+for(const id of ['crowd1','crowd2']){const c=$(id);for(let i=0;i<10;i++){const p=pos(i);const d=document.createElement('div');d.className='av';d.style.left=p.x+'px';d.style.top=p.y+'px';d.innerHTML=person(i)+'<div class="ring"></div><div class="badge">★</div>';c.appendChild(d)}}
+const LEAVE=[0,2,3,5,6,8,9]; // 7 who never came back
+// logo word
+$('word').innerHTML=[...'Regularhood'].map(ch=>`<span class="w">${ch}</span>`).join('');
+// ink dots
+const SLOTX=[130,290,450,610,770],SLAMS=[10.1,10.85,11.6,12.35,13.25];
+const dots=[];SLOTX.forEach((x,k)=>{for(let j=0;j<9;j++){const a=rnd()*6.28,r=95+rnd()*60,s=6+rnd()*16;const d=document.createElement('div');d.className='dot';d.style.cssText=`left:${x+Math.cos(a)*r-s/2}px;top:${300+Math.sin(a)*r-s/2}px;width:${s}px;height:${s}px;`+(k==4?'background:#e06a00':'');$('dots').appendChild(d);dots.push([d,k])}});
+const inkRot=SLOTX.map(()=>(rnd()-.5)*24);
+// confetti
+const CONF=[];for(let i=0;i<160;i++)CONF.push({vx:(rnd()-.5)*1700,vy:-600-rnd()*1500,c:['#f0a202','#34d399','#fff','#ea7a0c','#60a5fa','#f472b6'][i%6],w:10+rnd()*14,h:16+rnd()*18,sp:(rnd()-.5)*20,t0:13.3+(i%2)*.05});
+const CONF2=CONF.filter((_,i)=>i%3==0).map(c=>({...c,t0:24.7,vy:c.vy*.9}));
+const cv=$('cv'),cx=cv.getContext('2d');
+function confetti(t,list,ox,oy){for(const p of list){const d=t-p.t0;if(d<0||d>2.6)continue;const x=ox+p.vx*d*.9,y=oy+p.vy*d+1300*d*d;cx.save();cx.globalAlpha=clamp(2.6-d);cx.translate(x,y);cx.rotate(p.sp*d);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(d*p.sp*.7)));cx.restore()}}
+
+const scenes=[...document.querySelectorAll('.scene')];
+window.render=t=>{
+  // background glow drift
+  document.body.style.setProperty('--gx',30+Math.sin(t*.4)*20+'%');document.body.style.setProperty('--gy',25+Math.cos(t*.3)*15+'%');
+  document.body.style.setProperty('--ax',75+Math.cos(t*.35)*15+'%');document.body.style.setProperty('--ay',80+Math.sin(t*.5)*10+'%');
+  // shake
+  let sh=0;for(const s of SLAMS){const d=t-s;if(d>0&&d<.5)sh+=Math.exp(-d*10)*Math.sin(d*80)*(s===SLAMS[4]?30:16)}
+  for(const s of [3.45,13.55,23.7]){const d=t-s-.12;if(d>0&&d<.4)sh+=Math.exp(-d*12)*Math.sin(d*70)*10}
+  $('world').style.transform=`translate(${sh*.6}px,${sh}px)`;
+  scenes.forEach(sc=>{
+    const s=+sc.dataset.s,e=+sc.dataset.e;
+    const o=clamp((t-s+0.1)/0.2)*clamp((e-t+0.1)/0.2);
+    sc.style.opacity=o;sc.style.display=o>0?'block':'none';
+    if(!o)return;
+    sc.querySelectorAll('[data-in]').forEach(el=>{
+      const fx=el.dataset.fx,p=prog(t,+el.dataset.in,fx==='slam'?.28:.45);
+      const out=el.dataset.out?clamp((+el.dataset.out-t)/.18):1;
+      el.style.opacity=clamp(p*3)*out;
+      if(fx==='up')el.style.transform=`translateY(${(1-eo(p))*60}px)`;
+      if(fx==='slam')el.style.transform=`scale(${1+(1-eo(p))*1.2}) translateY(${(1-out)*-40}px)`;
+    });
+  });
+  // crowd 1
+  [...$('crowd1').children].forEach((d,i)=>{
+    const p=prog(t,.6+i*.08,.4);let tr=`translateY(${(1-back(p))*-120}px) scale(${.4+.6*back(p)})`,op=clamp(p*3);
+    const k=LEAVE.indexOf(i);
+    if(k>=0){const q=prog(t,2.15+k*.12,.6);tr+=` translate(${(i%5<2?-1:1)*q*q*500}px,${q*q*700}px) rotate(${(i%2?1:-1)*q*50}deg)`;d.style.filter=`grayscale(${clamp(q*3)})`;op*=1-q}
+    else{const q=prog(t,3.5,.3);d.querySelector('.ring').style.opacity=q;d.querySelector('.ring').style.borderColor='#ff6b5b';d.style.filter='none';if(t>3.5)tr+=` scale(${1+.15*Math.sin(clamp((t-3.5)/.3)*Math.PI)})`}
+    d.style.transform=tr;d.style.opacity=op;
+  });
+  // crowd 2: all come back, get ring + star
+  [...$('crowd2').children].forEach((d,i)=>{
+    const st=20.4+i*.1,p=prog(t,st,.45);const side=i%5<2.5?-1:1;
+    d.style.transform=`translateX(${(1-eo(p))*side*900}px)`;d.style.opacity=clamp(p*2);
+    const r=prog(t,21.3+i*.06,.25);d.querySelector('.ring').style.opacity=r;d.querySelector('.badge').style.opacity=r;d.querySelector('.badge').style.transform=`scale(${.3+.7*back(r)})`;
+  });
+  // reveal
+  {const f=clamp(1-Math.abs(t-7.5)/.18);$('flash').style.opacity=f*.85;
+   const p=prog(t,7.6,.55);$('logo').style.transform=`scale(${.2+.8*back(p)}) rotate(${(1-p)*-25}deg)`;$('logo').style.opacity=clamp(p*3);
+   ['b1','b2'].forEach((id,j)=>{const q=prog(t,7.7+j*.18,.8);$(id).style.width=$(id).style.height=(60+q*1100)+'px';$(id).style.opacity=(1-q)*(q>0?.8:0);$(id).style.top='720px';$(id).style.borderColor=j?'#34d399':'#f0a202'});
+   [...$('word').children].forEach((w,i)=>{const q=prog(t,7.95+i*.04,.3);w.style.opacity=q;w.style.transform=`translateY(${(1-back(q))*80}px)`});}
+  // rubber stamp + card
+  {const k0=SLAMS.findIndex(s=>t<s+.4);const k=k0<0?4:k0;const ts=SLAMS[k],d=t-ts;
+   let y,x=SLOTX[k];
+   if(d<0){y=-300*Math.pow(clamp(-d/.38),2);if(k===0&&t<ts-.38)y=-300-(ts-.38-t)*2500}
+   else{y=-300*eo(clamp((d-.07)/.33));if(k<4)x=SLOTX[k]+(SLOTX[k+1]-SLOTX[k])*eo(clamp((d-.12)/.28));else y=-300-clamp(d-.4)*3000}
+   const cardTop=900,cardLeft=90;
+   $('rubber').style.transform=`translate(${cardLeft+x-130}px,${cardTop+300-366+y}px) rotate(${d<0?(-d)*12:0}deg)`;
+   $('rubber').style.display=(t>9.6&&t<14.6)?'block':'none';
+   const cp=prog(t,9.65,.45);$('card').style.transform=`translateY(${(1-eo(cp))*600}px) rotate(${(1-eo(cp))*8}deg)`;
+   const inks=[...$('card').querySelectorAll('.ink')];
+   inks.forEach((el,i)=>{const q=prog(t,SLAMS[i],.12);el.style.opacity=q*.92;el.style.transform=`rotate(${inkRot[i]}deg) scale(${1.25-.25*q})`});
+   dots.forEach(([el,i])=>{const q=prog(t,SLAMS[i],.15);el.style.opacity=q*.8;el.style.transform=`scale(${q})`});
+   const n=SLAMS.filter(s=>t>=s).length;const cnt=$('counter');
+   cnt.innerHTML=n&&n<5?`Visit <span class="amber">${n}</span>`:n===5?'':'';
+   const lp=prog(t,SLAMS[Math.max(0,n-1)],.25);cnt.style.transform=`scale(${1+(1-eo(lp))*.5})`;cnt.style.opacity=t<13.25?clamp((t-10.1)*5):0;
+   $('card').style.boxShadow=n===5?`0 50px 90px rgba(0,0,0,.45),0 0 ${80+40*Math.sin(t*8)}px rgba(240,162,2,.7)`:'0 50px 90px rgba(0,0,0,.45)';}
+  // notifications
+  {const ph=prog(t,16.7,.5);$('phone').style.transform=`translateY(${(1-eo(ph))*700}px)`;
+   [['n1',17.3],['n2',18.4]].forEach(([id,s])=>{const q=prog(t,s,.4);$(id).style.opacity=clamp(q*2);$(id).style.transform=`translateY(${(1-back(q))*-140}px) scale(${.9+.1*eo(q)})`})}
+  // end
+  {const p=prog(t,23.05,.55);$('logo2').style.transform=`scale(${.2+.8*back(p)})`;$('logo2').style.opacity=clamp(p*3);
+   const u=t-24.9;$('url').style.boxShadow=u>0?`0 0 0 ${(u%1.1)*60}px rgba(240,162,2,${.5*(1-(u%1.1)/1.1)})`:'none';}
+  // confetti
+  cx.clearRect(0,0,1080,1920);confetti(t,CONF,540,1180);confetti(t,CONF2,540,1290);
+};
+render(0);
+</script>
+</body></html>
