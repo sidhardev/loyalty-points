@@ -183,9 +183,13 @@ const COPY = {
     howTitle: 'Three steps. Nothing to learn.',
     steps: [
       ['Set one rule', 'Pick how many visits and what they get. That’s your whole loyalty program.'],
-      ['Type the number, tap Add visit', 'Any phone, tablet or computer at the counter. Your staff learn it in a minute.'],
+      ['Type the number, tap Add visit', 'Any phone, tablet or computer at the counter. Their card lands on WhatsApp right away.'],
       ['Give the reward when the app says', 'The screen turns orange on the last visit. Tap Given — done.'],
     ],
+    howEvery: 'Every',
+    howVisits: 'visits',
+    howReward: 'Reward',
+    howPhone: 'Customer’s number',
     everyKicker: 'Not just cafés',
     everyTitle: 'One card. Every kind of shop.',
     everySub: 'If people visit you again and again, it works for you. You choose the rule — here are some ideas.',
@@ -203,6 +207,8 @@ const COPY = {
       ['Bring back the ones who stopped', 'See who hasn’t come in 30 days and send a “we miss you” in one tap.', UserX],
       ['Your customers stay yours', 'We never sell or message them. Download everything anytime.', Lock],
     ] as const,
+    shopsKicker: 'Already on Regularhood',
+    shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
     priceTitle: 'Free to start.',
     priceSub: 'Sign up, set your rule and add your first visit today.',
@@ -257,9 +263,13 @@ const COPY = {
     howTitle: 'तीन कदम। सीखने को कुछ नहीं।',
     steps: [
       ['एक नियम तय करें', 'कितनी विज़िट और क्या इनाम — बस यही आपका पूरा लॉयल्टी प्रोग्राम है।'],
-      ['नंबर लिखें, विज़िट जोड़ें', 'काउंटर पर कोई भी फ़ोन, टैबलेट या कंप्यूटर। स्टाफ़ एक मिनट में सीख जाता है।'],
+      ['नंबर लिखें, विज़िट जोड़ें', 'काउंटर पर कोई भी फ़ोन, टैबलेट या कंप्यूटर। ग्राहक का कार्ड तुरंत WhatsApp पर पहुँचता है।'],
       ['ऐप बताए तब इनाम दें', 'आखिरी विज़िट पर स्क्रीन नारंगी हो जाती है। “दे दिया” दबाएँ — हो गया।'],
     ],
+    howEvery: 'हर',
+    howVisits: 'विज़िट पर',
+    howReward: 'इनाम',
+    howPhone: 'ग्राहक का नंबर',
     everyKicker: 'सिर्फ़ कैफ़े नहीं',
     everyTitle: 'एक कार्ड। हर तरह की दुकान।',
     everySub: 'अगर ग्राहक आपके पास बार-बार आते हैं, तो यह आपके लिए है। नियम आप चुनें — ये रहे कुछ आइडिया।',
@@ -277,6 +287,8 @@ const COPY = {
       ['रुके हुए ग्राहकों को वापस लाएँ', 'देखें कौन 30 दिन से नहीं आया और एक टैप में “आपकी याद आई” भेजें।', UserX],
       ['आपके ग्राहक आपके ही रहें', 'हम न उन्हें बेचते हैं, न मैसेज करते हैं। कभी भी सब डाउनलोड करें।', Lock],
     ] as const,
+    shopsKicker: 'Regularhood पर पहले से',
+    shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
     priceTitle: 'शुरू करना मुफ़्त है।',
     priceSub: 'साइन अप करें, नियम तय करें और आज ही पहली विज़िट जोड़ें।',
@@ -903,7 +915,64 @@ function ScrollCard({ c, lang }: { c: Copy; lang: Lang }) {
 
 // ---------------------------------------------------------------- sections
 
-function How({ c }: { c: Copy }) {
+/** What each step looks like on the counter's screen, for the picked example shop. Plays once as its card comes in. */
+function HowArt({ step, c, lang }: { step: number; c: Copy; lang: Lang }) {
+  const { ex } = useExample();
+  const reward = ex[lang].short;
+  const size = ex.needed > 8 ? 16 : 20;
+  if (step === 0)
+    return (
+      <div className="lp-how-art lp-how-rule" aria-hidden="true">
+        <div className="lp-how-row">
+          <span>{c.howEvery}</span>
+          <span className="lp-how-stepper">
+            <i>−</i>
+            <b key={ex.key}>{ex.needed}</b>
+            <i>+</i>
+          </span>
+          <span>{c.howVisits}</span>
+        </div>
+        <div className="lp-how-reward">
+          <Gift size={16} />
+          <span>
+            <small>{c.howReward}</small>
+            {reward}
+          </span>
+        </div>
+      </div>
+    );
+  if (step === 1)
+    return (
+      <div className="lp-how-art lp-how-add" aria-hidden="true">
+        <div className="lp-how-input">
+          <Phone size={15} />
+          <span>
+            <small>{c.howPhone}</small>
+            <b className="lp-how-typed">98765 43210</b>
+          </span>
+        </div>
+        <span className="lp-how-btn">{c.demoAdd}</span>
+        <div className="lp-how-wa">
+          <MessageCircle size={14} />
+          <span>{c.floatSent}</span>
+          <Stamps on={ex.needed - 2} of={ex.needed} size={size - 4} pop={ex.needed - 3} />
+        </div>
+      </div>
+    );
+  return (
+    <div className="lp-how-art lp-how-give" aria-hidden="true">
+      <Stamps on={ex.needed} of={ex.needed} size={size} />
+      <span className="lp-how-btn lp-how-btn-orange">
+        <Gift size={16} /> {c.demoGive(reward)}
+      </span>
+      <span className="lp-how-given">
+        <Check size={14} strokeWidth={3} /> {c.demoGiven}
+      </span>
+    </div>
+  );
+}
+
+function How({ c, lang }: { c: Copy; lang: Lang }) {
   return (
     <section className="lp-section lp-wrap" id="how" data-section="how">
       <p className="lp-kicker rv">{c.howKicker}</p>
@@ -911,6 +980,7 @@ function How({ c }: { c: Copy }) {
       <ol className="lp-steps">
         {c.steps.map(([title, text], i) => (
           <li key={title} className="rv" style={{ '--i': i } as CSSProperties} onPointerMove={spotlight}>
+            <HowArt step={i} c={c} lang={lang} />
             <span className="lp-step-n">{i + 1}</span>
             <h3>{title}</h3>
             <p>{text}</p>
@@ -1013,6 +1083,39 @@ function Why({ c }: { c: Copy }) {
   );
 }
 
+type ListedShop = { name: string; visitsNeeded: number; rewardName: string };
+
+/** Real shops the admin ticked in Admin → Shops. Not in the prerendered page; nothing at all until one is ticked. */
+function ShopsUsing({ c }: { c: Copy }) {
+  const [shops, setShops] = useState<ListedShop[]>([]);
+  useEffect(() => {
+    fetch('/api/public/shops')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: ListedShop[]) => setShops(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }, []);
+  if (!shops.length) return null;
+  return (
+    <section className="lp-section lp-wrap lp-using" id="shops">
+      <p className="lp-kicker">{c.shopsKicker}</p>
+      <h2 className="lp-h2">{c.shopsTitle}</h2>
+      <ul className="lp-using-list">
+        {shops.map((s, i) => (
+          <li key={`${s.name}-${i}`} style={{ '--i': i } as CSSProperties}>
+            <span className="lp-using-mark" aria-hidden="true">
+              {[...s.name.trim()][0]?.toUpperCase() ?? '•'}
+            </span>
+            <span>
+              <strong>{s.name}</strong>
+              {s.rewardName && <small>{c.rule(s.visitsNeeded, s.rewardName)}</small>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Pricing({ c }: { c: Copy }) {
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
@@ -1109,11 +1212,12 @@ export function Landing() {
             <Hero c={c} lang={lang} />
             <Marquee lang={lang} />
             <Film c={c} lang={lang} />
-            <How c={c} />
+            <How c={c} lang={lang} />
             <ScrollCard c={c} lang={lang} />
             <EveryShop c={c} lang={lang} />
             <ForCustomers c={c} lang={lang} />
             <Why c={c} />
+            <ShopsUsing c={c} />
             <Pricing c={c} />
             <Faq c={c} lang={lang} />
             <section className="lp-final" data-section="final">

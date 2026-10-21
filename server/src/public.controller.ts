@@ -7,6 +7,7 @@ import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.se
 // Pages customers open without an account:
 //  - /w/<token>: their stamp card (the random token in the link, sent on WhatsApp by the shop, is what identifies them)
 //  - /join/<code>: the counter poster's old QR; now it just says what the shop gives and to tell their number
+//  - the homepage's "Shops using Regularhood": only shops the admin ticked (Admin → shop), never paused ones
 
 @Controller('api/public')
 export class PublicController {
@@ -51,5 +52,14 @@ export class PublicController {
     const m = this.db.sql.prepare('SELECT * FROM merchants WHERE join_code = ?').get(code) as MerchantRow | undefined;
     if (!m || m.suspended_at) throw new NotFoundException('This QR code is not valid');
     return { shop: m.name, visitsNeeded: m.visits_needed, rewardName: m.reward_name };
+  }
+
+  @Get('shops')
+  shops() {
+    return (
+      this.db.sql
+        .prepare("SELECT name, visits_needed, reward_name FROM merchants WHERE on_landing = 1 AND suspended_at IS NULL ORDER BY created_at")
+        .all() as { name: string; visits_needed: number; reward_name: string }[]
+    ).map((m) => ({ name: m.name, visitsNeeded: m.visits_needed, rewardName: m.reward_name }));
   }
 }

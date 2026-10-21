@@ -4167,3 +4167,11 @@ circle.trend-views {
     max-width: 112px;
   }
 }
+
+/* admin: the "show on homepage" tick in the shops table */
+.landing-check {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
