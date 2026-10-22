@@ -28,6 +28,7 @@ export type Guide = {
 };
 
 const UPDATED = '2026-10-19';
+const ADDED = '2026-10-22';
 
 const en: Guide[] = [
   {
@@ -338,6 +339,293 @@ const en: Guide[] = [
       { q: 'Does the customer need to install anything?', a: 'No. The WhatsApp message has a link, and their card opens in the phone’s browser. No app, no sign-up and no PIN.' },
       { q: 'Can the card be in Hindi?', a: 'Yes. The card the customer opens shows their stamps and visits left in Hindi or English.' },
       { q: 'Is it free?', a: 'Regularhood is free to start, and sending a card from your own WhatsApp costs nothing extra.' },
+    ],
+  },
+  {
+    slug: 'how-to-increase-shop-sales',
+    name: 'How to increase shop sales',
+    title: 'How to Increase Sales in Your Shop: 8 Ideas That Cost Little',
+    description: 'Practical ways for a small shop in India to increase sales: more visits from regulars, a reward worth coming back for, WhatsApp and your counter. Free to start.',
+    eyebrow: 'Shop sales',
+    h1: 'How to increase sales in your shop without spending on ads',
+    intro:
+      'Most small shops try to grow by finding new customers. But the quickest extra sales usually come from people who already know you: a regular who comes once more a month adds up faster than any pamphlet.',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'Where a shop’s sales come from',
+        p: [
+          'Sales are three things multiplied together: how many customers you have, how often they come and how much they buy each time. Most advice is about the first one, which is also the most expensive to change.',
+          'How often a regular comes is the easiest to move. One extra visit a month from your regulars needs no new customers, no ads and no discount.',
+        ],
+      },
+      {
+        h2: 'Eight ideas to try',
+        steps: [
+          { title: 'Reward visits', text: 'A simple card — every 5 visits, a small free gift — gives regulars a reason to choose you over the shop next door.' },
+          { title: 'Tell customers how close they are', text: 'People come back sooner when they know they’re one or two visits away from a reward.' },
+          { title: 'Put your offer on the counter', text: 'A small poster where people pay starts the conversation for you, even when the counter is busy.' },
+          { title: 'Use your WhatsApp status', text: 'Your regulars already have your number. New stock, today’s special and your reward rule reach them for free.' },
+          { title: 'Suggest one more thing', text: 'One honest suggestion at billing — the thing that goes with what they’re buying — raises the bill without feeling like selling.' },
+          { title: 'Keep the bestsellers in stock', text: 'A customer who comes for their usual and doesn’t find it may try another shop, and stay there.' },
+          { title: 'Notice who stopped coming', text: 'A regular who drifts away takes months of sales with them. Find out who they are while it’s still easy to win them back.' },
+          { title: 'Send a friendly message', text: 'A short “we miss you” on WhatsApp, from the shop they know, brings many of them back.' },
+        ],
+      },
+      {
+        h2: 'What usually doesn’t work for small shops',
+        list: [
+          'Deep discounts — they bring people once, and teach them to wait for the next discount.',
+          'Pamphlets and newspaper inserts — hard to know if they brought anyone.',
+          'Bulk SMS to strangers — it reads like spam and gets ignored.',
+          'A separate app for customers — most never download it.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood covers several of these in one tap at the counter. You set one rule — every N visits (3 to 10), one reward you choose — then type the customer’s phone number and tap Add visit. The app tells you when to give the reward.',
+          'With one tap you can send a customer their card on WhatsApp, showing how many visits are left. You get a printable counter poster and a WhatsApp status image with your rule, and a list of customers who haven’t come back with a ready “we miss you” message. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'What is the cheapest way to increase sales in a small shop?', a: 'Get your regulars to come a little more often. A simple visit reward and a counter poster cost almost nothing, and they work on people who already like your shop.' },
+      { q: 'Should I give discounts to increase sales?', a: 'Use them carefully. A discount brings people once, but a small reward for coming back again and again builds the habit of choosing your shop.' },
+      { q: 'How do I know if my regulars are coming less?', a: 'Keep a record of visits by phone number. Regularhood shows a list of customers who haven’t visited for a while, so you see it before it’s too late.' },
+      { q: 'Do I need a website or social media to grow my shop?', a: 'Not to start. Your counter, your WhatsApp and your regulars are enough to grow sales. A website helps new people find you later.' },
+    ],
+  },
+  {
+    slug: 'win-back-old-customers',
+    name: 'Win back old customers',
+    title: 'How to Win Back Customers Who Stopped Coming to Your Shop',
+    description: 'How a small shop can bring back old customers: find out who stopped coming, send a short WhatsApp message, and give them a reason to visit. Free to start.',
+    eyebrow: 'Win back customers',
+    h1: 'How to bring back customers who stopped coming',
+    intro:
+      'Every shop has them: the regular who used to come every week and quietly stopped. Usually nothing went wrong — they just got into a new habit. A small, friendly nudge is often all it takes to bring them back.',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'Why customers drift away',
+        list: [
+          'They moved, changed jobs or their routine changed.',
+          'A new shop opened on their way and was simply closer that day.',
+          'They had one bad experience and didn’t say anything.',
+          'Nobody noticed they were gone, so nobody asked.',
+        ],
+      },
+      {
+        h2: 'First, know who they are',
+        p: [
+          'You can’t bring back a customer you don’t know you’ve lost. In a busy shop, a regular who stops coming is noticed weeks or months later, if at all.',
+          'Keeping a record of visits against each customer’s phone number fixes that. Then “who hasn’t come in the last month?” is a list, not a guess.',
+        ],
+      },
+      {
+        h2: 'Three steps to win them back',
+        steps: [
+          { title: 'Make the list', text: 'Find the customers who used to come regularly but haven’t visited for a while.' },
+          { title: 'Send a short, personal message', text: 'One friendly WhatsApp message from the shop they know: you missed them, and you’d like to see them again.' },
+          { title: 'Give them a reason to come', text: 'If they’re close to their reward, say so. “One more visit and your free gift is ready” is a good reason to drop by.' },
+        ],
+      },
+      {
+        h2: 'What to write',
+        p: [
+          'Keep it short, warm and from your shop’s name. Something like: “Hello, it’s been a while since we saw you at our shop. Your card has 4 of 5 stamps — one more visit and your free gift is ready. Hope to see you soon.”',
+          'Send it once. If they don’t come back, don’t keep messaging; a second message weeks later is plenty.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood keeps a list of customers who haven’t come back for a while. Next to each one is a ready “we miss you” WhatsApp message — tap it and send it from your own WhatsApp.',
+          'Because visits are counted on the customer’s phone number, the list builds itself while you work the counter. You can also export customers and visits to a spreadsheet. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How long before a customer counts as lost?', a: 'It depends on how often they used to come. A daily customer missing for two weeks is a sign; a monthly salon customer missing for two months is too.' },
+      { q: 'Should I offer a discount to bring them back?', a: 'Usually you don’t need to. Reminding them that their reward is close is often enough, and it costs you nothing extra.' },
+      { q: 'Is it okay to message customers on WhatsApp?', a: 'Yes, if they’re your customers, the message is personal and you don’t send it often. A short note from a shop they know is welcome; daily promotions are not.' },
+      { q: 'What if they had a bad experience?', a: 'A personal message gives them a chance to tell you. Listen, fix it if you can, and thank them for telling you.' },
+    ],
+  },
+  {
+    slug: 'whatsapp-marketing-for-shops',
+    name: 'WhatsApp marketing for shops',
+    title: 'WhatsApp Marketing for Small Shops: What Works, What Annoys',
+    description: 'How a small shop can use WhatsApp for marketing: status updates, personal messages and loyalty cards, without spamming customers. Free to start.',
+    eyebrow: 'WhatsApp for shops',
+    h1: 'WhatsApp marketing for your shop, without being annoying',
+    intro:
+      'For a neighbourhood shop, WhatsApp is already the best marketing channel there is: your customers have it, they read it, and many already have your number. The trick is to use it like a shopkeeper, not like an advertiser.',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'Three ways to use WhatsApp',
+        table: {
+          head: ['', 'Who sees it', 'Good for'],
+          rows: [
+            ['WhatsApp status', 'Everyone who has your number saved', 'New stock, today’s special, your reward rule'],
+            ['Personal message', 'One customer', 'Their card, a reward that’s close, “we miss you”'],
+            ['Broadcast list', 'Customers who saved your number', 'Rare news: new timings, a festive offer'],
+          ],
+        },
+      },
+      {
+        h2: 'Make your status worth watching',
+        list: [
+          'Post a photo of something real: fresh stock, a finished haircut, today’s special.',
+          'Keep the text short and clear, in the language your customers speak.',
+          'Post your reward rule now and then, so new customers know about it.',
+          'One or two posts a day is plenty.',
+        ],
+      },
+      {
+        h2: 'Messages customers actually like',
+        p: [
+          'The messages that work are personal and useful: their loyalty card with how many visits are left, a heads-up that their reward is one visit away, or a short note after they haven’t come for a while.',
+          'The messages that annoy are the same promotion sent to everyone, every day. Send less, and make each one about the person reading it.',
+        ],
+      },
+      {
+        h2: 'Rules to keep',
+        list: [
+          'Message only people who are your customers.',
+          'Don’t add customers to groups without asking.',
+          'Stop when someone asks you to.',
+          'Never send forwards or anything unrelated to your shop.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood gives you the WhatsApp pieces that bring customers back. One tap sends a customer their loyalty card: their stamps and how many visits are left, in Hindi or English, opening in the browser.',
+          'The app also makes a WhatsApp status image with your shop’s rule, and keeps a list of customers who haven’t come back with a ready “we miss you” message. Everything is sent from your own WhatsApp. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Do I need WhatsApp Business for my shop?', a: 'It helps with a shop profile and timings, but it isn’t required. Regular WhatsApp works for status updates, messages and sending loyalty cards.' },
+      { q: 'How often should a shop message customers?', a: 'Rarely, and only when it’s useful to them. A status update can be daily; personal messages a few times a month at most.' },
+      { q: 'Is bulk WhatsApp messaging a good idea?', a: 'Not for a small shop. Bulk messages to people who don’t know you feel like spam, and they can get your number blocked or reported.' },
+      { q: 'What should I post on my WhatsApp status?', a: 'Real photos of your stock or work, today’s special, new arrivals and your loyalty reward rule. Short and clear works best.' },
+    ],
+  },
+  {
+    slug: 'discount-vs-loyalty-reward',
+    name: 'Discount or loyalty reward?',
+    title: 'Discount vs Loyalty Reward: Which Is Better for Your Shop?',
+    description: 'Should your shop give discounts or a loyalty reward? How each one affects profit and repeat visits, and when to use which. Free to start.',
+    eyebrow: 'Discount or reward',
+    h1: 'Discount or loyalty reward: which brings customers back?',
+    intro:
+      'Both give the customer something. But a discount and a loyalty reward teach customers very different habits — and cost your shop very differently.',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'Side by side',
+        table: {
+          head: ['', 'Discount', 'Loyalty reward'],
+          rows: [
+            ['Who gets it', 'Everyone, including one-time buyers', 'Only people who keep coming back'],
+            ['What it teaches', 'Wait for the next offer', 'Come back to finish the card'],
+            ['What it costs you', 'Taken off every bill', 'One small item, every few visits'],
+            ['How it feels', 'A price cut', 'A gift from the shop'],
+            ['Easy to stop?', 'Customers notice when it ends', 'The card simply carries on'],
+          ],
+        },
+      },
+      {
+        h2: 'Why a free item costs you less',
+        p: [
+          'A discount comes straight out of your margin on every bill. A free item costs you only what you paid for it, and you give it once every few visits.',
+          'Customers also tend to value a free item more than the same amount as a discount. A free pastry feels like a gift; a few rupees off is forgotten by the time they leave.',
+        ],
+      },
+      {
+        h2: 'When a discount makes sense',
+        list: [
+          'Clearing old or seasonal stock.',
+          'Opening week, to get people in the door the first time.',
+          'A festival offer that everyone in the market is running.',
+        ],
+      },
+      {
+        h2: 'When a loyalty reward makes sense',
+        list: [
+          'You want regulars to choose you over the shop next door.',
+          'Your customers come often — daily, weekly or monthly.',
+          'You want to know who your regulars are and who stopped coming.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood is a loyalty reward without the paperwork. You set one rule — every N visits (3 to 10), one reward you choose. At the counter you type the customer’s phone number and tap Add visit, and the app tells you when to give the reward. No points, no QR codes and nothing for the customer to install. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Is a discount or a free gift better for customers?', a: 'For bringing people back, a free gift for repeat visits usually works better. It rewards loyalty instead of a single purchase.' },
+      { q: 'Can I run a discount and a loyalty card together?', a: 'Yes. Use the discount for short offers like opening week or clearing stock, and keep the loyalty card running all year.' },
+      { q: 'What reward should I give instead of a discount?', a: 'A small item or service you sell often and that costs you little — a free pastry, a free juice, a free head massage.' },
+      { q: 'Will customers still come if I stop giving discounts?', a: 'Regulars come for your shop, not only the price. A reward for coming back gives them a reason to stay when the discount ends.' },
+    ],
+  },
+  {
+    slug: 'get-customers-for-new-shop',
+    name: 'Customers for a new shop',
+    title: 'How to Get Customers for a New Shop — and Make Them Regulars',
+    description: 'Just opened a shop? How to get your first customers in the area and turn them into regulars with a simple reward, WhatsApp and your counter. Free to start.',
+    eyebrow: 'New shop',
+    h1: 'How to get customers for a new shop and turn them into regulars',
+    intro:
+      'The first weeks after opening decide a lot. People in the area will try you once out of curiosity. Whether they come a second and third time is what builds the shop.',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'Get the first visit',
+        list: [
+          'Make the shop easy to notice: a clear board, good light and the door open.',
+          'Tell the neighbours: nearby shops, societies and offices.',
+          'Add your shop to Google Maps with photos, timings and your phone number.',
+          'Put a WhatsApp status up every day of opening week.',
+          'An opening-week offer is fine, but keep it short.',
+        ],
+      },
+      {
+        h2: 'Turn the first visit into a second',
+        p: [
+          'This is where most new shops lose people. The first visit was curiosity; the second needs a reason. Start your loyalty card on day one, so the very first customer leaves with a stamp and a goal.',
+          'Say it at the counter: “That’s your first stamp — 4 more and the next one is a free gift.” A new customer with one stamp already has a reason to come back to you instead of the shop they used before.',
+        ],
+      },
+      {
+        h2: 'A plan for the first month',
+        steps: [
+          { title: 'Week 1: stamp everyone', text: 'Every customer gets a stamp and hears the rule. Put the poster on the counter.' },
+          { title: 'Week 2: send the cards', text: 'Send customers their card on WhatsApp so they see how many visits are left.' },
+          { title: 'Week 3: learn your regulars', text: 'Notice who has come back two or three times. Learn their names and their usual.' },
+          { title: 'Week 4: bring back the one-timers', text: 'A short “hope to see you again” message to people who came once and haven’t returned.' },
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood takes a minute to set up, so it can be ready on opening day. You set one rule — every N visits (3 to 10), one reward you choose — and add visits by typing the customer’s phone number and tapping Add visit.',
+          'You get a printable counter poster and a WhatsApp status image with your rule, one-tap WhatsApp cards for customers, and a list of customers who haven’t come back with a ready message. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How do I attract customers to a new shop?', a: 'Make the shop visible, tell everyone nearby, get on Google Maps and use your WhatsApp status. Then give first-time customers a reason to come back.' },
+      { q: 'Should a new shop start a loyalty card right away?', a: 'Yes. The first weeks are when people decide whether to switch to you. A stamp on their first visit gives them a reason to return.' },
+      { q: 'Is an opening offer a good idea?', a: 'A short one is. Keep it to opening week, so customers come for the shop and not only for the offer.' },
+      { q: 'How long does it take to build regular customers?', a: 'It depends on your kind of shop, but a simple reward and a friendly counter usually show you your first regulars within the first month.' },
     ],
   },
 ];
@@ -651,6 +939,293 @@ const hi: Guide[] = [
       { q: 'क्या ग्राहक को कुछ इंस्टॉल करना होगा?', a: 'नहीं। WhatsApp मैसेज में लिंक होता है, और कार्ड फ़ोन के ब्राउज़र में खुलता है। न ऐप, न साइन अप, न PIN।' },
       { q: 'क्या कार्ड हिंदी में हो सकता है?', a: 'हाँ। ग्राहक जो कार्ड खोलता है उसमें स्टैम्प और बची विज़िट हिंदी या English में दिखती हैं।' },
       { q: 'क्या यह मुफ़्त है?', a: 'Regularhood शुरू करना मुफ़्त है, और अपने WhatsApp से कार्ड भेजने का कोई अलग ख़र्च नहीं।' },
+    ],
+  },
+  {
+    slug: 'how-to-increase-shop-sales',
+    name: 'दुकान की बिक्री कैसे बढ़ाएँ',
+    title: 'दुकान की बिक्री कैसे बढ़ाएँ: कम ख़र्च वाले 8 तरीके',
+    description: 'भारत की छोटी दुकान की बिक्री बढ़ाने के काम के तरीके: पक्के ग्राहकों की ज़्यादा विज़िट, लौटने लायक इनाम, WhatsApp और काउंटर। शुरू करना मुफ़्त।',
+    eyebrow: 'दुकान की बिक्री',
+    h1: 'बिना विज्ञापन के अपनी दुकान की बिक्री कैसे बढ़ाएँ',
+    intro:
+      'ज़्यादातर छोटी दुकानें नए ग्राहक ढूँढकर बढ़ना चाहती हैं। पर सबसे जल्दी बढ़ी बिक्री अक्सर उन्हीं लोगों से आती है जो आपको पहले से जानते हैं: महीने में एक बार ज़्यादा आने वाला पक्का ग्राहक किसी भी पर्चे से ज़्यादा बिक्री लाता है।',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'दुकान की बिक्री कहाँ से आती है',
+        p: [
+          'बिक्री तीन चीज़ों से बनती है: कितने ग्राहक हैं, वे कितनी बार आते हैं और हर बार कितना ख़रीदते हैं। ज़्यादातर सलाह पहली चीज़ पर होती है, और उसे बदलना सबसे महँगा भी है।',
+          'पक्का ग्राहक कितनी बार आता है, यह बदलना सबसे आसान है। आपके पक्के ग्राहकों की महीने में एक विज़िट ज़्यादा — न नए ग्राहक चाहिए, न विज्ञापन, न डिस्काउंट।',
+        ],
+      },
+      {
+        h2: 'आज़माने के आठ तरीके',
+        steps: [
+          { title: 'विज़िट पर इनाम दें', text: 'एक आसान कार्ड — हर 5 विज़िट पर एक छोटा मुफ़्त गिफ़्ट — पक्के ग्राहकों को बगल वाली दुकान की जगह आपको चुनने की वजह देता है।' },
+          { title: 'बताएँ कि इनाम कितना पास है', text: 'जब ग्राहक जानता है कि इनाम बस एक-दो विज़िट दूर है, तो वह जल्दी लौटता है।' },
+          { title: 'ऑफ़र काउंटर पर लगाएँ', text: 'जहाँ ग्राहक पैसे देते हैं वहाँ एक छोटा पोस्टर बात शुरू कर देता है, भीड़ में भी।' },
+          { title: 'WhatsApp स्टेटस का इस्तेमाल करें', text: 'आपके पक्के ग्राहकों के पास आपका नंबर है। नया माल, आज का स्पेशल और इनाम का नियम उन तक मुफ़्त पहुँचता है।' },
+          { title: 'एक और चीज़ सुझाएँ', text: 'बिल बनाते समय एक ईमानदार सुझाव — जो उनकी चीज़ के साथ जाती हो — बिना ज़बरदस्ती के बिल बढ़ाता है।' },
+          { title: 'सबसे ज़्यादा बिकने वाला माल रखें', text: 'जो ग्राहक अपनी रोज़ की चीज़ लेने आए और न मिले, वह दूसरी दुकान आज़मा सकता है — और वहीं रह सकता है।' },
+          { title: 'देखें कौन आना बंद कर गया', text: 'दूर हुआ पक्का ग्राहक महीनों की बिक्री साथ ले जाता है। समय रहते जानें कि वे कौन हैं, जब वापस बुलाना आसान है।' },
+          { title: 'एक प्यारा-सा मैसेज भेजें', text: 'जानी-पहचानी दुकान से WhatsApp पर छोटा-सा “हम आपको मिस कर रहे हैं” कई ग्राहकों को वापस ले आता है।' },
+        ],
+      },
+      {
+        h2: 'छोटी दुकानों के लिए जो अक्सर काम नहीं करता',
+        list: [
+          'भारी डिस्काउंट — लोग एक बार आते हैं, और अगले डिस्काउंट का इंतज़ार करना सीख जाते हैं।',
+          'पर्चे और अख़बार में पैम्फलेट — पता ही नहीं चलता कि कोई आया या नहीं।',
+          'अनजान लोगों को बल्क SMS — स्पैम जैसा लगता है और नज़रअंदाज़ हो जाता है।',
+          'ग्राहकों के लिए अलग ऐप — ज़्यादातर कभी डाउनलोड नहीं करते।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood इनमें से कई काम काउंटर पर एक टैप में करता है। आप एक नियम रखते हैं — हर N विज़िट (3 से 10) पर आपका चुना एक इनाम — फिर ग्राहक का फ़ोन नंबर लिखकर Add visit दबाते हैं। इनाम कब देना है, ऐप बता देता है।',
+          'एक टैप में ग्राहक को WhatsApp पर उसका कार्ड भेज सकते हैं, जिसमें बची विज़िट दिखती हैं। आपके नियम वाला छापने लायक काउंटर पोस्टर और WhatsApp स्टेटस इमेज मिलती है, और उन ग्राहकों की लिस्ट जो वापस नहीं आए, तैयार “मिस कर रहे हैं” मैसेज के साथ। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'छोटी दुकान की बिक्री बढ़ाने का सबसे सस्ता तरीका क्या है?', a: 'अपने पक्के ग्राहकों को थोड़ा और बार बुलाइए। विज़िट पर आसान इनाम और काउंटर पोस्टर में लगभग कोई ख़र्च नहीं, और यह उन लोगों पर काम करता है जिन्हें आपकी दुकान पहले से पसंद है।' },
+      { q: 'क्या बिक्री बढ़ाने के लिए डिस्काउंट देना चाहिए?', a: 'सोच-समझकर। डिस्काउंट से लोग एक बार आते हैं, पर बार-बार आने पर छोटा इनाम आपकी दुकान चुनने की आदत बनाता है।' },
+      { q: 'कैसे पता चले कि पक्के ग्राहक कम आ रहे हैं?', a: 'फ़ोन नंबर के हिसाब से विज़िट का रिकॉर्ड रखें। Regularhood उन ग्राहकों की लिस्ट दिखाता है जो काफ़ी दिनों से नहीं आए, ताकि देर होने से पहले पता चल जाए।' },
+      { q: 'क्या दुकान बढ़ाने के लिए वेबसाइट या सोशल मीडिया ज़रूरी है?', a: 'शुरुआत में नहीं। आपका काउंटर, आपका WhatsApp और आपके पक्के ग्राहक बिक्री बढ़ाने के लिए काफ़ी हैं। वेबसाइट बाद में नए लोगों को आप तक पहुँचाने में मदद करती है।' },
+    ],
+  },
+  {
+    slug: 'win-back-old-customers',
+    name: 'पुराने ग्राहक वापस लाएँ',
+    title: 'दुकान पर आना बंद कर चुके ग्राहकों को वापस कैसे लाएँ',
+    description: 'छोटी दुकान पुराने ग्राहकों को वापस कैसे लाए: जानें कौन आना बंद कर गया, WhatsApp पर छोटा मैसेज भेजें और आने की वजह दें। शुरू करना मुफ़्त।',
+    eyebrow: 'ग्राहक वापस लाएँ',
+    h1: 'आना बंद कर चुके ग्राहकों को वापस कैसे लाएँ',
+    intro:
+      'हर दुकान में ऐसे ग्राहक होते हैं: जो हर हफ़्ते आते थे और चुपचाप आना बंद कर दिया। अक्सर कुछ ग़लत नहीं हुआ — बस उनकी आदत बदल गई। एक छोटी, प्यार भरी याद दिलाना ही अक्सर काफ़ी होता है।',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'ग्राहक दूर क्यों हो जाते हैं',
+        list: [
+          'घर, नौकरी या रोज़ का रास्ता बदल गया।',
+          'रास्ते में नई दुकान खुली और उस दिन वह बस पास पड़ी।',
+          'एक बार अनुभव अच्छा नहीं रहा और उन्होंने कुछ कहा नहीं।',
+          'किसी ने ध्यान ही नहीं दिया कि वे नहीं आ रहे, तो किसी ने पूछा भी नहीं।',
+        ],
+      },
+      {
+        h2: 'पहले जानें कि वे कौन हैं',
+        p: [
+          'जिस ग्राहक के जाने का पता ही नहीं, उसे वापस नहीं बुला सकते। भीड़ वाली दुकान में आना बंद कर चुका ग्राहक हफ़्तों या महीनों बाद याद आता है, अगर आता भी है।',
+          'हर ग्राहक के फ़ोन नंबर पर विज़िट का रिकॉर्ड रखने से यह ठीक हो जाता है। फिर “पिछले महीने कौन नहीं आया?” अंदाज़ा नहीं, एक लिस्ट होती है।',
+        ],
+      },
+      {
+        h2: 'वापस लाने के तीन कदम',
+        steps: [
+          { title: 'लिस्ट बनाएँ', text: 'उन ग्राहकों को ढूँढें जो पहले नियमित आते थे पर काफ़ी दिनों से नहीं आए।' },
+          { title: 'छोटा, अपनापन भरा मैसेज भेजें', text: 'जानी-पहचानी दुकान से WhatsApp पर एक मैसेज: आपको उनकी कमी खली, और आप उन्हें फिर देखना चाहेंगे।' },
+          { title: 'आने की वजह दें', text: 'अगर इनाम पास है तो बताएँ। “बस एक विज़िट और, आपका मुफ़्त गिफ़्ट तैयार है” आने की अच्छी वजह है।' },
+        ],
+      },
+      {
+        h2: 'क्या लिखें',
+        p: [
+          'छोटा, अपनापन भरा और दुकान के नाम से। कुछ ऐसा: “नमस्ते, काफ़ी दिनों से आप हमारी दुकान पर नहीं आए। आपके कार्ड पर 5 में से 4 स्टैम्प हैं — बस एक विज़िट और, आपका मुफ़्त गिफ़्ट तैयार है। जल्द मिलते हैं।”',
+          'एक बार भेजें। अगर वे न आएँ तो बार-बार मैसेज न करें; कुछ हफ़्ते बाद दूसरा मैसेज काफ़ी है।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood उन ग्राहकों की लिस्ट रखता है जो काफ़ी दिनों से नहीं आए। हर एक के साथ तैयार “हम आपको मिस कर रहे हैं” WhatsApp मैसेज होता है — टैप करें और अपने WhatsApp से भेज दें।',
+          'विज़िट ग्राहक के फ़ोन नंबर पर गिनी जाती हैं, इसलिए काउंटर पर काम करते-करते लिस्ट अपने-आप बनती है। ग्राहक और विज़िट स्प्रेडशीट में एक्सपोर्ट भी कर सकते हैं। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'कितने दिन न आने पर ग्राहक को खोया हुआ मानें?', a: 'यह इस पर निर्भर है कि वे कितनी बार आते थे। रोज़ आने वाला दो हफ़्ते न आए तो संकेत है; महीने में एक बार आने वाला सैलून ग्राहक दो महीने न आए, तो भी।' },
+      { q: 'क्या वापस बुलाने के लिए डिस्काउंट देना चाहिए?', a: 'अक्सर ज़रूरत नहीं। यह याद दिलाना कि उनका इनाम पास है, अक्सर काफ़ी होता है, और इसमें कोई अलग ख़र्च नहीं।' },
+      { q: 'क्या ग्राहकों को WhatsApp पर मैसेज करना ठीक है?', a: 'हाँ, अगर वे आपके ग्राहक हैं, मैसेज निजी है और आप बार-बार नहीं भेजते। जानी-पहचानी दुकान का छोटा मैसेज अच्छा लगता है; रोज़ के प्रमोशन नहीं।' },
+      { q: 'अगर उनका अनुभव ख़राब रहा हो तो?', a: 'निजी मैसेज उन्हें बताने का मौका देता है। ध्यान से सुनें, हो सके तो ठीक करें, और बताने के लिए धन्यवाद कहें।' },
+    ],
+  },
+  {
+    slug: 'whatsapp-marketing-for-shops',
+    name: 'दुकान के लिए WhatsApp मार्केटिंग',
+    title: 'छोटी दुकान के लिए WhatsApp मार्केटिंग: क्या काम करता है, क्या चिढ़ाता है',
+    description: 'छोटी दुकान WhatsApp से मार्केटिंग कैसे करे: स्टेटस, निजी मैसेज और लॉयल्टी कार्ड, ग्राहकों को स्पैम किए बिना। शुरू करना मुफ़्त।',
+    eyebrow: 'दुकान के लिए WhatsApp',
+    h1: 'अपनी दुकान के लिए WhatsApp मार्केटिंग, बिना परेशान किए',
+    intro:
+      'मोहल्ले की दुकान के लिए WhatsApp पहले से सबसे अच्छा मार्केटिंग का ज़रिया है: ग्राहकों के पास है, वे पढ़ते हैं, और कई के पास आपका नंबर भी है। बस इसे विज्ञापन वाले की तरह नहीं, दुकानदार की तरह इस्तेमाल करना है।',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'WhatsApp इस्तेमाल करने के तीन तरीके',
+        table: {
+          head: ['', 'कौन देखता है', 'किसके लिए अच्छा'],
+          rows: [
+            ['WhatsApp स्टेटस', 'जिन्होंने आपका नंबर सेव किया है', 'नया माल, आज का स्पेशल, इनाम का नियम'],
+            ['निजी मैसेज', 'एक ग्राहक', 'उनका कार्ड, पास आता इनाम, “मिस कर रहे हैं”'],
+            ['ब्रॉडकास्ट लिस्ट', 'जिन ग्राहकों ने आपका नंबर सेव किया है', 'कभी-कभार की ख़बर: नया समय, त्योहार का ऑफ़र'],
+          ],
+        },
+      },
+      {
+        h2: 'स्टेटस को देखने लायक बनाएँ',
+        list: [
+          'असली चीज़ की फ़ोटो लगाएँ: ताज़ा माल, बना हुआ हेयरकट, आज का स्पेशल।',
+          'लिखावट छोटी और साफ़ रखें, ग्राहकों की भाषा में।',
+          'बीच-बीच में अपना इनाम का नियम लगाएँ, ताकि नए ग्राहकों को पता चले।',
+          'दिन में एक-दो पोस्ट काफ़ी हैं।',
+        ],
+      },
+      {
+        h2: 'ऐसे मैसेज जो ग्राहकों को अच्छे लगते हैं',
+        p: [
+          'काम के मैसेज निजी और उपयोगी होते हैं: बची विज़िट के साथ उनका लॉयल्टी कार्ड, यह ख़बर कि इनाम बस एक विज़िट दूर है, या काफ़ी दिन न आने पर एक छोटा-सा नोट।',
+          'चिढ़ाने वाले मैसेज वे हैं जो रोज़ सबको एक ही प्रमोशन भेजते हैं। कम भेजें, और हर मैसेज पढ़ने वाले के बारे में हो।',
+        ],
+      },
+      {
+        h2: 'ये नियम मानें',
+        list: [
+          'मैसेज सिर्फ़ अपने ग्राहकों को करें।',
+          'बिना पूछे ग्राहकों को ग्रुप में न जोड़ें।',
+          'कोई मना करे तो रुक जाएँ।',
+          'फ़ॉरवर्ड या दुकान से अलग कुछ भी न भेजें।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood आपको WhatsApp की वे चीज़ें देता है जो ग्राहकों को वापस लाती हैं। एक टैप में ग्राहक को उसका लॉयल्टी कार्ड जाता है: उसके स्टैम्प और बची विज़िट, हिंदी या English में, ब्राउज़र में खुलता है।',
+          'ऐप आपकी दुकान के नियम वाली WhatsApp स्टेटस इमेज भी बनाता है, और उन ग्राहकों की लिस्ट रखता है जो वापस नहीं आए, तैयार “मिस कर रहे हैं” मैसेज के साथ। सब कुछ आपके अपने WhatsApp से जाता है। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'क्या दुकान के लिए WhatsApp Business चाहिए?', a: 'दुकान की प्रोफ़ाइल और समय दिखाने में मदद करता है, पर ज़रूरी नहीं। स्टेटस, मैसेज और लॉयल्टी कार्ड भेजने के लिए सामान्य WhatsApp भी चलता है।' },
+      { q: 'दुकान को ग्राहकों को कितनी बार मैसेज करना चाहिए?', a: 'कम, और तभी जब उनके काम का हो। स्टेटस रोज़ लग सकता है; निजी मैसेज महीने में कुछ ही बार।' },
+      { q: 'क्या बल्क WhatsApp मैसेज अच्छा तरीका है?', a: 'छोटी दुकान के लिए नहीं। अनजान लोगों को बल्क मैसेज स्पैम लगते हैं, और आपका नंबर ब्लॉक या रिपोर्ट हो सकता है।' },
+      { q: 'WhatsApp स्टेटस पर क्या लगाएँ?', a: 'अपने माल या काम की असली फ़ोटो, आज का स्पेशल, नई चीज़ें और लॉयल्टी इनाम का नियम। छोटा और साफ़ सबसे अच्छा।' },
+    ],
+  },
+  {
+    slug: 'discount-vs-loyalty-reward',
+    name: 'डिस्काउंट या लॉयल्टी इनाम?',
+    title: 'डिस्काउंट या लॉयल्टी इनाम: आपकी दुकान के लिए क्या बेहतर?',
+    description: 'दुकान डिस्काउंट दे या लॉयल्टी इनाम? दोनों का मुनाफ़े और दोबारा आने पर असर, और कब कौन-सा इस्तेमाल करें। शुरू करना मुफ़्त।',
+    eyebrow: 'डिस्काउंट या इनाम',
+    h1: 'डिस्काउंट या लॉयल्टी इनाम: ग्राहक किससे लौटते हैं?',
+    intro:
+      'दोनों में ग्राहक को कुछ मिलता है। पर डिस्काउंट और लॉयल्टी इनाम ग्राहकों को बिल्कुल अलग आदतें सिखाते हैं — और दुकान को बिल्कुल अलग ख़र्च पड़ते हैं।',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'आमने-सामने',
+        table: {
+          head: ['', 'डिस्काउंट', 'लॉयल्टी इनाम'],
+          rows: [
+            ['किसे मिलता है', 'सबको, एक बार आने वालों को भी', 'सिर्फ़ उन्हें जो बार-बार आते हैं'],
+            ['क्या सिखाता है', 'अगले ऑफ़र का इंतज़ार करो', 'कार्ड पूरा करने लौटो'],
+            ['आपको कितना पड़ता है', 'हर बिल से कटता है', 'हर कुछ विज़िट पर एक छोटी चीज़'],
+            ['कैसा लगता है', 'दाम में कटौती', 'दुकान से तोहफ़ा'],
+            ['बंद करना आसान?', 'ख़त्म होते ही ग्राहक को खलता है', 'कार्ड बस चलता रहता है'],
+          ],
+        },
+      },
+      {
+        h2: 'मुफ़्त चीज़ आपको सस्ती क्यों पड़ती है',
+        p: [
+          'डिस्काउंट हर बिल पर सीधे आपके मुनाफ़े से कटता है। मुफ़्त चीज़ आपको उतने की पड़ती है जितने में आपने ख़रीदी, और वह हर कुछ विज़िट पर एक बार दी जाती है।',
+          'ग्राहक भी अक्सर मुफ़्त चीज़ को उतने ही रुपये के डिस्काउंट से ज़्यादा मानते हैं। मुफ़्त पेस्ट्री तोहफ़ा लगती है; कुछ रुपये की छूट दुकान से निकलते ही भूल जाती है।',
+        ],
+      },
+      {
+        h2: 'डिस्काउंट कब ठीक है',
+        list: [
+          'पुराना या मौसमी माल निकालना हो।',
+          'दुकान खुलने का हफ़्ता, ताकि लोग पहली बार अंदर आएँ।',
+          'त्योहार का ऑफ़र जो बाज़ार में सब चला रहे हों।',
+        ],
+      },
+      {
+        h2: 'लॉयल्टी इनाम कब ठीक है',
+        list: [
+          'आप चाहते हैं कि पक्के ग्राहक बगल वाली दुकान की जगह आपको चुनें।',
+          'आपके ग्राहक अक्सर आते हैं — रोज़, हर हफ़्ते या हर महीने।',
+          'आप जानना चाहते हैं कि आपके पक्के ग्राहक कौन हैं और किसने आना बंद किया।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood बिना कागज़ी झंझट का लॉयल्टी इनाम है। आप एक नियम रखते हैं — हर N विज़िट (3 से 10) पर आपका चुना एक इनाम। काउंटर पर ग्राहक का फ़ोन नंबर लिखकर Add visit दबाते हैं, और इनाम कब देना है, ऐप बता देता है। न पॉइंट्स, न QR कोड, और ग्राहक को कुछ इंस्टॉल नहीं करना। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'ग्राहकों के लिए डिस्काउंट बेहतर है या मुफ़्त गिफ़्ट?', a: 'ग्राहकों को वापस लाने के लिए बार-बार आने पर मुफ़्त गिफ़्ट अक्सर बेहतर काम करता है। यह एक ख़रीद नहीं, वफ़ादारी का इनाम है।' },
+      { q: 'क्या डिस्काउंट और लॉयल्टी कार्ड साथ चला सकते हैं?', a: 'हाँ। डिस्काउंट छोटे ऑफ़र के लिए रखें, जैसे खुलने का हफ़्ता या माल निकालना, और लॉयल्टी कार्ड पूरे साल चलाएँ।' },
+      { q: 'डिस्काउंट की जगह क्या इनाम दें?', a: 'कोई छोटी चीज़ या सेवा जो आप अक्सर बेचते हैं और जो आपको सस्ती पड़ती है — मुफ़्त पेस्ट्री, मुफ़्त जूस, मुफ़्त हेड मसाज।' },
+      { q: 'डिस्काउंट बंद करने पर क्या ग्राहक फिर भी आएँगे?', a: 'पक्के ग्राहक आपकी दुकान के लिए आते हैं, सिर्फ़ दाम के लिए नहीं। लौटने पर इनाम उन्हें डिस्काउंट ख़त्म होने के बाद भी रुकने की वजह देता है।' },
+    ],
+  },
+  {
+    slug: 'get-customers-for-new-shop',
+    name: 'नई दुकान के लिए ग्राहक',
+    title: 'नई दुकान पर ग्राहक कैसे लाएँ — और उन्हें पक्का ग्राहक कैसे बनाएँ',
+    description: 'अभी दुकान खोली है? इलाके में पहले ग्राहक कैसे लाएँ और आसान इनाम, WhatsApp और काउंटर से उन्हें पक्का ग्राहक कैसे बनाएँ। शुरू करना मुफ़्त।',
+    eyebrow: 'नई दुकान',
+    h1: 'नई दुकान पर ग्राहक कैसे लाएँ और उन्हें पक्का ग्राहक कैसे बनाएँ',
+    intro:
+      'खुलने के बाद के पहले कुछ हफ़्ते बहुत कुछ तय करते हैं। इलाके के लोग जिज्ञासा में एक बार आ ही जाएँगे। वे दूसरी और तीसरी बार आते हैं या नहीं, इसी से दुकान बनती है।',
+    updated: ADDED,
+    blocks: [
+      {
+        h2: 'पहली विज़िट लाएँ',
+        list: [
+          'दुकान आसानी से दिखे: साफ़ बोर्ड, अच्छी रोशनी और खुला दरवाज़ा।',
+          'आस-पास बताएँ: पास की दुकानें, सोसाइटी और दफ़्तर।',
+          'Google Maps पर दुकान जोड़ें: फ़ोटो, समय और फ़ोन नंबर के साथ।',
+          'खुलने के हफ़्ते में रोज़ WhatsApp स्टेटस लगाएँ।',
+          'खुलने का ऑफ़र ठीक है, पर छोटा रखें।',
+        ],
+      },
+      {
+        h2: 'पहली विज़िट को दूसरी में बदलें',
+        p: [
+          'यहीं ज़्यादातर नई दुकानें ग्राहक खो देती हैं। पहली विज़िट जिज्ञासा थी; दूसरी के लिए वजह चाहिए। पहले दिन से लॉयल्टी कार्ड शुरू करें, ताकि पहला ग्राहक भी एक स्टैम्प और एक लक्ष्य लेकर जाए।',
+          'काउंटर पर कहें: “यह आपका पहला स्टैम्प है — 4 और, फिर अगली बार मुफ़्त गिफ़्ट।” एक स्टैम्प वाले नए ग्राहक के पास पुरानी दुकान की जगह आपके पास लौटने की वजह है।',
+        ],
+      },
+      {
+        h2: 'पहले महीने का प्लान',
+        steps: [
+          { title: 'हफ़्ता 1: सबको स्टैम्प', text: 'हर ग्राहक को स्टैम्प मिले और नियम सुनाई दे। पोस्टर काउंटर पर लगाएँ।' },
+          { title: 'हफ़्ता 2: कार्ड भेजें', text: 'ग्राहकों को WhatsApp पर उनका कार्ड भेजें, ताकि उन्हें बची विज़िट दिखें।' },
+          { title: 'हफ़्ता 3: पक्के ग्राहक पहचानें', text: 'देखें कौन दो-तीन बार लौटा। उनके नाम और उनकी रोज़ की चीज़ याद रखें।' },
+          { title: 'हफ़्ता 4: एक बार वालों को बुलाएँ', text: 'जो एक बार आए और नहीं लौटे, उन्हें छोटा-सा “फिर मिलने की उम्मीद है” मैसेज भेजें।' },
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood सेट करने में एक मिनट लगता है, तो खुलने के दिन तक तैयार हो सकता है। आप एक नियम रखते हैं — हर N विज़िट (3 से 10) पर आपका चुना एक इनाम — और ग्राहक का फ़ोन नंबर लिखकर Add visit दबाकर विज़िट जोड़ते हैं।',
+          'आपके नियम वाला छापने लायक काउंटर पोस्टर और WhatsApp स्टेटस इमेज, ग्राहकों के लिए एक टैप वाले WhatsApp कार्ड, और न लौटे ग्राहकों की लिस्ट तैयार मैसेज के साथ मिलती है। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'नई दुकान पर ग्राहक कैसे लाएँ?', a: 'दुकान को दिखने लायक बनाएँ, आस-पास सबको बताएँ, Google Maps पर आएँ और WhatsApp स्टेटस इस्तेमाल करें। फिर पहली बार आए ग्राहकों को लौटने की वजह दें।' },
+      { q: 'क्या नई दुकान को तुरंत लॉयल्टी कार्ड शुरू करना चाहिए?', a: 'हाँ। पहले कुछ हफ़्तों में ही लोग तय करते हैं कि आपके पास आएँ या नहीं। पहली विज़िट पर स्टैम्प उन्हें लौटने की वजह देता है।' },
+      { q: 'क्या खुलने का ऑफ़र अच्छा है?', a: 'छोटा हो तो हाँ। इसे खुलने के हफ़्ते तक रखें, ताकि ग्राहक दुकान के लिए आएँ, सिर्फ़ ऑफ़र के लिए नहीं।' },
+      { q: 'पक्के ग्राहक बनने में कितना समय लगता है?', a: 'यह आपकी दुकान पर निर्भर है, पर आसान इनाम और अच्छे बर्ताव से अक्सर पहले महीने में ही पहले पक्के ग्राहक दिखने लगते हैं।' },
     ],
   },
 ];
