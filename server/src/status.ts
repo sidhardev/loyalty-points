@@ -80,7 +80,7 @@ ${input.shopType ? `Aim them at this kind of shop: "${input.shopType}". Show tha
 Visual style: ${STYLES[input.style].brief}.
 
 What Regularhood does (use only these facts):
-- A loyalty stamp card on the customer's phone number: every few visits (the shop picks, e.g. 5), one free reward (e.g. a free chai).
+- A loyalty stamp card on the customer's phone number: every few visits (the shop picks, e.g. 5), one free reward (e.g. a free gift).
 - At the counter the shop just types the customer's number and taps one button, "Add visit". The app says when to give the reward.
 - No app, no QR code, no points and no sign-up for customers. Their card arrives on WhatsApp and works in Hindi and English.
 - One-tap "we miss you" WhatsApp reminders to customers who haven't come back.
