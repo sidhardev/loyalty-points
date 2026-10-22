@@ -1,8 +1,9 @@
-// HTML for the SEO pages (/for/<slug>, /hi/for/<slug>), their index pages, the 404 and /sitemap.xml.
+// HTML for the SEO pages (/for/<slug>, /hi/for/<slug>), their index pages, the guides, /privacy and /terms, the 404 and /sitemap.xml.
 // Plain server-rendered HTML in the landing page's look, so it's readable without JavaScript. Every piece of text
 // written by the AI is escaped here: it's treated as text, never as markup.
 
 import type { Guide, GuideBlock } from './guides';
+import { LEGAL, type LegalDoc } from './legal';
 
 export type SeoLang = 'en' | 'hi';
 
@@ -212,7 +213,7 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 <nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a class="hide" href="${guidePath(o.lang)}">${t.guides}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></footer>
 ${BEACON}
 </body>
 </html>`;
@@ -387,6 +388,7 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
       urls.push(gUrl(guidePath(lang, g.slug), g.updated, twins.length > 1 ? twins.map((l) => ({ lang: l, path: guidePath(l, g.slug) })) : []));
     }
   }
+  urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
 
@@ -479,4 +481,22 @@ export function renderGuideHub(site: string, lang: SeoLang, guides: Guide[], has
 </div></main>`;
   const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: guidePath('en') }, { lang: 'hi', path: guidePath('hi') }] : [{ lang, path: here }];
   return shell({ lang, site, path: here, title: `${t.guidesTitle} · Regularhood`, description: t.guidesIntro, alternates, body, noindex: !guides.length });
+}
+
+/** /privacy and /terms (English only; the text is in legal.ts). */
+export function renderLegal(site: string, doc: LegalDoc, other: LegalDoc) {
+  const here = `/${doc.slug}`;
+  const body = `<main>
+<div class="wrap" style="padding-top:40px">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Regularhood</a> › ${esc(doc.name)}</nav>
+  <div class="article">
+    <h1>${esc(doc.h1)}</h1>
+    <p class="meta">Last updated: <time datetime="${doc.updated}">${doc.updated}</time> · <a href="/${other.slug}">${esc(other.name)}</a></p>
+    <p class="intro">${esc(doc.intro)}</p>
+  </div>
+</div>
+${doc.blocks.map(block).join('\n')}
+<section></section>
+</main>`;
+  return shell({ lang: 'en', site, path: here, title: doc.title, description: doc.description, alternates: [{ lang: 'en', path: here }], body });
 }
