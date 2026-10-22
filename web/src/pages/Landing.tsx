@@ -52,7 +52,9 @@ function usePageLang(): Lang {
   return ready ? stored : 'en';
 }
 
-/** Scroll reveals: `.rv` elements start hidden only once JavaScript runs, and show as they come into view. */
+/** Scroll reveals: `.rv` elements start hidden only once JavaScript runs, and show as they come into view. Elements
+ *  React mounts later are watched too: switching language remounts lists keyed by their text, which would otherwise
+ *  stay hidden. */
 function useReveals() {
   useEffect(() => {
     const root = document.querySelector('.lp');
@@ -69,8 +71,21 @@ function useReveals() {
       },
       { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
     );
-    root.querySelectorAll('.rv').forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    const watch = (scope: ParentNode) => scope.querySelectorAll('.rv:not(.in)').forEach((el) => io.observe(el));
+    watch(root);
+    const mo = new MutationObserver((records) => {
+      for (const r of records)
+        r.addedNodes.forEach((n) => {
+          if (!(n instanceof Element)) return;
+          if (n.matches('.rv:not(.in)')) io.observe(n);
+          watch(n);
+        });
+    });
+    mo.observe(root, { childList: true, subtree: true });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
   }, []);
 }
 
