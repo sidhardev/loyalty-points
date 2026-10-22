@@ -23,6 +23,8 @@
     { "source": "/guide/:path*", "destination": "https://api-habiturn.sidhar.me/guide/:path*" },
     { "source": "/hi/guide", "destination": "https://api-habiturn.sidhar.me/hi/guide" },
     { "source": "/hi/guide/:path*", "destination": "https://api-habiturn.sidhar.me/hi/guide/:path*" },
+    { "source": "/privacy", "destination": "https://api-habiturn.sidhar.me/privacy" },
+    { "source": "/terms", "destination": "https://api-habiturn.sidhar.me/terms" },
     { "source": "/((?!\\.well-known/).*)", "destination": "/shell.html" }
   ],
   "headers": [

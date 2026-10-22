@@ -21,7 +21,8 @@ import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { AiBudgetError, Gemini, type AiSettings } from './gemini';
 import { GUIDES, guide } from './guides';
-import { render404, renderGuide, renderGuideHub, renderHub, renderPage, renderSitemap, type SeoContent, type SeoLang } from './seo-render';
+import { LEGAL } from './legal';
+import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderSitemap, type SeoContent, type SeoLang } from './seo-render';
 
 // AI-written landing pages for each kind of shop: /for/<slug> in English and /hi/for/<slug> in Hindi. The superadmin
 // queues shop types (Admin → SEO pages); a timer writes a few pages a day with Gemini, publishes them (or keeps them as
@@ -589,6 +590,16 @@ export class SeoPublicController {
     if (!g) return this.send(res, render404(SITE, lang), 404);
     const twin = guide(lang === 'en' ? 'hi' : 'en', slug);
     this.send(res, renderGuide(SITE, lang, g, { twin, others: GUIDES[lang].filter((x) => x.slug !== slug) }));
+  }
+
+  @Get('privacy')
+  privacy(@Res() res: Response) {
+    this.send(res, renderLegal(SITE, LEGAL.privacy, LEGAL.terms));
+  }
+
+  @Get('terms')
+  terms(@Res() res: Response) {
+    this.send(res, renderLegal(SITE, LEGAL.terms, LEGAL.privacy));
   }
 
   /** The homepage plus every published page, with its other-language twin. Updates as pages are published. */

@@ -92,6 +92,12 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
           <button className="btn btn-primary btn-lg" disabled={busy}>
             {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
+          {mode === 'signup' && (
+            <p className="muted small center">
+              By creating an account you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and{' '}
+              <a href="/privacy" target="_blank" rel="noopener">Privacy policy</a>.
+            </p>
+          )}
           <p className="muted small center">
             {mode === 'login' ? 'New here? ' : 'Already have an account? '}
             <button
