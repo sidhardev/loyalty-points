@@ -120,7 +120,7 @@ Language: ${
   }
 
 What Regularhood does (use only these facts):
-- It's a digital stamp card on the customer's phone number. The shop sets one rule: every N visits (3 to 10), one reward it chooses, e.g. every 5 visits a free chai.
+- It's a digital stamp card on the customer's phone number. The shop sets one rule: every N visits (3 to 10), one reward it chooses, e.g. every 5 visits a free gift.
 - At the counter the shop types the customer's phone number and taps "Add visit". That's the whole job. Regulars' numbers are suggested after 4 digits. New numbers become customers on the spot.
 - On the Nth visit the app says "Give the reward now"; the shop taps "Given" and the card starts again.
 - A phone number counts once a day. Any visit or reward can be undone.
