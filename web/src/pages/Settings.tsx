@@ -162,7 +162,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
       <header className="page-head">
         <div>
           <h1>{t('Settings')}</h1>
-          <p>{merchant.email}</p>
+          <p>{merchant.email || merchant.phone}</p>
         </div>
       </header>
       <div className="grid-2">

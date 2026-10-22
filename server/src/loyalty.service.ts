@@ -9,7 +9,7 @@ import { Db, randomToken } from './db';
 export type MerchantRow = {
   id: number;
   name: string;
-  email: string;
+  email: string | null; // null: signed up with a WhatsApp number only
   password_hash: string;
   points_per_100: number;
   join_code: string;

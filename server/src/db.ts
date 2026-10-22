@@ -440,6 +440,51 @@ const MIGRATIONS: string[] = [
   `
   ALTER TABLE merchants ADD COLUMN on_landing INTEGER NOT NULL DEFAULT 0;
   `,
+
+  // 21: shops can sign up with just a WhatsApp number, so email becomes optional. SQLite can't drop NOT NULL in place,
+  // so the table is rebuilt with the same columns (foreign keys are off while migrations run, see migrate()).
+  `
+  CREATE TABLE merchants_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    password_hash TEXT NOT NULL,
+    points_per_100 INTEGER NOT NULL DEFAULT 10,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    join_code TEXT,
+    welcome_bonus INTEGER NOT NULL DEFAULT 0,
+    birthday_bonus INTEGER NOT NULL DEFAULT 0,
+    gold_threshold INTEGER NOT NULL DEFAULT 1000,
+    gold_multiplier REAL NOT NULL DEFAULT 1.5,
+    inactive_days INTEGER NOT NULL DEFAULT 30,
+    max_visits_per_day INTEGER NOT NULL DEFAULT 3,
+    large_bill INTEGER NOT NULL DEFAULT 5000,
+    last_seen_at TEXT,
+    suspended_at TEXT,
+    suspended_reason TEXT,
+    phone TEXT,
+    signup_source TEXT NOT NULL DEFAULT '',
+    signup_medium TEXT NOT NULL DEFAULT '',
+    signup_campaign TEXT NOT NULL DEFAULT '',
+    signup_ref TEXT NOT NULL DEFAULT '',
+    signup_landing TEXT NOT NULL DEFAULT '',
+    referred_by INTEGER REFERENCES merchants(id),
+    visits_needed INTEGER NOT NULL DEFAULT 5,
+    reward_name TEXT NOT NULL DEFAULT '',
+    on_landing INTEGER NOT NULL DEFAULT 0
+  );
+  INSERT INTO merchants_new (id, name, email, password_hash, points_per_100, created_at, join_code, welcome_bonus,
+    birthday_bonus, gold_threshold, gold_multiplier, inactive_days, max_visits_per_day, large_bill, last_seen_at,
+    suspended_at, suspended_reason, phone, signup_source, signup_medium, signup_campaign, signup_ref, signup_landing,
+    referred_by, visits_needed, reward_name, on_landing)
+  SELECT id, name, email, password_hash, points_per_100, created_at, join_code, welcome_bonus,
+    birthday_bonus, gold_threshold, gold_multiplier, inactive_days, max_visits_per_day, large_bill, last_seen_at,
+    suspended_at, suspended_reason, phone, signup_source, signup_medium, signup_campaign, signup_ref, signup_landing,
+    referred_by, visits_needed, reward_name, on_landing
+  FROM merchants;
+  DROP TABLE merchants;
+  ALTER TABLE merchants_new RENAME TO merchants;
+  `,
 ];
 
 const INDEXES = `
@@ -496,12 +541,19 @@ export class Db implements OnModuleDestroy {
       this.sql.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
       console.log(`Database copied to ${file} before upgrading from v${version} to v${MIGRATIONS.length}`);
     }
+    // Foreign keys are off while upgrading, so a step can rebuild a table other tables point at (SQLite ignores this
+    // pragma inside a transaction, so it's set around them). A step may not leave more broken references than it found.
+    this.sql.exec('PRAGMA foreign_keys = OFF');
+    const brokenRefs = () => this.sql.prepare('PRAGMA foreign_key_check').all().length;
     for (let v = version; v < MIGRATIONS.length; v++) {
       this.transaction(() => {
+        const before = brokenRefs();
         this.sql.exec(MIGRATIONS[v]);
+        if (brokenRefs() > before) throw new Error(`Upgrade to v${v + 1} broke foreign key references`);
         this.sql.exec(`PRAGMA user_version = ${v + 1}`);
       });
     }
+    this.sql.exec('PRAGMA foreign_keys = ON');
     // Rows from before wallet links / join codes existed get theirs here.
     for (const { id } of this.sql.prepare('SELECT id FROM customers WHERE wallet_token IS NULL').all() as { id: number }[]) {
       this.sql.prepare('UPDATE customers SET wallet_token = ? WHERE id = ?').run(randomToken(), id);

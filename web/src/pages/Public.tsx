@@ -19,6 +19,9 @@ type WalletData = {
   history: { kind: 'visit' | 'reward'; note: string | null; createdAt: string }[];
 };
 
+/** The card's shop's invite page (/r/<code>, sign-up form on the page), tagged as a card visit rather than a share. */
+const cardInvite = (code: string) => `${location.origin}/r/${encodeURIComponent(code)}?utm_source=card&utm_medium=referral&utm_campaign=${encodeURIComponent(code)}`;
+
 /** Page frame for customer pages, with the language switch on top and a small "made with Regularhood" line below.
  * `via` is the shop's join code, so Admin → Growth can see which shop's customers brought new shops. */
 function PublicPage({ children, via }: { children: ReactNode; via?: string }) {
@@ -28,7 +31,7 @@ function PublicPage({ children, via }: { children: ReactNode; via?: string }) {
         <LangToggle />
       </div>
       {children}
-      <a className="made-with" href={trackedLink('card', via, 'referral')} target="_blank" rel="noopener">
+      <a className="made-with" href={via ? cardInvite(via) : trackedLink('card', '', 'referral')} target="_blank" rel="noopener">
         <LogoMark size={22} />
         <span>
           {t('Rewards by Regularhood')} · <b>{t('Run a shop? Get it free')}</b>

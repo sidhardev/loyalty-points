@@ -107,14 +107,8 @@ export function Referral({ code }: { code: string }) {
               <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required />
             </label>
             <label>
-              <span>
-                {t('WhatsApp number')} <span className="muted">({t('optional')})</span>
-              </span>
-              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
-            </label>
-            <label>
-              {t('Email')}
-              <input type="email" autoComplete="email" value={form.email} onChange={set('email')} required />
+              {t('WhatsApp number')}
+              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" required />
             </label>
             <label>
               {t('Password')}
@@ -128,10 +122,20 @@ export function Referral({ code }: { code: string }) {
                 placeholder={t('At least 8 characters')}
               />
             </label>
+            <label>
+              <span>
+                {t('Email')} <span className="muted">({t('optional')})</span>
+              </span>
+              <input type="email" autoComplete="email" value={form.email} onChange={set('email')} />
+            </label>
             <ErrorText text={error} />
             <button className="btn btn-primary btn-lg" disabled={busy}>
               {busy ? t('Please wait…') : t('Create my shop account')}
             </button>
+            <p className="muted small center">
+              {t('By creating an account you agree to the')} <a href="/terms" target="_blank" rel="noopener">{t('Terms')}</a> {t('and')}{' '}
+              <a href="/privacy" target="_blank" rel="noopener">{t('Privacy policy')}</a>.
+            </p>
             <p className="muted small center">
               {t('Already have an account?')} <a href="/app">{t('Log in')}</a>
               <br />

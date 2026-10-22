@@ -14,7 +14,7 @@ const FEATURES = [
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' ? 'signup' : 'login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', login: '' });
   const { busy, error, setError, run } = useAction();
 
   const submit = (e: FormEvent) => {
@@ -23,7 +23,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
       const { token, merchant } = await api<{ token: string; merchant: Merchant }>(
         `auth/${mode}`,
         'POST',
-        mode === 'signup' ? { ...form, attribution: arrival() } : { email: form.email, password: form.password },
+        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival() } : { login: form.login, password: form.password },
       );
       setToken(token);
       if (mode === 'signup') trackEvent('signup', 'shop');
@@ -65,15 +65,16 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
               <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required autoFocus />
             </label>
           )}
-          <label>
-            Email
-            <input type="email" autoComplete="email" value={form.email} onChange={set('email')} required autoFocus={mode === 'login'} />
-          </label>
-          {mode === 'signup' && (
+          {mode === 'login' ? (
             <label>
-              WhatsApp number <span className="muted">(optional)</span>
-              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
-              <span className="hint">So we can help you set up. We never share it.</span>
+              WhatsApp number or email
+              <input autoComplete="username" value={form.login} onChange={set('login')} placeholder="98765 43210" required autoFocus />
+            </label>
+          ) : (
+            <label>
+              WhatsApp number
+              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" required />
+              <span className="hint">You log in with it. We never share it.</span>
             </label>
           )}
           <label>
@@ -88,6 +89,14 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
               placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
             />
           </label>
+          {mode === 'signup' && (
+            <label>
+              <span>
+                Email <span className="muted">(optional)</span>
+              </span>
+              <input type="email" autoComplete="email" value={form.email} onChange={set('email')} />
+            </label>
+          )}
           <ErrorText text={error} />
           <button className="btn btn-primary btn-lg" disabled={busy}>
             {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}

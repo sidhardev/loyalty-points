@@ -180,13 +180,15 @@ function ContactButtons({ shop, onDone, compact }: { shop: Shop; onDone: () => v
           <Phone size={16} /> Call
         </a>
       )}
-      <a
-        className={`btn ${size} btn-soft`}
-        href={`mailto:${shop.email}?subject=${encodeURIComponent(`Your Regularhood shop: ${shop.name}`)}&body=${encodeURIComponent(nudge(shop))}`}
-        onClick={() => record('email')}
-      >
-        <Mail size={16} /> Email
-      </a>
+      {shop.email && (
+        <a
+          className={`btn ${size} btn-soft`}
+          href={`mailto:${shop.email}?subject=${encodeURIComponent(`Your Regularhood shop: ${shop.name}`)}&body=${encodeURIComponent(nudge(shop))}`}
+          onClick={() => record('email')}
+        >
+          <Mail size={16} /> Email
+        </a>
+      )}
       <button className={`btn ${size} btn-ghost`} onClick={() => record('visit')}>
         <Check size={16} /> Visited / other
       </button>
@@ -330,7 +332,7 @@ function OverviewPage() {
                     </strong>
                     <span>{reason(s)}</span>
                   </span>
-                  <span className="muted small">{s.email}</span>
+                  <span className="muted small">{s.email || s.phone}</span>
                 </a>
               </li>
             ))}
@@ -423,7 +425,7 @@ function ShopsPage() {
                       <a href={`#/shops/${s.id}`}>
                         <strong>{s.name}</strong>
                       </a>
-                      <span className="muted small">{s.email}</span>
+                      <span className="muted small">{s.email || s.phone}</span>
                     </td>
                     <td>
                       <StatusBadge status={s.status} />
@@ -579,8 +581,7 @@ function ShopPage({ id }: { id: number }) {
             {shop.name} <StatusBadge status={shop.status} />
           </h1>
           <p>
-            {shop.email}
-            {shop.phone ? ` · ${shop.phone}` : ''} · joined {when(shop.created_at)} · last seen {ago(shop.last_seen_at)}
+            {[shop.email, shop.phone].filter(Boolean).join(' · ')} · joined {when(shop.created_at)} · last seen {ago(shop.last_seen_at)}
           </p>
           <p className="follow-meta">
             <span className="source-chip">From: {sourceName(shop.source)}</span>

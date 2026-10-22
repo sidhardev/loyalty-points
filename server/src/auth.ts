@@ -24,7 +24,8 @@ import { Db, randomToken } from './db';
 import { CARD_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
-// Shop owners sign up with email + password and get a token the website sends with every request.
+// Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
+// every request. They log in with either one.
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -42,7 +43,7 @@ export function checkPassword(password: string, stored: string) {
 export const publicMerchant = (m: MerchantRow) => ({
   id: m.id,
   name: m.name,
-  email: m.email,
+  email: m.email ?? '',
   joinCode: m.join_code,
   inactiveDays: m.inactive_days,
   phone: m.phone ?? '',
@@ -121,15 +122,18 @@ export class AuthController {
   @Post('auth/signup')
   async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown }) {
     const name = body?.name?.trim();
-    const email = body?.email?.trim().toLowerCase();
+    const email = body?.email?.trim().toLowerCase() ?? '';
     const password = body?.password ?? '';
     if (!name) throw new BadRequestException('Shop name is required');
-    if (!email || !EMAIL.test(email)) throw new BadRequestException('Enter a valid email');
-    if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
     const phone = readPhone(body?.phone);
+    if (!phone && !email) throw new BadRequestException('Enter your WhatsApp number');
+    if (email && !EMAIL.test(email)) throw new BadRequestException('Enter a valid email');
+    if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
 
-    const exists = this.db.sql.prepare('SELECT id FROM merchants WHERE email = ?').get(email);
-    if (exists) throw new ConflictException('An account with this email already exists');
+    if (email && this.db.sql.prepare('SELECT id FROM merchants WHERE email = ?').get(email)) {
+      throw new ConflictException('An account with this email already exists. Log in instead.');
+    }
+    if (phone && this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in instead.');
 
     // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
     const from = readAttribution(body?.attribution);
@@ -143,17 +147,29 @@ export class AuthController {
         `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
            signup_ref, signup_landing, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(name, email, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null);
+      .run(name, email || null, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null);
     return this.session(Number(lastInsertRowid));
   }
 
   @Post('auth/login')
-  async login(@Body() body: { email?: string; password?: string }) {
-    const email = body?.email?.trim().toLowerCase() ?? '';
-    const merchant = this.db.sql.prepare('SELECT * FROM merchants WHERE email = ?').get(email) as MerchantRow | undefined;
-    if (!merchant || !checkPassword(body?.password ?? '', merchant.password_hash)) {
-      throw new UnauthorizedException('Wrong email or password');
+  async login(@Body() body: { login?: string; email?: string; password?: string }) {
+    // One box for either: anything with an @ is an email, the rest a WhatsApp number.
+    const id = String(body?.login ?? body?.email ?? '').trim();
+    let candidates: MerchantRow[] = [];
+    if (id.includes('@')) {
+      candidates = this.db.sql.prepare('SELECT * FROM merchants WHERE email = ?').all(id.toLowerCase()) as MerchantRow[];
+    } else if (id) {
+      let phone = '';
+      try {
+        phone = readPhone(id);
+      } catch {
+        // Not a number either; falls through to "wrong".
+      }
+      // Numbers given before sign-up by number weren't checked for repeats, so the password picks the account.
+      if (phone) candidates = this.db.sql.prepare('SELECT * FROM merchants WHERE phone = ? ORDER BY id').all(phone) as MerchantRow[];
     }
+    const merchant = candidates.find((m) => checkPassword(body?.password ?? '', m.password_hash));
+    if (!merchant) throw new UnauthorizedException('Wrong WhatsApp number, email or password');
     if (merchant.suspended_at) throw new ForbiddenException(SUSPENDED);
     return this.session(merchant.id);
   }
@@ -162,7 +178,7 @@ export class AuthController {
   @Get('auth/reset/:token')
   resetInfo(@Param('token') token: string) {
     const m = this.resetTarget(token);
-    return { shop: m.name, email: m.email };
+    return { shop: m.name, email: m.email || m.phone || '' };
   }
 
   /** Sets a new password from a one-time reset link and logs the shop in. */
@@ -203,6 +219,8 @@ export class AuthController {
     const b = body ?? {};
     const name = (b.name?.trim() || m.name).slice(0, 80);
     const phone = b.phone === undefined ? (m.phone ?? '') : readPhone(b.phone);
+    if (!phone && !m.email) throw new BadRequestException('Keep your WhatsApp number: you log in with it');
+    if (phone && phone !== m.phone && this.phoneTaken(phone, m.id)) throw new ConflictException('Another shop account already uses this WhatsApp number');
     const needed = wholeNumber(b.visitsNeeded ?? m.visits_needed, 'Visits', 2, 50);
     const reward = (b.rewardName === undefined ? m.reward_name : String(b.rewardName)).trim().slice(0, 60);
     if (b.rewardName !== undefined && !reward) throw new BadRequestException('Write what the customer gets, e.g. Free chai');
@@ -223,6 +241,10 @@ export class AuthController {
       this.loyalty.log(m.id, 'shop', 'settings', changed.map(([label, before, after]) => `${label} ${before} → ${after}`).join(', '));
     }
     return publicMerchant(this.find(m.id));
+  }
+
+  private phoneTaken(phone: string, exceptId = 0) {
+    return Boolean(this.db.sql.prepare('SELECT id FROM merchants WHERE phone = ? AND id != ?').get(phone, exceptId));
   }
 
   private find(id: number) {

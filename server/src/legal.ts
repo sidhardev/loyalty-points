@@ -43,8 +43,8 @@ const privacy: LegalDoc = {
       h2: 'Information from shop owners',
       p: ['When a shop signs up and uses Regularhood, we keep:'],
       list: [
-        'Shop name, email address and password. Passwords are stored only as a salted hash; nobody, including us, can read them.',
-        'A WhatsApp number, if you choose to give one, so we can help you set up. We don’t share it.',
+        'Shop name, WhatsApp number and password, and an email address if you give one. You log in with the number or the email. Passwords are stored only as a salted hash; nobody, including us, can read them.',
+        'We use your WhatsApp number to log you in and to help you set up. We don’t share it.',
         'Your shop’s settings: the number of visits for a reward, the reward, bonuses and limits.',
         'Where you first came from (for example a search result, an Instagram post or another shop’s referral link), so we know which of our marketing works and can give referral rewards.',
         'A log of actions in your shop account (visits added, rewards given, customers deleted), shown to you in the activity log.',
@@ -130,7 +130,7 @@ const privacy: LegalDoc = {
     {
       h2: 'Your rights',
       p: [
-        `Under India’s Digital Personal Data Protection Act, 2023 you can ask what information we have about you, ask us to correct or delete it, withdraw consent, and nominate someone to act for you. Write to ${CONTACT_EMAIL} from the email or phone number the information is about; we reply within 30 days. If you are not satisfied, you can complain to the Data Protection Board of India.`,
+        `Under India’s Digital Personal Data Protection Act, 2023 you can ask what information we have about you, ask us to correct or delete it, withdraw consent, and nominate someone to act for you. Write to ${CONTACT_EMAIL} and tell us the email or phone number the information is about; we reply within 30 days. If you are not satisfied, you can complain to the Data Protection Board of India.`,
       ],
     },
     {
@@ -142,7 +142,7 @@ const privacy: LegalDoc = {
     {
       h2: 'Changes to this policy',
       p: [
-        'If we change this policy, we update the date at the top of this page. If a change matters for how we use your information, we will tell shops by email or in the app before it applies.',
+        'If we change this policy, we update the date at the top of this page. If a change matters for how we use your information, we will tell shops in the app, on WhatsApp or by email before it applies.',
       ],
     },
     {
@@ -174,7 +174,7 @@ const terms: LegalDoc = {
       h2: 'Your account',
       list: [
         'You must be at least 18 and use Regularhood for a real business you run or are allowed to act for.',
-        'Give correct details and keep your email address current, since that is how we reach you.',
+        'Give correct details and keep your WhatsApp number current, since that is how you log in and how we reach you.',
         'Keep your password private. You are responsible for what happens in your account, including actions by staff you let use it.',
         `Tell us at ${CONTACT_EMAIL} straight away if you think someone else has used your account.`,
       ],
@@ -249,7 +249,7 @@ const terms: LegalDoc = {
     {
       h2: 'Changes to these terms',
       p: [
-        'We may update these terms. We will change the date at the top of this page and, for important changes, tell you by email or in the app before they apply. If you keep using Regularhood after that, the new terms apply.',
+        'We may update these terms. We will change the date at the top of this page and, for important changes, tell you in the app, on WhatsApp or by email before they apply. If you keep using Regularhood after that, the new terms apply.',
       ],
     },
     {

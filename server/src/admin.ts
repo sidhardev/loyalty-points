@@ -68,7 +68,7 @@ export const AdminId = createParamDecorator((_: unknown, ctx: ExecutionContext) 
 type ShopRow = {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
   created_at: string;
   last_seen_at: string | null;
   suspended_at: string | null;
@@ -194,7 +194,7 @@ export class AdminController {
   @UseGuards(AdminGuard)
   shops(@Query('q') q = '', @Query('filter') filter = '') {
     const like = `%${q.trim().toLowerCase()}%`;
-    const rows = (this.db.sql.prepare(`${SHOP_SELECT} WHERE lower(m.name) LIKE ? OR lower(m.email) LIKE ? ORDER BY m.created_at DESC`).all(like, like) as ShopRow[]).map(
+    const rows = (this.db.sql.prepare(`${SHOP_SELECT} WHERE lower(m.name) LIKE ? OR lower(m.email) LIKE ? OR m.phone LIKE ? ORDER BY m.created_at DESC`).all(like, like, like) as ShopRow[]).map(
       shopView,
     );
     return filter ? rows.filter((s) => s.status === filter) : rows;
@@ -260,7 +260,7 @@ export class AdminController {
     this.db.transaction(() => {
       this.db.sql.prepare("UPDATE password_resets SET used_at = datetime('now') WHERE merchant_id = ? AND used_at IS NULL").run(id);
       this.db.sql.prepare('INSERT INTO password_resets (token_hash, merchant_id, expires_at) VALUES (?, ?, ?)').run(tokenHash(token), id, expiresAt);
-      this.audit(adminId, id, 'reset_link', `Made a password reset link for ${m.email}`);
+      this.audit(adminId, id, 'reset_link', `Made a password reset link for ${m.email || m.phone}`);
       this.loyalty.log(id, 'admin', 'password', 'Support made a password reset link');
     });
     return { path: `/reset/${token}`, expiresAt };
