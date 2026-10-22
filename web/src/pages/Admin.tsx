@@ -104,6 +104,7 @@ type Shop = {
   referred_by: number | null;
   referred_by_name: string | null;
   referrals: number;
+  on_landing: number; // 1 = listed on the homepage
   last_contact: string | null;
   last_contact_detail: string | null;
 };
@@ -365,6 +366,17 @@ function ShopsPage() {
     return () => clearTimeout(timer);
   }, [q, filter]);
 
+  const setLanding = (s: Shop, on: boolean) => {
+    setShops((list) => list && list.map((x) => (x.id === s.id ? { ...x, on_landing: on ? 1 : 0 } : x)));
+    adminApi(`shops/${s.id}/landing`, 'POST', { on }).then(
+      () => toast(on ? `${s.name} is on the homepage` : `${s.name} is off the homepage`),
+      (e) => {
+        setShops((list) => list && list.map((x) => (x.id === s.id ? { ...x, on_landing: on ? 0 : 1 } : x)));
+        toast((e as Error).message, 'error');
+      },
+    );
+  };
+
   return (
     <>
       <header className="page-head">
@@ -401,6 +413,7 @@ function ShopsPage() {
                   <th>Last visit</th>
                   <th>Joined</th>
                   <th>From</th>
+                  <th title="Show this shop on the homepage">Homepage</th>
                 </tr>
               </thead>
               <tbody>
@@ -423,6 +436,16 @@ function ShopsPage() {
                     <td>{ago(s.created_at)}</td>
                     <td>
                       <span className="source-chip">{sourceName(s.source)}</span>
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="landing-check"
+                        checked={!!s.on_landing}
+                        disabled={!!s.suspended_at}
+                        onChange={(e) => setLanding(s, e.target.checked)}
+                        aria-label={`Show ${s.name} on the homepage`}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -530,6 +553,12 @@ function ShopPage({ id }: { id: number }) {
       load();
     });
   };
+  const toggleLanding = () =>
+    void action.run(async () => {
+      await adminApi(`shops/${id}/landing`, 'POST', { on: !shop.on_landing });
+      toast(shop.on_landing ? `${shop.name} is off the homepage` : `${shop.name} is on the homepage`);
+      load();
+    });
   const addNote = (e: FormEvent) => {
     e.preventDefault();
     void action.run(async () => {
@@ -678,6 +707,20 @@ function ShopPage({ id }: { id: number }) {
               </button>
             </div>
           )}
+
+          <div className="support-action">
+            <div>
+              <strong>{shop.on_landing ? 'Shown on the homepage' : 'Show on the homepage'}</strong>
+              <span className="muted small">
+                {shop.suspended_at
+                  ? 'Paused shops are never shown.'
+                  : 'Lists the shop name and its card under “Shops using Regularhood”. Ask the owner first.'}
+              </span>
+            </div>
+            <button className={shop.on_landing ? 'btn btn-ghost' : 'btn btn-soft'} disabled={action.busy} onClick={toggleLanding}>
+              <Globe2 size={17} /> {shop.on_landing ? 'Remove' : 'Show'}
+            </button>
+          </div>
 
           <form className="support-form" onSubmit={addNote}>
             <label>

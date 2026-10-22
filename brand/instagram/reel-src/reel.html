@@ -1,0 +1,221 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+:root{--g:#0b7a52;--g2:#0a5e40;--amber:#f0a202;--cream:#eef2ec;--bg:#eaf0ea;--ink:#0d3b2a;--orange:#ea7a0c;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:"Segoe UI","Nirmala UI","Segoe UI Emoji",sans-serif;color:var(--ink)}
+.scene{position:absolute;inset:0;opacity:0;overflow:hidden}
+.light{background:var(--bg)}
+.dark{background:linear-gradient(180deg,#0c7d54,#0a5e40);color:#fff}
+.awning{position:absolute;top:0;left:0;right:0;height:120px;display:flex}
+.awning i{flex:1;height:120px;border-radius:0 0 60px 60px}
+.dots{position:absolute;inset:0}
+.dots b{position:absolute;border-radius:50%}
+.a{position:absolute;left:0;right:0;text-align:center;will-change:transform,opacity}
+.h1{font-size:104px;font-weight:800;line-height:1.08;letter-spacing:-1px}
+.h2{font-size:76px;font-weight:700;line-height:1.15}
+.sub{font-size:54px;font-weight:600;line-height:1.25}
+.pill{display:inline-block;background:var(--g);color:#fff;font-weight:800;font-size:40px;padding:16px 40px;border-radius:60px;letter-spacing:1px}
+.amber{color:var(--amber)}
+.green{color:var(--g)}
+/* paper card */
+.paper{position:absolute;left:250px;top:720px;width:580px;height:360px;background:#f6ecd6;border-radius:18px;box-shadow:0 30px 60px rgba(0,0,0,.18);padding:36px;font-weight:700;font-size:36px;color:#7a5b2b;white-space:nowrap}
+.paper .row{display:flex;gap:22px;margin-top:40px}
+.paper .row span{width:72px;height:72px;border-radius:50%;border:5px dashed #b99a65}
+.paper .row span.on{background:#c0392b;border:none;opacity:.8}
+.cross{position:absolute;left:0;right:0;top:620px;text-align:center;font-size:520px;line-height:1;color:#d63a2f;font-weight:900}
+/* phone */
+.phone{position:absolute;left:190px;top:470px;transform-origin:50% 0;width:700px;height:1060px;border-radius:72px;background:#13221c;padding:22px;box-shadow:0 40px 80px rgba(0,0,0,.25)}
+.screen{position:relative;width:100%;height:100%;border-radius:54px;background:#f4f8f6;overflow:hidden}
+.sh{height:120px;background:#fff;border-bottom:2px solid #e0e9e5;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:700;padding-top:20px}
+.lbl{font-size:30px;color:#5b6b65;text-align:center;margin-top:34px}
+.num{margin:16px 40px 0;height:120px;border-radius:24px;background:#fff;border:3px solid #c9d6d1;display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:700;letter-spacing:3px}
+.caret{display:inline-block;width:5px;height:66px;background:var(--g);margin-left:6px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 40px 0}
+.keypad div{height:104px;border-radius:22px;background:#fff;border:2px solid #e0e9e5;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:600}
+.keypad div.on{background:#e3f4ec;border-color:#047857}
+.addbtn{position:absolute;left:40px;right:40px;bottom:44px;height:130px;border-radius:30px;background:#047857;color:#fff;font-size:54px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.state{position:absolute;inset:120px 0 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.stamps{display:flex;gap:18px;justify-content:center}
+.stamps span{width:96px;height:96px;border-radius:50%;border:5px solid #c9d6d1;display:flex;align-items:center;justify-content:center;font-size:50px;color:#fff;font-weight:900;background:#fff}
+.stamps span.on{background:#10b981;border-color:#10b981}
+.stamps span.gift{border-color:var(--amber);background:#fdf2d0}
+.finger{position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(13,59,42,.28);border:6px solid rgba(255,255,255,.9);opacity:0}
+/* whatsapp */
+.wa{position:absolute;left:110px;right:110px;top:560px;height:800px;border-radius:44px;overflow:hidden;background:#efe7dd;box-shadow:0 40px 80px rgba(0,0,0,.2)}
+.wah{height:150px;background:#128c4a;color:#fff;display:flex;align-items:center;gap:26px;padding:0 40px;font-size:44px;font-weight:700}
+.wah .av{width:90px;height:90px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:50px}
+.bub{position:absolute;left:44px;right:120px;top:210px;background:#fff;border-radius:0 34px 34px 34px;padding:38px 40px;font-size:44px;line-height:1.35;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.bub .link{color:#0b67c2;font-weight:600}
+.bub .t{font-size:28px;color:#8a9a94;text-align:right;margin-top:10px}
+.chips{position:absolute;left:80px;right:80px;top:800px;display:flex;flex-wrap:wrap;gap:34px;justify-content:center}
+.chip{background:#fff;border:4px solid var(--g);border-radius:80px;padding:26px 46px;font-size:58px;font-weight:700;opacity:0}
+.logo{position:absolute;left:340px;width:400px;height:400px}
+.url{display:inline-block;background:var(--amber);color:#0d3b2a;font-weight:800;font-size:66px;padding:30px 60px;border-radius:90px}
+</style></head>
+<body>
+
+<!-- S1 hook -->
+<section class="scene light" data-s="0" data-e="3.4">
+  <div class="awning g-awn"></div><div class="dots"></div>
+  <div class="a sub" style="top:600px;color:#3d5a4d" data-in="0.15" data-fx="up">Naya customer aaya,</div>
+  <div class="a sub" style="top:690px;color:#3d5a4d" data-in="0.65" data-fx="up">paise diye…</div>
+  <div class="a sub" style="top:780px;color:#3d5a4d" data-in="1.15" data-fx="up">aur chala gaya. 🚶</div>
+  <div class="a h1" style="top:1000px" data-in="1.75" data-fx="pop">Kya wo<br><span class="green">wapas aayega?</span> 🤔</div>
+</section>
+
+<!-- S2 paper problem -->
+<section class="scene light" data-s="3.4" data-e="6.6">
+  <div class="awning g-awn"></div><div class="dots"></div>
+  <div class="a h2" style="top:330px" data-in="3.5" data-fx="up">Paper stamp card?</div>
+  <div class="paper" id="paper">Sharma Store — Loyalty card
+    <div class="row"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></div></div>
+  <div class="cross" id="cross">✕</div>
+  <div class="a sub" style="top:1300px" data-in="5.3" data-fx="up">Kho jaata hai. 😕<br>Ghar pe reh jaata hai.</div>
+</section>
+
+<!-- S3 logo reveal -->
+<section class="scene dark" data-s="6.6" data-e="9.4">
+  <div class="awning w-awn"></div><div class="dots"></div>
+  <img class="logo" id="logo1" style="top:540px" src="logo.svg">
+  <div class="a" style="top:1040px;font-size:130px;font-weight:800" data-in="7.3" data-fx="up">Regularhood</div>
+  <div class="a amber" style="top:1220px;font-size:60px;font-weight:700" data-in="7.7" data-fx="up">Har local dukaan ka<br>stamp card</div>
+</section>
+
+<!-- S4-S6 phone -->
+<section class="scene light" data-s="9.4" data-e="19.6">
+  <div class="awning g-awn"></div><div class="dots"></div>
+  <div class="a h2 cap" style="top:220px" data-cap="9.5,13.4">Customer bas<br><span class="green">number bataye</span> 📱</div>
+  <div class="a h2 cap" style="top:220px" data-cap="13.4,16.5">1 tap = <span class="green">1 stamp</span> ✅</div>
+  <div class="a h2 cap" style="top:220px" data-cap="16.5,19.7">5th visit =<br><span style="color:var(--orange)">free gift</span> 🎁</div>
+  <div class="phone" id="phone"><div class="screen" id="screen">
+    <div class="sh">🏪 Sharma Store</div>
+    <div id="pad">
+      <div class="lbl">Customer ka phone number</div>
+      <div class="num"><span id="digits"></span><span class="caret" id="caret"></span></div>
+      <div class="keypad" id="keys"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div style="font-size:34px">Clear</div><div>0</div><div>⌫</div></div>
+      <div class="addbtn" id="addbtn">Add visit</div>
+    </div>
+    <div class="state" id="st1">
+      <div style="font-size:120px">✅</div>
+      <div style="font-size:56px;font-weight:800;margin:20px 0 10px">Visit added</div>
+      <div style="font-size:36px;color:#5b6b65;margin-bottom:50px">98765 43210</div>
+      <div class="stamps" id="stamps1"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span id="newstamp">✓</span><span class="gift">🎁</span></div>
+      <div style="font-size:44px;font-weight:700;margin-top:50px">Bas <span class="green">1 aur</span> — phir free gift</div>
+    </div>
+    <div class="state" id="st2" style="background:var(--orange);color:#fff">
+      <div style="font-size:170px" id="gift">🎁</div>
+      <div style="font-size:72px;font-weight:800;margin:20px 40px 16px;line-height:1.1">Give the<br>reward now</div>
+      <div style="font-size:52px;font-weight:700;background:#fff;color:var(--orange);padding:18px 44px;border-radius:60px;margin-top:20px">Free gift 🎁</div>
+      <div class="stamps" style="margin-top:60px"><span class="on" style="background:#fff;border-color:#fff;color:var(--orange)">✓</span><span class="on" style="background:#fff;border-color:#fff;color:var(--orange)">✓</span><span class="on" style="background:#fff;border-color:#fff;color:var(--orange)">✓</span><span class="on" style="background:#fff;border-color:#fff;color:var(--orange)">✓</span><span class="on" style="background:#fff;border-color:#fff;color:var(--orange)">🎁</span></div>
+    </div>
+  </div></div>
+  <div class="finger" id="finger"></div>
+  <div class="a sub cap" style="top:1510px" data-cap="10.6,13.4">Na app. Na QR. Na password.</div>
+  <div class="a sub cap" style="top:1510px" data-cap="13.9,16.5">Bas ek button: <b class="green">Add visit</b></div>
+  <div class="a sub cap" style="top:1510px" data-cap="17.0,19.7">App khud bolega: <b style="color:var(--orange)">reward do!</b></div>
+</section>
+
+<!-- S7 whatsapp -->
+<section class="scene light" data-s="19.6" data-e="22.6">
+  <div class="awning g-awn"></div><div class="dots"></div>
+  <div class="a h2" style="top:220px" data-in="19.7" data-fx="up">Card seedha<br><span style="color:#128c4a">WhatsApp</span> pe 💬</div>
+  <div class="wa" data-in="19.8" data-fx="rise" style="left:110px;right:110px">
+    <div class="wah"><div class="av">🏪</div>Sharma Store</div>
+    <div class="bub" data-in="20.4" data-fx="pop" style="text-align:left">Namaste! 🙏 Aapki <b>3rd visit</b> ho gayi ✅<br><br>Bas <b>2 visit aur</b> — phir <b>free gift</b> 🎁<br><br><span class="link">👉 Apna card dekhein</span><div class="t">10:42 ✓✓</div></div>
+  </div>
+  <div class="a sub" style="top:1420px" data-in="21.0" data-fx="up" data-x>Hindi ya English mein</div>
+</section>
+
+<!-- S8 shop types -->
+<section class="scene light" data-s="22.6" data-e="25.0">
+  <div class="awning g-awn"></div><div class="dots"></div>
+  <div class="a h2" style="top:440px" data-in="22.7" data-fx="up">Jahaan log<br><span class="green">baar-baar</span> aate hain</div>
+  <div class="chips">
+    <div class="chip" data-in="23.0" data-fx="pop">🏋️ Gym</div>
+    <div class="chip" data-in="23.2" data-fx="pop">💇 Salon</div>
+    <div class="chip" data-in="23.4" data-fx="pop">🥐 Bakery</div>
+    <div class="chip" data-in="23.6" data-fx="pop">🛒 Kirana</div>
+    <div class="chip" data-in="23.8" data-fx="pop">🍰 Café</div>
+    <div class="chip" data-in="24.0" data-fx="pop">🍬 Mithai shop</div>
+  </div>
+</section>
+
+<!-- S9 end card -->
+<section class="scene dark" data-s="25.0" data-e="99">
+  <div class="awning w-awn"></div><div class="dots"></div>
+  <img class="logo" id="logo2" style="top:330px;width:340px;height:340px;left:370px" src="logo.svg">
+  <div class="a" style="top:720px;font-size:120px;font-weight:800" data-in="25.3" data-fx="up">Regularhood</div>
+  <div class="a" style="top:900px;font-size:76px;font-weight:800;line-height:1.2" data-in="25.6" data-fx="up">Free shuru karo ✅</div>
+  <div class="a amber" style="top:1010px;font-size:54px;font-weight:700" data-in="25.8" data-fx="up">1 minute mein setup</div>
+  <div class="a" style="top:1170px" data-in="26.1" data-fx="pop"><span class="url">www.regularhood.in</span></div>
+  <div class="a" style="top:1360px;font-size:46px;font-weight:600;opacity:.9" data-in="26.5" data-fx="up">Aapka agla regular aaj hi aayega 🙌</div>
+</section>
+
+<script>
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eo=x=>1-Math.pow(1-x,3);
+const back=x=>{const c=1.7;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const prog=(t,s,d=.45)=>clamp((t-s)/d);
+// decor
+document.querySelectorAll('.g-awn').forEach(a=>{for(let i=0;i<12;i++){const e=document.createElement('i');e.style.background=i%2?'#0b7a52':'#f0a202';a.appendChild(e)}});
+document.querySelectorAll('.w-awn').forEach(a=>{for(let i=0;i<12;i++){const e=document.createElement('i');e.style.background=i%2?'#eef2ec':'#f0a202';a.appendChild(e)}});
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+document.querySelectorAll('.dots').forEach(d=>{const dark=d.parentElement.classList.contains('dark');for(let i=0;i<26;i++){const b=document.createElement('b');const r=20+rnd()*22;b.style.cssText=`left:${rnd()*1060}px;top:${140+rnd()*1760}px;width:${r}px;height:${r}px;`+(rnd()<.6?`background:${dark?'rgba(255,255,255,.07)':'rgba(11,122,82,.07)'}`:`border:4px solid ${dark?'rgba(255,255,255,.08)':'rgba(11,122,82,.09)'}`);b.dataset.v=(rnd()-.5)*40;d.appendChild(b)}});
+const scenes=[...document.querySelectorAll('.scene')];
+const $=id=>document.getElementById(id);
+const DIG='9876543210';
+window.render=t=>{
+  scenes.forEach(sc=>{
+    const s=+sc.dataset.s,e=+sc.dataset.e;
+    const o=clamp((t-s+0.12)/0.25)*clamp((e-t+0.12)/0.25);
+    sc.style.opacity=o; sc.style.display=o>0?'block':'none';
+    if(!o) return;
+    sc.querySelectorAll('.dots b').forEach(b=>b.style.transform=`translateY(${-(t-s)*b.dataset.v}px)`);
+    sc.querySelectorAll('[data-in]').forEach(el=>{
+      const p=prog(t,+el.dataset.in,el.dataset.fx==='pop'?.5:.45);
+      el.style.opacity=clamp(p*2);
+      const fx=el.dataset.fx;
+      if(fx==='up') el.style.transform=`translateY(${(1-eo(p))*60}px)`;
+      if(fx==='rise') el.style.transform=`translateY(${(1-eo(p))*300}px)`;
+      if(fx==='pop') el.style.transform=`scale(${.6+.4*back(p)})`;
+    });
+    sc.querySelectorAll('[data-cap]').forEach(el=>{
+      const [a,b]=el.dataset.cap.split(',').map(Number);
+      const p=prog(t,a,.4),q=clamp((b-t)/.25);
+      el.style.opacity=Math.min(p,q); el.style.transform=`translateY(${(1-eo(p))*50}px)`;
+    });
+  });
+  // S2 paper falls, cross
+  {const p=prog(t,4.5,.7);const pa=$('paper');
+   const ip=prog(t,3.6,.5);
+   pa.style.opacity=clamp(ip*2)*(1-clamp((t-4.95)/0.3));
+   pa.style.transform=`translateY(${(1-eo(ip))*80+p*p*500}px) rotate(${-6+p*p*38}deg) scale(${1-p*.25})`;
+   const c=prog(t,4.6,.35);$('cross').style.opacity=c*(1-clamp((t-5.8)/0.4))*.9;$('cross').style.transform=`scale(${.5+.5*back(c)})`;}
+  // logos
+  {const p=prog(t,6.75,.6);$('logo1').style.transform=`scale(${.3+.7*back(p)}) rotate(${(1-p)*-12}deg)`;$('logo1').style.opacity=clamp(p*2);
+   const q=prog(t,25.05,.6);$('logo2').style.transform=`scale(${.3+.7*back(q)})`;$('logo2').style.opacity=clamp(q*2);}
+  // phone typing
+  {const n=Math.floor(clamp((t-10.2)/2.3)*10+1e-9);const shown=DIG.slice(0,n);
+   $('digits').textContent=shown.length>5?shown.slice(0,5)+' '+shown.slice(5):shown;
+   $('caret').style.opacity=(Math.floor(t*2.5)%2||n>=10)?1:0;
+   const keys=[...$('keys').children];keys.forEach(k=>k.classList.remove('on'));
+   if(n>0&&n<=10&&t<12.7){const d=DIG[n-1];const k=keys.find(k=>k.textContent===d);const since=(t-10.2)-(n-1)*0.23;if(since<.15)k&&k.classList.add('on');}
+   const ph=prog(t,9.5,.6);$('phone').style.transform=`scale(.92) translateY(${(1-eo(ph))*400}px)`;
+   // finger tap on Add visit at 13.3 and again at 16.3
+   const f=$('finger');let fo=0,fs=1;
+   for(const tt of [13.3,16.3]){const d=t-tt;if(d>-.35&&d<.45){fo=clamp(1-Math.abs(d+.05)/.4)*1;fs=d<0?1.15+(-d):1-.15*Math.sin(clamp(d/.2)*Math.PI)}}
+   f.style.opacity=fo;f.style.left='465px';f.style.top='1250px';f.style.transform=`scale(${fs})`;
+   const btn=$('addbtn');btn.style.background=(t>13.25&&t<13.5)?'#065f46':'#047857';
+   // states
+   const s1=clamp((t-13.45)/.2)*clamp((16.35-t)/.2);$('st1').style.opacity=s1;$('st1').style.background='#f4f8f6';
+   const ns=prog(t,13.7,.4);const st=$('newstamp');st.className=ns>0?'on':'';st.style.transform=`scale(${ns>0?2.2-1.2*eo(ns):1})`;st.style.color=ns>0?'#fff':'transparent';
+   const s2=clamp((t-16.45)/.2);$('st2').style.opacity=s2;
+   const g=prog(t,16.6,.6);$('gift').style.transform=`scale(${.4+.6*back(g)}) rotate(${Math.sin(t*9)*6*clamp((18.5-t))}deg)`;
+   // phone shake on reward
+   if(t>16.45&&t<16.9) $('phone').style.transform+=` rotate(${Math.sin(t*60)*1.5}deg)`;
+  }
+};
+render(0);
+</script>
+</body></html>

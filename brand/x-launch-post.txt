@@ -1,0 +1,68 @@
+=== Single post (fits in 280) ===
+
+Paper stamp cards get lost. Loyalty apps never get downloaded.
+
+So we built the simplest one possible:
+Customer says their phone number → you tap "Add visit" → done.
+
+Every 5th visit = a free gift 🎁
+Card arrives on WhatsApp. No app, no QR. Free.
+
+regularhood.in
+
+
+=== Optional thread (reply under the post above) ===
+
+2/
+Our first version had points, QR codes, PINs and bill tracking.
+
+We deleted almost all of it.
+
+If someone at a busy counter can't learn it in 10 seconds, it doesn't exist.
+
+3/
+What's left:
+→ One keypad, one button
+→ Screen turns orange when a reward is due
+→ A ready "we miss you" WhatsApp for customers who stopped coming
+→ Counter poster + status image made for you
+
+4/
+Works for any shop people come back to: cafés, salons, bakeries, kirana stores, gyms.
+
+Unlimited customers, free, 1-minute setup.
+
+Know a shop owner who deserves more regulars? Send them this 👇
+regularhood.in
+
+
+=== Alternative single posts (pick one) ===
+
+A) Question hook
+10 new customers walked in this month. How many came back?
+
+Regularhood is a stamp card on WhatsApp:
+customer says their number, you tap "Add visit".
+5th visit → free gift 🎁
+
+No app. No QR. No paper. Free.
+regularhood.in
+
+B) Build-in-public
+We built a loyalty app with points, QR codes, PINs and bill tracking.
+
+Then deleted almost all of it.
+
+Now: say your number, shop taps one button, every 5th visit is a free gift 🎁, card lands on WhatsApp.
+
+Simplest loyalty program we could make.
+regularhood.in
+
+C) Short and punchy
+Your customers won't download your app.
+They'll tell you their phone number.
+
+That's the whole loyalty program.
+One tap per visit. Free gift every 5th 🎁. Card on WhatsApp.
+
+Free for any shop → regularhood.in

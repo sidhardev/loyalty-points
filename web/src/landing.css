@@ -1309,6 +1309,214 @@ button.lp-phone-btn:not(.orange) {
   font: 850 18px var(--display);
 }
 
+/* each step's little counter screen: the rule, the number + Add visit + the WhatsApp card, the orange reward */
+
+.lp-how-art {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  min-height: 212px;
+  margin: -8px -6px 6px;
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--paper), #f6f9f5);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.lp-how-art small {
+  display: block;
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lp-how-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.lp-how-stepper {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+}
+
+.lp-how-stepper i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 38px;
+  color: var(--soft);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.lp-how-stepper b {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 38px;
+  border-inline: 1px solid var(--line);
+  color: var(--green-deep);
+  font: 850 22px var(--display);
+}
+
+.lp-how-reward,
+.lp-how-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 240px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  font-weight: 700;
+}
+
+.lp-how-reward svg {
+  flex: none;
+  color: var(--orange);
+}
+
+.lp-how-input svg {
+  flex: none;
+  color: var(--green);
+}
+
+.lp-how-typed {
+  display: inline-block;
+  font: 700 16px/1.2 ui-monospace, Consolas, monospace;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.lp-how-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 240px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+
+.lp-how-btn-orange {
+  background: var(--orange);
+}
+
+.lp-how-wa {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  max-width: 240px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--wa);
+  box-shadow: 0 12px 24px -18px rgba(13, 42, 32, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lp-how-wa > svg {
+  position: absolute;
+  top: 9px;
+  left: 10px;
+  color: #128c4a;
+}
+
+.lp-how-wa > span {
+  padding-left: 18px;
+}
+
+.lp-how-wa .lp-stamps {
+  justify-content: flex-start;
+  max-width: none;
+}
+
+.lp-how-given {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green-deep);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* played once as the step comes in: the number types out, the button is pressed, the card arrives on WhatsApp */
+.lp-steps li.in .lp-how-stepper b {
+  animation: lp-pop 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 0.5s);
+}
+
+.lp-steps li.in .lp-how-reward {
+  animation: lp-rise-in 0.6s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 0.7s);
+}
+
+.lp-steps li.in .lp-how-typed {
+  animation: lp-type 0.9s steps(11, end) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 0.4s);
+}
+
+.lp-steps li.in .lp-how-add .lp-how-btn {
+  animation: lp-press 0.35s ease;
+  animation-delay: calc(var(--i, 0) * 90ms + 1.45s);
+}
+
+.lp-steps li.in .lp-how-wa {
+  animation: lp-slide-in 0.6s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 1.8s);
+}
+
+.lp-steps li.in .lp-how-give .lp-stamps span {
+  animation: lp-pop 0.45s var(--ease) backwards;
+  animation-delay: calc(var(--k, 0) * 60ms + var(--i, 0) * 90ms + 0.4s);
+}
+
+.lp-steps li.in .lp-how-give .lp-how-btn {
+  animation: lp-rise-in 0.6s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 1.2s);
+}
+
+.lp-steps li.in .lp-how-given {
+  animation: lp-rise-in 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 1.7s);
+}
+
+@keyframes lp-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@keyframes lp-press {
+  50% {
+    transform: scale(0.94);
+    filter: brightness(0.9);
+  }
+}
+
 /* the card that fills as you scroll */
 
 .lp-scroll {
@@ -1621,6 +1829,62 @@ button.lp-phone-btn:not(.orange) {
   flex: none;
   margin-top: 3px;
   color: #128c4a;
+}
+
+/* shops using Regularhood (only the ones the admin ticked) */
+
+.lp-using-list {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .lp-using-list {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+.lp-using-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--sheet);
+  animation: lp-rise-in 0.6s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.lp-using-list li > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.lp-using-list strong {
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.lp-using-list small {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.lp-using-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--mint);
+  color: var(--green-deep);
+  font: 850 20px var(--display);
 }
 
 /* why */

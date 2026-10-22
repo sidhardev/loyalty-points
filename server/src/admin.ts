@@ -88,6 +88,7 @@ type ShopRow = {
   referred_by: number | null;
   referred_by_name: string | null;
   referrals: number;
+  on_landing: number;
   last_contact: string | null;
   last_contact_detail: string | null;
 };
@@ -102,7 +103,7 @@ const SHOP_SELECT = `
             AND t.created_at >= datetime('now', '-30 days')) AS rewards30,
          (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_visit,
          m.reward_name, m.visits_needed,
-         m.phone, m.signup_source, m.signup_medium, m.signup_campaign, m.signup_ref, m.signup_landing, m.referred_by,
+         m.phone, m.signup_source, m.signup_medium, m.signup_campaign, m.signup_ref, m.signup_landing, m.referred_by, m.on_landing,
          (SELECT r.name FROM merchants r WHERE r.id = m.referred_by) AS referred_by_name,
          (SELECT COUNT(*) FROM merchants r WHERE r.referred_by = m.id) AS referrals,
          (SELECT MAX(created_at) FROM admin_log l WHERE l.merchant_id = m.id AND l.action = 'contact') AS last_contact,
@@ -282,6 +283,17 @@ export class AdminController {
     const m = this.loyalty.merchant(id);
     this.db.sql.prepare('UPDATE merchants SET suspended_at = NULL, suspended_reason = NULL WHERE id = ?').run(id);
     this.audit(adminId, id, 'unsuspend', `Turned ${m.name} back on`);
+    return { ok: true };
+  }
+
+  /** Shows or hides the shop on the homepage's "Shops using Regularhood" list. */
+  @Post('shops/:id/landing')
+  @UseGuards(AdminGuard)
+  landing(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { on?: boolean }) {
+    const m = this.loyalty.merchant(id);
+    const on = body?.on === true;
+    this.db.sql.prepare('UPDATE merchants SET on_landing = ? WHERE id = ?').run(on ? 1 : 0, id);
+    this.audit(adminId, id, 'landing', on ? `Showed ${m.name} on the homepage` : `Took ${m.name} off the homepage`);
     return { ok: true };
   }
 

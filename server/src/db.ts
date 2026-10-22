@@ -435,6 +435,11 @@ const MIGRATIONS: string[] = [
     UNIQUE (merchant_id, kind, n)
   );
   `,
+
+  // 20: shops the admin ticked to show on the homepage ("Shops using Regularhood"). None by default.
+  `
+  ALTER TABLE merchants ADD COLUMN on_landing INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 const INDEXES = `

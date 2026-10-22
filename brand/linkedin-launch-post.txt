@@ -1,0 +1,60 @@
+Starbucks has a loyalty app.
+Your favourite neighbourhood café has a barista who remembers your order.
+
+Guess which one is losing customers to the new café that opened down the street.
+
+Every independent café survives on regulars.
+The person who orders the same cold brew every morning.
+The freelancer who works from the corner table three days a week.
+The couple who come in every Sunday for brunch.
+
+But "regular" is a feeling, not a system.
+And a feeling won't stop someone from trying the new place with the "Grand Opening – 20% OFF" sign.
+
+Chains solved this years ago. Independent cafés tried too:
+
+❌ Paper stamp cards → lost in a wallet, forgotten at home
+❌ Loyalty apps → "Could you download our app?" … and the customer has already left
+❌ QR codes, points, PINs → nobody wants that with a queue at the counter
+
+So we built a loyalty app too. Our first version had points, QR codes, PINs and bill tracking.
+
+Then we deleted almost all of it.
+
+What's left is the simplest loyalty program you can build. On purpose.
+
+Introducing Regularhood
+
+The customer says their phone number.
+The barista taps "Add visit".
+Done.
+
+Every 5th visit → a free cappuccino. (The café picks the number and the reward.)
+
+✅ No app for the customer
+✅ No QR code
+✅ No points maths
+✅ No sign-up
+
+The stamp card reaches the customer on WhatsApp.
+
+Built for a busy counter during the morning rush:
+→ One keypad. One button.
+→ The screen turns orange when a reward is due
+→ A ready "we miss you" WhatsApp for customers who haven't been back in a while
+→ A counter poster and Instagram/WhatsApp status image, made for you
+→ Works on any phone
+
+And it's free. Unlimited customers.
+
+👉 Try it free: https://www.regularhood.in
+
+The biggest lesson from building this:
+the hard part isn't adding features. It's having the courage to delete them.
+
+If a barista can't learn it in 10 seconds, it doesn't exist.
+
+Know a café owner who deserves more regulars?
+Tag them below 👇 or send them this post.
+
+#Startups #BuildInPublic #SmallBusiness #CafeOwners #ProductDesign
