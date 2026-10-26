@@ -29,6 +29,7 @@ export type Guide = {
 
 const UPDATED = '2026-10-19';
 const ADDED = '2026-10-22';
+const ADDED_OCT26 = '2026-10-26';
 
 const en: Guide[] = [
   {
@@ -626,6 +627,157 @@ const en: Guide[] = [
       { q: 'Should a new shop start a loyalty card right away?', a: 'Yes. The first weeks are when people decide whether to switch to you. A stamp on their first visit gives them a reason to return.' },
       { q: 'Is an opening offer a good idea?', a: 'A short one is. Keep it to opening week, so customers come for the shop and not only for the offer.' },
       { q: 'How long does it take to build regular customers?', a: 'It depends on your kind of shop, but a simple reward and a friendly counter usually show you your first regulars within the first month.' },
+    ],
+  },
+  {
+    slug: 'salon-loyalty-program',
+    name: 'Salon loyalty program',
+    title: 'Salon Loyalty Program: How to Run One That Brings Clients Back',
+    description: 'How to run a loyalty program for your salon or parlour: how many visits, which reward, filling slow days and bringing back clients who stopped coming. Free to start.',
+    eyebrow: 'Salon loyalty',
+    h1: 'How to run a salon loyalty program that clients actually use',
+    intro:
+      'A salon lives on clients who come back every few weeks. Most of them don’t leave because of a bad haircut — they just try the new place on the way home once, and then again. A simple loyalty program gives them a reason to keep their chair at your salon.',
+    updated: ADDED_OCT26,
+    blocks: [
+      {
+        h2: 'Why salons need a different plan',
+        p: [
+          'A café customer may come every day; a salon client comes every three to six weeks. That changes everything about a loyalty card. Ask for 10 visits and the first reward is a year away, so nobody cares about it.',
+          'Salon clients also choose a person, not just a shop. When a stylist leaves, clients often follow. A program that rewards visits to your salon — not to one stylist — helps keep them with you.',
+        ],
+      },
+      {
+        h2: 'How many visits before the reward',
+        table: {
+          head: ['Service', 'A regular comes every', 'Reward every'],
+          rows: [
+            ['Men’s haircut & beard', '2 to 4 weeks', '4 to 5 visits'],
+            ['Women’s haircut', '6 to 8 weeks', '3 to 4 visits'],
+            ['Threading & waxing', '2 to 4 weeks', '5 visits'],
+            ['Facial & cleanup', '3 to 5 weeks', '4 visits'],
+            ['Hair colour', '6 to 8 weeks', '3 visits'],
+          ],
+        },
+        p: ['A good test: a regular should reach their first reward within two or three months. If you offer many services, count visits, not services, and pick one number for everyone.'],
+      },
+      {
+        h2: 'Rewards that work in a salon',
+        list: [
+          'A free head massage — clients love it and it costs you ten minutes.',
+          'A free beard trim or threading on top of the regular service.',
+          'A free hair wash and blow-dry.',
+          'A free face cleanup or a hair spa for clients who come for bigger services.',
+          'Avoid a free full haircut or facial — it costs as much as the visits before it earned you.',
+        ],
+      },
+      {
+        h2: 'Use it to fill slow days',
+        p: [
+          'Most salons are full on weekends and quiet on weekday afternoons. Your loyalty card can move some of that. Tell regulars at the counter and on your WhatsApp status that the reward is easiest to enjoy on a weekday, when there’s no waiting.',
+          'When a client is one visit away from their reward, a short WhatsApp message on a quiet morning — “your free head massage is ready, we have a free chair today” — often brings them in the same day.',
+        ],
+      },
+      {
+        h2: 'Bring back clients who stopped coming',
+        p: [
+          'In a busy salon, a client who stops coming is noticed months later, if at all. If you keep visits on each client’s phone number, you can see who hasn’t been back in two months and send them one friendly message.',
+          'Keep it personal and short, from your salon’s name: you missed them, and if their reward is close, say so.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood is a stamp card on the client’s phone number. You set one rule — every N visits (3 to 10), one reward you choose. At the counter you type the client’s number and tap Add visit; on the last visit the app says “Give the reward now”.',
+          'With one tap you can send a client their card on WhatsApp, showing how many visits are left, in Hindi or English. You also get a printable counter poster, a WhatsApp status image with your rule, and a list of clients who haven’t come back with a ready “we miss you” message. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'What is a good loyalty reward for a salon?', a: 'A small service you can give quickly that clients enjoy: a free head massage, a beard trim, threading or a hair wash. Avoid giving away a full haircut or facial.' },
+      { q: 'How many visits should a salon loyalty card need?', a: 'Usually 3 to 5, because salon clients come every few weeks. The first reward should arrive within two or three months.' },
+      { q: 'Should a salon count visits or money spent?', a: 'Visits are simpler and fairer. A client who comes for a quick trim every month is just as loyal as one who comes for colour, and both should feel close to a reward.' },
+      { q: 'Do clients need to install an app?', a: 'No. With Regularhood the visits are counted on the client’s phone number, and their card opens from a WhatsApp link in the browser.' },
+      { q: 'Does it work for a beauty parlour or barber shop?', a: 'Yes. Any place where the same people come back every few weeks can use the same simple visit card.' },
+    ],
+  },
+  {
+    slug: 'messages-to-bring-customers-back',
+    name: 'Messages to bring customers back',
+    title: 'Messages to Bring Customers Back: WhatsApp Templates for Shops',
+    description: 'Short, polite messages to ask customers to come back, with offer ideas like a free add-on or 10% off. Copy-ready WhatsApp templates for salons and shops.',
+    eyebrow: 'Message templates',
+    h1: 'Short, polite messages that ask customers to come back',
+    intro:
+      'Asking a customer to come back can feel pushy, so most shops never do it. It doesn’t have to be. A short, polite message from a shop they know, with a small reason to visit, is welcome. Here are messages you can copy, change and send today.',
+    updated: ADDED_OCT26,
+    blocks: [
+      {
+        h2: 'What makes a good message',
+        list: [
+          'Short: two or three lines that fit on the phone screen without scrolling.',
+          'Polite and personal: their name, your shop’s name, no capital letters or ten emojis.',
+          'One clear reason to come: a reward that’s close, a free add-on, a new item.',
+          'Sent once: one message, not a series. A second one weeks later is plenty.',
+        ],
+      },
+      {
+        h2: 'Messages for a repeat visit or service',
+        list: [
+          '“Hello Priya ji, it’s been about a month since your last visit to Style Studio. Would you like to book your next appointment this week? We’d love to see you again.”',
+          '“Hi Rahul, your haircut is probably due by now. Drop in any weekday afternoon — no waiting. — Style Studio”',
+          '“Hello, this is Sharma Laundry. Your last order was two weeks ago — if you have clothes to give, we can pick them up tomorrow morning.”',
+        ],
+      },
+      {
+        h2: 'Messages when their reward is close',
+        list: [
+          '“Hello Anjali ji, you have 4 of 5 stamps at Sweet Corner. One more visit and your free gift is ready. See you soon!”',
+          '“Hi Amit, just one visit left for your free head massage at Style Studio. It’s waiting for you.”',
+        ],
+      },
+      {
+        h2: 'Messages with an offer',
+        list: [
+          'Free add-on: “Hello Neha ji, on your next visit this month, a free hair wash comes with any haircut. Hope to see you soon. — Style Studio”',
+          '10% off the next visit: “Hi Karan, thank you for coming in last week! Show this message on your next visit and get 10% off. Valid till the 30th.”',
+          'Bring a friend: “Hello Pooja ji, bring a friend on your next visit and you both get a free threading. — Glow Parlour”',
+          'New stock: “Hello, the fresh Kaju Katli you asked about is in today. We’ve kept some aside for you. — Sweet Corner”',
+        ],
+      },
+      {
+        h2: 'Messages for customers who stopped coming',
+        list: [
+          '“Hello Suresh ji, we haven’t seen you at Gupta General Store in a while — hope all is well. We’d be happy to see you again.”',
+          '“Hi Meera, it’s been a few months since your last visit to Glow Parlour. Your card still has 3 stamps — two more and your free face cleanup is ready.”',
+        ],
+      },
+      {
+        h2: 'Which offer to choose',
+        table: {
+          head: ['Offer', 'Good for', 'Watch out for'],
+          rows: [
+            ['Free add-on', 'Salons, parlours, laundry, cafés', 'Pick something quick and cheap for you'],
+            ['10% off next visit', 'Bigger bills, a one-time push', 'Customers waiting for the next discount'],
+            ['Reward that’s close', 'Any shop with a loyalty card', 'Nothing — it costs no extra'],
+            ['Bring a friend', 'Getting new customers', 'Keep the rule simple'],
+            ['New stock', 'Kirana, sweet shops, boutiques', 'Only for things they actually buy'],
+          ],
+        },
+        p: ['A free add-on usually feels bigger to the customer than a discount, and costs you less. Keep discounts for short pushes.'],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood keeps a record of visits on each customer’s phone number, so you know who to message and how close they are to their reward. One tap sends a customer their card on WhatsApp, and the app lists customers who haven’t come back with a ready “we miss you” message. Everything is sent from your own WhatsApp. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How do I politely ask a customer to come back?', a: 'Send one short message from your shop’s name: greet them by name, say you’d like to see them again, and give one small reason to come, like a reward that’s close or a free add-on.' },
+      { q: 'What offer brings repeat customers?', a: 'A free add-on or a reward for repeat visits usually works better than a discount. It feels like a gift and doesn’t teach customers to wait for the next sale.' },
+      { q: 'How often can I message customers?', a: 'Rarely. One message when it’s useful to them — a due service, a close reward, a long gap — is welcome. Daily messages feel like spam.' },
+      { q: 'Should I send these on WhatsApp or SMS?', a: 'WhatsApp, if they have it. Customers already chat with shops they know there, and a personal message reads very differently from a bulk SMS.' },
     ],
   },
 ];
@@ -1226,6 +1378,157 @@ const hi: Guide[] = [
       { q: 'क्या नई दुकान को तुरंत लॉयल्टी कार्ड शुरू करना चाहिए?', a: 'हाँ। पहले कुछ हफ़्तों में ही लोग तय करते हैं कि आपके पास आएँ या नहीं। पहली विज़िट पर स्टैम्प उन्हें लौटने की वजह देता है।' },
       { q: 'क्या खुलने का ऑफ़र अच्छा है?', a: 'छोटा हो तो हाँ। इसे खुलने के हफ़्ते तक रखें, ताकि ग्राहक दुकान के लिए आएँ, सिर्फ़ ऑफ़र के लिए नहीं।' },
       { q: 'पक्के ग्राहक बनने में कितना समय लगता है?', a: 'यह आपकी दुकान पर निर्भर है, पर आसान इनाम और अच्छे बर्ताव से अक्सर पहले महीने में ही पहले पक्के ग्राहक दिखने लगते हैं।' },
+    ],
+  },
+  {
+    slug: 'salon-loyalty-program',
+    name: 'सैलून लॉयल्टी प्रोग्राम',
+    title: 'सैलून लॉयल्टी प्रोग्राम: ग्राहकों को बार-बार कैसे बुलाएँ',
+    description: 'अपने सैलून या पार्लर के लिए लॉयल्टी प्रोग्राम कैसे चलाएँ: कितनी विज़िट, कौन-सा इनाम, खाली दिन कैसे भरें और न लौटे ग्राहकों को कैसे बुलाएँ। शुरू करना मुफ़्त।',
+    eyebrow: 'सैलून लॉयल्टी',
+    h1: 'सैलून का ऐसा लॉयल्टी प्रोग्राम जो ग्राहक सच में इस्तेमाल करें',
+    intro:
+      'सैलून उन ग्राहकों से चलता है जो हर कुछ हफ़्तों में लौटते हैं। ज़्यादातर ग्राहक ख़राब हेयरकट की वजह से नहीं जाते — वे बस एक बार रास्ते के नए सैलून में चले जाते हैं, फिर दोबारा। एक आसान लॉयल्टी प्रोग्राम उन्हें आपकी कुर्सी पर लौटने की वजह देता है।',
+    updated: ADDED_OCT26,
+    blocks: [
+      {
+        h2: 'सैलून के लिए अलग प्लान क्यों',
+        p: [
+          'कैफ़े का ग्राहक रोज़ आ सकता है; सैलून का ग्राहक हर तीन से छह हफ़्ते में आता है। इससे लॉयल्टी कार्ड का पूरा हिसाब बदल जाता है। 10 विज़िट माँगेंगे तो पहला इनाम साल भर दूर होगा, और किसी को उसकी परवाह नहीं होगी।',
+          'सैलून के ग्राहक दुकान के साथ-साथ एक इंसान को भी चुनते हैं। कोई स्टाइलिस्ट छोड़ता है तो ग्राहक अक्सर उसके पीछे चले जाते हैं। जो प्रोग्राम आपके सैलून की विज़िट पर इनाम देता है — किसी एक स्टाइलिस्ट पर नहीं — वह उन्हें आपके पास रखता है।',
+        ],
+      },
+      {
+        h2: 'कितनी विज़िट पर इनाम',
+        table: {
+          head: ['सर्विस', 'पक्का ग्राहक आता है हर', 'इनाम हर'],
+          rows: [
+            ['जेंट्स हेयरकट और दाढ़ी', '2 से 4 हफ़्ते', '4 से 5 विज़िट'],
+            ['लेडीज़ हेयरकट', '6 से 8 हफ़्ते', '3 से 4 विज़िट'],
+            ['थ्रेडिंग और वैक्सिंग', '2 से 4 हफ़्ते', '5 विज़िट'],
+            ['फ़ेशियल और क्लीनअप', '3 से 5 हफ़्ते', '4 विज़िट'],
+            ['हेयर कलर', '6 से 8 हफ़्ते', '3 विज़िट'],
+          ],
+        },
+        p: ['अच्छा पैमाना: पक्के ग्राहक को पहला इनाम दो-तीन महीने में मिल जाना चाहिए। अगर आप कई सर्विस देते हैं, तो सर्विस नहीं, विज़िट गिनें, और सबके लिए एक ही नंबर रखें।'],
+      },
+      {
+        h2: 'सैलून में काम करने वाले इनाम',
+        list: [
+          'मुफ़्त हेड मसाज — ग्राहकों को पसंद आता है और आपके दस मिनट लगते हैं।',
+          'रोज़ की सर्विस के साथ मुफ़्त दाढ़ी ट्रिम या थ्रेडिंग।',
+          'मुफ़्त हेयर वॉश और ब्लो-ड्राई।',
+          'बड़ी सर्विस वाले ग्राहकों के लिए मुफ़्त फ़ेस क्लीनअप या हेयर स्पा।',
+          'पूरा हेयरकट या फ़ेशियल मुफ़्त न दें — उसकी लागत उतनी ही है जितना पिछली विज़िट से कमाया।',
+        ],
+      },
+      {
+        h2: 'खाली दिन भरने में इस्तेमाल करें',
+        p: [
+          'ज़्यादातर सैलून वीकेंड पर भरे रहते हैं और हफ़्ते की दोपहर में ख़ाली। लॉयल्टी कार्ड इसमें से कुछ भीड़ खिसका सकता है। काउंटर पर और WhatsApp स्टेटस पर बताएँ कि इनाम का मज़ा हफ़्ते के दिन सबसे आराम से लें, जब इंतज़ार नहीं होता।',
+          'जब ग्राहक इनाम से बस एक विज़िट दूर हो, तो ख़ाली सुबह एक छोटा WhatsApp मैसेज — “आपकी मुफ़्त हेड मसाज तैयार है, आज कुर्सी ख़ाली है” — अक्सर उन्हें उसी दिन ले आता है।',
+        ],
+      },
+      {
+        h2: 'आना बंद कर चुके ग्राहकों को बुलाएँ',
+        p: [
+          'भीड़ वाले सैलून में, आना बंद कर चुका ग्राहक महीनों बाद पता चलता है, अगर चलता भी है। अगर हर ग्राहक की विज़िट उसके फ़ोन नंबर पर दर्ज हो, तो आप देख सकते हैं कि दो महीने से कौन नहीं आया और उसे एक प्यारा-सा मैसेज भेज सकते हैं।',
+          'मैसेज छोटा और अपनापन भरा रखें, सैलून के नाम से: आपको उनकी कमी खली, और अगर इनाम पास है तो वह भी बताएँ।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood ग्राहक के फ़ोन नंबर पर चलने वाला स्टैम्प कार्ड है। आप एक नियम रखते हैं — हर N विज़िट (3 से 10) पर आपका चुना एक इनाम। काउंटर पर ग्राहक का नंबर लिखें और Add visit दबाएँ; आख़िरी विज़िट पर ऐप कहता है “अभी इनाम दें”।',
+          'एक टैप में ग्राहक को WhatsApp पर उनका कार्ड भेज सकते हैं, जिसमें बची विज़िट दिखती हैं, हिंदी या English में। साथ में छापने लायक काउंटर पोस्टर, आपके नियम वाली WhatsApp स्टेटस इमेज, और न लौटे ग्राहकों की लिस्ट तैयार “हम आपको मिस कर रहे हैं” मैसेज के साथ मिलती है। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'सैलून के लिए अच्छा लॉयल्टी इनाम क्या है?', a: 'कोई छोटी सर्विस जो जल्दी हो जाए और ग्राहकों को पसंद हो: मुफ़्त हेड मसाज, दाढ़ी ट्रिम, थ्रेडिंग या हेयर वॉश। पूरा हेयरकट या फ़ेशियल मुफ़्त न दें।' },
+      { q: 'सैलून के लॉयल्टी कार्ड में कितनी विज़िट रखें?', a: 'आम तौर पर 3 से 5, क्योंकि सैलून के ग्राहक हर कुछ हफ़्तों में आते हैं। पहला इनाम दो-तीन महीने में मिल जाना चाहिए।' },
+      { q: 'सैलून विज़िट गिने या ख़र्च?', a: 'विज़िट गिनना आसान और ठीक है। हर महीने छोटी ट्रिम के लिए आने वाला ग्राहक भी उतना ही वफ़ादार है जितना कलर कराने वाला, और दोनों को इनाम पास लगना चाहिए।' },
+      { q: 'क्या ग्राहकों को ऐप इंस्टॉल करना होगा?', a: 'नहीं। Regularhood में विज़िट ग्राहक के फ़ोन नंबर पर गिनी जाती हैं, और उनका कार्ड WhatsApp लिंक से ब्राउज़र में खुलता है।' },
+      { q: 'क्या यह ब्यूटी पार्लर या नाई की दुकान के लिए भी है?', a: 'हाँ। जहाँ भी वही लोग हर कुछ हफ़्तों में लौटते हैं, वहाँ यही आसान विज़िट कार्ड काम करता है।' },
+    ],
+  },
+  {
+    slug: 'messages-to-bring-customers-back',
+    name: 'ग्राहकों को वापस बुलाने के मैसेज',
+    title: 'ग्राहक को दोबारा बुलाने के मैसेज: दुकानों के लिए WhatsApp टेम्पलेट',
+    description: 'ग्राहक को दोबारा आने के लिए छोटे और विनम्र मैसेज, मुफ़्त ऐड-ऑन या 10% छूट जैसे ऑफ़र के साथ। सैलून और दुकानों के लिए कॉपी करने लायक WhatsApp टेम्पलेट।',
+    eyebrow: 'मैसेज टेम्पलेट',
+    h1: 'ग्राहक को दोबारा बुलाने के छोटे, विनम्र मैसेज',
+    intro:
+      'ग्राहक से दोबारा आने को कहना ज़बरदस्ती जैसा लगता है, इसलिए ज़्यादातर दुकानें कभी कहती ही नहीं। ऐसा होना ज़रूरी नहीं। जानी-पहचानी दुकान से छोटा, विनम्र मैसेज, आने की एक छोटी वजह के साथ, अच्छा लगता है। ये मैसेज कॉपी करें, बदलें और आज भेजें।',
+    updated: ADDED_OCT26,
+    blocks: [
+      {
+        h2: 'अच्छे मैसेज की पहचान',
+        list: [
+          'छोटा: दो-तीन लाइन, जो बिना स्क्रॉल किए फ़ोन पर दिख जाएँ।',
+          'विनम्र और अपनापन भरा: उनका नाम, आपकी दुकान का नाम, न कैपिटल अक्षर न दस इमोजी।',
+          'आने की एक साफ़ वजह: पास आया इनाम, मुफ़्त ऐड-ऑन, नया माल।',
+          'एक बार: एक मैसेज, सिलसिला नहीं। हफ़्तों बाद दूसरा काफ़ी है।',
+        ],
+      },
+      {
+        h2: 'दोबारा विज़िट या सर्विस के लिए मैसेज',
+        list: [
+          '“नमस्ते प्रिया जी, Style Studio में आपकी पिछली विज़िट को करीब एक महीना हो गया। क्या इस हफ़्ते अगला अपॉइंटमेंट बुक करें? आपसे फिर मिलकर ख़ुशी होगी।”',
+          '“नमस्ते राहुल जी, आपका हेयरकट शायद अब तक ड्यू हो गया होगा। हफ़्ते के किसी भी दिन दोपहर आइए — कोई इंतज़ार नहीं। — Style Studio”',
+          '“नमस्ते, शर्मा लॉन्ड्री से। आपका पिछला ऑर्डर दो हफ़्ते पहले था — अगर कपड़े देने हों तो हम कल सुबह ले जा सकते हैं।”',
+        ],
+      },
+      {
+        h2: 'जब इनाम पास हो',
+        list: [
+          '“नमस्ते अंजलि जी, Sweet Corner पर आपके 5 में से 4 स्टैम्प हो गए हैं। बस एक विज़िट और, आपका मुफ़्त गिफ़्ट तैयार है। जल्दी मिलते हैं!”',
+          '“नमस्ते अमित जी, Style Studio में आपकी मुफ़्त हेड मसाज बस एक विज़िट दूर है। आपका इंतज़ार है।”',
+        ],
+      },
+      {
+        h2: 'ऑफ़र वाले मैसेज',
+        list: [
+          'मुफ़्त ऐड-ऑन: “नमस्ते नेहा जी, इस महीने अगली विज़िट पर किसी भी हेयरकट के साथ हेयर वॉश मुफ़्त। जल्दी मिलते हैं। — Style Studio”',
+          'अगली विज़िट पर 10% छूट: “नमस्ते करण जी, पिछले हफ़्ते आने के लिए धन्यवाद! अगली विज़िट पर यह मैसेज दिखाएँ और 10% छूट पाएँ। 30 तारीख़ तक।”',
+          'दोस्त को लाएँ: “नमस्ते पूजा जी, अगली बार किसी दोस्त को साथ लाइए, दोनों की थ्रेडिंग मुफ़्त। — Glow Parlour”',
+          'नया माल: “नमस्ते, आपने जो ताज़ा काजू कतली पूछी थी, आज आ गई है। आपके लिए थोड़ी अलग रख दी है। — Sweet Corner”',
+        ],
+      },
+      {
+        h2: 'आना बंद कर चुके ग्राहकों के लिए',
+        list: [
+          '“नमस्ते सुरेश जी, काफ़ी दिनों से आप गुप्ता जनरल स्टोर नहीं आए — उम्मीद है सब ठीक है। आपसे फिर मिलकर ख़ुशी होगी।”',
+          '“नमस्ते मीरा जी, Glow Parlour में आपकी पिछली विज़िट को कुछ महीने हो गए। आपके कार्ड पर अभी 3 स्टैम्प हैं — दो और, और आपका मुफ़्त फ़ेस क्लीनअप तैयार।”',
+        ],
+      },
+      {
+        h2: 'कौन-सा ऑफ़र चुनें',
+        table: {
+          head: ['ऑफ़र', 'किसके लिए अच्छा', 'ध्यान रखें'],
+          rows: [
+            ['मुफ़्त ऐड-ऑन', 'सैलून, पार्लर, लॉन्ड्री, कैफ़े', 'ऐसी चीज़ चुनें जो जल्दी हो और सस्ती पड़े'],
+            ['अगली विज़िट पर 10% छूट', 'बड़े बिल, एक बार का धक्का', 'ग्राहक अगली छूट का इंतज़ार करने लगते हैं'],
+            ['पास आया इनाम', 'लॉयल्टी कार्ड वाली हर दुकान', 'कुछ नहीं — कोई अलग ख़र्च नहीं'],
+            ['दोस्त को लाएँ', 'नए ग्राहक लाना', 'नियम आसान रखें'],
+            ['नया माल', 'किराना, मिठाई की दुकान, बुटीक', 'सिर्फ़ वही जो वे सच में ख़रीदते हैं'],
+          ],
+        },
+        p: ['मुफ़्त ऐड-ऑन ग्राहक को अक्सर छूट से बड़ा लगता है, और आपको सस्ता पड़ता है। छूट छोटे समय के लिए रखें।'],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood हर ग्राहक की विज़िट उसके फ़ोन नंबर पर दर्ज रखता है, तो आपको पता रहता है किसे मैसेज भेजना है और उसका इनाम कितना पास है। एक टैप में ग्राहक को WhatsApp पर उनका कार्ड जाता है, और ऐप न लौटे ग्राहकों की लिस्ट तैयार “हम आपको मिस कर रहे हैं” मैसेज के साथ दिखाता है। सब आपके अपने WhatsApp से जाता है। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'ग्राहक को विनम्रता से दोबारा आने को कैसे कहें?', a: 'दुकान के नाम से एक छोटा मैसेज भेजें: नाम लेकर नमस्ते करें, कहें कि आप उनसे फिर मिलना चाहेंगे, और आने की एक छोटी वजह दें, जैसे पास आया इनाम या मुफ़्त ऐड-ऑन।' },
+      { q: 'कौन-सा ऑफ़र ग्राहकों को दोबारा लाता है?', a: 'मुफ़्त ऐड-ऑन या बार-बार आने पर इनाम अक्सर छूट से बेहतर काम करता है। यह तोहफ़े जैसा लगता है और ग्राहकों को अगली सेल का इंतज़ार करना नहीं सिखाता।' },
+      { q: 'ग्राहकों को कितनी बार मैसेज करें?', a: 'कम। जब उनके काम का हो — सर्विस ड्यू हो, इनाम पास हो, लंबे समय से न आए हों — तब एक मैसेज अच्छा लगता है। रोज़ के मैसेज स्पैम लगते हैं।' },
+      { q: 'WhatsApp पर भेजें या SMS पर?', a: 'WhatsApp पर, अगर उनके पास है। ग्राहक जानी-पहचानी दुकानों से वहीं बात करते हैं, और निजी मैसेज बल्क SMS से बिल्कुल अलग लगता है।' },
     ],
   },
 ];
