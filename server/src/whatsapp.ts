@@ -74,18 +74,19 @@ const DEFAULTS: WaSettings = {
   customerQuota: Number(process.env.FOUNDING_MESSAGES) || 300,
 };
 
-/** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop.
- * Named for the stamp card, so templates approved earlier (regularhood_intro_*) keep working until these are. */
+/** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop (sent in
+ * lower case, "beauty salon"). It opens with the shop's own problem, says plainly what they'd do at the counter, and
+ * asks one easy question. Templates approved earlier keep working until a new one is picked. */
 export const SUGGESTED_TEMPLATES = {
   hi: {
     name: 'regularhood_stamp_hi',
-    body: 'नमस्ते {{1}} जी 🙏\nहम Regularhood से हैं, छोटी दुकानों के लिए आसान लॉयल्टी कार्ड।\nआपके {{2}} में ग्राहक को हर 5 विज़िट पर एक चीज़ फ्री मिले, तो वो बार-बार आते हैं। बस ग्राहक का नंबर लिखिए और एक बटन दबाइए, कोई ऐप या QR नहीं। शुरू करना फ्री है।\nक्या 2 मिनट में देखना चाहेंगे?',
+    body: 'नमस्ते! 🙏 {{1}} के लिए एक छोटा सा आइडिया।\nआपके {{2}} में जो ग्राहक एक बार आते हैं, उन्हें बार-बार बुलाने के लिए डिजिटल स्टैम्प कार्ड: हर 5 विज़िट पर ग्राहक को एक फ्री गिफ़्ट।\nकाउंटर पर बस ग्राहक का मोबाइल नंबर लिखिए, बाकी Regularhood संभाल लेगा। ग्राहक को कोई ऐप नहीं चाहिए, और शुरू करना फ्री है।\nक्या 2 मिनट में देखना चाहेंगे कि यह कैसे काम करता है?',
     yes: 'हाँ, बताइए',
     no: 'अभी नहीं',
   },
   en: {
     name: 'regularhood_stamp_hinglish',
-    body: 'Namaste {{1}} ji 🙏\nHum Regularhood se hain, chhoti dukaanon ke liye aasaan loyalty card.\nAapke {{2}} mein customer ko har 5 visit par ek cheez free mile, to woh baar-baar aate hain. Bas customer ka number likhiye aur ek button dabaiye, koi app ya QR nahi. Shuru karna free hai.\nKya 2 minute mein dekhna chahenge?',
+    body: 'Namaste! 🙏 {{1}} ke liye ek chhota sa idea.\nAapke {{2}} mein jo customer ek baar aate hain, unhe baar-baar bulane ke liye digital stamp card: har 5 visit par customer ko ek free gift.\nCounter pe bas customer ka mobile number likhiye, baaki Regularhood sambhal lega. Customer ko koi app nahi chahiye, aur shuru karna free hai.\nKya 2 minute mein dekhna chahenge ki yeh kaise kaam karta hai?',
     yes: 'Haan, batao',
     no: 'Abhi nahi',
   },
@@ -391,7 +392,9 @@ export class WhatsApp {
     if (this.sentToday() >= s.dailyLimit) throw new BadRequestException(`Today's limit of ${s.dailyLimit} messages is reached (change it in WhatsApp settings)`);
     if (this.monthCost().usd + s.marketingPriceUsd > s.monthlyBudgetUsd + 1e-9) throw new BadRequestException(`This month's WhatsApp budget ($${s.monthlyBudgetUsd}) is used up`);
 
-    const values = [l.name, l.category || l.shop_type || 'dukaan', l.area].slice(0, s.templateParams).map((v) => v.slice(0, 60));
+    // The kind of shop sits mid-sentence: "Beauty salon" from Google Maps reads as "beauty salon".
+    const kind = (l.category || l.shop_type || 'dukaan').toLowerCase();
+    const values = [l.name, kind, l.area].slice(0, s.templateParams).map((v) => v.slice(0, 60));
     const phone = waDigits(l.phone);
     const text = values.reduce((t, v, i) => t.replaceAll(`{{${i + 1}}}`, v), s.templateBody || `[${s.templateName}]`);
     try {
@@ -615,6 +618,9 @@ export class WhatsApp {
         .prepare(
           `SELECT id FROM leads WHERE status = 'new' AND mobile = 1 AND wa_opted_out = 0
              AND NOT EXISTS (SELECT 1 FROM wa_messages m WHERE m.lead_id = leads.id AND m.direction = 'out' AND m.status != 'failed')
+             -- Meta held one back (131049: they got many marketing messages lately): wait a week before trying again.
+             AND NOT EXISTS (SELECT 1 FROM wa_messages m WHERE m.lead_id = leads.id AND m.direction = 'out' AND m.error LIKE '%131049%'
+               AND m.created_at >= datetime('now', '-7 days'))
            ORDER BY score DESC, reviews DESC LIMIT ?`,
         )
         .all(count) as { id: number }[]

@@ -175,8 +175,10 @@ const HI: Record<string, string> = {
   '{n} of {limit} customers: new numbers can’t be added on the Free plan. Become a Founding Shop →':
     '{limit} में से {n} ग्राहक: फ़्री प्लान पर नए नंबर नहीं जुड़ सकते। फ़ाउंडिंग शॉप बनें →',
   '{n} of {limit} customers on the Free plan. See Founding Shop →': 'फ़्री प्लान पर {limit} में से {n} ग्राहक। फ़ाउंडिंग शॉप देखें →',
-  'The Free plan keeps up to 50 customers. Become a Founding Shop to add more.':
-    'फ़्री प्लान पर 50 ग्राहक तक रख सकते हैं। और जोड़ने के लिए फ़ाउंडिंग शॉप बनें।',
+  'The Free plan’s customer limit is reached. Become a Founding Shop to add more.': 'फ़्री प्लान की ग्राहक लिमिट पूरी हो गई। और जोड़ने के लिए फ़ाउंडिंग शॉप बनें।',
+  'Founding Shop is not on sale right now': 'फ़ाउंडिंग शॉप अभी उपलब्ध नहीं है',
+  'Not on sale right now': 'अभी उपलब्ध नहीं',
+  Limited: 'सीमित',
   'All Founding Shop places are taken': 'फ़ाउंडिंग शॉप की सारी जगहें भर गई हैं',
   'Payments are not set up yet. Please try again later.': 'पेमेंट अभी चालू नहीं है। थोड़ी देर बाद फिर कोशिश करें।',
   'Current plan': 'अभी का प्लान',
@@ -186,7 +188,7 @@ const HI: Record<string, string> = {
   'Set up automatic WhatsApp and reviews': 'WhatsApp और रिव्यू सेट करें',
   'Renew or go lifetime': 'रिन्यू करें या लाइफ़टाइम लें',
   'For shops that want regulars to come back without chasing them.': 'उन दुकानों के लिए जो चाहती हैं कि ग्राहक बिना पीछे पड़े लौटते रहें।',
-  'No 50-customer cap. Every regular gets a card.': '50 ग्राहकों की लिमिट नहीं। हर रेगुलर को कार्ड।',
+  'No customer limit. Every regular gets a card.': 'ग्राहकों की कोई लिमिट नहीं। हर रेगुलर को कार्ड।',
   'Their card after every visit and “reward ready”, sent for you. No tapping at the counter.':
     'हर विज़िट के बाद कार्ड और “इनाम तैयार”, आपकी जगह हम भेजते हैं। काउंटर पर कुछ नहीं दबाना।',
   '“We miss you” by itself': '“आपकी याद आ रही है” अपने आप',

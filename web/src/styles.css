@@ -4944,3 +4944,150 @@ circle.trend-views {
 .wa-moved {
   margin: 8px 0 0;
 }
+
+/* ---------------------------------------------------------------- Admin → Plans (AdminPlans.tsx) */
+
+.plans-grid {
+  margin-block: 16px;
+}
+
+.plans-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.plans-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.plans-form-save {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.plans-refund {
+  display: grid;
+  gap: 14px;
+}
+
+.plans-refund p {
+  margin: 0;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---------------------------------------------------------------- admin playbooks */
+
+.playbook-notes {
+  grid-column: 1 / -1;
+}
+
+.playbook-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.playbook-sheet {
+  max-width: 720px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.playbook-sheet h1 {
+  margin: 4px 0 8px;
+  font-size: 26px;
+}
+
+.playbook-sheet h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.playbook-brand {
+  margin: 0;
+  color: var(--brand-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.playbook-intro {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.playbook-ideas {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+
+.playbook-ideas p {
+  margin: 0 0 4px;
+}
+
+.playbook-say {
+  padding: 8px 12px;
+  border-left: 3px solid var(--brand);
+  border-radius: 6px;
+  background: var(--brand-soft);
+  font-style: italic;
+}
+
+.playbook-message {
+  max-width: 720px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+}
+
+.playbook-message p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.playbook-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.playbook-row-open td {
+  background: var(--brand-soft);
+}
+
+@media print {
+  #playbook,
+  #playbook * {
+    visibility: visible;
+  }
+
+  #playbook {
+    position: absolute;
+    inset: 0 auto auto 0;
+    max-width: none;
+    width: 100%;
+    border: 0;
+    color: #111;
+    background: #fff;
+  }
+}

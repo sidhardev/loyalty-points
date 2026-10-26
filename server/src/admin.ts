@@ -25,7 +25,7 @@ import type { Request } from 'express';
 import { AnalyticsStore } from './analytics';
 import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
-import { effectivePlan, FOUNDING_SEATS, seatsLeft } from './plans';
+import { effectivePlan, planSettings, seatsLeft } from './plans';
 import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
 import { rewardsDue, UPI_AMOUNT } from './referrals';
@@ -288,7 +288,7 @@ export class AdminController {
          FROM payments p JOIN merchants m ON m.id = p.merchant_id ORDER BY p.id DESC LIMIT 300`,
       )
       .all();
-    return { payments: rows, seats: { total: FOUNDING_SEATS, left: seatsLeft(this.db.sql) } };
+    return { payments: rows, seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) } };
   }
 
   /** A one-time link (24 hours) the shop opens to choose a new password. Any older unused link stops working. */

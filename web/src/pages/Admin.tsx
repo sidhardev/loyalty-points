@@ -10,6 +10,7 @@ import {
   FileText,
   Globe2,
   Link2,
+  BookOpen,
   Mail,
   MessageCircle,
   MessagesSquare,
@@ -37,9 +38,11 @@ import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { CustomerWhatsAppPage } from './AdminCustomerWa';
+import { PlansPage } from './AdminPlans';
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
+import { PlaybooksPage } from './AdminPlaybooks';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageEvent, type PageView } from './Visits';
 
@@ -776,7 +779,7 @@ function ShopPage({ id }: { id: number }) {
               <label>
                 Plan
                 <select value={planForm.plan} onChange={(e) => setPlanForm({ ...planForm, plan: e.target.value })}>
-                  <option value="free">Free (up to 50 customers)</option>
+                  <option value="free">Free (customer limit)</option>
                   <option value="grandfathered">Early shop (no limit, no Founding place)</option>
                   <option value="lifetime">Founding Shop · lifetime</option>
                   <option value="yearly">Founding Shop · 1 year from today</option>
@@ -784,7 +787,7 @@ function ShopPage({ id }: { id: number }) {
               </label>
               <label>
                 Why?
-                <input value={planForm.reason} onChange={(e) => setPlanForm({ ...planForm, reason: e.target.value })} placeholder="e.g. Paid ₹1,499 by UPI, UTR 4321…" required />
+                <input value={planForm.reason} onChange={(e) => setPlanForm({ ...planForm, reason: e.target.value })} placeholder="e.g. Paid by UPI, UTR 4321…" required />
               </label>
               <div className="actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setPlanForm(null)}>
@@ -1310,9 +1313,11 @@ const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; e
 const NAV = [
   { path: '/', label: 'Overview', icon: LayoutDashboard },
   { path: '/shops', label: 'Shops', icon: Store },
+  { path: '/plans', label: 'Plans', icon: BadgeIndianRupee },
   { path: '/growth', label: 'Growth', icon: Rocket },
   { path: '/follow-up', label: 'Follow up', icon: Phone },
   { path: '/leads', label: 'Leads', icon: Target },
+  { path: '/playbooks', label: 'Playbooks', icon: BookOpen },
   { path: '/chats', label: 'Chats', icon: MessagesSquare },
   { path: '/customer-whatsapp', label: 'Customer WhatsApp', icon: BellRing },
   { path: '/seo', label: 'SEO pages', icon: FileText },
@@ -1390,6 +1395,8 @@ export function AdminApp() {
     <ShopPage key={shopId} id={Number(shopId)} />
   ) : hash.startsWith('/shops') ? (
     <ShopsPage />
+  ) : hash.startsWith('/plans') ? (
+    <PlansPage api={adminApi} />
   ) : hash.startsWith('/growth') ? (
     <GrowthPage />
   ) : hash.startsWith('/follow-up') ? (
@@ -1402,6 +1409,8 @@ export function AdminApp() {
     <ChatsPage api={adminApi} />
   ) : hash.startsWith('/leads') ? (
     <LeadsPage api={adminApi} />
+  ) : hash.startsWith('/playbooks') ? (
+    <PlaybooksPage api={adminApi} />
   ) : hash.startsWith('/status') ? (
     <StatusPage api={adminApi} />
   ) : hash.startsWith('/visits') ? (

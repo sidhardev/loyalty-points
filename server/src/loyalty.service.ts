@@ -141,10 +141,10 @@ export class LoyaltyService {
 
     // A new number on the Free plan needs room under its customer limit (checked outside the transaction, so the
     // activity log keeps the refusal).
-    const limit = customerLimit(this.merchant(merchantId));
+    const limit = customerLimit(this.db.sql, this.merchant(merchantId));
     if (limit !== null && !this.byLast10(merchantId, phone) && this.customerCount(merchantId) >= limit) {
       this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers`);
-      throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: `The Free plan keeps up to ${limit} customers. Become a Founding Shop to add more.` });
+      throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: 'The Free plan’s customer limit is reached. Become a Founding Shop to add more.' });
     }
 
     return this.db.transaction(() => {

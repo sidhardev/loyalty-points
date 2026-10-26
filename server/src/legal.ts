@@ -209,8 +209,8 @@ const terms: LegalDoc = {
     {
       h2: 'Price',
       p: [
-        'Regularhood is free to start. On the Free plan a shop can keep up to 50 customers; customers already added always keep getting visits and rewards.',
-        'Founding Shop removes the limit. It is offered only to the first 100 shops, for ₹1,499 once (for as long as Regularhood runs) or ₹499 a year (renewed by paying again, at the same price while you keep renewing). Prices include any taxes and are shown before you pay. If a yearly plan is not renewed, the shop goes back to the Free plan and nothing is deleted.',
+        'Regularhood is free to start. The Free plan keeps a limited number of customers, shown on the price section of our website and in the app; customers already added always keep getting visits and rewards.',
+        'Founding Shop removes the limit and adds automatic WhatsApp messages and Google review requests. It is offered to a limited number of shops, paid once (for as long as Regularhood runs) or once a year (renewed by paying again, at the price you first paid while you keep renewing). The price, including any taxes, is shown before you pay. If a yearly plan is not renewed, the shop goes back to the Free plan and nothing is deleted.',
         'Shops that signed up before plans were introduced keep using Regularhood with no customer limit, as promised when they joined.',
         'Payments are taken by Razorpay. Refunds are explained in our refund policy (/refunds).',
       ],
@@ -277,7 +277,7 @@ const refunds: LegalDoc = {
   description: 'Refunds and cancellations for the Regularhood Founding Shop plan: a full refund within 7 days, how to ask, and how long it takes.',
   h1: 'Refund and cancellation policy',
   intro:
-    'This page covers payments for the Founding Shop plan (₹1,499 once, or ₹499 a year). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
+    'This page covers payments for the Founding Shop plan (paid once, or once a year). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
   updated: UPDATED,
   blocks: [
     {

@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
-import { FOUNDING_SEATS, isFounding, PRICES, seatsLeft } from './plans';
+import { isFounding, offer } from './plans';
 import { SITE } from './seo';
 
 // Pages customers open without an account:
@@ -21,7 +21,7 @@ export class PublicController {
   /** The homepage's price section: Founding Shop places left and prices. */
   @Get('founding')
   founding() {
-    return { total: FOUNDING_SEATS, left: seatsLeft(this.db.sql), prices: PRICES };
+    return offer(this.db.sql);
   }
 
   /**

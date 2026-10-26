@@ -524,6 +524,25 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_wa_messages_merchant ON wa_messages (merchant_id, created_at);
   CREATE INDEX idx_wa_messages_customer ON wa_messages (customer_id, auto);
   `,
+
+  // 24: Admin → Plans can refund a payment through Razorpay: the refund's id and when it was made.
+  `
+  ALTER TABLE payments ADD COLUMN razorpay_refund_id TEXT;
+  ALTER TABLE payments ADD COLUMN refunded_at TEXT;
+  `,
+
+  // 25: Admin → Playbooks: one-page Loyalty Playbooks written by Claude for a business we're pitching.
+  `
+  CREATE TABLE playbooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    business TEXT NOT NULL,
+    business_type TEXT NOT NULL,
+    city TEXT NOT NULL,
+    notes TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL -- JSON, see Playbook in playbook.ts
+  );
+  `,
 ];
 
 const INDEXES = `

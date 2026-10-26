@@ -10,7 +10,7 @@ import { AdminController, AdminGuard } from './admin';
 import { AnalyticsController, AnalyticsStore } from './analytics';
 import { AuthController, AuthGuard } from './auth';
 import { AutoMessages, AutoMessagesController } from './automessages';
-import { Billing, BillingController } from './billing';
+import { Billing, BillingAdminController, BillingController } from './billing';
 import { Db } from './db';
 import { Gemini } from './gemini';
 import { LoyaltyController } from './loyalty.controller';
@@ -20,6 +20,7 @@ import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
 import { StatusAdminController } from './status';
 import { LeadsAdminController, LeadsService } from './leads';
+import { PlaybookAdminController, PlaybookService } from './playbook';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
@@ -28,8 +29,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, WhatsApp],
+  controllers: [AuthController, BillingController, BillingAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, WhatsApp],
 })
 class AppModule {}
 

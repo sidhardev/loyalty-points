@@ -49,6 +49,7 @@ export type Billing = {
   limit: number | null;
   seats: { total: number; left: number };
   prices: { lifetime: number; yearly: number };
+  open: boolean; // false: Founding Shop isn't on sale (renewals still are)
   keyId: string;
 };
 

@@ -441,6 +441,17 @@ const MEDIA: Record<string, string> = {
 };
 
 /** One message: theirs on the left, ours on the right with WhatsApp's ticks and what it cost. */
+/** Meta's delivery errors in plain words, for the ones that come up; others as Meta wrote them. */
+function failReason(error: string | null) {
+  if (!error) return '';
+  if (/131049/.test(error))
+    return 'Meta held it back: this number got many marketing messages from businesses lately. Not billed. Bulk sending waits a week before trying them again.';
+  if (/131026/.test(error)) return 'not on WhatsApp (or an old WhatsApp version)';
+  if (/131047/.test(error)) return 'more than 24 hours since their last reply: send the template instead';
+  if (/132001/.test(error)) return 'template not found or not approved in this language';
+  return error;
+}
+
 export function WaBubble({ m, timeOnly }: { m: WaMessage; timeOnly?: boolean }) {
   const media = m.body.match(/^\[(\w+)\]$/)?.[1];
   const time = timeOnly
@@ -452,7 +463,7 @@ export function WaBubble({ m, timeOnly }: { m: WaMessage; timeOnly?: boolean }) 
       <span>
         {m.kind === 'template' ? 'intro · ' : ''}
         {time}
-        {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${m.error ?? ''}` : <> {TICKS[m.status]}</>)}
+        {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${failReason(m.error)}` : <> {TICKS[m.status]}</>)}
         {m.cost_usd ? ` · $${m.cost_usd.toFixed(4)}` : ''}
       </span>
     </div>

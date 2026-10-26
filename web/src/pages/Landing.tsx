@@ -225,10 +225,12 @@ const COPY = {
     shopsKicker: 'Already on Regularhood',
     shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
-    priceTitle: 'Free to start. A founding price for the first 100 shops.',
-    priceSub: 'Start free with up to 50 customers. When your regulars grow, become a Founding Shop: WhatsApp messages and Google reviews on autopilot, at a price we won’t offer again.',
-    priceFree: { name: 'Free', per: 'forever' },
-    priceList: ['Up to 50 customers', 'Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
+    // The numbers come from Admin → Plans (/api/public/founding); the prerendered page shows the defaults.
+    priceTitle: (seats: number) => `Free to start. A founding price for the first ${seats} shops.`,
+    priceSub: (free: number) =>
+      `Start free with up to ${free} customers. When your regulars grow, become a Founding Shop: WhatsApp messages and Google reviews on autopilot, at a price we won’t offer again.`,
+    priceFree: { name: 'Free', per: 'forever', limit: (n: number) => `Up to ${n} customers` },
+    priceList: ['Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
     founding: {
       name: 'Founding Shop',
       once: 'once, for life',
@@ -240,8 +242,9 @@ const COPY = {
         'Google review requests after every reward',
         'Founding price locked, with every new feature',
       ],
-      only: 'Only for the first 100 shops',
+      only: (seats: number) => `Only for the first ${seats} shops`,
       left: (left: number, total: number) => (left ? `${left} of ${total} places left` : 'All places taken'),
+      closed: 'Not on sale right now',
       cta: 'Start free, upgrade anytime',
     },
     create: 'Create your shop',
@@ -321,10 +324,11 @@ const COPY = {
     shopsKicker: 'Regularhood पर पहले से',
     shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
-    priceTitle: 'शुरू करना मुफ़्त है। पहली 100 दुकानों के लिए फ़ाउंडिंग कीमत।',
-    priceSub: '50 ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: WhatsApp मैसेज और Google रिव्यू अपने आप, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।',
-    priceFree: { name: 'फ़्री', per: 'हमेशा' },
-    priceList: ['50 ग्राहकों तक', 'हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
+    priceTitle: (seats: number) => `शुरू करना मुफ़्त है। पहली ${seats} दुकानों के लिए फ़ाउंडिंग कीमत।`,
+    priceSub: (free: number) =>
+      `${free} ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: WhatsApp मैसेज और Google रिव्यू अपने आप, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।`,
+    priceFree: { name: 'फ़्री', per: 'हमेशा', limit: (n: number) => `${n} ग्राहकों तक` },
+    priceList: ['हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
     founding: {
       name: 'फ़ाउंडिंग शॉप',
       once: 'एक बार, हमेशा के लिए',
@@ -336,8 +340,9 @@ const COPY = {
         'हर इनाम के बाद Google रिव्यू की रिक्वेस्ट',
         'फ़ाउंडिंग कीमत लॉक, हर नए फ़ीचर के साथ',
       ],
-      only: 'सिर्फ़ पहली 100 दुकानों के लिए',
+      only: (seats: number) => `सिर्फ़ पहली ${seats} दुकानों के लिए`,
       left: (left: number, total: number) => (left ? `${total} में से ${left} जगह बाकी` : 'सारी जगहें भर गईं'),
+      closed: 'अभी उपलब्ध नहीं',
       cta: 'मुफ़्त शुरू करें, कभी भी अपग्रेड करें',
     },
     create: 'अपनी दुकान बनाएँ',
@@ -359,7 +364,7 @@ export const FAQ = [
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
-  ['What does it cost?', 'Free for up to 50 customers. The first 100 shops can become a Founding Shop for ₹1,499 once (for life) or ₹499 a year: unlimited customers, WhatsApp messages sent to customers for you, and Google review requests. Pay by UPI; full refund within 7 days.'],
+  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. The first shops can become a Founding Shop, paid once for life or once a year (prices above): unlimited customers, WhatsApp messages sent to customers for you, and Google review requests. Pay by UPI; full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -369,7 +374,7 @@ const FAQ_HI = [
   ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
-  ['इसकी कीमत क्या है?', '50 ग्राहकों तक मुफ़्त। पहली 100 दुकानें ₹1,499 एक बार (हमेशा के लिए) या ₹499 साल में फ़ाउंडिंग शॉप बन सकती हैं: जितने चाहें ग्राहक, ग्राहकों को WhatsApp मैसेज अपने आप, और Google रिव्यू की रिक्वेस्ट। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
+  ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। शुरुआती दुकानें एक बार (हमेशा के लिए) या साल में एक बार पेमेंट करके फ़ाउंडिंग शॉप बन सकती हैं (कीमत ऊपर देखें): जितने चाहें ग्राहक, ग्राहकों को WhatsApp मैसेज अपने आप, और Google रिव्यू की रिक्वेस्ट। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -1165,13 +1170,13 @@ function ShopsUsing({ c }: { c: Copy }) {
   );
 }
 
-type Founding = { total: number; left: number; prices: { lifetime: number; yearly: number } };
+type Founding = { open: boolean; total: number; left: number; prices: { lifetime: number; yearly: number }; freeCustomers: number };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 
 /** Free, and the Founding Shop offer with its places left (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
-  const [founding, setFounding] = useState<Founding>({ total: 100, left: -1, prices: { lifetime: 149_900, yearly: 49_900 } });
+  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { lifetime: 149_900, yearly: 49_900 }, freeCustomers: 50 });
   useEffect(() => {
     fetch('/api/public/founding')
       .then((r) => (r.ok ? r.json() : null))
@@ -1182,8 +1187,8 @@ function Pricing({ c }: { c: Copy }) {
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <p className="lp-kicker rv">{c.priceKicker}</p>
-      <h2 className="lp-h2 rv">{c.priceTitle}</h2>
-      <p className="lp-sub rv">{c.priceSub}</p>
+      <h2 className="lp-h2 rv">{c.priceTitle(founding.total)}</h2>
+      <p className="lp-sub rv">{c.priceSub(founding.freeCustomers)}</p>
       <div className="lp-price-cards">
         <div className="lp-price-card lp-price-free rv">
           <p className="lp-price-name">{c.priceFree.name}</p>
@@ -1191,7 +1196,7 @@ function Pricing({ c }: { c: Copy }) {
             <strong className="lp-price-tag">₹0</strong> <span className="lp-price-per">{c.priceFree.per}</span>
           </div>
           <ul>
-            {c.priceList.map((item) => (
+            {[c.priceFree.limit(founding.freeCustomers), ...c.priceList].map((item) => (
               <li key={item}>
                 <Check size={18} /> {item}
               </li>
@@ -1203,8 +1208,8 @@ function Pricing({ c }: { c: Copy }) {
         </div>
         <div className="lp-price-card rv">
           <span className="lp-price-badge">
-            {f.only}
-            {founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
+            {founding.open ? f.only(founding.total) : f.closed}
+            {founding.open && founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
           </span>
           <p className="lp-price-name">{f.name}</p>
           <div>

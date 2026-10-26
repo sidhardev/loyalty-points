@@ -4,7 +4,7 @@ import { api, num, parseTime, type Billing, type Merchant } from '../api';
 import { t, useLang } from '../i18n';
 import { ErrorText, Skeleton, confetti, toast, useAction } from '../ui';
 
-// The shop's plan: Free (up to 50 customers) or Founding Shop, bought once for life or for a year through Razorpay's
+// The shop's plan: Free (a customer limit) or Founding Shop, bought once for life or for a year through Razorpay's
 // checkout. Founding Shop has no customer limit, sends customers WhatsApp messages by itself and asks for Google
 // reviews. Only the first few shops can be Founding Shops; the page says how many places are left.
 
@@ -30,7 +30,7 @@ const date = (sqlTime: string) => parseTime(sqlTime).toLocaleDateString('en-IN',
 
 /** What Founding Shop adds, in the order a shop owner cares about. */
 const PERKS = [
-  { icon: Users, title: 'Unlimited customers', text: 'No 50-customer cap. Every regular gets a card.' },
+  { icon: Users, title: 'Unlimited customers', text: 'No customer limit. Every regular gets a card.' },
   { icon: MessageCircle, title: 'Automatic WhatsApp', text: 'Their card after every visit and “reward ready”, sent for you. No tapping at the counter.' },
   { icon: BellRing, title: '“We miss you” by itself', text: 'Customers who stop coming get a reminder with their stamps, once.' },
   { icon: Star, title: 'More Google reviews', text: 'After a reward, customers get your review link. More reviews, higher on Maps.' },
@@ -39,7 +39,7 @@ const PERKS = [
 
 /** Free vs Founding Shop, row by row. */
 const COMPARE: [string, boolean | string, boolean | string][] = [
-  ['Customers', '50', 'Unlimited'],
+  ['Customers', 'Limited', 'Unlimited'],
   ['Stamp card, poster, status image', true, true],
   ['Send card on WhatsApp (one tap)', true, true],
   ['Card and “reward ready” sent automatically', false, true],
@@ -108,7 +108,9 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
 
   const founding = b.plan === 'lifetime' || b.plan === 'yearly';
   const lapsed = b.paidPlan === 'yearly' && !founding;
-  const soldOut = b.seats.left === 0 && !founding && !lapsed;
+  // Shops renewing a yearly plan can always pay; new ones need sales to be open and a place left.
+  const closed = !b.open && !founding && !lapsed;
+  const soldOut = closed || (b.seats.left === 0 && !founding && !lapsed);
   const taken = b.seats.total - b.seats.left;
   // Lifetime costs this many years of the yearly plan.
   const years = Math.round((b.prices.lifetime / b.prices.yearly) * 10) / 10;
@@ -168,7 +170,7 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
           </div>
 
           <div className="plan-seats-row">
-            <span>{soldOut ? t('All places taken') : t('{left} of {total} places left', { left: num(b.seats.left), total: num(b.seats.total) })}</span>
+            <span>{closed ? t('Not on sale right now') : soldOut ? t('All places taken') : t('{left} of {total} places left', { left: num(b.seats.left), total: num(b.seats.total) })}</span>
             <div className="plan-seats" aria-hidden>
               <span style={{ width: `${Math.max(2, (taken / b.seats.total) * 100)}%` }} />
             </div>
