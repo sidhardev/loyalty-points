@@ -5075,19 +5075,3 @@ circle.trend-views {
   background: var(--brand-soft);
 }
 
-@media print {
-  #playbook,
-  #playbook * {
-    visibility: visible;
-  }
-
-  #playbook {
-    position: absolute;
-    inset: 0 auto auto 0;
-    max-width: none;
-    width: 100%;
-    border: 0;
-    color: #111;
-    background: #fff;
-  }
-}

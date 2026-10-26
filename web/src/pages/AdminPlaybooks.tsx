@@ -34,6 +34,50 @@ const asText = (p: Playbook) =>
     ...p.firstWeek.map((s) => `• ${s}`),
   ].join('\n');
 
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** Prints the playbook alone from a hidden frame, so the admin layout around it can't spill blank pages or clip it. */
+function printPlaybook(p: Playbook, business: string) {
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
+  document.body.append(frame);
+  const doc = frame.contentDocument!;
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(`Loyalty Playbook – ${business}`)}</title><style>
+    @page { size: A4; margin: 16mm; }
+    body { font: 14px/1.55 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #111; margin: 0; }
+    .brand { margin: 0; color: #0f766e; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 4px 0 8px; font-size: 24px; }
+    h3 { margin: 0 0 4px; font-size: 16px; }
+    .intro { margin: 0 0 16px; color: #444; }
+    ol { display: grid; gap: 12px; margin: 0 0 16px; padding-left: 20px; }
+    li p { margin: 0 0 4px; }
+    .why { color: #444; }
+    .say { padding: 6px 10px; border-left: 3px solid #0f766e; background: #f0fdfa; font-style: italic; }
+    li { break-inside: avoid; }
+  </style></head><body>
+    <p class="brand">Regularhood · Loyalty Playbook</p>
+    <h1>${esc(p.headline)}</h1>
+    <p class="intro">${esc(p.intro)}</p>
+    <ol>${p.ideas
+      .map(
+        (i) =>
+          `<li><h3>${esc(i.title)}</h3><p>${esc(i.how)}</p><p class="why"><strong>Why it works:</strong> ${esc(i.why)}</p><p class="say">“${esc(i.example)}”</p></li>`,
+      )
+      .join('')}</ol>
+    <h3>Start this week</h3>
+    <ul>${p.firstWeek.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+  </body></html>`);
+  doc.close();
+  const win = frame.contentWindow!;
+  win.onafterprint = () => frame.remove();
+  setTimeout(() => {
+    win.focus();
+    win.print();
+    setTimeout(() => frame.remove(), 60_000); // in case afterprint never fires
+  }, 100);
+}
+
 const copy = (text: string, what: string) =>
   navigator.clipboard.writeText(text).then(
     () => toast(`${what} copied`),
@@ -91,7 +135,7 @@ export function PlaybooksPage({ api }: { api: AdminApi }) {
               <button className="btn btn-ghost" onClick={() => copy(open.playbook.message, 'Message')}>
                 <Copy size={16} /> Copy message
               </button>
-              <button className="btn btn-primary" onClick={() => print()}>
+              <button className="btn btn-primary" onClick={() => printPlaybook(open.playbook, open.business)}>
                 <Printer size={16} /> Print / PDF
               </button>
             </div>
@@ -196,7 +240,7 @@ function NewPlaybook({ api, onDone }: { api: AdminApi; onDone: (id: number) => v
 
 function PlaybookSheet({ p }: { p: Playbook }) {
   return (
-    <article id="playbook" className="playbook-sheet">
+    <article className="playbook-sheet">
       <p className="playbook-brand">Regularhood · Loyalty Playbook</p>
       <h1>{p.headline}</h1>
       <p className="playbook-intro">{p.intro}</p>
