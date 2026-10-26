@@ -74,6 +74,11 @@ const T = {
     cityHubEmpty: 'Pages for each city are on their way.',
     otherCities: 'Regularhood in other cities',
     inYourCity: 'Loyalty for shops in your city',
+    footShops: 'For shops',
+    footCities: 'Cities',
+    footPrivacy: 'Privacy',
+    footTerms: 'Terms',
+    footRefunds: 'Refunds',
   },
   hi: {
     home: 'होम',
@@ -113,8 +118,36 @@ const T = {
     cityHubEmpty: 'हर शहर के पेज जल्द आ रहे हैं।',
     otherCities: 'दूसरे शहरों में Regularhood',
     inYourCity: 'आपके शहर की दुकानों के लिए लॉयल्टी',
+    footShops: 'दुकानों के लिए',
+    footCities: 'शहर',
+    footPrivacy: 'प्राइवेसी',
+    footTerms: 'शर्तें',
+    footRefunds: 'रिफ़ंड',
   },
 };
+
+/** Hindi names for the shop types and cities, by slug, shown on Hindi pages (the queue keeps the English name as the topic). */
+const HI_NAMES: Record<SeoKind, Record<string, string>> = {
+  shop: {
+    'barber-shop': 'नाई की दुकान', 'beauty-parlour': 'ब्यूटी पार्लर', 'book-store': 'किताबों की दुकान', boutique: 'बुटीक', cafe: 'कैफ़े',
+    dhaba: 'ढाबा', 'electronics-shop': 'इलेक्ट्रॉनिक्स की दुकान', florist: 'फूलों की दुकान', 'fruit-and-vegetable-shop': 'फल और सब्ज़ी की दुकान',
+    gym: 'जिम', 'hardware-store': 'हार्डवेयर की दुकान', 'ice-cream-parlour': 'आइसक्रीम पार्लर', 'juice-bar': 'जूस की दुकान',
+    'kirana-store': 'किराना स्टोर', 'laundry-and-dry-cleaning': 'लॉन्ड्री और ड्राई क्लीनिंग', 'meat-and-fish-shop': 'मीट और मछली की दुकान',
+    'mobile-repair-shop': 'मोबाइल रिपेयर की दुकान', 'optical-store': 'चश्मे की दुकान', 'pet-shop': 'पेट शॉप', pharmacy: 'मेडिकल स्टोर',
+    restaurant: 'रेस्टोरेंट', salon: 'सैलून', spa: 'स्पा', 'stationery-shop': 'स्टेशनरी की दुकान', 'sweet-shop-and-bakery': 'मिठाई की दुकान और बेकरी',
+    tailor: 'दर्ज़ी', 'tiffin-service': 'टिफ़िन सर्विस', 'toy-shop': 'खिलौनों की दुकान', 'general-store': 'जनरल स्टोर',
+    'dairy-and-milk-shop': 'डेयरी और दूध की दुकान', 'cosmetics-shop': 'कॉस्मेटिक्स की दुकान', 'gift-shop': 'गिफ़्ट शॉप', 'car-wash': 'कार वॉश',
+    'bike-service-centre': 'बाइक सर्विस सेंटर', 'pizza-shop': 'पिज़्ज़ा की दुकान', 'street-food-stall': 'स्ट्रीट फ़ूड स्टॉल', 'nail-studio': 'नेल स्टूडियो',
+    'clothing-store': 'कपड़ों की दुकान', 'dry-fruits-shop': 'ड्राई फ्रूट्स की दुकान', 'jewellery-shop': 'ज्वेलरी की दुकान', 'footwear-store': 'जूते-चप्पल की दुकान',
+  },
+  city: {
+    jaipur: 'जयपुर', delhi: 'दिल्ली', lucknow: 'लखनऊ', indore: 'इंदौर', ahmedabad: 'अहमदाबाद', mumbai: 'मुंबई', pune: 'पुणे', surat: 'सूरत',
+    bhopal: 'भोपाल', patna: 'पटना', kanpur: 'कानपुर', nagpur: 'नागपुर', chandigarh: 'चंडीगढ़', ludhiana: 'लुधियाना', agra: 'आगरा',
+    varanasi: 'वाराणसी', hyderabad: 'हैदराबाद', bengaluru: 'बेंगलुरु', chennai: 'चेन्नई', kolkata: 'कोलकाता',
+  },
+};
+/** A page's name in its own language (the English topic when there's no Hindi name yet). */
+const label = (p: PageRef) => (p.lang === 'hi' && HI_NAMES[p.kind ?? 'shop'][p.slug]) || p.topic;
 
 const CSS = `
 :root{--paper:#eef2ec;--sheet:#fff;--ink:#0f2e24;--ink2:#3f564c;--soft:#5b7066;--line:#cbd6cd;--green:#0b7a52;--deep:#0a5e40;--mint:#d7ece1;--marigold:#f0a202;--mink:#8a5a00}
@@ -227,7 +260,17 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 <nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a class="hide" href="${guidePath(o.lang)}">${t.guides}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${path('en', '', 'city')}">Cities</a> · <a href="${path('hi', '', 'city')}">शहर</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span>${[
+  ['/', t.home],
+  [path(o.lang), t.footShops],
+  [path(o.lang, '', 'city'), t.footCities],
+  [guidePath(o.lang), t.guides],
+  ['/privacy', t.footPrivacy],
+  ['/terms', t.footTerms],
+  ['/refunds', t.footRefunds],
+]
+  .map(([href, text]) => `<a href="${href}">${text}</a>`)
+  .join(' · ')}</span></div></footer>
 ${BEACON}
 </body>
 </html>`;
@@ -260,7 +303,7 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${o.site}/` },
           { '@type': 'ListItem', position: 2, name: kind === 'city' ? t.allCities : t.all, item: `${o.site}${path(lang, '', kind)}` },
-          { '@type': 'ListItem', position: 3, name: row.topic, item: `${o.site}${here}` },
+          { '@type': 'ListItem', position: 3, name: label(row), item: `${o.site}${here}` },
         ],
       },
       { '@type': 'FAQPage', mainEntity: c.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
@@ -272,7 +315,7 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
     pages.length
       ? `<section style="padding-top:0"><div class="wrap">
   <h2 style="font-size:24px">${title}</h2>
-  <div class="links">${pages.map((p) => `<a href="${path(p.lang, p.slug, k)}">${esc(p.topic)}</a>`).join('')}</div>
+  <div class="links">${pages.map((p) => `<a href="${path(p.lang, p.slug, k)}">${esc(label(p))}</a>`).join('')}</div>
 </div></section>`
       : '';
 
@@ -289,7 +332,7 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
   ${
     c.billItems.length
       ? `<div class="receipt" aria-label="${esc(t.bill)}">
-    <h3>${esc(c.billShopName || row.topic)}</h3>
+    <h3>${esc(c.billShopName || label(row))}</h3>
     <div class="c">${esc(t.bill)} · ${esc(t.stampLine)}</div>
     <hr>
     ${c.billItems.map((i) => `<div class="r"><span>${esc(i.name)}</span><span>₹${inr(i.price)}</span></div>`).join('')}
@@ -359,7 +402,7 @@ export function renderHub(site: string, lang: SeoLang, pages: PageRef[], hasTwin
   const intro = city ? t.cityHubIntro : t.hubIntro;
   const items = pages.map((p) => {
     const c = p.content ? (JSON.parse(p.content) as SeoContent) : null;
-    return `<a href="${path(lang, p.slug, kind)}"><b>${esc(p.topic)}</b><span>${esc(c?.eyebrow ?? '')}</span></a>`;
+    return `<a href="${path(lang, p.slug, kind)}"><b>${esc(label(p))}</b><span>${esc(c?.eyebrow ?? '')}</span></a>`;
   });
   const body = `<main><div class="wrap" style="padding:56px 20px">
   <p class="eyebrow">Regularhood</p>
