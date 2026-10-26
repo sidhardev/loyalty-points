@@ -18,4 +18,4 @@ Free to start: unlimited customers and visits, customer cards in Hindi and Engli
 - [Homepage](https://www.regularhood.in/): what Regularhood is, how the stamp card works, price and FAQ (English and Hindi)
 - [Sign up](https://www.regularhood.in/app#signup): create a shop account and set the stamp card rule
 - [Shop log in](https://www.regularhood.in/app): the shop app (counter, customers, settings)
-- [Loyalty cards by kind of shop](https://www.regularhood.in/sitemap.xml): sitemap listing pages for each kind of shop, in English (/for/...) and Hindi (/hi/for/...)
+- [Loyalty cards by kind of shop](https://www.regularhood.in/sitemap.xml): sitemap listing pages for each kind of shop, in English (/for/...) and Hindi (/hi/for/...), and pages for shops in each city (/city/..., /hi/city/...)

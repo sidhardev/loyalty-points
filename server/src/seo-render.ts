@@ -1,4 +1,5 @@
-// HTML for the SEO pages (/for/<slug>, /hi/for/<slug>), their index pages, the guides, /privacy and /terms, the 404 and /sitemap.xml.
+// HTML for the SEO pages (/for/<slug> and /city/<slug>, each also under /hi), their index pages, the guides, /privacy and
+// /terms, the 404 and /sitemap.xml.
 // Plain server-rendered HTML in the landing page's look, so it's readable without JavaScript. Every piece of text
 // written by the AI is escaped here: it's treated as text, never as markup.
 
@@ -6,6 +7,7 @@ import type { Guide, GuideBlock } from './guides';
 import { LEGAL, type LegalDoc } from './legal';
 
 export type SeoLang = 'en' | 'hi';
+export type SeoKind = 'shop' | 'city';
 
 export type SeoContent = {
   title: string;
@@ -23,12 +25,12 @@ export type SeoContent = {
   faqs: { q: string; a: string }[];
 };
 
-type PageRef = { slug: string; lang: SeoLang; topic: string; title: string; content?: string | null; generated_at?: string | null; published_at?: string | null };
+type PageRef = { slug: string; lang: SeoLang; kind?: SeoKind; topic: string; title: string; content?: string | null; generated_at?: string | null; published_at?: string | null };
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const inr = (n: number) => n.toLocaleString('en-IN');
-const path = (lang: SeoLang, slug = '') => `${lang === 'hi' ? '/hi' : ''}/for${slug ? `/${slug}` : ''}`;
+const path = (lang: SeoLang, slug = '', kind: SeoKind = 'shop') => `${lang === 'hi' ? '/hi' : ''}/${kind === 'city' ? 'city' : 'for'}${slug ? `/${slug}` : ''}`;
 const guidePath = (lang: SeoLang, slug = '') => `${lang === 'hi' ? '/hi' : ''}/guide${slug ? `/${slug}` : ''}`;
 /** Sign-up link that Admin → Growth counts under "seo". */
 const signup = (campaign: string) => `/app?utm_source=seo&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}#signup`;
@@ -66,6 +68,12 @@ const T = {
     updated: 'Updated',
     moreGuides: 'More guides',
     forShops: 'Loyalty for your kind of shop',
+    allCities: 'Shops by city',
+    cityHubTitle: 'Loyalty programs for shops in your city',
+    cityHubIntro: 'Regularhood is a stamp card on the customer’s phone number: every few visits, a free reward. Pick your city to see how shops there can bring customers back.',
+    cityHubEmpty: 'Pages for each city are on their way.',
+    otherCities: 'Regularhood in other cities',
+    inYourCity: 'Loyalty for shops in your city',
   },
   hi: {
     home: 'होम',
@@ -99,6 +107,12 @@ const T = {
     updated: 'अपडेट',
     moreGuides: 'और गाइड',
     forShops: 'आपकी तरह की दुकान के लिए लॉयल्टी',
+    allCities: 'शहर के हिसाब से',
+    cityHubTitle: 'आपके शहर की दुकानों के लिए लॉयल्टी प्रोग्राम',
+    cityHubIntro: 'Regularhood ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड है: हर कुछ विज़िट पर एक मुफ़्त इनाम। अपना शहर चुनें और देखें कि वहाँ की दुकानें ग्राहकों को वापस कैसे बुला सकती हैं।',
+    cityHubEmpty: 'हर शहर के पेज जल्द आ रहे हैं।',
+    otherCities: 'दूसरे शहरों में Regularhood',
+    inYourCity: 'आपके शहर की दुकानों के लिए लॉयल्टी',
   },
 };
 
@@ -213,19 +227,22 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 <nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a class="hide" href="${guidePath(o.lang)}">${t.guides}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${path('en', '', 'city')}">Cities</a> · <a href="${path('hi', '', 'city')}">शहर</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></span></div></footer>
 ${BEACON}
 </body>
 </html>`;
 }
 
-export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?: PageRef; others: PageRef[] }) {
+/** One shop-type or city page. `others` are pages of the same kind, `cross` of the other kind (cities on a shop page). */
+export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?: PageRef; others: PageRef[]; cross?: PageRef[] }) {
   const lang = row.lang;
+  const kind = row.kind ?? 'shop';
   const t = T[lang];
-  const here = path(lang, row.slug);
+  const here = path(lang, row.slug, kind);
   const total = c.billItems.reduce((n, i) => n + i.price, 0);
   const needed = c.rewards[0]?.visits ?? 5;
-  const alternates = [{ lang, path: here }, ...(o.twin ? [{ lang: o.twin.lang, path: path(o.twin.lang, o.twin.slug) }] : [])];
+  const twinPath = o.twin ? path(o.twin.lang, o.twin.slug, kind) : '';
+  const alternates = [{ lang, path: here }, ...(o.twin ? [{ lang: o.twin.lang, path: twinPath }] : [])];
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -242,7 +259,7 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${o.site}/` },
-          { '@type': 'ListItem', position: 2, name: t.all, item: `${o.site}${path(lang)}` },
+          { '@type': 'ListItem', position: 2, name: kind === 'city' ? t.allCities : t.all, item: `${o.site}${path(lang, '', kind)}` },
           { '@type': 'ListItem', position: 3, name: row.topic, item: `${o.site}${here}` },
         ],
       },
@@ -250,6 +267,14 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
     ],
   };
   const others = o.others.slice(0, 24);
+  const cross = (o.cross ?? []).slice(0, 24);
+  const linkRow = (title: string, pages: PageRef[], k: SeoKind) =>
+    pages.length
+      ? `<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${title}</h2>
+  <div class="links">${pages.map((p) => `<a href="${path(p.lang, p.slug, k)}">${esc(p.topic)}</a>`).join('')}</div>
+</div></section>`
+      : '';
 
   const body = `<main>
 <div class="wrap hero">
@@ -259,7 +284,7 @@ export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?
     <p class="intro">${esc(c.intro)}</p>
     <div class="cta"><a class="btn" href="${signup(here)}">${t.start} →</a><a class="btn line" href="/#how">${t.how}</a></div>
     <ul class="perks">${t.perks.map((p) => `<li>${p}</li>`).join('')}</ul>
-    ${o.twin ? `<p style="margin:18px 0 0"><a href="${path(o.twin.lang, o.twin.slug)}" hreflang="${o.twin.lang}">${t.twin}</a></p>` : ''}
+    ${o.twin ? `<p style="margin:18px 0 0"><a href="${twinPath}" hreflang="${o.twin.lang}">${t.twin}</a></p>` : ''}
   </div>
   ${
     c.billItems.length
@@ -316,64 +341,66 @@ ${
 </div></section>
 
 ${
-  others.length
-    ? `<section style="padding-top:0"><div class="wrap">
-  <h2 style="font-size:24px">${t.others}</h2>
-  <div class="links">${others.map((p) => `<a href="${path(p.lang, p.slug)}">${esc(p.topic)}</a>`).join('')}</div>
-</div></section>`
-    : ''
+  kind === 'city'
+    ? linkRow(t.forShops, cross, 'shop') + linkRow(t.otherCities, others, 'city')
+    : linkRow(t.others, others, 'shop') + linkRow(t.inYourCity, cross, 'city')
 }
 </main>`;
 
   return shell({ lang, site: o.site, path: here, title: c.title, description: c.description, alternates, jsonLd, body });
 }
 
-export function renderHub(site: string, lang: SeoLang, pages: PageRef[], hasTwin: boolean) {
+/** /for and /hi/for (every kind of shop), or /city and /hi/city (every city). */
+export function renderHub(site: string, lang: SeoLang, pages: PageRef[], hasTwin: boolean, kind: SeoKind = 'shop') {
   const t = T[lang];
-  const here = path(lang);
+  const city = kind === 'city';
+  const here = path(lang, '', kind);
+  const title = city ? t.cityHubTitle : t.hubTitle;
+  const intro = city ? t.cityHubIntro : t.hubIntro;
   const items = pages.map((p) => {
     const c = p.content ? (JSON.parse(p.content) as SeoContent) : null;
-    return `<a href="${path(lang, p.slug)}"><b>${esc(p.topic)}</b><span>${esc(c?.eyebrow ?? '')}</span></a>`;
+    return `<a href="${path(lang, p.slug, kind)}"><b>${esc(p.topic)}</b><span>${esc(c?.eyebrow ?? '')}</span></a>`;
   });
   const body = `<main><div class="wrap" style="padding:56px 20px">
   <p class="eyebrow">Regularhood</p>
-  <h1>${t.hubTitle}</h1>
-  <p class="intro">${t.hubIntro}</p>
-  ${items.length ? `<div class="hub">${items.join('')}</div>` : `<p>${t.hubEmpty}</p>`}
-  <p style="margin-top:28px"><a href="${guidePath(lang)}">${t.guides} →</a>${hasTwin ? ` · <a href="${path(lang === 'en' ? 'hi' : 'en')}">${t.twin}</a>` : ''}</p>
+  <h1>${title}</h1>
+  <p class="intro">${intro}</p>
+  ${items.length ? `<div class="hub">${items.join('')}</div>` : `<p>${city ? t.cityHubEmpty : t.hubEmpty}</p>`}
+  <p style="margin-top:28px"><a href="${path(lang, '', city ? 'shop' : 'city')}">${city ? t.forShops : t.inYourCity} →</a> · <a href="${guidePath(lang)}">${t.guides} →</a>${hasTwin ? ` · <a href="${path(lang === 'en' ? 'hi' : 'en', '', kind)}">${t.twin}</a>` : ''}</p>
 </div></main>`;
-  const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: path('en') }, { lang: 'hi', path: path('hi') }] : [{ lang, path: here }];
-  return shell({ lang, site, path: here, title: `${t.hubTitle} · Regularhood`, description: t.hubIntro, alternates, body, noindex: !items.length });
+  const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: path('en', '', kind) }, { lang: 'hi', path: path('hi', '', kind) }] : [{ lang, path: here }];
+  return shell({ lang, site, path: here, title: `${title} · Regularhood`, description: intro, alternates, body, noindex: !items.length });
 }
 
-export function render404(site: string, lang: SeoLang) {
+export function render404(site: string, lang: SeoLang, kind: SeoKind = 'shop') {
   const t = T[lang];
   return shell({
     lang,
     site,
-    path: path(lang),
+    path: path(lang, '', kind),
     title: `${t.notFound} · Regularhood`,
     description: t.hubIntro,
     noindex: true,
-    body: `<main><div class="wrap" style="padding:80px 20px"><h1>${t.notFound}</h1><p class="intro"><a href="${path(lang)}">${t.all} →</a></p></div></main>`,
+    body: `<main><div class="wrap" style="padding:80px 20px"><h1>${t.notFound}</h1><p class="intro"><a href="${path(lang, '', kind)}">${kind === 'city' ? t.allCities : t.all} →</a></p></div></main>`,
   });
 }
 
 export function renderSitemap(site: string, pages: PageRef[], guides: Record<SeoLang, Guide[]> = { en: [], hi: [] }) {
   const day = (t?: string | null) => (t ? t.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const key = (p: PageRef) => `${p.kind ?? 'shop'}/${p.slug}`;
   const bySlug = new Map<string, PageRef[]>();
-  for (const p of pages) bySlug.set(p.slug, [...(bySlug.get(p.slug) ?? []), p]);
+  for (const p of pages) bySlug.set(key(p), [...(bySlug.get(key(p)) ?? []), p]);
   const latest = pages.reduce((m, p) => (day(p.generated_at) > m ? day(p.generated_at) : m), '2026-10-13');
   const url = (loc: string, lastmod: string, alts: PageRef[] = []) =>
     `  <url>\n    <loc>${site}${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n${
       alts.length > 1
-        ? alts.map((a) => `    <xhtml:link rel="alternate" hreflang="${a.lang === 'hi' ? 'hi-IN' : 'en-IN'}" href="${site}${path(a.lang, a.slug)}"/>\n`).join('')
+        ? alts.map((a) => `    <xhtml:link rel="alternate" hreflang="${a.lang === 'hi' ? 'hi-IN' : 'en-IN'}" href="${site}${path(a.lang, a.slug, a.kind)}"/>\n`).join('')
         : ''
     }  </url>`;
   const urls = [url('/', latest)];
-  if (pages.some((p) => p.lang === 'en')) urls.push(url(path('en'), latest));
-  if (pages.some((p) => p.lang === 'hi')) urls.push(url(path('hi'), latest));
-  for (const p of pages) urls.push(url(path(p.lang, p.slug), day(p.generated_at ?? p.published_at), bySlug.get(p.slug)));
+  for (const kind of ['shop', 'city'] as SeoKind[])
+    for (const lang of ['en', 'hi'] as SeoLang[]) if (pages.some((p) => p.lang === lang && (p.kind ?? 'shop') === kind)) urls.push(url(path(lang, '', kind), latest));
+  for (const p of pages) urls.push(url(path(p.lang, p.slug, p.kind), day(p.generated_at ?? p.published_at), bySlug.get(key(p))));
   // Hand-written guides, each with its other-language twin.
   const gUrl = (loc: string, lastmod: string, alts: { lang: SeoLang; path: string }[]) =>
     `  <url>\n    <loc>${site}${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n${alts

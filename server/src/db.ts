@@ -15,6 +15,25 @@ const KEEP_BACKUPS = 14;
 
 export const randomToken = (bytes = 12) => randomBytes(bytes).toString('base64url');
 
+/** Migration 26's queue: cities in Hindi and English (southern ones in English only), then more kinds of shops. */
+const SEED_PAGES = (() => {
+  const both = ['Jaipur', 'Delhi', 'Lucknow', 'Indore', 'Ahmedabad', 'Mumbai', 'Pune', 'Surat', 'Bhopal', 'Patna', 'Kanpur', 'Nagpur', 'Chandigarh', 'Ludhiana', 'Agra', 'Varanasi', 'Hyderabad'];
+  const enOnly = ['Bengaluru', 'Chennai', 'Kolkata'];
+  const shops: [string, string][] = [
+    ['general-store', 'General store'], ['dairy-and-milk-shop', 'Dairy & milk shop'], ['cosmetics-shop', 'Cosmetics shop'],
+    ['gift-shop', 'Gift shop'], ['car-wash', 'Car wash'], ['bike-service-centre', 'Bike service centre'], ['pizza-shop', 'Pizza shop'],
+    ['street-food-stall', 'Street food stall'], ['nail-studio', 'Nail studio'], ['clothing-store', 'Clothing store'],
+    ['dry-fruits-shop', 'Dry fruits shop'], ['jewellery-shop', 'Jewellery shop'], ['footwear-store', 'Footwear store'],
+    ['book-store', 'Book store'], ['toy-shop', 'Toy shop'],
+  ];
+  const rows = [
+    ...both.flatMap((c) => [`('${c.toLowerCase()}', 'en', '${c}', 'city')`, `('${c.toLowerCase()}', 'hi', '${c}', 'city')`]),
+    ...enOnly.map((c) => `('${c.toLowerCase()}', 'en', '${c}', 'city')`),
+    ...shops.flatMap(([slug, topic]) => [`('${slug}', 'en', '${topic}', 'shop')`, `('${slug}', 'hi', '${topic}', 'shop')`]),
+  ];
+  return `INSERT OR IGNORE INTO seo_pages (slug, lang, topic, kind) VALUES\n  ${rows.join(',\n  ')};`;
+})();
+
 const MIGRATIONS: string[] = [
   // 1: first version
   `
@@ -542,6 +561,13 @@ const MIGRATIONS: string[] = [
     notes TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL -- JSON, see Playbook in playbook.ts
   );
+  `,
+
+  // 26: city pages (/city/<slug>, /hi/city/<slug>) next to the shop-type pages, and a first batch of cities and more kinds
+  // of shops queued for the writer (seo.ts). Queued once, here, so a page the admin deletes stays deleted.
+  `
+  ALTER TABLE seo_pages ADD COLUMN kind TEXT NOT NULL DEFAULT 'shop' CHECK (kind IN ('shop', 'city'));
+  ${SEED_PAGES}
   `,
 ];
 

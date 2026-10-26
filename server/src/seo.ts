@@ -22,11 +22,12 @@ import { Db } from './db';
 import { AiBudgetError, Gemini, type AiSettings } from './gemini';
 import { GUIDES, guide } from './guides';
 import { LEGAL } from './legal';
-import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderSitemap, type SeoContent, type SeoLang } from './seo-render';
+import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderSitemap, type SeoContent, type SeoKind, type SeoLang } from './seo-render';
 
-// AI-written landing pages for each kind of shop: /for/<slug> in English and /hi/for/<slug> in Hindi. The superadmin
-// queues shop types (Admin → SEO pages); a timer writes a few pages a day with Gemini, publishes them (or keeps them as
-// drafts), and /sitemap.xml lists whatever is published. The pages are plain server-rendered HTML, so search engines
+// AI-written landing pages for each kind of shop (/for/<slug>, /hi/for/<slug>) and for each city (/city/<slug>,
+// /hi/city/<slug>), in English and Hindi. The superadmin queues shop types and cities (Admin → SEO pages); a timer
+// writes a few pages a day with Gemini, publishes them (or keeps them as drafts), and /sitemap.xml lists whatever is
+// published. The pages are plain server-rendered HTML, so search engines
 // read them without running JavaScript. On Vercel these paths are forwarded to this server (see vercel.json).
 
 export type SeoSettings = AiSettings & {
@@ -73,7 +74,8 @@ export type SeoPageRow = {
   id: number;
   slug: string;
   lang: SeoLang;
-  topic: string;
+  kind: SeoKind;
+  topic: string; // the shop type or the city
   notes: string;
   status: 'queued' | 'draft' | 'published' | 'failed';
   content: string | null;
@@ -91,27 +93,31 @@ export type SeoPageRow = {
 const S = (type: string, extra: object = {}) => ({ type, ...extra });
 const str = (description: string) => S('STRING', { description });
 const list = (items: object, min: number, max: number, description: string) => S('ARRAY', { items, minItems: min, maxItems: max, description });
-const SCHEMA = S('OBJECT', {
+const schema = (kind: SeoKind) => {
+  const city = kind === 'city';
+  return S('OBJECT', {
   properties: {
-    title: str('SEO title tag, at most 60 characters, includes the shop type and "loyalty" or "rewards"'),
+    title: str(`SEO title tag, at most 60 characters, includes ${city ? 'the city' : 'the shop type'} and "loyalty" or "rewards"`),
     description: str('Meta description, 120 to 155 characters, plain and specific'),
-    eyebrow: str('Two to five words above the headline, e.g. "Loyalty for salons"'),
-    h1: str('The page headline: a benefit for this kind of shop, at most 70 characters'),
+    eyebrow: str(`Two to five words above the headline, e.g. ${city ? '"Loyalty for shops in Jaipur"' : '"Loyalty for salons"'}`),
+    h1: str(`The page headline: a benefit for ${city ? 'shops in this city' : 'this kind of shop'}, at most 70 characters`),
     intro: str('Two or three short sentences under the headline'),
-    problems: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'Why customers of this kind of shop drift away'),
-    steps: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, 'How Regularhood works at this kind of shop, in order'),
+    problems: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, city ? 'Why customers of neighbourhood shops in this city drift away' : 'Why customers of this kind of shop drift away'),
+    steps: list(S('OBJECT', { properties: { title: str('short'), text: str('one or two sentences') }, required: ['title', 'text'] }), 3, 3, city ? 'How Regularhood works at a shop counter in this city, in order' : 'How Regularhood works at this kind of shop, in order'),
     billShopName: str('A made-up, ordinary shop name for the example bill (not a real brand or chain)'),
-    billItems: list(S('OBJECT', { properties: { name: str('item, at most 14 characters'), price: S('INTEGER', { description: 'realistic price in rupees' }) }, required: ['name', 'price'] }), 2, 4, 'A typical bill at this kind of shop'),
+    billItems: list(S('OBJECT', { properties: { name: str('item, at most 14 characters'), price: S('INTEGER', { description: 'realistic price in rupees' }) }, required: ['name', 'price'] }), 2, 4, city ? 'A typical bill at a common neighbourhood shop in this city' : 'A typical bill at this kind of shop'),
     rewards: list(S('OBJECT', { properties: { name: str('the reward, e.g. a free item or service'), visits: S('INTEGER', { description: 'visits needed to get it, from 3 to 10' }) }, required: ['name', 'visits'] }), 3, 4, 'Reward ideas: what a shop like this could give every few visits, fewest visits first'),
-    tips: list(str('one practical sentence'), 3, 5, 'Practical tips to get more repeat customers at this kind of shop'),
-    faqs: list(S('OBJECT', { properties: { q: str('question'), a: str('answer, two or three sentences') }, required: ['q', 'a'] }), 4, 6, 'Questions an owner of this kind of shop would ask'),
+    tips: list(str('one practical sentence'), 3, 5, city ? 'Practical tips to get more repeat customers at a shop in this city' : 'Practical tips to get more repeat customers at this kind of shop'),
+    faqs: list(S('OBJECT', { properties: { q: str('question'), a: str('answer, two or three sentences') }, required: ['q', 'a'] }), 4, 6, city ? 'Questions a shop owner in this city would ask' : 'Questions an owner of this kind of shop would ask'),
   },
   required: ['title', 'description', 'eyebrow', 'h1', 'intro', 'problems', 'steps', 'billShopName', 'billItems', 'rewards', 'tips', 'faqs'],
-});
+  });
+};
 
-function prompt(topic: string, lang: SeoLang, notes: string) {
+function prompt(topic: string, lang: SeoLang, notes: string, kind: SeoKind) {
+  const city = kind === 'city';
   return `You write landing pages for Regularhood, a simple loyalty stamp card app for small neighbourhood shops in India.
-Write one page for owners of this kind of shop: "${topic}".${notes ? `\nExtra notes from the editor: ${notes}` : ''}
+Write one page for ${city ? `owners of small neighbourhood shops in this city: "${topic}"` : `owners of this kind of shop: "${topic}"`}.${notes ? `\nExtra notes from the editor: ${notes}` : ''}
 
 Language: ${
     lang === 'hi'
@@ -131,8 +137,14 @@ What Regularhood does (use only these facts):
 - Export customers and visits to a spreadsheet. Works on any phone, tablet or computer with internet. Free to start, set up in one minute.
 
 Rules:
-- Be specific to "${topic}": its customers, the services or products they buy, how often they visit, typical bills and good rewards. Name real things that shop sells.
-- Use the name of this kind of shop and the words loyalty or rewards ${lang === 'hi' ? '(in Hindi: लॉयल्टी, इनाम) ' : ''}naturally in the headline, intro and a few answers, the way an owner would search for it.
+${
+    city
+      ? `- Be specific to ${topic}: the kinds of neighbourhood shops common there, the language customers speak at the counter, how people shop, the festivals and seasons that bring shoppers out, and what regulars buy. Tips and answers should only make sense for ${topic}, not for any city.
+- Only name markets, areas and festivals of ${topic} that really exist and are well known; never invent them. Never name a real shop, brand or person. Never say Regularhood already has shops, customers, staff or an office in ${topic}.${lang === 'hi' ? "\n- Write the city's name in Devanagari." : ''}
+- Use the city's name and the words loyalty or rewards ${lang === 'hi' ? '(in Hindi: लॉयल्टी, इनाम) ' : ''}naturally in the headline, intro and a few answers, the way a shop owner there would search for it.`
+      : `- Be specific to "${topic}": its customers, the services or products they buy, how often they visit, typical bills and good rewards. Name real things that shop sells.
+- Use the name of this kind of shop and the words loyalty or rewards ${lang === 'hi' ? '(in Hindi: लॉयल्टी, इनाम) ' : ''}naturally in the headline, intro and a few answers, the way an owner would search for it.`
+  }
 - Friendly and practical, like advice from another shop owner. Never say customers are forced or pressured to come back.
 - Every FAQ question ends with a question mark.
 - No statistics, percentages or research claims, no testimonials, no quotes from people, no competitor names, no prices for Regularhood except "free to start".
@@ -246,15 +258,15 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     return (this.db.sql.prepare("SELECT COUNT(DISTINCT ref_id) AS n FROM ai_usage WHERE purpose = 'seo-page' AND ts >= ?").get(this.istDayStart()) as { n: number }).n;
   }
 
-  /** Adds shop types to the queue, in the given languages; ones already there are skipped. */
-  queue(topics: string[], langs: SeoLang[], notes = '') {
-    const add = this.db.sql.prepare('INSERT OR IGNORE INTO seo_pages (slug, lang, topic, notes) VALUES (?, ?, ?, ?)');
+  /** Adds shop types (or cities) to the queue, in the given languages; ones already there are skipped. */
+  queue(topics: string[], langs: SeoLang[], notes = '', kind: SeoKind = 'shop') {
+    const add = this.db.sql.prepare('INSERT OR IGNORE INTO seo_pages (slug, lang, topic, notes, kind) VALUES (?, ?, ?, ?, ?)');
     let added = 0;
     for (const raw of topics) {
       const topic = raw.trim().slice(0, 80);
       const slug = slugify(topic);
       if (!slug) continue;
-      for (const lang of langs) added += Number(add.run(slug, lang, topic, notes.trim().slice(0, 500)).changes);
+      for (const lang of langs) added += Number(add.run(slug, lang, topic, notes.trim().slice(0, 500), kind).changes);
     }
     return added;
   }
@@ -282,7 +294,7 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       // One more try if the answer doesn't pass the checks in clean() (e.g. Hindi written in Latin letters).
-      const write = () => this.gemini.json<SeoContent>(prompt(page.topic, page.lang, page.notes), SCHEMA, s, { purpose: manual ? 'seo-page-manual' : 'seo-page', refId: id });
+      const write = () => this.gemini.json<SeoContent>(prompt(page.topic, page.lang, page.notes, page.kind), schema(page.kind), s, { purpose: manual ? 'seo-page-manual' : 'seo-page', refId: id });
       let { data, costUsd } = await write();
       let content: SeoContent;
       try {
@@ -322,18 +334,21 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     return row;
   }
 
-  published(lang?: SeoLang) {
+  published(lang?: SeoLang, kind?: SeoKind) {
     return this.db.sql
-      .prepare(`SELECT * FROM seo_pages WHERE status = 'published' ${lang ? 'AND lang = ?' : ''} ORDER BY topic`)
-      .all(...(lang ? [lang] : [])) as SeoPageRow[];
+      .prepare(`SELECT * FROM seo_pages WHERE status = 'published' ${lang ? 'AND lang = ?' : ''} ${kind ? 'AND kind = ?' : ''} ORDER BY topic`)
+      .all(...(lang ? [lang] : []), ...(kind ? [kind] : [])) as SeoPageRow[];
   }
 
-  /** The finished HTML of one page (published, or any page for the admin's preview). */
+  /** The finished HTML of one page (published, or any page for the admin's preview), linking to the other kind's pages too. */
   html(row: SeoPageRow) {
     if (!row.content) throw new NotFoundException('This page has not been written yet');
-    const others = this.published(row.lang).filter((p) => p.slug !== row.slug);
-    const twin = this.db.sql.prepare("SELECT * FROM seo_pages WHERE slug = ? AND lang != ? AND status = 'published'").get(row.slug, row.lang) as SeoPageRow | undefined;
-    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others });
+    const others = this.published(row.lang, row.kind).filter((p) => p.slug !== row.slug);
+    const cross = this.published(row.lang, row.kind === 'city' ? 'shop' : 'city');
+    const twin = this.db.sql
+      .prepare("SELECT * FROM seo_pages WHERE slug = ? AND kind = ? AND lang != ? AND status = 'published'")
+      .get(row.slug, row.kind, row.lang) as SeoPageRow | undefined;
+    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others, cross });
   }
 }
 
@@ -396,8 +411,9 @@ export class SeoAdminController {
       this.db.sql.prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS usd, COUNT(*) AS calls FROM ai_usage WHERE ${where}`).get(...args) as { usd: number; calls: number };
     const pages = this.db.sql
       .prepare(
-        `SELECT p.id, p.slug, p.lang, p.topic, p.notes, p.status, p.title, p.description, p.error, p.cost_usd, p.created_at, p.generated_at, p.published_at, p.stale,
-           (SELECT COUNT(*) FROM page_views v WHERE v.path = CASE p.lang WHEN 'hi' THEN '/hi/for/' ELSE '/for/' END || p.slug) AS views
+        `SELECT p.id, p.slug, p.lang, p.kind, p.topic, p.notes, p.status, p.title, p.description, p.error, p.cost_usd, p.created_at, p.generated_at, p.published_at, p.stale,
+           (SELECT COUNT(*) FROM page_views v
+             WHERE v.path = CASE p.lang WHEN 'hi' THEN '/hi' ELSE '' END || CASE p.kind WHEN 'city' THEN '/city/' ELSE '/for/' END || p.slug) AS views
          FROM seo_pages p ORDER BY CASE p.status WHEN 'queued' THEN 1 ELSE 0 END, COALESCE(p.generated_at, p.created_at) DESC, p.id`,
       )
       .all();
@@ -455,15 +471,16 @@ export class SeoAdminController {
     return this.seo.saveSettings(body ?? {});
   }
 
-  /** Queue shop types: { topics: ['Salon', 'Gym'], langs: ['en', 'hi'], notes } or { suggested: true }. */
+  /** Queue shop types or cities: { topics: ['Salon', 'Gym'], langs: ['en', 'hi'], notes, kind: 'shop' | 'city' } or { suggested: true }. */
   @Post('queue')
-  queue(@Body() body: { topics?: string[] | string; langs?: string[]; notes?: string; suggested?: boolean }) {
+  queue(@Body() body: { topics?: string[] | string; langs?: string[]; notes?: string; kind?: string; suggested?: boolean }) {
     if (body?.suggested) return { added: this.seo.suggested() };
     const topics = (Array.isArray(body?.topics) ? body.topics : String(body?.topics ?? '').split(/[\n,]/)).map((t) => String(t)).filter((t) => t.trim());
     const langs = (body?.langs ?? ['en', 'hi']).filter((l): l is SeoLang => l === 'en' || l === 'hi');
-    if (!topics.length) throw new BadRequestException('Type at least one kind of shop');
+    const kind: SeoKind = body?.kind === 'city' ? 'city' : 'shop';
+    if (!topics.length) throw new BadRequestException(kind === 'city' ? 'Type at least one city' : 'Type at least one kind of shop');
     if (!langs.length) throw new BadRequestException('Pick English, Hindi or both');
-    return { added: this.seo.queue(topics, langs, body?.notes ?? '') };
+    return { added: this.seo.queue(topics, langs, body?.notes ?? '', kind) };
   }
 
   @Post('pages/:id/generate')
@@ -539,30 +556,57 @@ export class SeoPublicController {
     res.status(status).type('html').set(NO_CACHE).send(html);
   }
 
-  private one(lang: SeoLang, slug: string, res: Response) {
-    const row = this.db.sql.prepare("SELECT * FROM seo_pages WHERE slug = ? AND lang = ? AND status = 'published'").get(slug, lang) as SeoPageRow | undefined;
-    if (!row) return this.send(res, render404(SITE, lang), 404);
+  private one(kind: SeoKind, lang: SeoLang, slug: string, res: Response) {
+    const row = this.db.sql
+      .prepare("SELECT * FROM seo_pages WHERE slug = ? AND lang = ? AND kind = ? AND status = 'published'")
+      .get(slug, lang, kind) as SeoPageRow | undefined;
+    if (!row) return this.send(res, render404(SITE, lang, kind), 404);
     this.send(res, this.seo.html(row));
+  }
+
+  private hub(kind: SeoKind, lang: SeoLang, res: Response) {
+    const other: SeoLang = lang === 'en' ? 'hi' : 'en';
+    this.send(res, renderHub(SITE, lang, this.seo.published(lang, kind), this.seo.published(other, kind).length > 0, kind));
   }
 
   @Get('for')
   hubEn(@Res() res: Response) {
-    this.send(res, renderHub(SITE, 'en', this.seo.published('en'), this.seo.published('hi').length > 0));
+    this.hub('shop', 'en', res);
   }
 
   @Get('hi/for')
   hubHi(@Res() res: Response) {
-    this.send(res, renderHub(SITE, 'hi', this.seo.published('hi'), this.seo.published('en').length > 0));
+    this.hub('shop', 'hi', res);
   }
 
   @Get('for/:slug')
   pageEn(@Param('slug') slug: string, @Res() res: Response) {
-    this.one('en', slug, res);
+    this.one('shop', 'en', slug, res);
   }
 
   @Get('hi/for/:slug')
   pageHi(@Param('slug') slug: string, @Res() res: Response) {
-    this.one('hi', slug, res);
+    this.one('shop', 'hi', slug, res);
+  }
+
+  @Get('city')
+  citiesEn(@Res() res: Response) {
+    this.hub('city', 'en', res);
+  }
+
+  @Get('hi/city')
+  citiesHi(@Res() res: Response) {
+    this.hub('city', 'hi', res);
+  }
+
+  @Get('city/:slug')
+  cityEn(@Param('slug') slug: string, @Res() res: Response) {
+    this.one('city', 'en', slug, res);
+  }
+
+  @Get('hi/city/:slug')
+  cityHi(@Param('slug') slug: string, @Res() res: Response) {
+    this.one('city', 'hi', slug, res);
   }
 
   @Get('guide')

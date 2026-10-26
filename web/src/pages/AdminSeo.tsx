@@ -3,7 +3,7 @@ import { Bot, Eye, FileText, Globe, IndianRupee, KeyRound, Plus, RefreshCw, Rock
 import { num, when } from '../api';
 import { EmptyState, ErrorText, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 
-// Admin → SEO pages: AI-written landing pages for each kind of shop (/for/<slug>, /hi/for/<slug>), written a few a day
+// Admin → SEO pages: AI-written landing pages for each kind of shop (/for/<slug>) and city (/city/<slug>), written a few a day
 // by Gemini on the server (server/src/seo.ts). Here: the schedule and budget, the queue of shop types, each page, and
 // what every AI call cost. The Gemini key can be set here (stored encrypted on the server, never shown again) or come from
 // GEMINI_API_KEY in the server's environment.
@@ -24,6 +24,7 @@ type Page = {
   id: number;
   slug: string;
   lang: 'en' | 'hi';
+  kind: 'shop' | 'city';
   topic: string;
   notes: string;
   status: Status;
@@ -54,7 +55,7 @@ type Overview = {
 export type AdminApi = <T>(path: string, method?: string, body?: unknown) => Promise<T>;
 
 const STATUS: Record<Status, string> = { queued: 'In queue', draft: 'Draft', published: 'Live', failed: 'Failed' };
-const pagePath = (p: Pick<Page, 'lang' | 'slug'>) => `${p.lang === 'hi' ? '/hi' : ''}/for/${p.slug}`;
+const pagePath = (p: Pick<Page, 'lang' | 'slug' | 'kind'>) => `${p.lang === 'hi' ? '/hi' : ''}/${p.kind === 'city' ? 'city' : 'for'}/${p.slug}`;
 
 export function SeoPage({ api, adminToken }: { api: AdminApi; adminToken: () => string | null }) {
   const [data, setData] = useState<Overview | null>(null);
@@ -200,7 +201,7 @@ export function SeoPage({ api, adminToken }: { api: AdminApi; adminToken: () => 
                   <tr key={p.id}>
                     <td>
                       <strong>
-                        {p.topic} <span className="source-chip">{p.lang === 'hi' ? 'हिंदी' : 'English'}</span>
+                        {p.topic} {p.kind === 'city' && <span className="source-chip">City</span>} <span className="source-chip">{p.lang === 'hi' ? 'हिंदी' : 'English'}</span>
                       </strong>
                       <span className="muted small">
                         {p.status === 'published' ? (
@@ -408,6 +409,7 @@ function QueueCard({ api, onAdded }: { api: AdminApi; onAdded: () => void }) {
   const [topics, setTopics] = useState('');
   const [notes, setNotes] = useState('');
   const [langs, setLangs] = useState({ en: true, hi: true });
+  const [kind, setKind] = useState<'shop' | 'city'>('shop');
   const { busy, error, run } = useAction();
   const add = (body: object) =>
     void run(async () => {
@@ -422,17 +424,30 @@ function QueueCard({ api, onAdded }: { api: AdminApi; onAdded: () => void }) {
       className="card"
       onSubmit={(e) => {
         e.preventDefault();
-        add({ topics, notes, langs: (['en', 'hi'] as const).filter((l) => langs[l]) });
+        add({ topics, notes, kind, langs: (['en', 'hi'] as const).filter((l) => langs[l]) });
       }}
     >
       <div className="card-head">
         <h2>
-          <Plus size={18} /> Add kinds of shops
+          <Plus size={18} /> Add kinds of shops or cities
         </h2>
       </div>
+      <div className="poster-options">
+        <label className="poster-check">
+          <input type="radio" name="seo-kind" checked={kind === 'shop'} onChange={() => setKind('shop')} /> Kinds of shops
+        </label>
+        <label className="poster-check">
+          <input type="radio" name="seo-kind" checked={kind === 'city'} onChange={() => setKind('city')} /> Cities
+        </label>
+      </div>
       <label>
-        Kinds of shops (one per line)
-        <textarea rows={4} value={topics} onChange={(e) => setTopics(e.target.value)} placeholder={'Gym\nMobile repair shop\nBoutique'} />
+        {kind === 'city' ? 'Cities' : 'Kinds of shops'} (one per line)
+        <textarea
+          rows={4}
+          value={topics}
+          onChange={(e) => setTopics(e.target.value)}
+          placeholder={kind === 'city' ? 'Jaipur\nIndore\nLucknow' : 'Gym\nMobile repair shop\nBoutique'}
+        />
       </label>
       <label>
         Notes for the writer (optional)
@@ -456,7 +471,8 @@ function QueueCard({ api, onAdded }: { api: AdminApi; onAdded: () => void }) {
         </button>
       </div>
       <p className="muted small" style={{ margin: 0 }}>
-        Each kind of shop gets its own page in each language: /for/gym and /hi/for/gym. Pages are written in queue order.
+        Each kind of shop gets its own page in each language: /for/gym and /hi/for/gym; each city too: /city/jaipur and
+        /hi/city/jaipur. Pages are written in queue order.
       </p>
     </form>
   );
