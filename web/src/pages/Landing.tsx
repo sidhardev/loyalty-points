@@ -5,6 +5,7 @@ import {
   CakeSlice,
   Candy,
   Check,
+  CheckCheck,
   Coffee,
   Delete,
   Dumbbell,
@@ -222,6 +223,46 @@ const COPY = {
       ['Bring back the ones who stopped', 'See who hasn’t come in 30 days and send a “we miss you” in one tap.', UserX],
       ['Your customers stay yours', 'We never sell your list or use it for ads. Download everything anytime.', Lock],
     ] as const,
+    autoKicker: 'Founding Shop',
+    autoTitle: 'The follow-ups you never have time for. Sent for you.',
+    autoSub: 'Regularhood’s WhatsApp number writes to your customers at the right moment, in your shop’s name, while you keep serving.',
+    // One customer's month: when each message goes out, and what it says.
+    autoSteps: [
+      {
+        when: 'After every visit',
+        tag: (n: number) => `Visit ${n - 2}`,
+        time: '6:42 pm',
+        text: (shop: string, n: number, r: string) => `Your visit at ${shop} is stamped.\n${n - 2} of ${n} stamps — 2 more for ${r}.`,
+        button: 'See my card',
+      },
+      {
+        when: 'When the card is full',
+        tag: (n: number) => `Visit ${n}`,
+        time: '7:15 pm',
+        text: (shop: string, _n: number, r: string) => `Good news! Your ${r} at ${shop} is ready. Just tell your number next time.`,
+        button: 'See my card',
+      },
+      {
+        when: 'If they stop coming',
+        tag: () => 'Day 30, once',
+        time: '11:30 am',
+        text: (shop: string, _n: number, r: string) => `We miss you at ${shop}. Two more visits and the ${r} is yours.`,
+        button: 'See my card',
+      },
+      {
+        when: 'After the reward',
+        tag: () => 'Same day',
+        time: '7:20 pm',
+        text: (shop: string) => `Thank you for visiting ${shop}. A Google review would help us a lot.`,
+        button: 'Rate on Google',
+      },
+    ],
+    autoAlso: [
+      ['Unlimited customers', 'Every regular gets a card. No cap.'],
+      ['Your price, locked', 'Every feature we add later, at no extra cost.'],
+      ['Your call', 'Hindi or English, each message on or off. Customers can reply STOP.'],
+    ] as const,
+    autoCta: 'See the Founding price',
     shopsKicker: 'Already on Regularhood',
     shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
@@ -321,6 +362,45 @@ const COPY = {
       ['रुके हुए ग्राहकों को वापस लाएँ', 'देखें कौन 30 दिन से नहीं आया और एक टैप में “आपकी याद आई” भेजें।', UserX],
       ['आपके ग्राहक आपके ही रहें', 'हम आपकी लिस्ट न बेचते हैं, न विज्ञापन में इस्तेमाल करते हैं। कभी भी सब डाउनलोड करें।', Lock],
     ] as const,
+    autoKicker: 'फ़ाउंडिंग शॉप',
+    autoTitle: 'जिन ग्राहकों को मैसेज करने का टाइम नहीं मिलता, उन्हें हम करते हैं।',
+    autoSub: 'Regularhood का WhatsApp नंबर सही वक्त पर, आपकी दुकान के नाम से ग्राहकों को लिखता है, और आप काउंटर संभालते रहते हैं।',
+    autoSteps: [
+      {
+        when: 'हर विज़िट के बाद',
+        tag: (n: number) => `विज़िट ${n - 2}`,
+        time: 'शाम 6:42',
+        text: (shop: string, n: number, r: string) => `${shop} पर आपकी विज़िट जुड़ गई।\n${n} में से ${n - 2} स्टैम्प — ${r} के लिए बस 2 और।`,
+        button: 'मेरा कार्ड देखें',
+      },
+      {
+        when: 'कार्ड पूरा होने पर',
+        tag: (n: number) => `विज़िट ${n}`,
+        time: 'शाम 7:15',
+        text: (shop: string, _n: number, r: string) => `खुशखबरी! ${shop} पर आपका ${r} तैयार है। अगली बार बस नंबर बताइए।`,
+        button: 'मेरा कार्ड देखें',
+      },
+      {
+        when: 'आना बंद करें तो',
+        tag: () => '30वें दिन, एक बार',
+        time: 'सुबह 11:30',
+        text: (shop: string, _n: number, r: string) => `${shop} पर आपकी याद आ रही है। बस दो और विज़िट, फिर ${r} आपका।`,
+        button: 'मेरा कार्ड देखें',
+      },
+      {
+        when: 'इनाम के बाद',
+        tag: () => 'उसी दिन',
+        time: 'शाम 7:20',
+        text: (shop: string) => `${shop} पर आने के लिए धन्यवाद। आपका Google रिव्यू हमारी बहुत मदद करेगा।`,
+        button: 'Google पर रिव्यू दें',
+      },
+    ],
+    autoAlso: [
+      ['जितने चाहें ग्राहक', 'हर रेगुलर को कार्ड। कोई लिमिट नहीं।'],
+      ['आपकी कीमत, लॉक', 'आगे आने वाले सारे फ़ीचर, बिना ज़्यादा पैसे।'],
+      ['आपकी मर्ज़ी', 'हिंदी या English, हर मैसेज चालू/बंद। ग्राहक STOP लिख सकते हैं।'],
+    ] as const,
+    autoCta: 'फ़ाउंडिंग कीमत देखें',
     shopsKicker: 'Regularhood पर पहले से',
     shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
@@ -1118,6 +1198,56 @@ function ForCustomers({ c, lang }: { c: Copy; lang: Lang }) {
   );
 }
 
+/**
+ * Founding Shop, shown as one customer's month: each message Regularhood sends by itself, at the moment it goes out,
+ * on a WhatsApp chat background. Uses the shop picked at the top of the page.
+ */
+function Autopilot({ c, lang }: { c: Copy; lang: Lang }) {
+  const { ex } = useExample();
+  // "Free cappuccino" reads as "the free cappuccino" mid-sentence.
+  const reward = lang === 'en' ? ex.en.short.charAt(0).toLowerCase() + ex.en.short.slice(1) : ex.hi.short;
+
+  return (
+    <section className="lp-section lp-wrap" id="founding" data-section="founding">
+      <p className="lp-kicker rv">{c.autoKicker}</p>
+      <h2 className="lp-h2 rv">{c.autoTitle}</h2>
+      <p className="lp-sub rv">{c.autoSub}</p>
+
+      <ol className="lp-auto rv">
+        {c.autoSteps.map((step, i) => (
+          <li key={step.when} style={{ '--i': i } as CSSProperties}>
+            <div className="lp-auto-when">
+              <span className="lp-auto-tag">{step.tag(ex.needed)}</span>
+              <strong>{step.when}</strong>
+            </div>
+            <div className="lp-auto-bubble">
+              <p>{step.text(ex.shop, ex.needed, reward)}</p>
+              <span className="lp-auto-time">
+                {step.time} <CheckCheck size={14} aria-hidden="true" />
+              </span>
+              <span className="lp-auto-btn">{step.button}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div className="lp-auto-foot rv">
+        <dl className="lp-auto-also">
+          {c.autoAlso.map(([title, text]) => (
+            <div key={title}>
+              <dt>{title}</dt>
+              <dd>{text}</dd>
+            </div>
+          ))}
+        </dl>
+        <a className="lp-link lp-auto-cta" href="#pricing" data-track="founding: See the price">
+          {c.autoCta} <ArrowRight size={18} />
+        </a>
+      </div>
+    </section>
+  );
+}
+
 function Why({ c }: { c: Copy }) {
   return (
     <section className="lp-section lp-wrap" id="why" data-section="why">
@@ -1307,6 +1437,7 @@ export function Landing() {
             <ForCustomers c={c} lang={lang} />
             <Why c={c} />
             <ShopsUsing c={c} />
+            <Autopilot c={c} lang={lang} />
             <Pricing c={c} />
             <Faq c={c} lang={lang} />
             <section className="lp-final" data-section="final">
