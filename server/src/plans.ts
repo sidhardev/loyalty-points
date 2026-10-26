@@ -27,6 +27,12 @@ export function effectivePlan(m: PlanFields): Plan {
   return m.plan === 'lifetime' || m.plan === 'grandfathered' ? m.plan : 'free';
 }
 
+/** Founding Shop extras (automatic WhatsApp, Google review requests) are for paying shops only, not grandfathered ones. */
+export const isFounding = (m: PlanFields) => ['lifetime', 'yearly'].includes(effectivePlan(m));
+
+/** Automatic WhatsApp messages a Founding Shop gets each calendar month (each one costs us Meta's per-message price). */
+export const FOUNDING_MESSAGES = Number(process.env.FOUNDING_MESSAGES) || 300;
+
 /** How many customers this shop may have; null = no limit. */
 export const customerLimit = (m: PlanFields) => (effectivePlan(m) === 'free' ? FREE_CUSTOMERS : null);
 

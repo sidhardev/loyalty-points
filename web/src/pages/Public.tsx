@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Check, Gift, History, Phone } from 'lucide-react';
+import { Check, Gift, History, Phone, Star } from 'lucide-react';
 
-import { api, when } from '../api';
+import { api, reviewUrl, when } from '../api';
 import { trackedLink } from '../attribution';
 import '../counter.css';
 import { LangToggle, t, useLang } from '../i18n';
@@ -13,7 +13,7 @@ import { Stamps } from './Counter';
 // There's nothing for the customer to do: the shop types their number, and the WhatsApp link opens their card.
 
 type WalletData = {
-  shop: { name: string; joinCode: string; visitsNeeded: number; rewardName: string };
+  shop: { name: string; joinCode: string; visitsNeeded: number; rewardName: string; review: boolean };
   stamps: number;
   since: string;
   history: { kind: 'visit' | 'reward'; note: string | null; createdAt: string }[];
@@ -128,6 +128,12 @@ export function Wallet({ token }: { token: string }) {
           <div className="small muted">{t('One visit a day counts. No app, no sign-up.')}</div>
         </div>
       </div>
+
+      {shop.review && history.some((h) => h.kind === 'reward') && (
+        <a className="btn btn-soft review-btn" href={reviewUrl(shop.joinCode)} target="_blank" rel="noreferrer">
+          <Star size={18} /> {t('Liked {shop}? Rate it on Google', { shop: shop.name })}
+        </a>
+      )}
 
       <InstallBanner id="wallet" title={t('Add your card to your home screen')} text={t('See your visits in one tap.')} />
 

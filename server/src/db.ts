@@ -507,6 +507,23 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_payments_merchant ON payments (merchant_id);
   `,
+
+  // 23: Founding Shop extras. Regularhood's WhatsApp number can message the shop's customers by itself (their card
+  // after a visit, "reward ready", "we miss you", a Google review request after a reward); each kind can be switched
+  // off. wa_messages rows sent for a shop carry its id, the customer and which automatic message it was.
+  `
+  ALTER TABLE merchants ADD COLUMN auto_card INTEGER NOT NULL DEFAULT 1;
+  ALTER TABLE merchants ADD COLUMN auto_reward INTEGER NOT NULL DEFAULT 1;
+  ALTER TABLE merchants ADD COLUMN auto_missyou INTEGER NOT NULL DEFAULT 1;
+  ALTER TABLE merchants ADD COLUMN auto_review INTEGER NOT NULL DEFAULT 1;
+  ALTER TABLE merchants ADD COLUMN review_url TEXT NOT NULL DEFAULT ''; -- the shop's Google review link
+  ALTER TABLE merchants ADD COLUMN msg_lang TEXT NOT NULL DEFAULT 'hi'; -- automatic messages: hi | en
+  ALTER TABLE wa_messages ADD COLUMN merchant_id INTEGER REFERENCES merchants(id) ON DELETE SET NULL;
+  ALTER TABLE wa_messages ADD COLUMN customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL;
+  ALTER TABLE wa_messages ADD COLUMN auto TEXT; -- card | reward | missyou | review
+  CREATE INDEX idx_wa_messages_merchant ON wa_messages (merchant_id, created_at);
+  CREATE INDEX idx_wa_messages_customer ON wa_messages (customer_id, auto);
+  `,
 ];
 
 const INDEXES = `

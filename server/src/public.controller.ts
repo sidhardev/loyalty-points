@@ -3,7 +3,8 @@ import type { Response } from 'express';
 import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
-import { FOUNDING_SEATS, PRICES, seatsLeft } from './plans';
+import { FOUNDING_SEATS, isFounding, PRICES, seatsLeft } from './plans';
+import { SITE } from './seo';
 
 // Pages customers open without an account:
 //  - /w/<token>: their stamp card (the random token in the link, sent on WhatsApp by the shop, is what identifies them)
@@ -23,6 +24,16 @@ export class PublicController {
     return { total: FOUNDING_SEATS, left: seatsLeft(this.db.sql), prices: PRICES };
   }
 
+  /**
+   * The shop's Google review page, behind a link of ours (/api/public/review/<join code>) so WhatsApp buttons and the
+   * customer's card don't need to know it. Unknown codes and shops without a link go to the homepage.
+   */
+  @Get('review/:code')
+  review(@Param('code') code: string, @Res() res: Response) {
+    const m = this.db.sql.prepare('SELECT review_url FROM merchants WHERE join_code = ? AND suspended_at IS NULL').get(code) as { review_url: string } | undefined;
+    res.redirect(302, m?.review_url || SITE);
+  }
+
   @Get('wallet/:token')
   wallet(@Param('token') token: string) {
     const c = this.db.sql.prepare('SELECT * FROM customers WHERE wallet_token = ?').get(token) as CustomerRow | undefined;
@@ -36,7 +47,7 @@ export class PublicController {
       )
       .all(c.id) as { type: string; note: string | null; created_at: string }[];
     return {
-      shop: { name: m.name, joinCode: m.join_code, visitsNeeded: m.visits_needed, rewardName: m.reward_name },
+      shop: { name: m.name, joinCode: m.join_code, visitsNeeded: m.visits_needed, rewardName: m.reward_name, review: Boolean(m.review_url && isFounding(m)) },
       stamps: c.points,
       since: c.created_at,
       history: history.map((h) => ({ kind: h.type === 'earn' ? 'visit' : 'reward', note: h.note, createdAt: h.created_at })),

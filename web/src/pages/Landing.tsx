@@ -220,19 +220,26 @@ const COPY = {
       ['Anyone at the counter can use it', 'A keypad and one button. No training, no manual.', Smartphone],
       ['Works for every customer', 'Only a phone number. No sign-up, no app, no QR, no PIN.', Phone],
       ['Bring back the ones who stopped', 'See who hasn’t come in 30 days and send a “we miss you” in one tap.', UserX],
-      ['Your customers stay yours', 'We never sell or message them. Download everything anytime.', Lock],
+      ['Your customers stay yours', 'We never sell your list or use it for ads. Download everything anytime.', Lock],
     ] as const,
     shopsKicker: 'Already on Regularhood',
     shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
     priceTitle: 'Free to start. A founding price for the first 100 shops.',
-    priceSub: 'Start free with up to 50 customers. When your regulars grow, become a Founding Shop: no limit, at a price we won’t offer again.',
-    priceList: ['Up to 50 customers', 'Customer cards in Hindi and English', 'WhatsApp card and reminder messages', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
+    priceSub: 'Start free with up to 50 customers. When your regulars grow, become a Founding Shop: WhatsApp messages and Google reviews on autopilot, at a price we won’t offer again.',
+    priceFree: { name: 'Free', per: 'forever' },
+    priceList: ['Up to 50 customers', 'Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
     founding: {
       name: 'Founding Shop',
       once: 'once, for life',
       yearly: (price: string) => `or ${price} a year`,
-      list: ['Unlimited customers', 'Everything in Free', 'Price locked for as long as you stay', 'Every new feature we add'],
+      list: [
+        'Unlimited customers',
+        'Card and “reward ready” sent on WhatsApp for you',
+        '“We miss you” reminders, sent by themselves',
+        'Google review requests after every reward',
+        'Founding price locked, with every new feature',
+      ],
       only: 'Only for the first 100 shops',
       left: (left: number, total: number) => (left ? `${left} of ${total} places left` : 'All places taken'),
       cta: 'Start free, upgrade anytime',
@@ -309,19 +316,26 @@ const COPY = {
       ['काउंटर पर कोई भी चला ले', 'एक कीपैड और एक बटन। न ट्रेनिंग, न मैनुअल।', Smartphone],
       ['हर ग्राहक के लिए', 'सिर्फ़ फ़ोन नंबर। न साइन-अप, न ऐप, न QR, न PIN।', Phone],
       ['रुके हुए ग्राहकों को वापस लाएँ', 'देखें कौन 30 दिन से नहीं आया और एक टैप में “आपकी याद आई” भेजें।', UserX],
-      ['आपके ग्राहक आपके ही रहें', 'हम न उन्हें बेचते हैं, न मैसेज करते हैं। कभी भी सब डाउनलोड करें।', Lock],
+      ['आपके ग्राहक आपके ही रहें', 'हम आपकी लिस्ट न बेचते हैं, न विज्ञापन में इस्तेमाल करते हैं। कभी भी सब डाउनलोड करें।', Lock],
     ] as const,
     shopsKicker: 'Regularhood पर पहले से',
     shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
     priceTitle: 'शुरू करना मुफ़्त है। पहली 100 दुकानों के लिए फ़ाउंडिंग कीमत।',
-    priceSub: '50 ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: कोई लिमिट नहीं, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।',
-    priceList: ['50 ग्राहकों तक', 'हिंदी और English में ग्राहक कार्ड', 'WhatsApp पर कार्ड और याद दिलाने वाले मैसेज', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
+    priceSub: '50 ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: WhatsApp मैसेज और Google रिव्यू अपने आप, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।',
+    priceFree: { name: 'फ़्री', per: 'हमेशा' },
+    priceList: ['50 ग्राहकों तक', 'हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
     founding: {
       name: 'फ़ाउंडिंग शॉप',
       once: 'एक बार, हमेशा के लिए',
       yearly: (price: string) => `या ${price} साल का`,
-      list: ['जितने चाहें ग्राहक', 'फ़्री वाला सब कुछ', 'जब तक आप साथ हैं, कीमत वही', 'आगे आने वाले सारे नए फ़ीचर'],
+      list: [
+        'जितने चाहें ग्राहक',
+        'कार्ड और “इनाम तैयार” WhatsApp पर अपने आप',
+        '“आपकी याद आ रही है” रिमाइंडर, अपने आप',
+        'हर इनाम के बाद Google रिव्यू की रिक्वेस्ट',
+        'फ़ाउंडिंग कीमत लॉक, हर नए फ़ीचर के साथ',
+      ],
       only: 'सिर्फ़ पहली 100 दुकानों के लिए',
       left: (left: number, total: number) => (left ? `${total} में से ${left} जगह बाकी` : 'सारी जगहें भर गईं'),
       cta: 'मुफ़्त शुरू करें, कभी भी अपग्रेड करें',
@@ -345,7 +359,7 @@ export const FAQ = [
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
-  ['What does it cost?', 'Free for up to 50 customers. For more, the first 100 shops can become a Founding Shop: ₹1,499 once for life, or ₹499 a year. Pay by UPI; full refund within 7 days.'],
+  ['What does it cost?', 'Free for up to 50 customers. The first 100 shops can become a Founding Shop for ₹1,499 once (for life) or ₹499 a year: unlimited customers, WhatsApp messages sent to customers for you, and Google review requests. Pay by UPI; full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -355,7 +369,7 @@ const FAQ_HI = [
   ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
-  ['इसकी कीमत क्या है?', '50 ग्राहकों तक मुफ़्त। इससे ज़्यादा के लिए पहली 100 दुकानें फ़ाउंडिंग शॉप बन सकती हैं: ₹1,499 एक बार, हमेशा के लिए, या ₹499 साल का। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
+  ['इसकी कीमत क्या है?', '50 ग्राहकों तक मुफ़्त। पहली 100 दुकानें ₹1,499 एक बार (हमेशा के लिए) या ₹499 साल में फ़ाउंडिंग शॉप बन सकती हैं: जितने चाहें ग्राहक, ग्राहकों को WhatsApp मैसेज अपने आप, और Google रिव्यू की रिक्वेस्ट। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -1167,47 +1181,46 @@ function Pricing({ c }: { c: Copy }) {
   const f = c.founding;
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
-      <div className="lp-price">
-        <div>
-          <p className="lp-kicker rv">{c.priceKicker}</p>
-          <h2 className="lp-h2 rv">{c.priceTitle}</h2>
-          <p className="lp-sub rv">{c.priceSub}</p>
+      <p className="lp-kicker rv">{c.priceKicker}</p>
+      <h2 className="lp-h2 rv">{c.priceTitle}</h2>
+      <p className="lp-sub rv">{c.priceSub}</p>
+      <div className="lp-price-cards">
+        <div className="lp-price-card lp-price-free rv">
+          <p className="lp-price-name">{c.priceFree.name}</p>
+          <div>
+            <strong className="lp-price-tag">₹0</strong> <span className="lp-price-per">{c.priceFree.per}</span>
+          </div>
+          <ul>
+            {c.priceList.map((item) => (
+              <li key={item}>
+                <Check size={18} /> {item}
+              </li>
+            ))}
+          </ul>
+          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Create your shop">
+            {c.create} <ArrowRight size={18} />
+          </a>
         </div>
-        <div className="lp-price-cards">
-          <div className="lp-price-card lp-price-free rv">
-            <strong className="lp-price-tag">₹0</strong>
-            <ul>
-              {c.priceList.map((item) => (
-                <li key={item}>
-                  <Check size={18} /> {item}
-                </li>
-              ))}
-            </ul>
-            <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Create your shop">
-              {c.create} <ArrowRight size={18} />
-            </a>
+        <div className="lp-price-card rv">
+          <span className="lp-price-badge">
+            {f.only}
+            {founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
+          </span>
+          <p className="lp-price-name">{f.name}</p>
+          <div>
+            <strong className="lp-price-tag">{inr(founding.prices.lifetime)}</strong> <span className="lp-price-per">{f.once}</span>
+            <p className="lp-price-alt">{f.yearly(inr(founding.prices.yearly))}</p>
           </div>
-          <div className="lp-price-card rv">
-            <span className="lp-price-badge">
-              {f.only}
-              {founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
-            </span>
-            <p className="lp-price-name">{f.name}</p>
-            <div>
-              <strong className="lp-price-tag">{inr(founding.prices.lifetime)}</strong> <span className="lp-price-per">{f.once}</span>
-              <p className="lp-price-alt">{f.yearly(inr(founding.prices.yearly))}</p>
-            </div>
-            <ul>
-              {f.list.map((item) => (
-                <li key={item}>
-                  <Check size={18} /> {item}
-                </li>
-              ))}
-            </ul>
-            <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Founding Shop">
-              {f.cta} <ArrowRight size={18} />
-            </a>
-          </div>
+          <ul>
+            {f.list.map((item) => (
+              <li key={item}>
+                <Check size={18} /> {item}
+              </li>
+            ))}
+          </ul>
+          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Founding Shop">
+            {f.cta} <ArrowRight size={18} />
+          </a>
         </div>
       </div>
     </section>

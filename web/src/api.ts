@@ -9,6 +9,8 @@ export type Merchant = {
   phone: string; // owner's WhatsApp number, '' = not given
   visitsNeeded: number; // every this many visits…
   rewardName: string; // …the customer gets this ('' until the shop sets it up)
+  founding: boolean; // Founding Shop (paid): automatic WhatsApp and Google review requests
+  review: boolean; // the shop saved its Google review link
 };
 
 /** A customer is just a phone number with stamps: one per visit, the reward at `merchant.visitsNeeded`. */
@@ -24,7 +26,18 @@ export type Customer = {
 };
 
 /** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
-export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer };
+export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer; auto: AutoKind | null };
+
+/** Automatic WhatsApp messages Regularhood sends a Founding Shop's customers. */
+export type AutoKind = 'card' | 'reward' | 'missyou' | 'review';
+export type AutoStatus = {
+  founding: boolean;
+  live: boolean; // Regularhood's WhatsApp number is set up to send
+  quota: number; // a month
+  used: number;
+  settings: { card: boolean; reward: boolean; missyou: boolean; review: boolean; lang: 'hi' | 'en'; reviewUrl: string };
+  recent: { kind: AutoKind; status: string; created_at: string; phone: string | null; name: string | null }[];
+};
 
 /** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise. */
 export type Billing = {
@@ -96,6 +109,16 @@ export const daysAgo = (sqlTime: string) => Math.floor((Date.now() - parseTime(s
 
 export const walletUrl = (token: string) => `${location.origin}/w/${token}`;
 export const joinUrl = (code: string) => `${location.origin}/join/${code}`;
+/** Opens the shop's Google review page (our redirect, so the link stays short and the same). */
+export const reviewUrl = (code: string) => `${location.origin}/api/public/review/${code}`;
+
+/** The WhatsApp message asking a customer for a Google review. */
+export function reviewMessage(m: Merchant, lang: 'en' | 'hi' = 'hi') {
+  const url = reviewUrl(m.joinCode);
+  return lang === 'hi'
+    ? `${m.name} पर आने के लिए धन्यवाद! 🙏 आपका Google रिव्यू हमारी बहुत मदद करेगा, सिर्फ़ 30 सेकंड लगेंगे: ${url}`
+    : `Thank you for visiting ${m.name}! 🙏 A Google review helps us a lot and takes 30 seconds: ${url}`;
+}
 
 /** "98765 43210" for a 10-digit number; anything else as stored. */
 export const phoneLabel = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(0, 5)} ${phone.slice(5)}` : phone);

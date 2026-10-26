@@ -19,6 +19,7 @@ import {
 import type { Request, Response } from 'express';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AdminGuard, AdminId } from './admin';
+import { CUSTOMER_TEMPLATES, fill, type AutoKind, type MsgLang } from './customer-templates';
 import { Db } from './db';
 import { LeadsService } from './leads';
 import { seal, unseal } from './secret';
@@ -33,6 +34,9 @@ import { SITE, SeoService } from './seo';
 // (/api/whatsapp/webhook, checked with the app secret). Costs: the price per marketing message is a setting (Meta's
 // rate card for India changes), counted when Meta says a message is billable; sends stop at the monthly budget and at
 // a daily cap, which also protects the number's quality rating.
+//
+// The same number also sends Founding Shops' customers their automatic messages (automessages.ts). Those rows carry a
+// merchant_id and `auto`, have their own monthly allowance per shop, and don't count against the lead caps.
 
 export type WaSettings = {
   phoneNumberId: string;
@@ -48,6 +52,7 @@ export type WaSettings = {
   utilityPriceUsd: number;
   monthlyBudgetUsd: number;
   verifyToken: string; // Meta sends it back when the webhook is set up
+  customerMessages: boolean; // send Founding Shops' automatic messages (once the rh_* templates are approved)
 };
 
 const DEFAULTS: WaSettings = {
@@ -64,6 +69,7 @@ const DEFAULTS: WaSettings = {
   utilityPriceUsd: 0.0014,
   monthlyBudgetUsd: 5,
   verifyToken: '',
+  customerMessages: false,
 };
 
 /** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop.
@@ -148,6 +154,7 @@ export class WhatsApp {
       s.templateBody = String(input.templateBody ?? '').slice(0, 1100);
     }
     if (input.autoPitch !== undefined) s.autoPitch = Boolean(input.autoPitch);
+    if (input.customerMessages !== undefined) s.customerMessages = Boolean(input.customerMessages);
     if (input.dailyLimit !== undefined) s.dailyLimit = Math.round(num(input.dailyLimit, 'Messages per day', 0, 10_000));
     if (input.marketingPriceUsd !== undefined) s.marketingPriceUsd = num(input.marketingPriceUsd, 'Marketing price', 0, 10);
     if (input.utilityPriceUsd !== undefined) s.utilityPriceUsd = num(input.utilityPriceUsd, 'Utility price', 0, 10);
@@ -293,15 +300,26 @@ export class WhatsApp {
            COUNT(*) FILTER (WHERE direction = 'out' AND kind = 'template' AND status != 'failed') AS templates,
            COUNT(*) FILTER (WHERE direction = 'out' AND status = 'read') AS read,
            COUNT(DISTINCT CASE WHEN direction = 'in' THEN phone END) AS replied
-         FROM wa_messages WHERE created_at >= date('now', 'start of month')`,
+         FROM wa_messages WHERE auto IS NULL AND created_at >= date('now', 'start of month')`,
       )
       .get() as { usd: number; templates: number; read: number; replied: number };
+  }
+
+  /** This month's automatic messages to shops' customers, all shops together. */
+  customerMonth() {
+    return this.db.sql
+      .prepare(
+        `SELECT COALESCE(SUM(cost_usd), 0) AS usd, COUNT(*) FILTER (WHERE status != 'failed') AS sent,
+           COUNT(*) FILTER (WHERE status = 'failed') AS failed, COUNT(DISTINCT merchant_id) AS shops
+         FROM wa_messages WHERE auto IS NOT NULL AND created_at >= date('now', 'start of month')`,
+      )
+      .get() as { usd: number; sent: number; failed: number; shops: number };
   }
 
   sentToday() {
     return (
       this.db.sql
-        .prepare("SELECT COUNT(*) AS n FROM wa_messages WHERE direction = 'out' AND kind = 'template' AND status != 'failed' AND created_at >= datetime('now', '-1 day')")
+        .prepare("SELECT COUNT(*) AS n FROM wa_messages WHERE direction = 'out' AND kind = 'template' AND auto IS NULL AND status != 'failed' AND created_at >= datetime('now', '-1 day')")
         .get() as { n: number }
     ).n;
   }
@@ -313,10 +331,34 @@ export class WhatsApp {
     return this.db.sql.prepare('SELECT * FROM leads WHERE id = ?').get(id) as LeadLite;
   }
 
-  private record(m: { leadId: number | null; phone: string; direction: 'out' | 'in'; wamid?: string; kind: string; body: string; status: string; error?: string }) {
+  private record(m: {
+    leadId: number | null;
+    phone: string;
+    direction: 'out' | 'in';
+    wamid?: string;
+    kind: string;
+    body: string;
+    status: string;
+    error?: string;
+    auto?: { merchantId: number; customerId: number; kind: AutoKind };
+  }) {
     this.db.sql
-      .prepare('INSERT OR IGNORE INTO wa_messages (lead_id, phone, direction, wamid, kind, body, status, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(m.leadId, m.phone, m.direction, m.wamid ?? null, m.kind, m.body.slice(0, 4000), m.status, m.error?.slice(0, 500) ?? null);
+      .prepare(
+        'INSERT OR IGNORE INTO wa_messages (lead_id, phone, direction, wamid, kind, body, status, error, merchant_id, customer_id, auto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      )
+      .run(
+        m.leadId,
+        m.phone,
+        m.direction,
+        m.wamid ?? null,
+        m.kind,
+        m.body.slice(0, 4000),
+        m.status,
+        m.error?.slice(0, 500) ?? null,
+        m.auto?.merchantId ?? null,
+        m.auto?.customerId ?? null,
+        m.auto?.kind ?? null,
+      );
   }
 
   leadByPhone(phone: string) {
@@ -377,6 +419,83 @@ export class WhatsApp {
       if (/\(131026\)/.test(message)) this.db.sql.prepare('UPDATE leads SET mobile = 0 WHERE id = ?').run(leadId);
       throw error;
     }
+  }
+
+  /** Whether automatic messages to shops' customers can go out: switched on in the panel, with a number and token. */
+  get customerReady() {
+    const s = this.settings();
+    return Boolean(s.customerMessages && s.phoneNumberId && this.token());
+  }
+
+  /**
+   * One of the rh_* templates to a shop's customer. `values` fill the body, `urlParam` the button's link. Errors are
+   * recorded and thrown; the caller decides whether that matters.
+   */
+  async sendCustomerTemplate(phone: string, t: { kind: AutoKind; lang: MsgLang; values: string[]; urlParam: string; merchantId: number; customerId: number }) {
+    const s = this.settings();
+    const tpl = CUSTOMER_TEMPLATES[t.kind];
+    // WhatsApp refuses empty variables and new lines inside them.
+    const values = t.values.map((v) => v.replace(/\s+/g, ' ').trim().slice(0, 60) || '-');
+    const body = fill(tpl.body[t.lang], values);
+    const auto = { merchantId: t.merchantId, customerId: t.customerId, kind: t.kind };
+    try {
+      const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
+        method: 'POST',
+        body: {
+          messaging_product: 'whatsapp',
+          to: phone,
+          type: 'template',
+          template: {
+            name: tpl.name,
+            language: { code: t.lang },
+            components: [
+              { type: 'body', parameters: values.map((v) => ({ type: 'text', text: v })) },
+              { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: t.urlParam }] },
+            ],
+          },
+        },
+      });
+      this.record({ leadId: null, phone, direction: 'out', wamid: r.messages?.[0]?.id, kind: 'template', body, status: 'sent', auto });
+    } catch (error) {
+      this.record({ leadId: null, phone, direction: 'out', kind: 'template', body, status: 'failed', error: (error as Error).message, auto });
+      throw error;
+    }
+  }
+
+  /** The rh_* templates in both languages, with Meta's review status ('missing' if Meta doesn't have one). */
+  async customerTemplates() {
+    const have = await this.templates();
+    return (Object.keys(CUSTOMER_TEMPLATES) as AutoKind[]).flatMap((kind) =>
+      (['hi', 'en'] as MsgLang[]).map((lang) => {
+        const t = have.find((x) => x.name === CUSTOMER_TEMPLATES[kind].name && x.language === lang);
+        return { kind, lang, name: CUSTOMER_TEMPLATES[kind].name, status: t?.status ?? 'missing', category: t?.category ?? CUSTOMER_TEMPLATES[kind].category };
+      }),
+    );
+  }
+
+  /** Sends Meta every rh_* template it doesn't have yet, in both languages, for review. */
+  async createCustomerTemplates() {
+    const s = this.settings();
+    if (!s.wabaId) throw new BadRequestException('Add the WhatsApp Business Account ID first');
+    const created: string[] = [];
+    for (const t of await this.customerTemplates()) {
+      if (t.status !== 'missing') continue;
+      const tpl = CUSTOMER_TEMPLATES[t.kind];
+      await this.graph(`${s.wabaId}/message_templates`, {
+        method: 'POST',
+        body: {
+          name: tpl.name,
+          language: t.lang,
+          category: tpl.category,
+          components: [
+            { type: 'BODY', text: tpl.body[t.lang], example: { body_text: [tpl.example.body] } },
+            { type: 'BUTTONS', buttons: [{ type: 'URL', text: tpl.button[t.lang], url: tpl.url, example: [tpl.example.url] }] },
+          ],
+        },
+      });
+      created.push(`${tpl.name} (${t.lang})`);
+    }
+    return { created, templates: await this.customerTemplates() };
   }
 
   /** A free-form message: only allowed for 24 hours after the lead's last message. */
@@ -639,6 +758,7 @@ export class WhatsAppAdminController {
       sentToday: this.wa.sentToday(),
       webhookLog: this.wa.webhookLog(),
       month: this.wa.monthCost(),
+      customerMonth: this.wa.customerMonth(),
       suggested: SUGGESTED_TEMPLATES,
     };
   }
@@ -703,6 +823,20 @@ export class WhatsAppAdminController {
   @HttpCode(200)
   createTemplate(@Body() body: { lang?: string; body?: string }) {
     return this.wa.createTemplate(body?.lang === 'en' ? 'en' : 'hi', body?.body);
+  }
+
+  /** The templates for shops' customers (rh_*), with Meta's review status. */
+  @Get('customer-templates')
+  customerTemplates() {
+    return this.wa.customerTemplates();
+  }
+
+  @Post('customer-templates')
+  @HttpCode(200)
+  async createCustomerTemplates(@AdminId() adminId: number) {
+    const r = await this.wa.createCustomerTemplates();
+    if (r.created.length) this.audit(adminId, `Sent customer message templates for review: ${r.created.join(', ')}`);
+    return r;
   }
 
   @Get('leads/:id')

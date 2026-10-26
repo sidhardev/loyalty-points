@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Check, Crown, Delete, Gift, MessageCircle, Undo2 } from 'lucide-react';
-import { api, cardMessage, num, phoneLabel, whatsapp, type Customer, type Merchant, type VisitResult } from '../api';
+import { Check, CheckCheck, Crown, Delete, Gift, MessageCircle, Star, Undo2 } from 'lucide-react';
+import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type AutoKind, type Customer, type Merchant, type VisitResult } from '../api';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { ErrorText, confetti, toast, useAction } from '../ui';
@@ -82,7 +82,8 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
   );
 }
 
-type Shown = { result: VisitResult; given?: boolean };
+// `reviewSent`: after the reward, Regularhood sent the Google review request by itself.
+type Shown = { result: VisitResult; given?: boolean; reviewSent?: boolean };
 
 export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m: Merchant) => void }) {
   useLang(); // re-render in the chosen language
@@ -175,8 +176,8 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
 
   const giveReward = (c: Customer) =>
     void run(async () => {
-      const r = await api<{ rewardId: number; customer: Customer }>(`customers/${c.id}/reward`, 'POST');
-      setShown((s) => s && { result: { ...s.result, customer: r.customer }, given: true });
+      const r = await api<{ rewardId: number; customer: Customer; auto: AutoKind | null }>(`customers/${c.id}/reward`, 'POST');
+      setShown((s) => s && { result: { ...s.result, customer: r.customer }, given: true, reviewSent: r.auto === 'review' });
       setLeft(BACK_AFTER);
     });
 
@@ -191,10 +192,24 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
     });
 
   if (shown) {
-    const { result, given } = shown;
+    const { result, given, reviewSent } = shown;
     const c = result.customer;
     const n = merchant.visitsNeeded;
-    const send = (
+    // Founding Shop: Regularhood messaged the customer by itself, so there's nothing to send.
+    const autoNote = (text: string) => (
+      <p className="auto-note">
+        <CheckCheck size={18} /> {text}
+      </p>
+    );
+    const send = given && reviewSent ? (
+      autoNote(t('Google review request sent on WhatsApp'))
+    ) : given && merchant.founding && merchant.review ? (
+      <a className="btn btn-whatsapp btn-lg" href={whatsapp(c.phone, reviewMessage(merchant, messageLang()))} target="_blank" rel="noreferrer" onClick={() => setHold(true)}>
+        <Star size={20} /> {t('Ask for a Google review')}
+      </a>
+    ) : !given && result.auto === 'card' ? (
+      autoNote(t('Card sent on WhatsApp automatically'))
+    ) : (
       <a
         className="btn btn-whatsapp btn-lg"
         href={whatsapp(c.phone, cardMessage(merchant, c, messageLang(), given))}
@@ -219,6 +234,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
               {result.already ? t('Visit already counted today.') : t('This is visit {n}.', { n })} {t('Their card is full.')}
             </p>
             <Stamps stamps={c.stamps} needed={n} size="lg" />
+            {result.auto === 'reward' && autoNote(t('“Reward ready” sent on WhatsApp'))}
             <ErrorText text={error} />
             <button className="btn btn-reward btn-xl" onClick={() => giveReward(c)} disabled={busy}>
               <Check size={24} strokeWidth={3} /> {t('Given')}

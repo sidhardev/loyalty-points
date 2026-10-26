@@ -20,6 +20,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
+import { isFounding } from './plans';
 import { Db, randomToken } from './db';
 import { CARD_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
@@ -49,6 +50,8 @@ export const publicMerchant = (m: MerchantRow) => ({
   phone: m.phone ?? '',
   visitsNeeded: m.visits_needed,
   rewardName: m.reward_name,
+  founding: isFounding(m), // Founding Shop extras: automatic WhatsApp, Google review requests
+  review: Boolean(m.review_url), // has a Google review link
 });
 
 type Settings = {

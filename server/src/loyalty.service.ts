@@ -37,6 +37,12 @@ export type MerchantRow = {
   plan: string; // see plans.ts
   plan_expires_at: string | null;
   founding_no: number | null;
+  auto_card: number;
+  auto_reward: number;
+  auto_missyou: number;
+  auto_review: number;
+  review_url: string;
+  msg_lang: string;
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';

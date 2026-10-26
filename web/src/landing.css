@@ -1525,13 +1525,14 @@ button.lp-phone-btn:not(.orange) {
   background: linear-gradient(180deg, var(--paper), #e9f4ee 50%, var(--paper));
 }
 
+/* The content sits at the top with the same spacing as every other section (not centred in a full screen), so there's
+   no extra gap above it or after it once the section scrolls away. */
 .lp-scroll-sticky {
   position: sticky;
   top: 0;
   display: grid;
-  align-items: center;
-  min-height: 100vh;
-  padding-block: 80px 40px;
+  align-items: start;
+  padding-block: clamp(64px, 9vw, 110px);
 }
 
 .lp-scroll-grid {
@@ -1915,38 +1916,40 @@ button.lp-phone-btn:not(.orange) {
   line-height: 1.25;
 }
 
-/* pricing */
+/* pricing: the heading like every section, then Free and Founding Shop side by side, the same height */
 
-.lp-price {
+.lp-price-cards {
   display: grid;
-  gap: 30px;
-  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
 }
 
-.lp-price > div:first-child {
-  display: grid;
-  gap: 16px;
-}
-
-@media (min-width: 880px) {
-  .lp-price {
+@media (min-width: 820px) {
+  .lp-price-cards {
     grid-template-columns: 1fr 1fr;
+    align-items: stretch;
   }
 }
 
 .lp-price-card {
   position: relative;
-  display: grid;
-  gap: 20px;
-  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 30px 28px;
   border-radius: 28px;
   background: radial-gradient(100% 80% at 100% 0%, rgba(11, 122, 82, 0.35), transparent 60%), var(--night);
   color: var(--paper);
   box-shadow: 0 40px 80px -40px rgba(15, 46, 36, 0.8);
 }
 
+/* the button sits at the bottom, so both cards' buttons line up */
+.lp-price-card .lp-btn {
+  margin-top: auto;
+}
+
 .lp-price-tag {
-  font: 900 72px/1 var(--display);
+  font: 900 clamp(48px, 12vw, 64px)/1 var(--display);
   letter-spacing: -0.04em;
 }
 
@@ -1968,11 +1971,6 @@ button.lp-phone-btn:not(.orange) {
   flex: none;
   margin-top: 4px;
   color: var(--marigold);
-}
-
-.lp-price-cards {
-  display: grid;
-  gap: 18px;
 }
 
 /* the Free card is light; the Founding Shop card keeps the dark ink panel */
@@ -1997,7 +1995,7 @@ button.lp-phone-btn:not(.orange) {
 }
 
 .lp-price-badge {
-  justify-self: start;
+  align-self: flex-start;
   padding: 5px 12px;
   border-radius: 999px;
   background: var(--marigold);
@@ -2016,6 +2014,14 @@ button.lp-phone-btn:not(.orange) {
 .lp-price-alt {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 700;
+}
+
+.lp-price-per {
+  margin-left: 6px;
+}
+
+.lp-price-free .lp-price-per {
+  color: var(--soft);
 }
 
 .lp-price-alt {

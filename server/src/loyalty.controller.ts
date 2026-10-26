@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard, MerchantId } from './auth';
+import { AutoMessages } from './automessages';
 import { Db } from './db';
 import { LoyaltyService, cleanPhone, tzShift, type CustomerRow } from './loyalty.service';
 import { ACTIVE_DAYS, ACTIVE_VISITS, rewardsFor, UPI_AMOUNT, UPI_EVERY } from './referrals';
@@ -36,6 +37,7 @@ export class LoyaltyController {
   constructor(
     private readonly db: Db,
     private readonly loyalty: LoyaltyService,
+    private readonly auto: AutoMessages,
   ) {}
 
   // ---- the counter ----
@@ -53,14 +55,17 @@ export class LoyaltyController {
       .get(merchantId, shift, shift);
   }
 
+  /** `auto`: the WhatsApp message Regularhood is sending the customer by itself (Founding Shop), if any. */
   @Post('visits')
   addVisit(@MerchantId() merchantId: number, @Body() body: { phone?: string; tz?: number }) {
-    return this.loyalty.addVisit(merchantId, body?.phone, body?.tz);
+    const result = this.loyalty.addVisit(merchantId, body?.phone, body?.tz);
+    return { ...result, auto: this.auto.afterVisit(merchantId, result.customer.id, result.already) };
   }
 
   @Post('customers/:id/reward')
   giveReward(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
-    return this.loyalty.giveReward(merchantId, id);
+    const result = this.loyalty.giveReward(merchantId, id);
+    return { ...result, auto: this.auto.afterReward(merchantId, id) };
   }
 
   @Post('transactions/:id/undo')

@@ -84,7 +84,7 @@ const privacy: LegalDoc = {
         'Supporting shops: answering questions and helping with setup.',
         'Improving Regularhood and knowing which marketing brings shops in, using counts and totals.',
         'Meeting legal obligations, and preventing fraud and misuse.',
-        'We never use customers’ information for advertising, and we don’t contact them ourselves.',
+        'We never use customers’ information for advertising. We message a shop’s customers only when that shop turns on automatic WhatsApp messages (Founding Shop), and only about their card at that shop.',
       ],
     },
     {
@@ -103,6 +103,7 @@ const privacy: LegalDoc = {
       h2: 'WhatsApp messages from shops',
       p: [
         'When a shop sends a customer their card or a reminder on WhatsApp, Regularhood opens WhatsApp on the shop’s own phone with the message filled in, and the shop sends it. We don’t send these messages and don’t see the chat.',
+        'A Founding Shop can turn on automatic messages. Then Regularhood’s own WhatsApp Business number sends that shop’s customers their card after a visit, a note when their reward is ready, a reminder if they haven’t visited for a while, and a request to review the shop on Google after a reward. Each message names the shop, and the shop can switch each kind off. These messages are sent through WhatsApp (Meta), which receives the customer’s phone number and the message. A customer who replies STOP gets no more messages from Regularhood’s number.',
       ],
     },
     {

@@ -7,6 +7,7 @@ import '../poster.css';
 import { ReferralCard, ShareCard } from '../share';
 import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
+import { AutoWhatsApp } from './AutoWhatsApp';
 import { Stamps, messageLang } from './Counter';
 
 /** The counter poster: tells customers the rule and that they only need to say their number. Prints on A4 or saves as a PNG. */
@@ -241,6 +242,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
           </button>
         </form>
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+          <AutoWhatsApp merchant={merchant} onMerchant={onSaved} />
           <Poster merchant={merchant} />
           <ShareCard merchant={merchant} />
           <ReferralCard merchant={merchant} />

@@ -4178,6 +4178,12 @@ circle.trend-views {
 
 /* ---------------------------------------------------------------- plan (Plan.tsx) */
 
+.plan-page {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+}
+
 .plan-meter,
 .plan-seats {
   height: 8px;
@@ -4192,6 +4198,7 @@ circle.trend-views {
   height: 100%;
   border-radius: inherit;
   background: var(--brand-fill);
+  transition: width 0.4s ease;
 }
 
 .plan-meter span.full {
@@ -4199,12 +4206,123 @@ circle.trend-views {
 }
 
 .plan-seats span {
+  background: linear-gradient(90deg, var(--gold), #d97706);
+}
+
+/* where the shop stands */
+
+.plan-now {
+  gap: 14px;
+}
+
+.plan-now.is-founding {
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--line));
+  background: linear-gradient(135deg, var(--gold-soft), var(--surface) 55%);
+}
+
+.plan-now-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-now-head > div {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-now-head strong {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.plan-now-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plan-now-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.is-founding .plan-now-icon {
   background: var(--gold);
+  color: #fff;
+}
+
+.plan-now-usage {
+  display: grid;
+  gap: 8px;
+}
+
+.plan-now-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.plan-now-cta {
+  justify-self: start;
+}
+
+/* the offer */
+
+.plan-offer {
+  gap: 18px;
+}
+
+.plan-offer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.plan-offer-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.plan-offer-head p {
+  margin: 2px 0 0;
+}
+
+.plan-crown {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.plan-seats-row {
+  display: grid;
+  gap: 6px;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .plan-perks {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4212,58 +4330,342 @@ circle.trend-views {
 
 .plan-perks li {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.plan-perks svg {
+.plan-perks li > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.plan-perks strong {
+  font-size: 15px;
+}
+
+.plan-perks li > span:last-child > span {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.plan-perk-icon {
+  display: grid;
   flex: none;
-  color: var(--brand-fill);
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
 }
 
 .plan-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .plan-option {
+  position: relative;
   display: grid;
-  justify-items: start;
-  gap: 4px;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
   padding: 16px;
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.plan-option strong {
-  font-size: 26px;
-  font-variant-numeric: tabular-nums;
-}
-
-.plan-option > span:last-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.plan-option.best {
-  border: 2px solid var(--brand);
-  background: var(--brand-soft);
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .plan-option:hover:not(:disabled) {
   border-color: var(--brand);
 }
 
+.plan-option.selected {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
 .plan-option:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.plan-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.plan-option.selected .plan-radio {
+  border: 6px solid var(--brand);
+}
+
+.plan-option-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-option-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 750;
+}
+
+.plan-option-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.plan-option-price {
+  display: grid;
+  justify-items: end;
+}
+
+.plan-option-price strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.plan-option-price span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.plan-best {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.plan-pay {
+  width: 100%;
+}
+
+.plan-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  list-style: none;
+}
+
+.plan-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Free vs Founding Shop */
+
+.plan-compare h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.plan-compare table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.plan-compare th {
+  padding: 0 8px 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.plan-compare th svg {
+  color: var(--gold);
+  vertical-align: -2px;
+}
+
+.plan-compare td {
+  padding: 10px 8px;
+  border-top: 1px solid var(--line);
+}
+
+.plan-compare td + td {
+  width: 76px;
+  text-align: center;
+  font-weight: 650;
+}
+
+.plan-compare td.yes {
+  color: var(--ok);
+}
+
+.plan-compare td.no {
+  color: var(--line-strong);
+}
+
+.plan-compare td svg {
+  vertical-align: middle;
+}
+
+.review-btn {
+  justify-content: center;
+}
+
+/* Founding Shop: the counter says Regularhood already sent the WhatsApp message */
+.auto-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* ---------------------------------------------------------------- automatic WhatsApp (AutoWhatsApp.tsx) */
+
+.seg-sm button {
+  padding: 5px 10px;
+  font-size: 13px;
+}
+
+.badge-gold {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.auto-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auto-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.auto-list li:last-child {
+  border-bottom: 0;
+}
+
+.auto-list li > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auto-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.auto-locked .auto-icon {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line-strong);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.switch.on {
+  background: var(--brand);
+}
+
+.switch.on::after {
+  transform: translateX(18px);
+}
+
+.switch:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.auto-review {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.auto-review label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.auto-review label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+}
+
+.auto-usage {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.auto-usage > div:first-child {
+  display: grid;
+  gap: 2px;
 }
