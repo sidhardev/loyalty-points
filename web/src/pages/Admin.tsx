@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import QRCode from 'qrcode';
 import {
   BadgeIndianRupee,
+  BellRing,
   ArrowLeft,
   Check,
   Copy,
@@ -35,6 +36,7 @@ import { daysAgo, num, rupees, when, whatsapp } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
+import { CustomerWhatsAppPage } from './AdminCustomerWa';
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
@@ -1312,6 +1314,7 @@ const NAV = [
   { path: '/follow-up', label: 'Follow up', icon: Phone },
   { path: '/leads', label: 'Leads', icon: Target },
   { path: '/chats', label: 'Chats', icon: MessagesSquare },
+  { path: '/customer-whatsapp', label: 'Customer WhatsApp', icon: BellRing },
   { path: '/seo', label: 'SEO pages', icon: FileText },
   { path: '/status', label: 'WhatsApp status', icon: MessageCircle },
   { path: '/visits', label: 'Visits', icon: Globe2 },
@@ -1393,6 +1396,8 @@ export function AdminApp() {
     <FollowUpPage />
   ) : hash.startsWith('/seo') ? (
     <SeoPage api={adminApi} adminToken={getAdminToken} />
+  ) : hash.startsWith('/customer-whatsapp') ? (
+    <CustomerWhatsAppPage api={adminApi} />
   ) : hash.startsWith('/chats') ? (
     <ChatsPage api={adminApi} />
   ) : hash.startsWith('/leads') ? (

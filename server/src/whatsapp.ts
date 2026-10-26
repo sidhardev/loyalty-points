@@ -53,6 +53,7 @@ export type WaSettings = {
   monthlyBudgetUsd: number;
   verifyToken: string; // Meta sends it back when the webhook is set up
   customerMessages: boolean; // send Founding Shops' automatic messages (once the rh_* templates are approved)
+  customerQuota: number; // automatic messages each Founding Shop gets a month
 };
 
 const DEFAULTS: WaSettings = {
@@ -70,6 +71,7 @@ const DEFAULTS: WaSettings = {
   monthlyBudgetUsd: 5,
   verifyToken: '',
   customerMessages: false,
+  customerQuota: Number(process.env.FOUNDING_MESSAGES) || 300,
 };
 
 /** Templates offered by "Create template", ready for Meta's review. {{1}} = shop name, {{2}} = kind of shop.
@@ -155,6 +157,7 @@ export class WhatsApp {
     }
     if (input.autoPitch !== undefined) s.autoPitch = Boolean(input.autoPitch);
     if (input.customerMessages !== undefined) s.customerMessages = Boolean(input.customerMessages);
+    if (input.customerQuota !== undefined) s.customerQuota = Math.round(num(input.customerQuota, 'Messages per shop a month', 0, 10_000));
     if (input.dailyLimit !== undefined) s.dailyLimit = Math.round(num(input.dailyLimit, 'Messages per day', 0, 10_000));
     if (input.marketingPriceUsd !== undefined) s.marketingPriceUsd = num(input.marketingPriceUsd, 'Marketing price', 0, 10);
     if (input.utilityPriceUsd !== undefined) s.utilityPriceUsd = num(input.utilityPriceUsd, 'Utility price', 0, 10);
@@ -340,7 +343,7 @@ export class WhatsApp {
     body: string;
     status: string;
     error?: string;
-    auto?: { merchantId: number; customerId: number; kind: AutoKind };
+    auto?: { merchantId: number | null; customerId: number | null; kind: AutoKind }; // null shop: a test from the admin panel
   }) {
     this.db.sql
       .prepare(
@@ -431,7 +434,10 @@ export class WhatsApp {
    * One of the rh_* templates to a shop's customer. `values` fill the body, `urlParam` the button's link. Errors are
    * recorded and thrown; the caller decides whether that matters.
    */
-  async sendCustomerTemplate(phone: string, t: { kind: AutoKind; lang: MsgLang; values: string[]; urlParam: string; merchantId: number; customerId: number }) {
+  async sendCustomerTemplate(
+    phone: string,
+    t: { kind: AutoKind; lang: MsgLang; values: string[]; urlParam: string; merchantId: number | null; customerId: number | null },
+  ) {
     const s = this.settings();
     const tpl = CUSTOMER_TEMPLATES[t.kind];
     // WhatsApp refuses empty variables and new lines inside them.
@@ -460,6 +466,71 @@ export class WhatsApp {
       this.record({ leadId: null, phone, direction: 'out', kind: 'template', body, status: 'failed', error: (error as Error).message, auto });
       throw error;
     }
+  }
+
+  /** A customer template with its example values to any number (Admin → Customer WhatsApp → Send a test). */
+  async sendCustomerTest(phoneInput: string, kind: AutoKind, lang: MsgLang) {
+    const s = this.settings();
+    if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Connect the WhatsApp number and token first (step 1)');
+    let phone = waDigits(phoneInput);
+    if (phone.length === 10) phone = `91${phone}`;
+    if (phone.length < 11 || phone.length > 15) throw new BadRequestException('Enter a WhatsApp number, e.g. 98765 43210');
+    const tpl = CUSTOMER_TEMPLATES[kind];
+    await this.sendCustomerTemplate(phone, { kind, lang, values: tpl.example.body, urlParam: tpl.example.url.split('/').pop()!, merchantId: null, customerId: null });
+  }
+
+  /**
+   * Everything Admin → Customer WhatsApp shows: which setup steps are done (templates are checked separately, since
+   * that asks Meta), this month's numbers, each Founding Shop's use and the latest messages.
+   */
+  customerOverview() {
+    const s = this.settings();
+    const sql = this.db.sql;
+    const lastWebhook = this.webhookLog().find((w) => w.result === 'ok');
+    const month = sql
+      .prepare(
+        `SELECT COUNT(*) FILTER (WHERE status != 'failed') AS sent, COUNT(*) FILTER (WHERE status IN ('delivered', 'read')) AS delivered,
+           COUNT(*) FILTER (WHERE status = 'read') AS read, COUNT(*) FILTER (WHERE status = 'failed') AS failed, COALESCE(SUM(cost_usd), 0) AS usd
+         FROM wa_messages WHERE auto IS NOT NULL AND merchant_id IS NOT NULL AND created_at >= date('now', 'start of month')`,
+      )
+      .get();
+    const shops = sql
+      .prepare(
+        `SELECT m.id, m.name, m.plan, m.auto_card + m.auto_reward + m.auto_missyou + m.auto_review AS kinds_on, m.review_url != '' AS has_review,
+           COUNT(w.id) FILTER (WHERE w.status != 'failed') AS sent, COUNT(w.id) FILTER (WHERE w.status = 'failed') AS failed, MAX(w.created_at) AS last_at
+         FROM merchants m LEFT JOIN wa_messages w ON w.merchant_id = m.id AND w.auto IS NOT NULL AND w.created_at >= date('now', 'start of month')
+         WHERE (m.plan = 'lifetime' OR (m.plan = 'yearly' AND m.plan_expires_at > datetime('now'))) AND m.suspended_at IS NULL
+         GROUP BY m.id ORDER BY sent DESC, m.name`,
+      )
+      .all();
+    const recent = sql
+      .prepare(
+        `SELECT w.id, w.auto AS kind, w.phone, w.status, w.error, w.created_at, w.merchant_id, m.name AS shop
+         FROM wa_messages w LEFT JOIN merchants m ON m.id = w.merchant_id WHERE w.auto IS NOT NULL ORDER BY w.id DESC LIMIT 40`,
+      )
+      .all();
+    const tested = sql.prepare("SELECT MAX(created_at) AS at FROM wa_messages WHERE auto IS NOT NULL AND merchant_id IS NULL AND status != 'failed'").get() as { at: string | null };
+    return {
+      steps: {
+        number: Boolean(s.phoneNumberId && this.token()),
+        webhook: Boolean(this.appSecret() && lastWebhook),
+        tested: tested.at,
+        live: s.customerMessages,
+      },
+      phoneNumberId: s.phoneNumberId,
+      wabaId: s.wabaId,
+      appSecret: Boolean(this.appSecret()),
+      lastWebhook: lastWebhook?.at ?? null,
+      quota: s.customerQuota,
+      utilityPriceUsd: s.utilityPriceUsd,
+      marketingPriceUsd: s.marketingPriceUsd,
+      month,
+      shops,
+      recent,
+      templates: Object.fromEntries(
+        Object.entries(CUSTOMER_TEMPLATES).map(([kind, t]) => [kind, { name: t.name, category: t.category, body: t.body, button: t.button, example: t.example.body }]),
+      ),
+    };
   }
 
   /** The rh_* templates in both languages, with Meta's review status ('missing' if Meta doesn't have one). */
@@ -823,6 +894,22 @@ export class WhatsAppAdminController {
   @HttpCode(200)
   createTemplate(@Body() body: { lang?: string; body?: string }) {
     return this.wa.createTemplate(body?.lang === 'en' ? 'en' : 'hi', body?.body);
+  }
+
+  /** Admin → Customer WhatsApp: setup steps, this month's numbers, shops and recent messages. */
+  @Get('customers')
+  customers() {
+    return { ...this.wa.customerOverview(), usdToInr: this.seo.settings().usdToInr };
+  }
+
+  @Post('customer-test')
+  @HttpCode(200)
+  async customerTest(@AdminId() adminId: number, @Body() body: { phone?: string; kind?: string; lang?: string }) {
+    const kind = (['card', 'reward', 'missyou', 'review'] as const).find((k) => k === body?.kind) ?? 'card';
+    const lang = body?.lang === 'en' ? 'en' : 'hi';
+    await this.wa.sendCustomerTest(String(body?.phone ?? ''), kind, lang);
+    this.audit(adminId, `Sent a test customer message (${kind}, ${lang})`);
+    return this.wa.customerOverview();
   }
 
   /** The templates for shops' customers (rh_*), with Meta's review status. */

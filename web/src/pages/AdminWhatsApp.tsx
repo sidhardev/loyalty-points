@@ -22,7 +22,8 @@ export type WaSettings = {
   utilityPriceUsd: number;
   monthlyBudgetUsd: number;
   verifyToken: string;
-  customerMessages: boolean; // Founding Shops' automatic messages to their customers
+  customerMessages: boolean; // Founding Shops' automatic messages to their customers (Admin → Customer WhatsApp)
+  customerQuota: number;
 };
 type SecretInfo = { source: 'panel' | 'env' | null; last4: string };
 type Suggested = { name: string; body: string; yes: string; no: string };
@@ -40,7 +41,6 @@ export type WaOverview = {
   suggested: { hi: Suggested; en: Suggested };
 };
 type Template = { name: string; language: string; status: string; category: string; body: string; params: number };
-type CustomerTemplate = { kind: string; lang: string; name: string; status: string; category: string };
 type PhoneInfo = { display_phone_number?: string; verified_name?: string; quality_rating?: string; messaging_limit_tier?: string; name_status?: string };
 export type WaMessage = { id: number; direction: 'out' | 'in'; kind: string; body: string; status: string; error: string | null; category: string | null; cost_usd: number; created_at: string };
 
@@ -92,7 +92,7 @@ export function WhatsAppBar({ api, wa, onChanged }: { api: AdminApi; wa: WaOverv
   );
 }
 
-function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOverview; inr: (usd: number) => string; onChanged: () => void }) {
+export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOverview; inr: (usd: number) => string; onChanged: () => void }) {
   const [form, setForm] = useState(wa.settings);
   const [token, setToken] = useState('');
   const [secret, setSecret] = useState('');
@@ -104,14 +104,6 @@ function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOv
     void run(async () => {
       setSub((await api<{ apps: { id: string; name: string }[] }>('whatsapp/subscription', 'POST')).apps);
       toast('Subscribed: replies will now reach the webhook');
-    });
-  const [custTemplates, setCustTemplates] = useState<CustomerTemplate[] | null>(null);
-  const loadCustTemplates = () => void run(async () => setCustTemplates(await api<CustomerTemplate[]>('whatsapp/customer-templates')));
-  const createCustTemplates = () =>
-    void run(async () => {
-      const r = await api<{ created: string[]; templates: CustomerTemplate[] }>('whatsapp/customer-templates', 'POST');
-      setCustTemplates(r.templates);
-      toast(r.created.length ? `Sent ${r.created.length} templates to Meta for review` : 'Meta already has all of them');
     });
   const [newLang, setNewLang] = useState<'hi' | 'en'>('hi');
   const [newBody, setNewBody] = useState(wa.suggested.hi.body);
@@ -377,45 +369,8 @@ function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; wa: WaOv
         expect a message lower the quality rating and can get the number limited.
       </p>
 
-      <h3 className="wa-step">6. Customer messages (Founding Shops)</h3>
-      <p className="small" style={{ margin: 0 }}>
-        This month {wa.customerMonth.sent} sent for {wa.customerMonth.shops} shops, {wa.customerMonth.failed} failed · {inr(wa.customerMonth.usd)}. Each Founding
-        Shop gets its own monthly allowance; these don’t count against the intro limits above.
-      </p>
-      <div className="actions">
-        <button className="btn btn-soft btn-sm" disabled={busy || !s.wabaId || !wa.secrets.token.source} onClick={loadCustTemplates}>
-          <RefreshCw size={15} /> Check templates
-        </button>
-        <button className="btn btn-soft btn-sm" disabled={busy || !s.wabaId || !wa.secrets.token.source} onClick={createCustTemplates}>
-          <Send size={15} /> Send missing ones for review
-        </button>
-      </div>
-      {custTemplates && (
-        <div className="wa-templates">
-          {custTemplates.map((t) => (
-            <div key={`${t.name}-${t.lang}`} className="wa-template">
-              <div>
-                <strong>{t.name}</strong> <span className={`badge ${t.status === 'APPROVED' ? 'badge-plus' : 'badge-neutral'}`}>{t.status}</span>{' '}
-                <span className="muted small">
-                  {t.lang} · {t.category}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <label className="poster-check">
-        <input
-          type="checkbox"
-          checked={s.customerMessages}
-          disabled={busy}
-          onChange={(e) => save({ customerMessages: e.target.checked }, e.target.checked ? 'Customer messages on' : 'Customer messages off')}
-        />{' '}
-        Send Founding Shops’ customers their automatic messages
-      </label>
-      <p className="muted small" style={{ margin: 0 }}>
-        Turn this on once all eight templates show APPROVED, and only with your real WhatsApp Business number: a test number can only message the few
-        numbers added in Meta. Until then shops can set everything up, and the counter keeps its manual WhatsApp button.
+      <p className="muted small wa-moved">
+        Messages to Founding Shops’ customers have their own page: <a href="#/customer-whatsapp">Customer WhatsApp</a>.
       </p>
     </div>
   );

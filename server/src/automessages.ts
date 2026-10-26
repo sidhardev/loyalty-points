@@ -3,7 +3,7 @@ import { AuthGuard, MerchantId } from './auth';
 import type { AutoKind, MsgLang } from './customer-templates';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
-import { FOUNDING_MESSAGES, isFounding } from './plans';
+import { isFounding } from './plans';
 import { waDigits, WhatsApp } from './whatsapp';
 
 // Founding Shop extras: Regularhood's WhatsApp number messages the shop's customers by itself, so the shop doesn't have
@@ -12,7 +12,7 @@ import { waDigits, WhatsApp } from './whatsapp';
 //  - reward: instead of the card, on the visit that fills it
 //  - missyou: once, when a customer hasn't come for the shop's "inactive" days (sent 11:00–19:00 India time)
 //  - review: after a reward is given, the shop's Google review link (once per customer every 180 days)
-// Each shop gets FOUNDING_MESSAGES a month. Nothing goes to numbers that replied STOP. Sending needs the admin to switch
+// Each shop gets a monthly allowance (Admin → Customer WhatsApp). Nothing goes to numbers that replied STOP. Sending needs the admin to switch
 // customer messages on (Admin → WhatsApp) once Meta approved the rh_* templates (customer-templates.ts).
 
 type Shop = MerchantRow;
@@ -70,7 +70,7 @@ export class AutoMessages implements OnModuleDestroy {
   /** Whether this shop's automatic message of this kind can go out now (to this customer, if given). */
   private allowed(m: Shop, kind: AutoKind, c?: CustomerRow) {
     const on = { card: m.auto_card, reward: m.auto_reward, missyou: m.auto_missyou, review: m.auto_review && m.review_url }[kind];
-    if (!on || !isFounding(m) || !this.wa.customerReady || this.used(m.id) >= FOUNDING_MESSAGES) return false;
+    if (!on || !isFounding(m) || !this.wa.customerReady || this.used(m.id) >= this.wa.settings().customerQuota) return false;
     return !c || !this.wa.optedOut(waPhone(c.phone)); // they replied STOP
   }
 
@@ -180,7 +180,7 @@ export class AutoMessages implements OnModuleDestroy {
     return {
       founding: isFounding(m),
       live: this.wa.customerReady, // Regularhood's number is set up to send
-      quota: FOUNDING_MESSAGES,
+      quota: this.wa.settings().customerQuota,
       used: this.used(merchantId),
       settings: { card: !!m.auto_card, reward: !!m.auto_reward, missyou: !!m.auto_missyou, review: !!m.auto_review, lang: m.msg_lang, reviewUrl: m.review_url },
       recent,
