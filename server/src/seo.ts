@@ -20,6 +20,7 @@ import type { Response } from 'express';
 import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { AiBudgetError, Gemini, type AiSettings } from './gemini';
+import { CITY_PAGES } from './city-pages';
 import { GUIDES, guide } from './guides';
 import { LEGAL } from './legal';
 import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderSitemap, type SeoContent, type SeoKind, type SeoLang } from './seo-render';
@@ -164,6 +165,7 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.fixSlugs();
+    this.publishHandwritten();
     // Checks every 10 minutes whether today's pages are due; one page per check, so a day's few spread out a little.
     this.timer = setInterval(() => void this.tick(), 10 * 60_000);
     this.timer.unref();
@@ -204,6 +206,19 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     clearInterval(this.timer);
+  }
+
+  /** Publishes the hand-written city pages (city-pages.ts) into their queued rows that have no text yet. */
+  private publishHandwritten() {
+    const fill = this.db.sql.prepare(
+      `UPDATE seo_pages SET status = 'published', content = ?, title = ?, description = ?, error = NULL, stale = 0,
+         generated_at = datetime('now'), published_at = COALESCE(published_at, datetime('now'))
+       WHERE kind = 'city' AND slug = ? AND lang = ? AND content IS NULL`,
+    );
+    for (const p of CITY_PAGES) {
+      const content = clean(p.content, p.lang);
+      fill.run(JSON.stringify(content), content.title, content.description, p.slug, p.lang);
+    }
   }
 
   /** Pages queued before accents were handled got addresses like /for/caf; they move to /for/cafe (unless taken). */
