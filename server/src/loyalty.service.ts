@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Db, randomToken } from './db';
+import { customerLimit } from './plans';
 
 // The stamp card: every visit is one stamp, and every `visits_needed` stamps the customer gets the shop's one reward.
 // A customer is just a phone number. customers.points holds their stamps (visits since their last reward).
@@ -33,6 +34,9 @@ export type MerchantRow = {
   signup_ref: string;
   signup_landing: string;
   referred_by: number | null;
+  plan: string; // see plans.ts
+  plan_expires_at: string | null;
+  founding_no: number | null;
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';
@@ -77,6 +81,10 @@ export class LoyaltyService {
       .get(id, merchantId) as CustomerRow | undefined;
     if (!c) throw new NotFoundException('Customer not found');
     return c;
+  }
+
+  customerCount(merchantId: number) {
+    return (this.db.sql.prepare('SELECT COUNT(*) AS n FROM customers WHERE merchant_id = ?').get(merchantId) as { n: number }).n;
   }
 
   /** Same number written differently (+91, spaces) still finds the customer. */
@@ -124,6 +132,14 @@ export class LoyaltyService {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10 || digits.length > 13) throw new BadRequestException('Enter the 10-digit phone number');
     const shift = tzShift(tz);
+
+    // A new number on the Free plan needs room under its customer limit (checked outside the transaction, so the
+    // activity log keeps the refusal).
+    const limit = customerLimit(this.merchant(merchantId));
+    if (limit !== null && !this.byLast10(merchantId, phone) && this.customerCount(merchantId) >= limit) {
+      this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers`);
+      throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: `The Free plan keeps up to ${limit} customers. Become a Founding Shop to add more.` });
+    }
 
     return this.db.transaction(() => {
       const m = this.merchant(merchantId);

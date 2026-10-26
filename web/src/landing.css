@@ -1970,6 +1970,58 @@ button.lp-phone-btn:not(.orange) {
   color: var(--marigold);
 }
 
+.lp-price-cards {
+  display: grid;
+  gap: 18px;
+}
+
+/* the Free card is light; the Founding Shop card keeps the dark ink panel */
+.lp-price-card.lp-price-free {
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.lp-price-free li {
+  color: var(--ink-2);
+}
+
+.lp-price-free li svg {
+  color: var(--green);
+}
+
+.lp-price-card.lp-price-free .lp-btn-glow {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lp-price-badge {
+  justify-self: start;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--marigold);
+  color: var(--night);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lp-price-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.lp-price-per,
+.lp-price-alt {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+}
+
+.lp-price-alt {
+  margin: 8px 0 0;
+}
+
 /* faq */
 
 .lp-faq {

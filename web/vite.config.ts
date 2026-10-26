@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 // `npm run build` also makes a server build of the homepage, which scripts/prerender.mjs turns into static HTML.
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react()],
-  server: { port: 4000, strictPort: true, proxy: { '/api': 'http://localhost:4001', '/for': 'http://localhost:4001', '/hi/for': 'http://localhost:4001', '/guide': 'http://localhost:4001', '/hi/guide': 'http://localhost:4001', '/privacy': 'http://localhost:4001', '/terms': 'http://localhost:4001', '/sitemap.xml': 'http://localhost:4001' } },
+  server: { port: 4000, strictPort: true, proxy: { '/api': 'http://localhost:4001', '/for': 'http://localhost:4001', '/hi/for': 'http://localhost:4001', '/guide': 'http://localhost:4001', '/hi/guide': 'http://localhost:4001', '/privacy': 'http://localhost:4001', '/terms': 'http://localhost:4001', '/refunds': 'http://localhost:4001', '/sitemap.xml': 'http://localhost:4001' } },
   preview: { port: 4000, strictPort: true },
   // The manifest tells the prerender which stylesheet and script the homepage needs; it's deleted afterwards.
   build: isSsrBuild ? { outDir: 'dist-ssr', copyPublicDir: false } : { manifest: true },

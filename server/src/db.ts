@@ -485,6 +485,28 @@ const MIGRATIONS: string[] = [
   DROP TABLE merchants;
   ALTER TABLE merchants_new RENAME TO merchants;
   `,
+
+  // 22: plans. Free shops keep up to 50 customers; Founding Shops (the first 100 that pay, lifetime or yearly) have no
+  // limit. Every shop that signed up before plans existed is 'grandfathered': no limit, as the terms promised.
+  // `payments` keeps every Razorpay order, paid or not.
+  `
+  ALTER TABLE merchants ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'; -- free | grandfathered | lifetime | yearly
+  ALTER TABLE merchants ADD COLUMN plan_expires_at TEXT; -- yearly only (UTC, SQLite format)
+  ALTER TABLE merchants ADD COLUMN founding_no INTEGER; -- the shop's Founding Shop number, kept once given
+  UPDATE merchants SET plan = 'grandfathered';
+  CREATE TABLE payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id),
+    kind TEXT NOT NULL, -- lifetime | yearly
+    amount_paise INTEGER NOT NULL,
+    razorpay_order_id TEXT NOT NULL UNIQUE,
+    razorpay_payment_id TEXT,
+    status TEXT NOT NULL DEFAULT 'created', -- created | paid | refunded
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    paid_at TEXT
+  );
+  CREATE INDEX idx_payments_merchant ON payments (merchant_id);
+  `,
 ];
 
 const INDEXES = `

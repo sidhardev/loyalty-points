@@ -25,6 +25,7 @@ import type { Request } from 'express';
 import { AnalyticsStore } from './analytics';
 import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
+import { effectivePlan, FOUNDING_SEATS, seatsLeft } from './plans';
 import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
 import { rewardsDue, UPI_AMOUNT } from './referrals';
@@ -91,6 +92,9 @@ type ShopRow = {
   on_landing: number;
   last_contact: string | null;
   last_contact_detail: string | null;
+  plan: string;
+  plan_expires_at: string | null;
+  founding_no: number | null;
 };
 
 /** Per-shop numbers used by the list and the detail page. */
@@ -104,6 +108,7 @@ const SHOP_SELECT = `
          (SELECT MAX(created_at) FROM transactions t WHERE t.merchant_id = m.id AND t.type = 'earn' AND t.reversed = 0) AS last_visit,
          m.reward_name, m.visits_needed,
          m.phone, m.signup_source, m.signup_medium, m.signup_campaign, m.signup_ref, m.signup_landing, m.referred_by, m.on_landing,
+         m.plan, m.plan_expires_at, m.founding_no,
          (SELECT r.name FROM merchants r WHERE r.id = m.referred_by) AS referred_by_name,
          (SELECT COUNT(*) FROM merchants r WHERE r.referred_by = m.id) AS referrals,
          (SELECT MAX(created_at) FROM admin_log l WHERE l.merchant_id = m.id AND l.action = 'contact') AS last_contact,
@@ -119,7 +124,7 @@ function status(s: ShopRow) {
   return daysSince(s.created_at) <= 2 ? 'new' : 'never';
 }
 
-const shopView = (s: ShopRow) => ({ ...s, status: status(s), source: sourceLabel(s.signup_source, s.signup_ref) });
+const shopView = (s: ShopRow) => ({ ...s, status: status(s), source: sourceLabel(s.signup_source, s.signup_ref), activePlan: effectivePlan(s) });
 
 const CONTACT_CHANNELS = { whatsapp: 'WhatsApp', call: 'a call', email: 'email', visit: 'a visit' } as const;
 
@@ -247,7 +252,43 @@ export class AdminController {
       daily,
       notes,
       log,
+      payments: sql.prepare('SELECT id, kind, amount_paise, razorpay_order_id, razorpay_payment_id, status, created_at, paid_at FROM payments WHERE merchant_id = ? ORDER BY id DESC').all(id),
     };
+  }
+
+  /**
+   * Gives or takes away a plan by hand: a Founding Shop paid some other way (UPI to us), a refund, or a mistake.
+   * Payments themselves stay as they are; refunds are made in the Razorpay dashboard.
+   */
+  @Post('shops/:id/plan')
+  @UseGuards(AdminGuard)
+  setPlan(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { plan?: string; reason?: string }) {
+    const m = this.loyalty.merchant(id);
+    const plan = body?.plan;
+    if (plan !== 'free' && plan !== 'grandfathered' && plan !== 'lifetime' && plan !== 'yearly') throw new BadRequestException('Pick a plan');
+    const reason = String(body?.reason ?? '').trim().slice(0, 200);
+    if (!reason) throw new BadRequestException('Add a reason — it is kept in the admin log');
+    const founding = plan === 'lifetime' || plan === 'yearly';
+    const no = founding ? (m.founding_no ?? ((this.db.sql.prepare('SELECT MAX(founding_no) AS n FROM merchants').get() as { n: number | null }).n ?? 0) + 1) : m.founding_no;
+    this.db.sql
+      .prepare(`UPDATE merchants SET plan = ?, plan_expires_at = ${plan === 'yearly' ? "datetime('now', '+1 year')" : 'NULL'}, founding_no = ? WHERE id = ?`)
+      .run(plan, no, id);
+    this.audit(adminId, id, 'plan', `Plan of ${m.name}: ${m.plan} → ${plan}${founding ? ` (Founding Shop #${no})` : ''}: ${reason}`);
+    this.loyalty.log(id, 'admin', 'plan', `Support changed the plan to ${plan}`);
+    return { ok: true };
+  }
+
+  /** Every Razorpay payment, newest first, with Founding Shop places taken. */
+  @Get('payments')
+  @UseGuards(AdminGuard)
+  payments() {
+    const rows = this.db.sql
+      .prepare(
+        `SELECT p.id, p.merchant_id AS shopId, m.name, p.kind, p.amount_paise, p.razorpay_order_id, p.razorpay_payment_id, p.status, p.created_at, p.paid_at
+         FROM payments p JOIN merchants m ON m.id = p.merchant_id ORDER BY p.id DESC LIMIT 300`,
+      )
+      .all();
+    return { payments: rows, seats: { total: FOUNDING_SEATS, left: seatsLeft(this.db.sql) } };
   }
 
   /** A one-time link (24 hours) the shop opens to choose a new password. Any older unused link stops working. */

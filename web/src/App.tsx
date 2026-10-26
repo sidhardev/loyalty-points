@@ -9,6 +9,7 @@ import { Customers } from './pages/Customers';
 import { Counter } from './pages/Counter';
 import { ActivityLog } from './pages/ActivityLog';
 import { Join, OldLink, Wallet } from './pages/Public';
+import { Plan } from './pages/Plan';
 import { Referral } from './pages/Referral';
 import { Settings } from './pages/Settings';
 import { ConfirmHost, confirmDialog, Logo, Toaster, InstallButton } from './ui';
@@ -124,6 +125,7 @@ function ShopApp() {
   if (customerId) page = <CustomerPage key={customerId} id={Number(customerId)} merchant={merchant} />;
   else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} />;
   else if (hash.startsWith('/activity')) page = <ActivityLog />;
+  else if (hash.startsWith('/plan')) page = <Plan merchant={merchant} />;
   else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} onLogout={logout} />;
   else page = <Counter merchant={merchant} onSaved={setMerchant} />;
 

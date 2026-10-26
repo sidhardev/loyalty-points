@@ -26,6 +26,19 @@ export type Customer = {
 /** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
 export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer };
 
+/** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise. */
+export type Billing = {
+  plan: 'free' | 'grandfathered' | 'lifetime' | 'yearly';
+  paidPlan: string;
+  expiresAt: string | null;
+  foundingNo: number | null;
+  customers: number;
+  limit: number | null;
+  seats: { total: number; left: number };
+  prices: { lifetime: number; yearly: number };
+  keyId: string;
+};
+
 const TOKEN = 'lp_token';
 
 export const getToken = () => localStorage.getItem(TOKEN);
@@ -52,7 +65,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   }
   if (!res.ok) {
     const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-    throw new Error(message || `Something went wrong (${res.status})`);
+    throw Object.assign(new Error(message || `Something went wrong (${res.status})`), { code: data.code as string | undefined });
   }
   return data as T;
 }

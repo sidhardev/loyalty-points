@@ -213,7 +213,7 @@ ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).repl
 <nav><a class="hide" href="/">${t.home}</a><a class="hide" href="${path(o.lang)}">${t.all}</a><a class="hide" href="${guidePath(o.lang)}">${t.guides}</a><a href="/app">${t.login}</a><a class="btn sm" href="${signup(o.path)}">${t.start}</a></nav>
 </div></header>
 ${o.body}
-<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></footer>
+<footer><div class="wrap"><span>Regularhood · ${t.footer}</span><span><a href="/">${t.home}</a> · <a href="${path('en')}">For shops</a> · <a href="${path('hi')}">दुकानों के लिए</a> · <a href="${guidePath('en')}">Guides</a> · <a href="${guidePath('hi')}">गाइड</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></span></div></footer>
 ${BEACON}
 </body>
 </html>`;
@@ -388,7 +388,7 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
       urls.push(gUrl(guidePath(lang, g.slug), g.updated, twins.length > 1 ? twins.map((l) => ({ lang: l, path: guidePath(l, g.slug) })) : []));
     }
   }
-  urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated));
+  urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
 
@@ -483,7 +483,7 @@ export function renderGuideHub(site: string, lang: SeoLang, guides: Guide[], has
   return shell({ lang, site, path: here, title: `${t.guidesTitle} · Regularhood`, description: t.guidesIntro, alternates, body, noindex: !guides.length });
 }
 
-/** /privacy and /terms (English only; the text is in legal.ts). */
+/** /privacy, /terms and /refunds (English only; the text is in legal.ts). */
 export function renderLegal(site: string, doc: LegalDoc, other: LegalDoc) {
   const here = `/${doc.slug}`;
   const body = `<main>

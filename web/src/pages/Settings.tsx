@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Bell, ChevronRight, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
+import { Bell, ChevronRight, Crown, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
 import { api, download, type Merchant } from '../api';
 import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
@@ -100,6 +100,14 @@ function YourData() {
           <Database size={18} /> {t('Your data')}
         </h2>
       </div>
+      <a className="row-item link-row" href="#/plan">
+        <Crown size={19} />
+        <span className="row-main">
+          <strong>{t('Your plan')}</strong>
+          <span>{t('Customer limit and Founding Shop')}</span>
+        </span>
+        <ChevronRight size={18} />
+      </a>
       <a className="row-item link-row" href="#/activity">
         <ScrollText size={19} />
         <span className="row-main">

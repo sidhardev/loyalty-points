@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { AdminController, AdminGuard } from './admin';
 import { AnalyticsController, AnalyticsStore } from './analytics';
 import { AuthController, AuthGuard } from './auth';
+import { Billing, BillingController } from './billing';
 import { Db } from './db';
 import { Gemini } from './gemini';
 import { LoyaltyController } from './loyalty.controller';
@@ -26,13 +27,13 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, AnalyticsStore, Gemini, SeoService, LeadsService, WhatsApp],
+  controllers: [AuthController, BillingController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, WhatsApp],
 })
 class AppModule {}
 
 async function bootstrap() {
-  // rawBody: the WhatsApp webhook checks Meta's signature over the exact bytes received.
+  // rawBody: the WhatsApp and Razorpay webhooks check the sender's signature over the exact bytes received.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   // Behind a local tunnel or proxy (ngrok, nginx, Caddy), take the visitor's IP from X-Forwarded-For,
   // so per-IP limits apply to each visitor rather than to the proxy. TRUST_PROXY sets which proxies to
@@ -49,8 +50,8 @@ async function bootstrap() {
     const page = existsSync(join(web, 'shell.html')) ? readFileSync(join(web, 'shell.html'), 'utf8') : home;
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
-      // Server-rendered SEO pages, guides, privacy/terms and the live sitemap (seo.ts).
-      if (/^\/(hi\/)?(for|guide)(\/|$)/.test(req.path) || ['/sitemap.xml', '/privacy', '/terms'].includes(req.path)) return next();
+      // Server-rendered SEO pages, guides, privacy/terms/refunds and the live sitemap (seo.ts).
+      if (/^\/(hi\/)?(for|guide)(\/|$)/.test(req.path) || ['/sitemap.xml', '/privacy', '/terms', '/refunds'].includes(req.path)) return next();
       // Well-known files we don't publish (ard.json, ai-catalog.json…) are a 404, not the app page, so crawlers and
       // AI agents don't read HTML as a manifest.
       if (req.path.startsWith('/.well-known/')) return next();

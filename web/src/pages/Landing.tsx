@@ -225,15 +225,24 @@ const COPY = {
     shopsKicker: 'Already on Regularhood',
     shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
-    priceTitle: 'Free to start.',
-    priceSub: 'Sign up, set your rule and add your first visit today.',
-    priceList: ['Unlimited customers and visits', 'Customer cards in Hindi and English', 'WhatsApp card and reminder messages', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
+    priceTitle: 'Free to start. A founding price for the first 100 shops.',
+    priceSub: 'Start free with up to 50 customers. When your regulars grow, become a Founding Shop: no limit, at a price we won’t offer again.',
+    priceList: ['Up to 50 customers', 'Customer cards in Hindi and English', 'WhatsApp card and reminder messages', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
+    founding: {
+      name: 'Founding Shop',
+      once: 'once, for life',
+      yearly: (price: string) => `or ${price} a year`,
+      list: ['Unlimited customers', 'Everything in Free', 'Price locked for as long as you stay', 'Every new feature we add'],
+      only: 'Only for the first 100 shops',
+      left: (left: number, total: number) => (left ? `${left} of ${total} places left` : 'All places taken'),
+      cta: 'Start free, upgrade anytime',
+    },
     create: 'Create your shop',
     faqKicker: 'Questions',
     faqTitle: 'Asked at the counter.',
     finalTitle: 'Your next regular walks in today.',
     finalSub: 'Set up takes one minute. Their first stamp can land today.',
-    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', tag: 'From first visit to “the usual”.' },
+    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', tag: 'From first visit to “the usual”.' },
   },
   hi: {
     login: 'लॉग इन',
@@ -305,15 +314,24 @@ const COPY = {
     shopsKicker: 'Regularhood पर पहले से',
     shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
-    priceTitle: 'शुरू करना मुफ़्त है।',
-    priceSub: 'साइन अप करें, नियम तय करें और आज ही पहली विज़िट जोड़ें।',
-    priceList: ['जितने चाहें ग्राहक और विज़िट', 'हिंदी और English में ग्राहक कार्ड', 'WhatsApp पर कार्ड और याद दिलाने वाले मैसेज', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
+    priceTitle: 'शुरू करना मुफ़्त है। पहली 100 दुकानों के लिए फ़ाउंडिंग कीमत।',
+    priceSub: '50 ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: कोई लिमिट नहीं, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।',
+    priceList: ['50 ग्राहकों तक', 'हिंदी और English में ग्राहक कार्ड', 'WhatsApp पर कार्ड और याद दिलाने वाले मैसेज', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
+    founding: {
+      name: 'फ़ाउंडिंग शॉप',
+      once: 'एक बार, हमेशा के लिए',
+      yearly: (price: string) => `या ${price} साल का`,
+      list: ['जितने चाहें ग्राहक', 'फ़्री वाला सब कुछ', 'जब तक आप साथ हैं, कीमत वही', 'आगे आने वाले सारे नए फ़ीचर'],
+      only: 'सिर्फ़ पहली 100 दुकानों के लिए',
+      left: (left: number, total: number) => (left ? `${total} में से ${left} जगह बाकी` : 'सारी जगहें भर गईं'),
+      cta: 'मुफ़्त शुरू करें, कभी भी अपग्रेड करें',
+    },
     create: 'अपनी दुकान बनाएँ',
     faqKicker: 'सवाल',
     faqTitle: 'काउंटर पर पूछे गए सवाल।',
     finalTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
     finalSub: 'सेटअप में एक मिनट। पहला स्टैम्प आज ही लग सकता है।',
-    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
+    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
   },
 };
 
@@ -327,6 +345,7 @@ export const FAQ = [
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
+  ['What does it cost?', 'Free for up to 50 customers. For more, the first 100 shops can become a Founding Shop: ₹1,499 once for life, or ₹499 a year. Pay by UPI; full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -336,6 +355,7 @@ const FAQ_HI = [
   ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
+  ['इसकी कीमत क्या है?', '50 ग्राहकों तक मुफ़्त। इससे ज़्यादा के लिए पहली 100 दुकानें फ़ाउंडिंग शॉप बन सकती हैं: ₹1,499 एक बार, हमेशा के लिए, या ₹499 साल का। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -1131,7 +1151,20 @@ function ShopsUsing({ c }: { c: Copy }) {
   );
 }
 
+type Founding = { total: number; left: number; prices: { lifetime: number; yearly: number } };
+
+const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
+
+/** Free, and the Founding Shop offer with its places left (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
+  const [founding, setFounding] = useState<Founding>({ total: 100, left: -1, prices: { lifetime: 149_900, yearly: 49_900 } });
+  useEffect(() => {
+    fetch('/api/public/founding')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f: Founding | null) => f && setFounding(f))
+      .catch(() => {});
+  }, []);
+  const f = c.founding;
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <div className="lp-price">
@@ -1140,18 +1173,41 @@ function Pricing({ c }: { c: Copy }) {
           <h2 className="lp-h2 rv">{c.priceTitle}</h2>
           <p className="lp-sub rv">{c.priceSub}</p>
         </div>
-        <div className="lp-price-card rv">
-          <strong className="lp-price-tag">₹0</strong>
-          <ul>
-            {c.priceList.map((f) => (
-              <li key={f}>
-                <Check size={18} /> {f}
-              </li>
-            ))}
-          </ul>
-          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Create your shop">
-            {c.create} <ArrowRight size={18} />
-          </a>
+        <div className="lp-price-cards">
+          <div className="lp-price-card lp-price-free rv">
+            <strong className="lp-price-tag">₹0</strong>
+            <ul>
+              {c.priceList.map((item) => (
+                <li key={item}>
+                  <Check size={18} /> {item}
+                </li>
+              ))}
+            </ul>
+            <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Create your shop">
+              {c.create} <ArrowRight size={18} />
+            </a>
+          </div>
+          <div className="lp-price-card rv">
+            <span className="lp-price-badge">
+              {f.only}
+              {founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
+            </span>
+            <p className="lp-price-name">{f.name}</p>
+            <div>
+              <strong className="lp-price-tag">{inr(founding.prices.lifetime)}</strong> <span className="lp-price-per">{f.once}</span>
+              <p className="lp-price-alt">{f.yearly(inr(founding.prices.yearly))}</p>
+            </div>
+            <ul>
+              {f.list.map((item) => (
+                <li key={item}>
+                  <Check size={18} /> {item}
+                </li>
+              ))}
+            </ul>
+            <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Founding Shop">
+              {f.cta} <ArrowRight size={18} />
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -1276,6 +1332,9 @@ export function Landing() {
                 </a>
                 <a href="/terms" data-track="footer: Terms">
                   {c.footer.terms}
+                </a>
+                <a href="/refunds" data-track="footer: Refunds">
+                  {c.footer.refunds}
                 </a>
               </nav>
               <small>{c.footer.tag}</small>

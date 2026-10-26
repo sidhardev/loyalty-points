@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import QRCode from 'qrcode';
 import {
+  BadgeIndianRupee,
   ArrowLeft,
   Check,
   Copy,
@@ -30,7 +31,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { daysAgo, num, when, whatsapp } from '../api';
+import { daysAgo, num, rupees, when, whatsapp } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
@@ -107,6 +108,10 @@ type Shop = {
   on_landing: number; // 1 = listed on the homepage
   last_contact: string | null;
   last_contact_detail: string | null;
+  plan: string; // stored plan: free | grandfathered | lifetime | yearly
+  activePlan: string; // in force now (a yearly plan that ran out is free)
+  plan_expires_at: string | null;
+  founding_no: number | null;
 };
 type Comeback = { customers: number; visits: number; wonBack: number; allVisits: number; rewards: number };
 
@@ -347,6 +352,16 @@ function OverviewPage() {
 
 // ---------------------------------------------------------------- shops
 
+/** "Founding #3 · lifetime", "Free", "Early shop" — a shop's plan in a few words. */
+const planLabel = (s: Pick<Shop, 'plan' | 'activePlan' | 'founding_no' | 'plan_expires_at'>) => {
+  if (s.activePlan === 'lifetime') return `Founding #${s.founding_no} · lifetime`;
+  if (s.activePlan === 'yearly') return `Founding #${s.founding_no} · yearly to ${when(s.plan_expires_at!)}`;
+  if (s.activePlan === 'grandfathered') return 'Early shop (no limit)';
+  return s.plan === 'yearly' ? 'Free (yearly ran out)' : 'Free';
+};
+
+type Payment = { id: number; kind: string; amount_paise: number; razorpay_order_id: string; razorpay_payment_id: string | null; status: string; created_at: string; paid_at: string | null };
+
 const FILTERS: { key: '' | Status; label: string }[] = [
   { key: '', label: 'All' },
   { key: 'active', label: 'Active' },
@@ -360,6 +375,9 @@ function ShopsPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'' | Status>('');
   const [shops, setShops] = useState<Shop[] | null>(null);
+  const [billing, setBilling] = useState<{ payments: (Payment & { shopId: number; name: string })[]; seats: { total: number; left: number } } | null>(null);
+  useEffect(() => void adminApi<NonNullable<typeof billing>>('payments').then(setBilling), []);
+  const paid = billing?.payments.filter((p) => p.status === 'paid') ?? [];
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -385,6 +403,21 @@ function ShopsPage() {
         <div>
           <h1>Shops</h1>
           <p>{shops ? `${num(shops.length)} shown` : 'Loading…'}</p>
+          {billing && (
+            <p className="follow-meta">
+              <span>
+                Founding Shops: {num(billing.seats.total - billing.seats.left)} of {num(billing.seats.total)} places taken
+              </span>
+              <span>
+                {num(paid.length)} payments · {rupees(paid.reduce((n, p) => n + p.amount_paise, 0) / 100)}
+              </span>
+              {paid[0] && (
+                <span>
+                  Last: <a href={`#/shops/${paid[0].shopId}`}>{paid[0].name}</a> {ago(paid[0].paid_at)}
+                </span>
+              )}
+            </p>
+          )}
         </div>
       </header>
       <section className="card">
@@ -426,6 +459,7 @@ function ShopsPage() {
                         <strong>{s.name}</strong>
                       </a>
                       <span className="muted small">{s.email || s.phone}</span>
+                      {s.founding_no && s.activePlan !== 'free' && <span className="source-chip">{planLabel(s)}</span>}
                     </td>
                     <td>
                       <StatusBadge status={s.status} />
@@ -472,6 +506,7 @@ type ShopDetail = {
   daily: { day: string; visits: number; rewards: number }[];
   notes: { id: number; note: string; created_at: string; admin: string }[];
   log: { id: number; action: string; detail: string; created_at: string; admin: string }[];
+  payments: Payment[];
 };
 
 /** Visits per day for the last 30 days, as simple bars. */
@@ -503,6 +538,7 @@ function ShopPage({ id }: { id: number }) {
   const [note, setNote] = useState('');
   const [pauseReason, setPauseReason] = useState('');
   const [pausing, setPausing] = useState(false);
+  const [planForm, setPlanForm] = useState<{ plan: string; reason: string } | null>(null);
   const action = useAction();
 
   const load = useCallback(() => {
@@ -561,6 +597,15 @@ function ShopPage({ id }: { id: number }) {
       toast(shop.on_landing ? `${shop.name} is off the homepage` : `${shop.name} is on the homepage`);
       load();
     });
+  const savePlan = (e: FormEvent) => {
+    e.preventDefault();
+    void action.run(async () => {
+      await adminApi(`shops/${id}/plan`, 'POST', planForm);
+      setPlanForm(null);
+      toast(`${shop.name}'s plan changed`);
+      load();
+    });
+  };
   const addNote = (e: FormEvent) => {
     e.preventDefault();
     void action.run(async () => {
@@ -585,6 +630,7 @@ function ShopPage({ id }: { id: number }) {
           </p>
           <p className="follow-meta">
             <span className="source-chip">From: {sourceName(shop.source)}</span>
+            <span className="source-chip">Plan: {planLabel(shop)}</span>
             {shop.signup_campaign && !shop.referred_by && <span>Campaign: {shop.signup_campaign}</span>}
             {shop.referred_by && (
               <span>
@@ -722,6 +768,46 @@ function ShopPage({ id }: { id: number }) {
               <Globe2 size={17} /> {shop.on_landing ? 'Remove' : 'Show'}
             </button>
           </div>
+
+          {planForm ? (
+            <form className="support-form" onSubmit={savePlan}>
+              <label>
+                Plan
+                <select value={planForm.plan} onChange={(e) => setPlanForm({ ...planForm, plan: e.target.value })}>
+                  <option value="free">Free (up to 50 customers)</option>
+                  <option value="grandfathered">Early shop (no limit, no Founding place)</option>
+                  <option value="lifetime">Founding Shop · lifetime</option>
+                  <option value="yearly">Founding Shop · 1 year from today</option>
+                </select>
+              </label>
+              <label>
+                Why?
+                <input value={planForm.reason} onChange={(e) => setPlanForm({ ...planForm, reason: e.target.value })} placeholder="e.g. Paid ₹1,499 by UPI, UTR 4321…" required />
+              </label>
+              <div className="actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setPlanForm(null)}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" disabled={action.busy}>
+                  Save plan
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="support-action">
+              <div>
+                <strong>Plan: {planLabel(shop)}</strong>
+                <span className="muted small">
+                  {data.payments.length
+                    ? data.payments.map((p) => `${p.kind} ₹${num(p.amount_paise / 100)} ${p.status} ${ago(p.paid_at ?? p.created_at)}`).join(' · ')
+                    : 'No Razorpay payments. Refunds are made in the Razorpay dashboard, then set the plan here.'}
+                </span>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setPlanForm({ plan: shop.plan, reason: '' })}>
+                <BadgeIndianRupee size={17} /> Change
+              </button>
+            </div>
+          )}
 
           <form className="support-form" onSubmit={addNote}>
             <label>

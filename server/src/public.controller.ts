@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
+import { FOUNDING_SEATS, PRICES, seatsLeft } from './plans';
 
 // Pages customers open without an account:
 //  - /w/<token>: their stamp card (the random token in the link, sent on WhatsApp by the shop, is what identifies them)
@@ -15,6 +16,12 @@ export class PublicController {
     private readonly db: Db,
     private readonly loyalty: LoyaltyService,
   ) {}
+
+  /** The homepage's price section: Founding Shop places left and prices. */
+  @Get('founding')
+  founding() {
+    return { total: FOUNDING_SEATS, left: seatsLeft(this.db.sql), prices: PRICES };
+  }
 
   @Get('wallet/:token')
   wallet(@Param('token') token: string) {

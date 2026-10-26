@@ -602,6 +602,11 @@ export class SeoPublicController {
     this.send(res, renderLegal(SITE, LEGAL.terms, LEGAL.privacy));
   }
 
+  @Get('refunds')
+  refunds(@Res() res: Response) {
+    this.send(res, renderLegal(SITE, LEGAL.refunds, LEGAL.terms));
+  }
+
   /** The homepage plus every published page, with its other-language twin. Updates as pages are published. */
   @Get('sitemap.xml')
   sitemap(@Res() res: Response) {

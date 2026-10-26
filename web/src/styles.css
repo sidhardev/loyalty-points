@@ -4175,3 +4175,95 @@ circle.trend-views {
   accent-color: var(--brand);
   cursor: pointer;
 }
+
+/* ---------------------------------------------------------------- plan (Plan.tsx) */
+
+.plan-meter,
+.plan-seats {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.plan-meter span,
+.plan-seats span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-fill);
+}
+
+.plan-meter span.full {
+  background: var(--bad);
+}
+
+.plan-seats span {
+  background: var(--gold);
+}
+
+.plan-perks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-perks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-perks svg {
+  flex: none;
+  color: var(--brand-fill);
+}
+
+.plan-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.plan-option {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-option strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-option > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.plan-option.best {
+  border: 2px solid var(--brand);
+  background: var(--brand-soft);
+}
+
+.plan-option:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+.plan-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

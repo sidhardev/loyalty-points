@@ -25,6 +25,7 @@
     { "source": "/hi/guide/:path*", "destination": "https://api-habiturn.sidhar.me/hi/guide/:path*" },
     { "source": "/privacy", "destination": "https://api-habiturn.sidhar.me/privacy" },
     { "source": "/terms", "destination": "https://api-habiturn.sidhar.me/terms" },
+    { "source": "/refunds", "destination": "https://api-habiturn.sidhar.me/refunds" },
     { "source": "/((?!\\.well-known/).*)", "destination": "/shell.html" }
   ],
   "headers": [

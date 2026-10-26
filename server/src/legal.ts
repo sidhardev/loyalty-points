@@ -1,10 +1,10 @@
-// Privacy policy (/privacy) and terms of service (/terms). Plain English, and only what the code really does: if a
+// Privacy policy (/privacy), terms of service (/terms) and the refund policy (/refunds). Plain English, and only what the code really does: if a
 // feature starts collecting or sharing something new, update these pages (and UPDATED) in the same change.
 
 import type { GuideBlock } from './guides';
 
 export type LegalDoc = {
-  slug: 'privacy' | 'terms';
+  slug: 'privacy' | 'terms' | 'refunds';
   name: string;
   title: string;
   description: string;
@@ -17,7 +17,7 @@ export type LegalDoc = {
 /** Where privacy requests, grievances and questions go. */
 export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'devsidharr@gmail.com';
 
-const UPDATED = '2026-10-22';
+const UPDATED = '2026-10-26';
 
 const privacy: LegalDoc = {
   slug: 'privacy',
@@ -95,6 +95,7 @@ const privacy: LegalDoc = {
         'Vercel: delivers the website.',
         'Google Fonts: the website’s fonts are loaded from Google, which sees your IP address when it sends them.',
         'Google Gemini: writes some of our website’s articles. No shop or customer information is sent to it.',
+        'Razorpay: takes payments for the Founding Shop plan (UPI, cards, net banking). It receives the shop’s name, phone number and email for the payment; we never see or store card or bank details.',
         'Google Maps and WhatsApp (Meta): we look up publicly listed businesses on Google Maps and may send them one WhatsApp message about Regularhood. A business that replies “Not now” or STOP is never messaged again.',
       ],
     },
@@ -207,7 +208,10 @@ const terms: LegalDoc = {
     {
       h2: 'Price',
       p: [
-        'Regularhood is free to start. If we introduce paid plans or features, we will tell you the price before you are charged, and nothing that was free when you signed up will start costing you without notice and your choice to continue.',
+        'Regularhood is free to start. On the Free plan a shop can keep up to 50 customers; customers already added always keep getting visits and rewards.',
+        'Founding Shop removes the limit. It is offered only to the first 100 shops, for ₹1,499 once (for as long as Regularhood runs) or ₹499 a year (renewed by paying again, at the same price while you keep renewing). Prices include any taxes and are shown before you pay. If a yearly plan is not renewed, the shop goes back to the Free plan and nothing is deleted.',
+        'Shops that signed up before plans were introduced keep using Regularhood with no customer limit, as promised when they joined.',
+        'Payments are taken by Razorpay. Refunds are explained in our refund policy (/refunds).',
       ],
     },
     {
@@ -265,4 +269,46 @@ const terms: LegalDoc = {
   ],
 };
 
-export const LEGAL = { privacy, terms };
+const refunds: LegalDoc = {
+  slug: 'refunds',
+  name: 'Refund policy',
+  title: 'Refund Policy · Regularhood',
+  description: 'Refunds and cancellations for the Regularhood Founding Shop plan: a full refund within 7 days, how to ask, and how long it takes.',
+  h1: 'Refund and cancellation policy',
+  intro:
+    'This page covers payments for the Founding Shop plan (₹1,499 once, or ₹499 a year). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
+  updated: UPDATED,
+  blocks: [
+    {
+      h2: 'Full refund within 7 days',
+      p: [
+        `If Founding Shop isn’t right for you, write to ${CONTACT_EMAIL} within 7 days of paying, from your shop’s email or WhatsApp number, with your shop name. We refund the full amount, no questions asked. Your shop moves back to the Free plan and keeps all its customers and visits.`,
+      ],
+    },
+    {
+      h2: 'After 7 days',
+      p: [
+        'After 7 days payments are not refunded, except where the law requires it or we charged you by mistake (for example twice for the same plan), which we always refund in full.',
+        'If we ever shut Regularhood down within the first year after a lifetime payment, we refund the lifetime payment in proportion to the months left in that year, and give every shop time to download its data.',
+      ],
+    },
+    {
+      h2: 'Cancelling a yearly plan',
+      p: [
+        'A yearly plan does not renew by itself: nothing is charged unless you pay again. To cancel, simply don’t renew. The plan stays on until its end date, then the shop moves to the Free plan; nothing is deleted.',
+      ],
+    },
+    {
+      h2: 'How refunds are paid',
+      p: [
+        'Refunds go back to the same UPI account, card or bank account you paid with, through Razorpay. They usually arrive within 5–7 working days after we approve them, depending on your bank.',
+      ],
+    },
+    {
+      h2: 'Contact',
+      p: [`Questions about a payment or refund: ${CONTACT_EMAIL}.`],
+    },
+  ],
+};
+
+export const LEGAL = { privacy, terms, refunds };

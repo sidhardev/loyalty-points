@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Check, Delete, Gift, MessageCircle, Undo2 } from 'lucide-react';
+import { Check, Crown, Delete, Gift, MessageCircle, Undo2 } from 'lucide-react';
 import { api, cardMessage, num, phoneLabel, whatsapp, type Customer, type Merchant, type VisitResult } from '../api';
 import '../counter.css';
 import { t, useLang } from '../i18n';
@@ -93,6 +93,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   const [left, setLeft] = useState(BACK_AFTER);
   const [hold, setHold] = useState(false); // stop the countdown once they start doing something with the result
   const { busy, error, setError, run } = useAction();
+  const [limitHit, setLimitHit] = useState(false); // the Free plan's customer limit stopped a new number
   const tz = -new Date().getTimezoneOffset();
 
   const loadToday = useCallback(() => void api<{ visits: number; rewards: number }>(`today?tz=${tz}`).then(setToday).catch(() => {}), [tz]);
@@ -116,7 +117,10 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   const submit = (phone = digits) => {
     if (phone.length !== 10 || busy) return;
     void run(async () => {
-      const result = await api<VisitResult>('visits', 'POST', { phone, tz });
+      const result = await api<VisitResult>('visits', 'POST', { phone, tz }).catch((err: Error & { code?: string }) => {
+        setLimitHit(err.code === 'customer_limit');
+        throw err;
+      });
       setShown({ result });
       setLeft(BACK_AFTER);
       setHold(false);
@@ -294,6 +298,11 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
         ))}
       </div>
       <ErrorText text={error} />
+      {error && limitHit && (
+        <a className="btn btn-primary" href="#/plan">
+          <Crown size={17} /> {t('See Founding Shop')}
+        </a>
+      )}
       <div className="keypad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => (
           <button key={k} onClick={() => type(k)}>

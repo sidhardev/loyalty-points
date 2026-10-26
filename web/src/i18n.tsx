@@ -152,6 +152,44 @@ const HI: Record<string, string> = {
   'Turn off': 'बंद करें',
   'Log out?': 'लॉग आउट करें?',
   'Log out': 'लॉग आउट',
+
+  // plan (Free or Founding Shop)
+  'Your plan': 'आपका प्लान',
+  'Customer limit and Founding Shop': 'ग्राहकों की लिमिट और फ़ाउंडिंग शॉप',
+  Free: 'फ़्री',
+  'Early shop': 'शुरुआती दुकान',
+  'Founding Shop #{n}': 'फ़ाउंडिंग शॉप #{n}',
+  'For life': 'हमेशा के लिए',
+  'Until {date}': '{date} तक',
+  '{n} customers · no limit': '{n} ग्राहक · कोई लिमिट नहीं',
+  '{n} of {limit} customers on the Free plan': 'फ़्री प्लान पर {limit} में से {n} ग्राहक',
+  'Your yearly plan has ended. Renew to add new customers again.': 'आपका सालाना प्लान खत्म हो गया है। नए ग्राहक जोड़ने के लिए रिन्यू करें।',
+  'You joined before plans existed, so you keep every feature with no limit. Thank you!':
+    'आप प्लान आने से पहले जुड़े थे, इसलिए आपको सब कुछ बिना लिमिट मिलता रहेगा। धन्यवाद!',
+  'Become a Founding Shop': 'फ़ाउंडिंग शॉप बनें',
+  'All places taken': 'सारी जगहें भर गईं',
+  '{left} of {total} places left': '{total} में से {left} जगह बाकी',
+  'Unlimited customers': 'जितने चाहें ग्राहक',
+  'Price locked for as long as you stay': 'जब तक आप साथ हैं, कीमत वही रहेगी',
+  'Every new feature we add': 'आगे आने वाले सारे नए फ़ीचर',
+  'Your Founding Shop number, for good': 'आपका फ़ाउंडिंग शॉप नंबर, हमेशा के लिए',
+  'Best value': 'सबसे फ़ायदेमंद',
+  'Once, for life': 'एक बार, हमेशा के लिए',
+  'Renew for 1 more year': '1 साल और रिन्यू करें',
+  'A year, renew at the same price': 'एक साल, उसी कीमत पर रिन्यू',
+  'Pay by UPI, card or net banking through Razorpay. Full refund within 7 days if it is not for you.':
+    'Razorpay से UPI, कार्ड या नेट बैंकिंग से पेमेंट करें। पसंद न आए तो 7 दिन में पूरा रिफ़ंड।',
+  'Refund policy': 'रिफ़ंड पॉलिसी',
+  'Welcome, Founding Shop #{n}!': 'स्वागत है, फ़ाउंडिंग शॉप #{n}!',
+  'Payment received. Your plan will switch on in a few minutes.': 'पेमेंट मिल गया। कुछ मिनट में आपका प्लान चालू हो जाएगा।',
+  'See Founding Shop': 'फ़ाउंडिंग शॉप देखें',
+  '{n} of {limit} customers: new numbers can’t be added on the Free plan. Become a Founding Shop →':
+    '{limit} में से {n} ग्राहक: फ़्री प्लान पर नए नंबर नहीं जुड़ सकते। फ़ाउंडिंग शॉप बनें →',
+  '{n} of {limit} customers on the Free plan. See Founding Shop →': 'फ़्री प्लान पर {limit} में से {n} ग्राहक। फ़ाउंडिंग शॉप देखें →',
+  'The Free plan keeps up to 50 customers. Become a Founding Shop to add more.':
+    'फ़्री प्लान पर 50 ग्राहक तक रख सकते हैं। और जोड़ने के लिए फ़ाउंडिंग शॉप बनें।',
+  'All Founding Shop places are taken': 'फ़ाउंडिंग शॉप की सारी जगहें भर गई हैं',
+  'Payments are not set up yet. Please try again later.': 'पेमेंट अभी चालू नहीं है। थोड़ी देर बाद फिर कोशिश करें।',
   Cancel: 'रद्द करें',
 
   // activity log
