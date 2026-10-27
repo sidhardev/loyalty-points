@@ -12,6 +12,8 @@ export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 @Injectable()
 export class Storage {
   private bucketReady = false;
+  /** The last thing that went wrong, for Admin → WhatsApp chats; cleared by the next upload that works. */
+  lastError: { at: string; message: string } | null = null;
 
   private get base() {
     return (process.env.SUPABASE_URL?.trim() ?? '').replace(/\/$/, '');
@@ -63,9 +65,19 @@ export class Storage {
 
   async upload(path: string, file: Buffer, type: string) {
     if (file.length > MAX_FILE_BYTES) throw new BadRequestException(`Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB can be kept`);
-    await this.bucket();
-    await this.call(`object/${BUCKET}/${path}`, { method: 'POST', body: file, type, upsert: true });
+    try {
+      await this.bucket();
+      await this.call(`object/${BUCKET}/${path}`, { method: 'POST', body: file, type, upsert: true });
+    } catch (error) {
+      this.lastError = { at: new Date().toISOString(), message: (error as Error).message };
+      throw error;
+    }
+    this.lastError = null;
     return path;
+  }
+
+  status() {
+    return { ready: this.ready, lastError: this.lastError };
   }
 
   private signed = new Map<string, { url: string; until: number }>();

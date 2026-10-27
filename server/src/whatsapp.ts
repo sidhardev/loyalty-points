@@ -679,6 +679,14 @@ export class WhatsApp {
 
   private keeping = new Map<number, number>(); // message id → when a copy was last tried
 
+  /** Whether files can be kept (Supabase set up), and the last thing that went wrong copying one. */
+  storageStatus() {
+    const s = this.storage.status();
+    return { ready: s.ready, lastError: this.mediaError ?? s.lastError };
+  }
+
+  private mediaError: { at: string; message: string } | null = null;
+
   /** Copies a message's file from Meta to Supabase. Meta keeps it for about 30 days; its download link lasts 5 minutes. */
   private async keepMedia(id: number) {
     const last = this.keeping.get(id);
@@ -702,8 +710,10 @@ export class WhatsApp {
       const path = await this.storage.upload(mediaPath(row.phone, row.direction, mime, row.media_name ?? ''), file, mime);
       this.db.sql.prepare('UPDATE wa_messages SET media_path = ?, media_mime = ?, media_size = ? WHERE id = ?').run(path, mime, file.length, id);
       this.keeping.delete(id);
+      this.mediaError = null;
     } catch (error) {
       console.error(`Keeping WhatsApp file ${row.media_id} failed:`, (error as Error).message);
+      this.mediaError = { at: new Date().toISOString(), message: `Copying from Meta: ${(error as Error).message}` };
     }
   }
 
@@ -1147,7 +1157,7 @@ export class WhatsAppAdminController {
   /** Admin → WhatsApp chats: every conversation, and the number of replies not opened yet (for the menu badge). */
   @Get('chats')
   chats() {
-    return { chats: this.wa.chats(), unread: this.wa.unread(), ready: this.wa.ready, missing: this.wa.missing() };
+    return { chats: this.wa.chats(), unread: this.wa.unread(), ready: this.wa.ready, missing: this.wa.missing(), storage: this.wa.storageStatus() };
   }
 
   @Get('unread')

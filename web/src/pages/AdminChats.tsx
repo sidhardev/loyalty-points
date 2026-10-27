@@ -33,7 +33,7 @@ type Chat = {
   window_open: number | null;
   link: string;
 };
-type Data = { chats: Chat[]; unread: number; ready: boolean; missing: string[] };
+type Data = { chats: Chat[]; unread: number; ready: boolean; missing: string[]; storage: { ready: boolean; lastError: { at: string; message: string } | null } };
 
 /** Fired with the unread count whenever the chats are loaded, so the menu badge updates straight away. */
 export const WA_UNREAD = 'wa-unread';
@@ -120,6 +120,17 @@ export function ChatsPage({ api }: { api: AdminApi }) {
       </header>
 
       {wa && <WhatsAppBar api={api} wa={wa} onChanged={() => (reloadWa(), load())} />}
+      {data && !data.storage.ready && (
+        <p className="alert alert-error small">
+          Photos and files aren’t being kept: this server has no <code>SUPABASE_URL</code> / <code>SUPABASE_SECRET_KEY</code>. Add them to deploy/.env and run{' '}
+          <code>docker compose up -d</code> in deploy/.
+        </p>
+      )}
+      {data?.storage.ready && data.storage.lastError && (
+        <p className="alert alert-error small">
+          Keeping a photo or file in Supabase failed ({when(data.storage.lastError.at.replace('T', ' ').slice(0, 19))}): {data.storage.lastError.message}
+        </p>
+      )}
 
       <section className={`card chats${open ? ' chat-open' : ''}`}>
         <aside className="chats-list">
