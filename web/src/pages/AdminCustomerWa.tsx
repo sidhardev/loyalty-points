@@ -57,8 +57,7 @@ const KIND_NAME: Record<Kind, string> = { card: 'Card', reward: 'Reward ready', 
 
 const fill = (text: string, values: string[]) => values.reduce((t, v, i) => t.replaceAll(`{{${i + 1}}}`, v), text);
 const prettyPhone = (p: string) => (p.startsWith('91') && p.length === 12 ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : `+${p}`);
-/** Meta's test numbers are US numbers starting +1 555, named "Test Number". */
-const isTestNumber = (p: PhoneInfo | null) => Boolean(p && (/test/i.test(p.verified_name ?? '') || /^\+?1\s?555/.test(p.display_phone_number ?? '')));
+// No "test number" warning: Meta gives businesses real +1 555 numbers too, and its API has no field that marks a test number.
 
 function StatusChip({ status }: { status: string }) {
   const tone = status === 'APPROVED' ? 'ok' : status === 'REJECTED' || status === 'PAUSED' || status === 'DISABLED' ? 'bad' : status === 'missing' ? 'none' : 'wait';
@@ -126,7 +125,6 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
   const allApproved = templates !== null && approved === templates.length;
   const missing = templates?.filter((t) => t.status === 'missing').length ?? 0;
   const rejected = templates?.filter((t) => t.status === 'REJECTED') ?? [];
-  const testNumber = isTestNumber(phone);
   const status = (kind: Kind, lang: Lang) => templates?.find((t) => t.kind === kind && t.lang === lang)?.status ?? '…';
   // Worst case for one shop that uses its whole allowance, all billed as marketing.
   const maxPerShop = inr(data.quota * data.marketingPriceUsd);
@@ -155,15 +153,6 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
       const ok = await confirmDialog({
         title: 'Go live before every template is approved?',
         body: 'Messages whose template isn’t approved yet will fail and show as “not sent”. The counter still says it sent them.',
-        confirm: 'Go live anyway',
-        danger: true,
-      });
-      if (!ok) return;
-    }
-    if (on && testNumber) {
-      const ok = await confirmDialog({
-        title: 'This is Meta’s test number',
-        body: 'A test number can only message the few phone numbers added in Meta, so real customers won’t get anything. Connect your own number first.',
         confirm: 'Go live anyway',
         danger: true,
       });
@@ -205,7 +194,7 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
             </span>
           </div>
           <ol className="cw-steps">
-            <Step n={1} done={data.steps.number && !testNumber} warn={data.steps.number && testNumber} title="Connect your WhatsApp Business number">
+            <Step n={1} done={data.steps.number} title="Connect your WhatsApp Business number">
               {data.steps.number ? (
                 <>
                   <p className="cw-fact">
@@ -219,12 +208,6 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
                       <>Number ID {data.phoneNumberId} · checking with Meta…</>
                     )}
                   </p>
-                  {testNumber && (
-                    <p className="alert alert-error small">
-                      This is Meta’s test number: it can only message the few numbers you added in Meta. Add your own number in Meta (WhatsApp → API setup → Add
-                      phone number), then put its Phone number ID in the settings.
-                    </p>
-                  )}
                 </>
               ) : (
                 <p className="muted small">
