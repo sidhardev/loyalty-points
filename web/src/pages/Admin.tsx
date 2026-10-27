@@ -68,12 +68,17 @@ const setAdminToken = (token: string | null) => {
 };
 const ADMIN_LOGGED_OUT = 'lp-admin-logged-out';
 
+/** A Blob body (a file for WhatsApp chats) goes as it is, with its own type; anything else as JSON. */
 async function adminApi<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   const token = getAdminToken();
+  const file = body instanceof Blob ? body : null;
   const res = await fetch(`/api/admin/${path}`, {
     method,
-    headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
+    headers: {
+      ...(file ? { 'content-type': file.type || 'application/octet-stream' } : body ? { 'content-type': 'application/json' } : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: file ?? (body ? JSON.stringify(body) : undefined),
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && token) {

@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import type { NextFunction, Request, Response } from 'express';
+import { raw, type NextFunction, type Request, type Response } from 'express';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AdminController, AdminGuard } from './admin';
@@ -19,6 +19,7 @@ import { PublicController } from './public.controller';
 import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
 import { StatusAdminController } from './status';
+import { Storage } from './storage';
 import { LeadsAdminController, LeadsService } from './leads';
 import { PlaybookAdminController, PlaybookService } from './playbook';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
@@ -30,7 +31,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
   controllers: [AuthController, BillingController, BillingAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, WhatsApp],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, Storage, WhatsApp],
 })
 class AppModule {}
 
@@ -42,6 +43,12 @@ async function bootstrap() {
   // believe: a hop count ("1" behind one proxy, e.g. Caddy in Docker or Railway) or Express names like "loopback".
   const trust = process.env.TRUST_PROXY ?? 'loopback';
   app.set('trust proxy', /^\d+$/.test(trust) ? Number(trust) : trust);
+
+  // Files sent from Admin → WhatsApp chats arrive as the raw body (whatsapp.ts, chatMedia); the admin check runs after.
+  const fileUpload = raw({ type: () => true, limit: '50mb' });
+  app.use((req: Request, res: Response, next: NextFunction) =>
+    req.method === 'POST' && /^\/api\/admin\/whatsapp\/chats\/\d+\/media$/.test(req.path) ? fileUpload(req, res, next) : next(),
+  );
 
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');

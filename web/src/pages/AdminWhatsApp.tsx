@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Check, CheckCheck, Copy, MessageCircle, RefreshCw, Send, Settings2, ShieldCheck, Trash2 } from 'lucide-react';
+import { Check, CheckCheck, Copy, Download, FileText, MessageCircle, RefreshCw, Send, Settings2, ShieldCheck, Trash2 } from 'lucide-react';
 import { when } from '../api';
 import { ErrorText, Sheet, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
@@ -42,7 +42,19 @@ export type WaOverview = {
 };
 type Template = { name: string; language: string; status: string; category: string; body: string; params: number };
 type PhoneInfo = { display_phone_number?: string; verified_name?: string; quality_rating?: string; messaging_limit_tier?: string; name_status?: string };
-export type WaMessage = { id: number; direction: 'out' | 'in'; kind: string; body: string; status: string; error: string | null; category: string | null; cost_usd: number; created_at: string };
+export type WaMedia = { url: string | null; mime: string | null; name: string | null; size: number | null };
+export type WaMessage = {
+  id: number;
+  direction: 'out' | 'in';
+  kind: string;
+  body: string;
+  status: string;
+  error: string | null;
+  category: string | null;
+  cost_usd: number;
+  created_at: string;
+  media: WaMedia | null; // a photo, video, voice note or document, kept in Supabase (url: a link for about an hour)
+};
 
 const copy = (text: string, what: string) =>
   navigator.clipboard.writeText(text).then(
@@ -426,7 +438,7 @@ const TICKS: Record<string, ReactNode> = {
   read: <CheckCheck size={13} className="wa-read" />,
 };
 
-/** What WhatsApp sent that isn't text. The file itself isn't downloaded: open WhatsApp on the phone to see it. */
+/** What WhatsApp sent that isn't text. Files are copied to Supabase and shown in the chat (WaFile). */
 const MEDIA: Record<string, string> = {
   image: '📷 Photo',
   audio: '🎤 Voice message',
@@ -452,14 +464,51 @@ function failReason(error: string | null) {
   return error;
 }
 
+export const fileSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+/** The file in a message: the photo, a video or voice-note player, or a document to download. */
+function WaFile({ m, file }: { m: WaMessage; file: WaMedia }) {
+  const mime = file.mime ?? '';
+  if (!file.url)
+    return (
+      <p className="wa-file-missing">
+        {MEDIA[m.kind] ?? '📎 File'}
+        <small>
+          {file.size && file.size > 50 * 1024 * 1024
+            ? ` · ${fileSize(file.size)}, too big to keep here: open WhatsApp on the phone`
+            : ' · not saved yet (Supabase storage isn’t set up, or Meta no longer has it)'}
+        </small>
+      </p>
+    );
+  if (mime.startsWith('image/'))
+    return (
+      <a className={`wa-photo${m.kind === 'sticker' ? ' sticker' : ''}`} href={file.url} target="_blank" rel="noreferrer">
+        <img src={file.url} alt={m.kind === 'sticker' ? 'Sticker' : 'Photo'} loading="lazy" />
+      </a>
+    );
+  if (mime.startsWith('video/')) return <video className="wa-video" src={file.url} controls preload="metadata" />;
+  if (mime.startsWith('audio/')) return <audio className="wa-audio" src={file.url} controls preload="metadata" />;
+  return (
+    <a className="wa-doc" href={file.url} target="_blank" rel="noreferrer" download={file.name ?? undefined}>
+      <FileText size={22} />
+      <span>
+        <strong>{file.name || 'Document'}</strong>
+        <small>{[file.size ? fileSize(file.size) : '', mime.split('/')[1]?.toUpperCase()].filter(Boolean).join(' · ')}</small>
+      </span>
+      <Download size={17} />
+    </a>
+  );
+}
+
 export function WaBubble({ m, timeOnly }: { m: WaMessage; timeOnly?: boolean }) {
   const media = m.body.match(/^\[(\w+)\]$/)?.[1];
   const time = timeOnly
     ? new Date(`${m.created_at.replace(' ', 'T')}Z`).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
     : when(m.created_at);
   return (
-    <div className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}${media ? ' media' : ''}`}>
-      <p>{media ? (MEDIA[media] ?? `[${media}]`) : m.body}</p>
+    <div className={`wa-msg ${m.direction}${m.status === 'failed' ? ' failed' : ''}${media && !m.media ? ' media' : ''}${m.media ? ' has-file' : ''}`}>
+      {m.media && <WaFile m={m} file={m.media} />}
+      {!(m.media && media) && <p>{media ? (MEDIA[media] ?? `[${media}]`) : m.body}</p>}
       <span>
         {m.kind === 'template' ? 'intro · ' : ''}
         {time}

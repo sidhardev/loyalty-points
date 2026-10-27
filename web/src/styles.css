@@ -3921,8 +3921,113 @@ circle.trend-views {
 
 .chat-compose {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
+}
+
+.chat-compose textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-attach {
+  align-self: center;
+}
+
+/* The file about to be sent, above the reply box. */
+.chat-attachment {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.chat-attachment img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.chat-attachment span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-attachment strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Files in messages: photos, stickers, videos, voice notes and documents. */
+.wa-msg.has-file {
+  width: min(300px, 85%);
+}
+
+.wa-photo img,
+.wa-video {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.wa-photo.sticker img {
+  width: 140px;
+  background: none;
+  object-fit: contain;
+}
+
+.wa-audio {
+  width: 100%;
+  min-width: 220px;
+  height: 40px;
+}
+
+.wa-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  background: var(--surface-2);
+}
+
+.wa-msg .wa-doc span {
+  display: grid;
+  flex: 1;
+  gap: 0;
+  min-width: 0;
+  color: inherit;
+  font-size: 14px;
+}
+
+.wa-doc strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wa-doc small,
+.wa-file-missing small {
+  color: var(--muted);
+}
+
+.wa-file-missing {
+  color: var(--ink-2);
+  font-style: italic;
 }
 
 .chat-compose textarea {

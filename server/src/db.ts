@@ -569,6 +569,16 @@ const MIGRATIONS: string[] = [
   ALTER TABLE seo_pages ADD COLUMN kind TEXT NOT NULL DEFAULT 'shop' CHECK (kind IN ('shop', 'city'));
   ${SEED_PAGES}
   `,
+
+  // 27: photos, videos, voice notes and documents in WhatsApp chats. Meta only keeps a received file for about 30 days,
+  // so it's copied to Supabase Storage (storage.ts) when it arrives; media_id lets a failed copy be tried again later.
+  `
+  ALTER TABLE wa_messages ADD COLUMN media_id TEXT; -- Meta's id for the file
+  ALTER TABLE wa_messages ADD COLUMN media_path TEXT; -- where it is in Supabase Storage, once copied
+  ALTER TABLE wa_messages ADD COLUMN media_mime TEXT;
+  ALTER TABLE wa_messages ADD COLUMN media_name TEXT; -- a document's file name
+  ALTER TABLE wa_messages ADD COLUMN media_size INTEGER; -- bytes
+  `,
 ];
 
 const INDEXES = `

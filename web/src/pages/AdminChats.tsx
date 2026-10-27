@@ -1,14 +1,16 @@
-import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, MessagesSquare, RefreshCw, Search, Send, Sparkles, UserPlus } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { ArrowLeft, FileText, MessagesSquare, Paperclip, RefreshCw, Search, Send, Sparkles, UserPlus, X } from 'lucide-react';
 import { when } from '../api';
 import { Avatar, EmptyState, ErrorText, Sheet, SkeletonRows, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
-import { WaBubble, WhatsAppBar, useWhatsApp, type WaMessage } from './AdminWhatsApp';
+import { WaBubble, WhatsAppBar, fileSize, useWhatsApp, type WaMessage } from './AdminWhatsApp';
 
 // Admin → WhatsApp chats: every conversation on the WhatsApp API number (server/src/whatsapp.ts), leads or not, with the
 // replies not opened yet. Opening a chat marks its replies as seen. Free replies are allowed for 24 hours after their
 // last message; outside that, a lead can only be sent the intro template again. Refreshes by itself while open.
 // People who aren't leads show under their WhatsApp profile name and can be saved as a lead from the chat.
+// Photos, videos, voice notes and documents show in the chat (kept in Supabase), and can be sent with the paperclip
+// or pasted into the reply box; the reply then goes as the file's caption.
 
 type Chat = {
   phone: string;
@@ -42,6 +44,7 @@ const pretty = (phone: string) => (phone.startsWith('91') && phone.length === 12
 const display = (c: Chat) => c.name ?? c.profile_name ?? pretty(c.phone);
 const preview = (body: string) => (/^\[\w+\]$/.test(body) ? body.replace(/^\[(\w+)\]$/, (_, k: string) => ({ image: '📷 Photo', audio: '🎤 Voice message', video: '🎬 Video', document: '📄 Document' })[k] ?? `[${k}]`) : body);
 const utc = (t: string) => new Date(`${t.replace(' ', 'T')}Z`);
+const MAX_FILE = 50 * 1024 * 1024; // Supabase's free plan keeps files up to 50 MB
 
 /** Ready-made replies, in the Hinglish shop owners text in. "{link}" becomes their sign-up link. */
 const QUICK = [
@@ -188,11 +191,21 @@ export function ChatsPage({ api }: { api: AdminApi }) {
 function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: Chat; onBack: () => void; onChanged: () => void }) {
   const [messages, setMessages] = useState<WaMessage[] | null>(null);
   const [text, setText] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const { busy, error, run } = useAction();
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
   const count = useRef(0);
+  const preview = useMemo(() => (file?.type.startsWith('image/') ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
+  const attach = (f: File | null | undefined) => {
+    if (!f) return;
+    if (f.size > MAX_FILE) return void toast(`${f.name} is ${fileSize(f.size)}: files up to 50 MB can be sent`, 'error');
+    setFile(f);
+    box.current?.focus();
+  };
 
   const load = useCallback(
     () =>
@@ -225,7 +238,7 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
   const windowEnds = lastIn ? utc(lastIn).getTime() + 24 * 3_600_000 : 0;
   const left = windowEnds - Date.now();
   const windowOpen = left > 0;
-  const send = (path: string, body: object | undefined, done: string) =>
+  const send = (path: string, body: unknown, done: string) =>
     void run(async () => {
       const r = await api<WaMessage[]>(path, 'POST', body);
       setMessages(r);
@@ -326,25 +339,59 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
               className="chat-compose"
               onSubmit={(e) => {
                 e.preventDefault();
-                send(`whatsapp/chats/${chat.phone}/text`, { text }, 'Sent');
+                if (file) send(`whatsapp/chats/${chat.phone}/media?${new URLSearchParams({ name: file.name, caption: text })}`, file, 'Sent');
+                else send(`whatsapp/chats/${chat.phone}/text`, { text }, 'Sent');
                 setText('');
+                setFile(null);
               }}
             >
+              {file && (
+                <div className="chat-attachment">
+                  {preview ? <img src={preview} alt="" /> : <FileText size={22} />}
+                  <span>
+                    <strong>{file.name}</strong>
+                    <small className="muted">{fileSize(file.size)} · what you type goes as its caption</small>
+                  </span>
+                  <button type="button" className="icon-btn" onClick={() => setFile(null)} aria-label="Remove file">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={picker}
+                type="file"
+                hidden
+                accept="image/jpeg,image/png,video/mp4,video/3gpp,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                onChange={(e) => {
+                  attach(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              <button type="button" className="icon-btn chat-attach" disabled={busy} onClick={() => picker.current?.click()} aria-label="Attach a photo, video or document">
+                <Paperclip size={18} />
+              </button>
               <textarea
                 ref={box}
                 rows={1}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.files[0];
+                  if (pasted) {
+                    e.preventDefault();
+                    attach(pasted);
+                  }
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && text.trim()) {
+                  if (e.key === 'Enter' && !e.shiftKey && (text.trim() || file)) {
                     e.preventDefault();
                     e.currentTarget.form?.requestSubmit();
                   }
                 }}
-                placeholder="Type a reply"
+                placeholder={file ? 'Add a caption (optional)' : 'Type a reply'}
                 aria-label="Reply"
               />
-              <button className="btn btn-primary" disabled={busy || !text.trim()} aria-label="Send">
+              <button className="btn btn-primary" disabled={busy || !(text.trim() || file)} aria-label="Send">
                 <Send size={17} />
               </button>
             </form>

@@ -147,3 +147,10 @@ A shop that hasn't written to us can only get that template. When the owner taps
 sign-up link is sent by itself, and free messages are allowed for 24 hours; "not now" or STOP stops all messages to
 that number. The card has a daily cap (keep it low on a new number: blocks and reports lower its quality rating), the
 price per message from Meta's rate card, and a monthly budget.
+
+**Photos, videos and documents in the chats** are kept in Supabase Storage, because Meta deletes a received file after
+about 30 days. In `deploy/.env` set `SUPABASE_URL=https://<project>.supabase.co` and `SUPABASE_SECRET_KEY=` the
+project's secret key (Project Settings → API Keys; the legacy `service_role` key works too, the publishable/anon one
+doesn't). The private `whatsapp-media` bucket is made on the first file (`SUPABASE_BUCKET` changes the name). Files up to
+50 MB are kept (the free plan's limit); without Supabase they still arrive, show as "not saved yet", and are copied when
+the chat is next opened, as long as Meta still has them.

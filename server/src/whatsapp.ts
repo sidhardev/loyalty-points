@@ -24,6 +24,7 @@ import { Db } from './db';
 import { LeadsService } from './leads';
 import { seal, unseal } from './secret';
 import { SITE, SeoService } from './seo';
+import { MAX_FILE_BYTES, Storage } from './storage';
 
 // WhatsApp Cloud API (Meta) for the lead finder. A shop that hasn't messaged us can only be sent an approved template:
 // a short intro with the shop's name and kind, and two quick-reply buttons. When the owner taps "yes" (or writes back),
@@ -110,6 +111,7 @@ export class WhatsApp {
   constructor(
     private readonly db: Db,
     private readonly leads: LeadsService,
+    private readonly storage: Storage,
   ) {}
 
   // ---------------------------------------------------------------- settings and secrets
@@ -345,10 +347,12 @@ export class WhatsApp {
     status: string;
     error?: string;
     auto?: { merchantId: number | null; customerId: number | null; kind: AutoKind }; // null shop: a test from the admin panel
+    media?: { id?: string; path?: string; mime?: string; name?: string; size?: number };
   }) {
     this.db.sql
       .prepare(
-        'INSERT OR IGNORE INTO wa_messages (lead_id, phone, direction, wamid, kind, body, status, error, merchant_id, customer_id, auto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        `INSERT OR IGNORE INTO wa_messages (lead_id, phone, direction, wamid, kind, body, status, error, merchant_id, customer_id, auto,
+           media_id, media_path, media_mime, media_name, media_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         m.leadId,
@@ -362,6 +366,11 @@ export class WhatsApp {
         m.auto?.merchantId ?? null,
         m.auto?.customerId ?? null,
         m.auto?.kind ?? null,
+        m.media?.id ?? null,
+        m.media?.path ?? null,
+        m.media?.mime?.slice(0, 100) ?? null,
+        m.media?.name?.slice(0, 240) ?? null,
+        m.media?.size ?? null,
       );
   }
 
@@ -599,6 +608,128 @@ export class WhatsApp {
     }
   }
 
+  // ---------------------------------------------------------------- photos, videos, voice notes and documents
+
+  /**
+   * A file from the admin panel, within the 24 hours like a free message. It's kept in Supabase (to show in the chat),
+   * uploaded to Meta and sent by Meta's id. Photos over 5 MB and videos over 16 MB go as documents, as WhatsApp asks.
+   */
+  async sendMediaTo(phone: string, file: Buffer, mime: string, fileName: string, captionInput: string) {
+    const s = this.settings();
+    if (!file.length) throw new BadRequestException('Choose a file');
+    if (file.length > MAX_FILE_BYTES) throw new BadRequestException(`Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB can be sent`);
+    if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Set up WhatsApp first');
+    if (this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
+    if (!this.chatWindowOpen(phone)) throw new BadRequestException('WhatsApp only allows free messages within 24 hours of their last reply. Send the template instead.');
+    const MB = 1024 * 1024;
+    const kind =
+      /^image\/(jpeg|png)$/.test(mime) && file.length <= 5 * MB
+        ? 'image'
+        : /^video\/(mp4|3gpp)$/.test(mime) && file.length <= 16 * MB
+          ? 'video'
+          : /^audio\/(aac|mp4|mpeg|amr|ogg)/.test(mime) && file.length <= 16 * MB
+            ? 'audio'
+            : 'document';
+    const name = fileName.replace(/[\\/\r\n]/g, '').trim().slice(0, 200) || `file.${extension(mime)}`;
+    const caption = captionInput.trim().slice(0, 1000);
+    const leadId = this.leadByPhone(phone)?.id ?? null;
+    const media = { mime, size: file.length, name: kind === 'document' ? name : undefined } as { id?: string; path?: string; mime: string; size: number; name?: string };
+    // Voice notes can't carry a caption, so it goes as a text after.
+    const body = (kind !== 'audio' && caption) || `[${kind}]`;
+
+    if (this.storage.ready) {
+      try {
+        media.path = await this.storage.upload(mediaPath(phone, 'out', mime, name), file, mime);
+      } catch (error) {
+        console.error('Keeping a sent WhatsApp file in Supabase failed:', (error as Error).message);
+      }
+    }
+    try {
+      const form = new FormData();
+      form.append('messaging_product', 'whatsapp');
+      form.append('type', mime);
+      form.append('file', new Blob([new Uint8Array(file)], { type: mime }), name);
+      const res = await fetch(`${API_BASE}/${s.graphVersion}/${s.phoneNumberId}/media`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${this.token()}` },
+        body: form,
+        signal: AbortSignal.timeout(120_000),
+      }).catch((error: Error) => {
+        throw new BadRequestException(`Could not reach WhatsApp: ${error.message}`);
+      });
+      const up = (await res.json().catch(() => ({}))) as { id?: string } & GraphError;
+      if (!res.ok || !up.id) throw new BadRequestException(`WhatsApp ${res.status}: ${up.error?.error_data?.details || up.error?.message || 'upload failed'}`);
+      media.id = up.id;
+      const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
+        method: 'POST',
+        body: {
+          messaging_product: 'whatsapp',
+          to: phone,
+          type: kind,
+          [kind]: { id: up.id, ...(kind !== 'audio' && caption ? { caption } : {}), ...(kind === 'document' ? { filename: name } : {}) },
+        },
+      });
+      this.record({ leadId, phone, direction: 'out', wamid: r.messages?.[0]?.id, kind, body, status: 'sent', media });
+    } catch (error) {
+      this.record({ leadId, phone, direction: 'out', kind, body, status: 'failed', error: (error as Error).message, media });
+      throw error;
+    }
+    if (kind === 'audio' && caption) await this.sendTextTo(phone, caption, leadId);
+  }
+
+  private keeping = new Map<number, number>(); // message id → when a copy was last tried
+
+  /** Copies a message's file from Meta to Supabase. Meta keeps it for about 30 days; its download link lasts 5 minutes. */
+  private async keepMedia(id: number) {
+    const last = this.keeping.get(id);
+    if (!this.storage.ready || (last && Date.now() - last < 10 * 60_000)) return;
+    this.keeping.set(id, Date.now());
+    const row = this.db.sql.prepare('SELECT phone, direction, media_id, media_mime, media_name FROM wa_messages WHERE id = ? AND media_path IS NULL').get(id) as
+      | { phone: string; direction: 'in' | 'out'; media_id: string | null; media_mime: string | null; media_name: string | null }
+      | undefined;
+    if (!row?.media_id) return;
+    try {
+      const info = await this.graph<{ url?: string; mime_type?: string; file_size?: number }>(row.media_id);
+      const mime = info.mime_type || row.media_mime || 'application/octet-stream';
+      if (info.file_size && info.file_size > MAX_FILE_BYTES) {
+        this.db.sql.prepare('UPDATE wa_messages SET media_size = ?, media_mime = ? WHERE id = ?').run(info.file_size, mime, id);
+        return;
+      }
+      if (!info.url) throw new Error('Meta gave no download link');
+      const res = await fetch(info.url, { headers: { authorization: `Bearer ${this.token()}`, 'user-agent': 'Regularhood/1.0' }, signal: AbortSignal.timeout(120_000) });
+      if (!res.ok) throw new Error(`download ${res.status}`);
+      const file = Buffer.from(await res.arrayBuffer());
+      const path = await this.storage.upload(mediaPath(row.phone, row.direction, mime, row.media_name ?? ''), file, mime);
+      this.db.sql.prepare('UPDATE wa_messages SET media_path = ?, media_mime = ?, media_size = ? WHERE id = ?').run(path, mime, file.length, id);
+      this.keeping.delete(id);
+    } catch (error) {
+      console.error(`Keeping WhatsApp file ${row.media_id} failed:`, (error as Error).message);
+    }
+  }
+
+  /**
+   * Messages for the panel, each with its file (a signed Supabase link for an hour) if it has one. Files not copied yet
+   * (Supabase wasn't set up, or the copy failed) are tried again first, while Meta still has them.
+   */
+  private async withMedia(rows: MessageRow[]) {
+    const pending = rows.filter(
+      (r) => r.media_id && !r.media_path && (r.media_size ?? 0) <= MAX_FILE_BYTES && Date.now() - Date.parse(`${r.created_at.replace(' ', 'T')}Z`) < 29 * 86_400_000,
+    );
+    if (pending.length && this.storage.ready) {
+      await Promise.allSettled(pending.slice(-6).map((r) => this.keepMedia(r.id)));
+      const get = this.db.sql.prepare('SELECT media_path, media_mime, media_size FROM wa_messages WHERE id = ?');
+      for (const r of pending) Object.assign(r, get.get(r.id));
+    }
+    const urls = await this.storage.signedUrls(rows.flatMap((r) => (r.media_path ? [r.media_path] : []))).catch((error: Error) => {
+      console.error('Signing WhatsApp file links failed:', error.message);
+      return new Map<string, string>();
+    });
+    return rows.map(({ media_id, media_path, media_mime, media_name, media_size, ...m }) => ({
+      ...m,
+      media: media_id || media_path ? { url: (media_path && urls.get(media_path)) || null, mime: media_mime, name: media_name, size: media_size } : null,
+    }));
+  }
+
   /** The lead's AI pitch (written now if there isn't one), with the sign-up link, as a free-form message. */
   async sendPitch(leadId: number, lang?: 'hinglish' | 'hindi') {
     let l = this.lead(leadId);
@@ -693,10 +824,8 @@ export class WhatsApp {
   /** One conversation, oldest first. Opening it marks the replies as seen. */
   chat(phone: string) {
     this.db.sql.prepare("UPDATE wa_messages SET seen = 1 WHERE phone = ? AND direction = 'in' AND seen = 0").run(phone);
-    return this.db.sql
-      .prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE phone = ? ORDER BY created_at DESC, id DESC LIMIT 500')
-      .all(phone)
-      .reverse();
+    const rows = this.db.sql.prepare(`SELECT ${MESSAGE_COLUMNS} FROM wa_messages WHERE phone = ? ORDER BY created_at DESC, id DESC LIMIT 500`).all(phone) as MessageRow[];
+    return this.withMedia(rows.reverse());
   }
 
   unread() {
@@ -704,7 +833,7 @@ export class WhatsApp {
   }
 
   thread(leadId: number) {
-    return this.db.sql.prepare('SELECT id, direction, kind, body, status, error, category, cost_usd, created_at FROM wa_messages WHERE lead_id = ? ORDER BY created_at, id').all(leadId);
+    return this.withMedia(this.db.sql.prepare(`SELECT ${MESSAGE_COLUMNS} FROM wa_messages WHERE lead_id = ? ORDER BY created_at, id`).all(leadId) as MessageRow[]);
   }
 
   // ---------------------------------------------------------------- webhook
@@ -762,9 +891,33 @@ export class WhatsApp {
 
         for (const m of v.messages ?? []) {
           const phone = m.from;
-          const text = m.button?.text ?? m.interactive?.button_reply?.title ?? m.text?.body ?? `[${m.type}]`;
+          const file = m.image ?? m.video ?? m.audio ?? m.document ?? m.sticker;
+          const at = m.location;
+          const text =
+            m.button?.text ??
+            m.interactive?.button_reply?.title ??
+            m.text?.body ??
+            (file?.caption?.trim() || undefined) ??
+            (at?.latitude != null
+              ? `📍 ${[at.name, at.address].filter(Boolean).join(', ') || 'Location'}\nhttps://maps.google.com/?q=${at.latitude},${at.longitude}`
+              : undefined) ??
+            (m.reaction?.emoji ? `Reacted ${m.reaction.emoji}` : undefined) ??
+            `[${m.type}]`;
           const lead = this.leadByPhone(phone);
-          this.record({ leadId: lead?.id ?? null, phone, direction: 'in', wamid: m.id, kind: m.type, body: text, status: 'received' });
+          this.record({
+            leadId: lead?.id ?? null,
+            phone,
+            direction: 'in',
+            wamid: m.id,
+            kind: m.type,
+            body: text,
+            status: 'received',
+            media: file?.id ? { id: file.id, mime: file.mime_type, name: file.filename } : undefined,
+          });
+          if (file?.id) {
+            const row = this.db.sql.prepare('SELECT id FROM wa_messages WHERE wamid = ? AND media_path IS NULL').get(m.id) as { id: number } | undefined;
+            if (row) void this.keepMedia(row.id);
+          }
           const said = text.trim();
           // STOP (or "not now") from anyone stops our messages; START lets them be messaged again.
           if (NO.test(said)) this.db.sql.prepare('INSERT OR IGNORE INTO wa_optouts (phone) VALUES (?)').run(phone);
@@ -805,11 +958,44 @@ type WebhookPayload = {
           text?: { body?: string };
           button?: { text?: string; payload?: string };
           interactive?: { button_reply?: { title?: string } };
+          image?: WebhookFile;
+          video?: WebhookFile;
+          audio?: WebhookFile;
+          document?: WebhookFile;
+          sticker?: WebhookFile;
+          location?: { latitude?: number; longitude?: number; name?: string; address?: string };
+          reaction?: { emoji?: string };
         }[];
       };
     }[];
   }[];
 };
+
+type WebhookFile = { id?: string; mime_type?: string; caption?: string; filename?: string };
+
+const MESSAGE_COLUMNS = 'id, direction, kind, body, status, error, category, cost_usd, created_at, media_id, media_path, media_mime, media_name, media_size';
+type MessageRow = {
+  id: number;
+  created_at: string;
+  media_id: string | null;
+  media_path: string | null;
+  media_mime: string | null;
+  media_name: string | null;
+  media_size: number | null;
+  [column: string]: unknown;
+};
+
+const EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/3gpp': '3gp', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/amr': 'amr', 'application/pdf': 'pdf', 'text/plain': 'txt',
+};
+const extension = (mime: string) => EXTENSIONS[mime.split(';')[0].trim()] ?? 'bin';
+
+/** whatsapp/919876543210/2026-10/in-<random>.jpg — a document keeps its own extension. */
+function mediaPath(phone: string, direction: 'in' | 'out', mime: string, name: string) {
+  const own = name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
+  return `${phone}/${new Date().toISOString().slice(0, 7)}/${direction}-${randomBytes(9).toString('base64url')}.${own ?? extension(mime)}`;
+}
 
 // ---------------------------------------------------------------- admin
 
@@ -979,6 +1165,17 @@ export class WhatsAppAdminController {
   async chatText(@Param('phone') phone: string, @Body() body: { text?: string }) {
     const p = this.digits(phone);
     await this.wa.sendTextTo(p, String(body?.text ?? ''));
+    return this.wa.chat(p);
+  }
+
+  /** A photo, video, voice note or document: the file is the raw body (main.ts), its name and caption are in the query. */
+  @Post('chats/:phone/media')
+  @HttpCode(200)
+  async chatMedia(@Param('phone') phone: string, @Req() req: Request, @Query('name') name = '', @Query('caption') caption = '') {
+    const p = this.digits(phone);
+    if (!Buffer.isBuffer(req.body)) throw new BadRequestException('Choose a file');
+    const mime = String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream';
+    await this.wa.sendMediaTo(p, req.body, mime, String(name), String(caption));
     return this.wa.chat(p);
   }
 
