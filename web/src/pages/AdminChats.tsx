@@ -122,13 +122,17 @@ export function ChatsPage({ api }: { api: AdminApi }) {
       {wa && <WhatsAppBar api={api} wa={wa} onChanged={() => (reloadWa(), load())} />}
       {data && !data.storage.ready && (
         <p className="alert alert-error small">
-          Photos and files aren’t being kept: this server has no <code>SUPABASE_URL</code> / <code>SUPABASE_SECRET_KEY</code>. Add them to deploy/.env and run{' '}
-          <code>docker compose up -d</code> in deploy/.
+          <span>
+            Photos and files aren’t being kept: this server has no <code>SUPABASE_URL</code> / <code>SUPABASE_SECRET_KEY</code>. Add them to deploy/.env and run{' '}
+            <code>docker compose up -d</code> in deploy/.
+          </span>
         </p>
       )}
       {data?.storage.ready && data.storage.lastError && (
         <p className="alert alert-error small">
-          Keeping a photo or file in Supabase failed ({when(data.storage.lastError.at.replace('T', ' ').slice(0, 19))}): {data.storage.lastError.message}
+          <span>
+            Keeping a photo or file in Supabase failed ({when(data.storage.lastError.at.replace('T', ' ').slice(0, 19))}): {data.storage.lastError.message}
+          </span>
         </p>
       )}
 
