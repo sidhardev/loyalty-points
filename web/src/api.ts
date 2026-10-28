@@ -108,26 +108,46 @@ export const daysAgo = (sqlTime: string) => Math.floor((Date.now() - parseTime(s
 
 // ---- links customers open ----
 
-export const walletUrl = (token: string) => `${location.origin}/w/${token}`;
+/** Language of the WhatsApp messages the shop sends its customers (chosen in Settings, kept on the shop's phone). */
+export type MsgLang = 'hi' | 'en' | 'ml';
+
+/** The customer's card. A Malayalam message opens it in Malayalam; otherwise the phone's language decides. */
+export const walletUrl = (token: string, lang?: MsgLang) => `${location.origin}/w/${token}${lang === 'ml' ? '?lang=ml' : ''}`;
 export const joinUrl = (code: string) => `${location.origin}/join/${code}`;
 /** Opens the shop's Google review page (our redirect, so the link stays short and the same). */
 export const reviewUrl = (code: string) => `${location.origin}/api/public/review/${code}`;
 
 /** The WhatsApp message asking a customer for a Google review. */
-export function reviewMessage(m: Merchant, lang: 'en' | 'hi' = 'hi') {
+export function reviewMessage(m: Merchant, lang: MsgLang = 'hi') {
   const url = reviewUrl(m.joinCode);
-  return lang === 'hi'
-    ? `${m.name} पर आने के लिए धन्यवाद! 🙏 आपका Google रिव्यू हमारी बहुत मदद करेगा, सिर्फ़ 30 सेकंड लगेंगे: ${url}`
-    : `Thank you for visiting ${m.name}! 🙏 A Google review helps us a lot and takes 30 seconds: ${url}`;
+  if (lang === 'hi') return `${m.name} पर आने के लिए धन्यवाद! 🙏 आपका Google रिव्यू हमारी बहुत मदद करेगा, सिर्फ़ 30 सेकंड लगेंगे: ${url}`;
+  if (lang === 'ml') return `${m.name} സന്ദർശിച്ചതിന് നന്ദി! 🙏 നിങ്ങളുടെ ഒരു Google റിവ്യൂ ഞങ്ങൾക്ക് വലിയ സഹായമാണ്, 30 സെക്കൻഡ് മതി: ${url}`;
+  return `Thank you for visiting ${m.name}! 🙏 A Google review helps us a lot and takes 30 seconds: ${url}`;
+}
+
+/** "We miss you" WhatsApp message with how close they are to the reward. */
+export function reminderMessage(m: Merchant, c: Customer, lang: MsgLang = 'hi') {
+  const left = Math.max(0, m.visitsNeeded - c.stamps);
+  const url = walletUrl(c.walletToken, lang);
+  if (lang === 'hi') {
+    const hook = left ? `बस ${left} और विज़िट, फिर ${m.rewardName}!` : `आपका ${m.rewardName} इंतज़ार कर रहा है!`;
+    return `${m.name} पर आपकी कमी महसूस हो रही है! 👋 ${hook}\nआपका कार्ड: ${url}`;
+  }
+  if (lang === 'ml') {
+    const hook = left ? `${m.rewardName} കിട്ടാൻ ഇനി ${left} സന്ദർശനം മാത്രം!` : `നിങ്ങളുടെ ${m.rewardName} കാത്തിരിക്കുന്നു!`;
+    return `${m.name}-ൽ ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു! 👋 ${hook}\nനിങ്ങളുടെ കാർഡ്: ${url}`;
+  }
+  const hook = left ? `Only ${left} more visit${left === 1 ? '' : 's'} for ${m.rewardName}!` : `Your ${m.rewardName} is waiting!`;
+  return `We miss you at ${m.name}! 👋 ${hook}\nYour card: ${url}`;
 }
 
 /** "98765 43210" for a 10-digit number; anything else as stored. */
 export const phoneLabel = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(0, 5)} ${phone.slice(5)}` : phone);
 
 /** The customer's card message the shop sends on WhatsApp after a visit (`given`: right after handing over the reward). */
-export function cardMessage(m: Merchant, c: Customer, lang: 'en' | 'hi' = 'hi', given = false) {
+export function cardMessage(m: Merchant, c: Customer, lang: MsgLang = 'hi', given = false) {
   const left = Math.max(0, m.visitsNeeded - c.stamps);
-  const url = walletUrl(c.walletToken);
+  const url = walletUrl(c.walletToken, lang);
   if (lang === 'hi') {
     if (given) return `${m.name}: आपका ${m.rewardName} 🎉 धन्यवाद! नया कार्ड शुरू — ${m.visitsNeeded} विज़िट पर फिर से।
 आपका कार्ड: ${url}`;
@@ -135,6 +155,14 @@ export function cardMessage(m: Merchant, c: Customer, lang: 'en' | 'hi' = 'hi', 
 आपका कार्ड: ${url}`;
     return `${m.name}: विज़िट ${c.stamps}/${m.visitsNeeded} ✓ बस ${left} और विज़िट, फिर ${m.rewardName}! 🎁
 आपका कार्ड: ${url}`;
+  }
+  if (lang === 'ml') {
+    if (given) return `${m.name}: നിങ്ങളുടെ ${m.rewardName} ആസ്വദിക്കൂ 🎉 നന്ദി! പുതിയ കാർഡ് തുടങ്ങി — ${m.visitsNeeded} സന്ദർശനം കഴിഞ്ഞാൽ വീണ്ടും.
+നിങ്ങളുടെ കാർഡ്: ${url}`;
+    if (c.rewardDue) return `${m.name}: നിങ്ങളുടെ സമ്മാനം തയ്യാർ — ${m.rewardName} 🎁
+നിങ്ങളുടെ കാർഡ്: ${url}`;
+    return `${m.name}: സന്ദർശനം ${c.stamps}/${m.visitsNeeded} ✓ ${m.rewardName} കിട്ടാൻ ഇനി ${left} സന്ദർശനം മാത്രം! 🎁
+നിങ്ങളുടെ കാർഡ്: ${url}`;
   }
   if (given) return `${m.name}: enjoy your ${m.rewardName} 🎉 Thank you! A new card starts — again after ${m.visitsNeeded} visits.
 Your card: ${url}`;

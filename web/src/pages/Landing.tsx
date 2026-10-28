@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { watchSections } from '../analytics';
 import { getToken } from '../api';
-import { setLang, useLang, type Lang } from '../i18n';
+import { setLang, useLang } from '../i18n';
 import { LogoMark } from '../ui';
 import '../landing.css';
 
@@ -45,12 +45,15 @@ function useFonts() {
   }, []);
 }
 
+/** The homepage is in English and Hindi only (Malayalam covers just the customer's card). */
+type Lang = 'en' | 'hi';
+
 /** The visitor's language, shared with the customer pages (i18n.tsx). English until hydrated, like the prerendered page. */
 function usePageLang(): Lang {
   const stored = useLang();
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  return ready ? stored : 'en';
+  return ready && stored === 'hi' ? 'hi' : 'en';
 }
 
 /** Scroll reveals: `.rv` elements start hidden only once JavaScript runs, and show as they come into view. Elements

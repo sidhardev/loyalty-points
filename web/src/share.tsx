@@ -389,7 +389,7 @@ function ReferralRewards({ data, merchant }: { data: ShareData; merchant: Mercha
         </p>
       )}
 
-      <a className="btn btn-whatsapp" href={waLink(ownerMessage(merchant, appLang))} target="_blank" rel="noreferrer">
+      <a className="btn btn-whatsapp" href={waLink(ownerMessage(merchant, appLang === 'hi' ? 'hi' : 'en'))} target="_blank" rel="noreferrer">
         <Store size={17} /> {t('Send your link to other shop owners')}
       </a>
     </section>

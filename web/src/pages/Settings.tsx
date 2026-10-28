@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Bell, ChevronRight, Crown, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
-import { api, download, type Merchant } from '../api';
+import { api, download, type Merchant, type MsgLang } from '../api';
 import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
 import '../poster.css';
@@ -149,7 +149,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
 
   const set = (key: 'name' | 'phone' | 'rewardName' | 'inactiveDays') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
-  const chooseLang = (l: 'hi' | 'en') => {
+  const chooseLang = (l: MsgLang) => {
     setLang(l);
     try {
       localStorage.setItem('lp_msg_lang', l);
@@ -221,6 +221,9 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
               </button>
               <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => chooseLang('en')}>
                 English
+              </button>
+              <button type="button" className={lang === 'ml' ? 'active' : ''} onClick={() => chooseLang('ml')} lang="ml">
+                മലയാളം
               </button>
             </div>
             <span className="hint">{t('Saved on this phone right away.')}</span>

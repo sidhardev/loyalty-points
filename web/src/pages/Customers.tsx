@@ -1,18 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Crown, Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
-import { api, daysAgo, num, phoneLabel, walletUrl, whatsapp, type Billing, type Customer, type Merchant } from '../api';
+import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Billing, type Customer, type Merchant } from '../api';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
+import { messageLang } from './Counter';
 
 type Filter = 'all' | 'reward' | 'inactive';
-
-/** "We miss you" WhatsApp message with how close they are to the reward. */
-function reminder(m: Merchant, c: Customer) {
-  const left = Math.max(0, m.visitsNeeded - c.stamps);
-  const hook = left ? `Only ${left} more visit${left === 1 ? '' : 's'} for ${m.rewardName}!` : `Your ${m.rewardName} is waiting!`;
-  return `We miss you at ${m.name}! 👋 ${hook}\nYour card: ${walletUrl(c.walletToken)}`;
-}
 
 const seen = (c: Customer) => {
   if (!c.lastVisit) return t('no visits yet');
@@ -101,7 +95,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          open(whatsapp(c.phone, reminder(merchant, c)), '_blank');
+                          open(whatsapp(c.phone, reminderMessage(merchant, c, messageLang())), '_blank');
                           setSent(new Set(sent).add(c.id));
                         }}
                         role="button"

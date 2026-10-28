@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, CheckCheck, Crown, Delete, Gift, MessageCircle, Star, Undo2 } from 'lucide-react';
-import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type AutoKind, type Customer, type Merchant, type VisitResult } from '../api';
+import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type AutoKind, type Customer, type Merchant, type MsgLang, type VisitResult } from '../api';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { ErrorText, confetti, toast, useAction } from '../ui';
@@ -11,9 +11,10 @@ import { ErrorText, confetti, toast, useAction } from '../ui';
 /** Seconds a plain visit stays on screen before the keypad comes back. */
 const BACK_AFTER = 8;
 
-export const messageLang = (): 'hi' | 'en' => {
+export const messageLang = (): MsgLang => {
   try {
-    return localStorage.getItem('lp_msg_lang') === 'en' ? 'en' : 'hi';
+    const saved = localStorage.getItem('lp_msg_lang');
+    return saved === 'en' || saved === 'ml' ? saved : 'hi';
   } catch {
     return 'hi';
   }

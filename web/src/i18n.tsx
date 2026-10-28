@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 // English / Hindi for the customer's card and the shop's own screens (switched with LangToggle, remembered per phone).
 // Texts are looked up by their English wording; {name}-style placeholders are filled in after translating.
 
-export type Lang = 'en' | 'hi';
+export type Lang = 'en' | 'hi' | 'ml';
 
 const HI: Record<string, string> = {
   // member card and wallet
@@ -358,13 +358,69 @@ const HI: Record<string, string> = {
   'Not now': 'अभी नहीं',
 };
 
+// Malayalam for the customer's card pages only (shops in Kerala send their card messages in Malayalam).
+// The shop's own screens have no Malayalam yet and stay in English.
+const ML: Record<string, string> = {
+  // member card and wallet
+  'Add your card to your home screen': 'നിങ്ങളുടെ കാർഡ് ഹോം സ്ക്രീനിൽ ചേർക്കൂ',
+  History: 'ചരിത്രം',
+  "This link doesn't work": 'ഈ ലിങ്ക് പ്രവർത്തിക്കുന്നില്ല',
+
+  // stamp card
+  '{shop} · My card': '{shop} · എന്റെ കാർഡ്',
+  'Every {n} visits → {reward}': 'ഓരോ {n} സന്ദർശനത്തിനും → {reward}',
+  'Your {reward} is ready! 🎁': 'നിങ്ങളുടെ {reward} തയ്യാർ! 🎁',
+  '1 more visit for {reward}': '{reward} കിട്ടാൻ ഇനി 1 സന്ദർശനം മാത്രം',
+  '{n} more visits for {reward}': '{reward} കിട്ടാൻ ഇനി {n} സന്ദർശനം മാത്രം',
+  'Get it on your next visit — just tell your phone number.': 'അടുത്ത തവണ വരുമ്പോൾ വാങ്ങൂ — ഫോൺ നമ്പർ പറഞ്ഞാൽ മതി.',
+  'Visit {x} of {n}': 'സന്ദർശനം {x} / {n}',
+  'Just tell your phone number at the counter': 'കൗണ്ടറിൽ ഫോൺ നമ്പർ പറഞ്ഞാൽ മതി',
+  'One visit a day counts. No app, no sign-up.': 'ദിവസം ഒരു സന്ദർശനം കണക്കാക്കും. ആപ്പ് വേണ്ട, സൈൻ-അപ്പ് വേണ്ട.',
+  'The shop sends your card on WhatsApp. No app, no sign-up.': 'കട നിങ്ങളുടെ കാർഡ് WhatsApp-ൽ അയയ്ക്കും. ആപ്പ് വേണ്ട, സൈൻ-അപ്പ് വേണ്ട.',
+  'There is nothing to scan or log in to any more. The shop adds your visit and sends your card on WhatsApp.':
+    'ഇനി ഒന്നും സ്കാൻ ചെയ്യുകയോ ലോഗിൻ ചെയ്യുകയോ വേണ്ട. കട നിങ്ങളുടെ സന്ദർശനം ചേർത്ത് കാർഡ് WhatsApp-ൽ അയയ്ക്കും.',
+  'See your visits in one tap.': 'ഒറ്റ ടാപ്പിൽ നിങ്ങളുടെ സന്ദർശനങ്ങൾ കാണൂ.',
+  'Ask the shop to send your card again on WhatsApp.': 'നിങ്ങളുടെ കാർഡ് വീണ്ടും WhatsApp-ൽ അയയ്ക്കാൻ കടയോട് പറയൂ.',
+  'This QR code is not valid': 'ഈ QR കോഡ് ശരിയല്ല',
+  Visit: 'സന്ദർശനം',
+  'Got {reward}': '{reward} കിട്ടി',
+  'No visits yet.': 'ഇതുവരെ സന്ദർശനങ്ങളില്ല.',
+  'Liked {shop}? Rate it on Google': '{shop} ഇഷ്ടപ്പെട്ടോ? Google-ൽ റിവ്യൂ ചെയ്യൂ',
+
+  // footer
+  'Rewards by Regularhood': 'Regularhood വഴി സമ്മാനങ്ങൾ',
+  'Run a shop? Get it free': 'കടയുണ്ടോ? സൗജന്യമായി നേടൂ',
+
+  // install
+  'Install the app': 'ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യൂ',
+  'Tap the {icon} Share button in the browser bar.': 'ബ്രൗസർ ബാറിലെ {icon} Share ബട്ടൺ ടാപ്പ് ചെയ്യൂ.',
+  'Scroll down and tap Add to Home Screen.': 'താഴേക്ക് സ്ക്രോൾ ചെയ്ത് “Add to Home Screen” ടാപ്പ് ചെയ്യൂ.',
+  'Tap Add.': '“Add” ടാപ്പ് ചെയ്യൂ.',
+  'Tap the {icon} menu at the top right of the browser.': 'ബ്രൗസറിന്റെ മുകളിൽ വലതുവശത്തുള്ള {icon} മെനു ടാപ്പ് ചെയ്യൂ.',
+  'Tap Install app or Add to Home screen.': '“Install app” അല്ലെങ്കിൽ “Add to Home screen” ടാപ്പ് ചെയ്യൂ.',
+  'Tap Install.': '“Install” ടാപ്പ് ചെയ്യൂ.',
+  'Click the {icon} install icon at the right end of the address bar.': 'അഡ്രസ് ബാറിന്റെ വലത്തേ അറ്റത്തുള്ള {icon} ഇൻസ്റ്റാൾ ഐക്കൺ ക്ലിക്ക് ചെയ്യൂ.',
+  'Or open the browser menu and choose Install.': 'അല്ലെങ്കിൽ ബ്രൗസർ മെനു തുറന്ന് “Install” തിരഞ്ഞെടുക്കൂ.',
+  'It then opens from your home screen like any other app.': 'പിന്നെ മറ്റേതൊരു ആപ്പിനെയും പോലെ ഹോം സ്ക്രീനിൽ നിന്ന് തുറക്കാം.',
+  'Got it': 'ശരി',
+  Install: 'ഇൻസ്റ്റാൾ',
+  'Not now': 'ഇപ്പോൾ വേണ്ട',
+};
+
+const DICT: Record<Lang, Record<string, string> | null> = { en: null, hi: HI, ml: ML };
+
 const KEY = 'lp_lang';
 const CHANGED = 'lp-lang-changed';
 
+const isLang = (l: string | null): l is Lang => l === 'en' || l === 'hi' || l === 'ml';
+
 function initial(): Lang {
   try {
+    // A card link from a Malayalam message carries ?lang=ml. Not saved: only the card pages have Malayalam.
+    const fromLink = new URLSearchParams(location.search).get('lang');
+    if (isLang(fromLink)) return fromLink;
     const saved = localStorage.getItem(KEY);
-    if (saved === 'en' || saved === 'hi') return saved;
+    if (isLang(saved)) return saved;
   } catch {
     // Fall back to the phone's language.
   }
@@ -393,7 +449,7 @@ export function setLang(lang: Lang) {
 
 /** Translates with the current language. Pages re-render on a change through useLang(). */
 export function t(text: string, vars: Record<string, string | number> = {}) {
-  const template = (enabled && current === 'hi' && HI[text]) || text;
+  const template = (enabled && DICT[current]?.[text]) || text;
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
@@ -419,7 +475,7 @@ export function withIcon(text: string, icon: ReactNode) {
   );
 }
 
-/** EN / हिं switch shown on customer pages. */
+/** EN / हिं switch shown on customer pages, plus മ once a Malayalam card link set the language. */
 export function LangToggle() {
   const lang = useLang();
   return (
@@ -430,6 +486,11 @@ export function LangToggle() {
       <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi">
         हिं
       </button>
+      {lang === 'ml' && (
+        <button className={lang === 'ml' ? 'active' : ''} onClick={() => setLang('ml')} aria-pressed={lang === 'ml'} lang="ml">
+          മ
+        </button>
+      )}
     </div>
   );
 }
