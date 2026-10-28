@@ -1,10 +1,10 @@
-// Privacy policy (/privacy), terms of service (/terms) and the refund policy (/refunds). Plain English, and only what the code really does: if a
+// Privacy policy (/privacy), terms of service (/terms), the refund policy (/refunds), delivery (/shipping) and contact (/contact). Plain English, and only what the code really does: if a
 // feature starts collecting or sharing something new, update these pages (and UPDATED) in the same change.
 
 import type { GuideBlock } from './guides';
 
 export type LegalDoc = {
-  slug: 'privacy' | 'terms' | 'refunds';
+  slug: 'privacy' | 'terms' | 'refunds' | 'shipping' | 'contact';
   name: string;
   title: string;
   description: string;
@@ -16,6 +16,9 @@ export type LegalDoc = {
 
 /** Where privacy requests, grievances and questions go. */
 export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'devsidharr@gmail.com';
+/** Shown on /contact (payment providers ask for a phone number and an address). */
+const CONTACT_PHONE = process.env.CONTACT_PHONE || '+91 78500 18347';
+const CONTACT_ADDRESS = process.env.CONTACT_ADDRESS || '3, 30 PS, RSNR, SGNR';
 
 const UPDATED = '2026-10-26';
 
@@ -312,4 +315,76 @@ const refunds: LegalDoc = {
   ],
 };
 
-export const LEGAL = { privacy, terms, refunds };
+const shipping: LegalDoc = {
+  slug: 'shipping',
+  name: 'Shipping and delivery',
+  title: 'Shipping and Delivery Policy · Regularhood',
+  description: 'Regularhood is software delivered online: nothing is shipped, and a paid Founding Shop plan switches on as soon as the payment goes through.',
+  h1: 'Shipping and delivery policy',
+  intro:
+    'Regularhood is a software service used in a web browser. We don’t sell or ship physical goods, so there are no shipping charges and no delivery address is needed.',
+  updated: UPDATED,
+  blocks: [
+    {
+      h2: 'How the Founding Shop plan is delivered',
+      list: [
+        'The plan switches on in your shop account as soon as Razorpay confirms the payment, usually within a few seconds. The Plan page then shows your Founding Shop number.',
+        'A lifetime plan has no end date. A yearly plan runs for one year from the day you pay (or from the end of your current year, if you renew early).',
+        'There is nothing to download or install: you keep using Regularhood at regularhood.in on the same phone or computer.',
+      ],
+    },
+    {
+      h2: 'If the plan doesn’t switch on',
+      p: [
+        `If money left your account but the Plan page still shows the Free plan after 30 minutes, write to ${CONTACT_EMAIL} with your shop name and the payment ID from Razorpay’s message. We switch the plan on, or refund the payment in full, within 2 working days.`,
+      ],
+    },
+    {
+      h2: 'Posters and QR codes',
+      p: ['Posters and QR codes for your counter are files you download and print yourself. We don’t print or post them.'],
+    },
+    {
+      h2: 'Contact',
+      p: [`Questions about a payment or your plan: ${CONTACT_EMAIL}.`],
+    },
+  ],
+};
+
+const contact: LegalDoc = {
+  slug: 'contact',
+  name: 'Contact us',
+  title: 'Contact Us · Regularhood',
+  description: 'How to reach Regularhood for help with your shop account, payments, refunds, privacy requests and complaints.',
+  h1: 'Contact us',
+  intro: 'Regularhood is a digital stamp card for small shops in India. We’re a small team and read every message ourselves.',
+  updated: UPDATED,
+  blocks: [
+    {
+      h2: 'Get in touch',
+      list: [
+        `Email: ${CONTACT_EMAIL}`,
+        ...(CONTACT_PHONE ? [`Phone / WhatsApp: ${CONTACT_PHONE}`] : []),
+        ...(CONTACT_ADDRESS ? [`Address: ${CONTACT_ADDRESS}`] : []),
+        'We reply within 1 working day, Monday to Saturday, 10 am to 7 pm IST.',
+      ],
+    },
+    {
+      h2: 'What to include',
+      list: [
+        'Your shop name and the WhatsApp number or email you log in with.',
+        'For a payment: the Razorpay payment ID from your payment message.',
+        'For a customer’s information: the customer’s phone number and what you want changed or deleted.',
+      ],
+    },
+    {
+      h2: 'Payments and refunds',
+      p: ['Founding Shop payments can be refunded in full within 7 days. See the refund policy (/refunds) and the shipping and delivery policy (/shipping).'],
+    },
+    {
+      h2: 'Grievances',
+      p: [`Complaints about privacy or the service: write to ${CONTACT_EMAIL}. We acknowledge them within 24 hours and resolve them within 15 days.`],
+    },
+  ],
+};
+
+export const LEGAL = { privacy, terms, refunds, shipping, contact };

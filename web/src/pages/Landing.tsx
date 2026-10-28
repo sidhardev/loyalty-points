@@ -293,7 +293,7 @@ const COPY = {
     faqTitle: 'Asked at the counter.',
     finalTitle: 'Your next regular walks in today.',
     finalSub: 'Set up takes one minute. Their first stamp can land today.',
-    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', cities: 'Shops by city', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', tag: 'From first visit to “the usual”.' },
+    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', cities: 'Shops by city', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', shipping: 'Delivery', contact: 'Contact', tag: 'From first visit to “the usual”.' },
   },
   hi: {
     login: 'लॉग इन',
@@ -430,7 +430,7 @@ const COPY = {
     faqTitle: 'काउंटर पर पूछे गए सवाल।',
     finalTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
     finalSub: 'सेटअप में एक मिनट। पहला स्टैम्प आज ही लग सकता है।',
-    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
+    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', shipping: 'डिलीवरी', contact: 'संपर्क', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
   },
 };
 
@@ -1487,6 +1487,12 @@ export function Landing() {
                 </a>
                 <a href="/refunds" data-track="footer: Refunds">
                   {c.footer.refunds}
+                </a>
+                <a href="/shipping" data-track="footer: Delivery">
+                  {c.footer.shipping}
+                </a>
+                <a href="/contact" data-track="footer: Contact">
+                  {c.footer.contact}
                 </a>
               </nav>
               <small>{c.footer.tag}</small>

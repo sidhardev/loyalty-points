@@ -79,6 +79,8 @@ const T = {
     footPrivacy: 'Privacy',
     footTerms: 'Terms',
     footRefunds: 'Refunds',
+    footShipping: 'Delivery',
+    footContact: 'Contact',
   },
   hi: {
     home: 'होम',
@@ -123,6 +125,8 @@ const T = {
     footPrivacy: 'प्राइवेसी',
     footTerms: 'शर्तें',
     footRefunds: 'रिफ़ंड',
+    footShipping: 'डिलीवरी',
+    footContact: 'संपर्क',
   },
 };
 
@@ -268,6 +272,8 @@ ${o.body}
   ['/privacy', t.footPrivacy],
   ['/terms', t.footTerms],
   ['/refunds', t.footRefunds],
+  ['/shipping', t.footShipping],
+  ['/contact', t.footContact],
 ]
   .map(([href, text]) => `<a href="${href}">${text}</a>`)
   .join(' · ')}</span></div></footer>
@@ -458,7 +464,7 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
       urls.push(gUrl(guidePath(lang, g.slug), g.updated, twins.length > 1 ? twins.map((l) => ({ lang: l, path: guidePath(l, g.slug) })) : []));
     }
   }
-  urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated));
+  urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated), url('/shipping', LEGAL.shipping.updated), url('/contact', LEGAL.contact.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
 
@@ -553,7 +559,7 @@ export function renderGuideHub(site: string, lang: SeoLang, guides: Guide[], has
   return shell({ lang, site, path: here, title: `${t.guidesTitle} · Regularhood`, description: t.guidesIntro, alternates, body, noindex: !guides.length });
 }
 
-/** /privacy, /terms and /refunds (English only; the text is in legal.ts). */
+/** /privacy, /terms, /refunds, /shipping and /contact (English only; the text is in legal.ts). */
 export function renderLegal(site: string, doc: LegalDoc, other: LegalDoc) {
   const here = `/${doc.slug}`;
   const body = `<main>

@@ -30,6 +30,8 @@
     { "source": "/privacy", "destination": "https://api-habiturn.sidhar.me/privacy" },
     { "source": "/terms", "destination": "https://api-habiturn.sidhar.me/terms" },
     { "source": "/refunds", "destination": "https://api-habiturn.sidhar.me/refunds" },
+    { "source": "/shipping", "destination": "https://api-habiturn.sidhar.me/shipping" },
+    { "source": "/contact", "destination": "https://api-habiturn.sidhar.me/contact" },
     { "source": "/((?!\\.well-known/).*)", "destination": "/shell.html" }
   ],
   "headers": [
