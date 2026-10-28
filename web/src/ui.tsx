@@ -296,7 +296,8 @@ export function ConfirmHost() {
 
 // ---------------------------------------------------------------- sheet (bottom sheet on phones, dialog on desktop)
 
-export function Sheet({ title, onClose, children, wide }: { title: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean }) {
+/** Without a title, only a close button sits in the corner, for sheets that lay out their own heading. */
+export function Sheet({ title, onClose, children, wide, className }: { title?: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean; className?: string }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     addEventListener('keydown', onKey);
@@ -309,14 +310,20 @@ export function Sheet({ title, onClose, children, wide }: { title: ReactNode; on
   }, [onClose]);
   return (
     <div className="overlay" onClick={onClose}>
-      <div className={`sheet${wide ? ' sheet-wide' : ''}`} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet${wide ? ' sheet-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <span className="sheet-grip" aria-hidden />
-        <div className="sheet-head">
-          <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+        {title ? (
+          <div className="sheet-head">
+            <h2>{title}</h2>
+            <button className="icon-btn" onClick={onClose} aria-label="Close">
+              <X size={20} />
+            </button>
+          </div>
+        ) : (
+          <button className="icon-btn sheet-close" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
-        </div>
+        )}
         {children}
       </div>
     </div>

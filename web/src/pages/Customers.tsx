@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Crown, Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
-import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Billing, type Customer, type Merchant } from '../api';
+import { Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
+import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Customer, type Merchant } from '../api';
+import { LimitStrip, refreshBilling } from '../billing';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
@@ -21,9 +22,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
   const [list, setList] = useState<Customer[] | null>(null);
   const [sent, setSent] = useState<Set<number>>(new Set());
   const version = useDataVersion();
-  const [billing, setBilling] = useState<Billing | null>(null);
-  useEffect(() => void api<Billing>('billing').then(setBilling, () => {}), [version]);
-  const nearLimit = billing?.limit != null && billing.customers >= billing.limit - 10;
+  useEffect(() => void refreshBilling().catch(() => {}), [version]);
 
   const load = useCallback(() => {
     const timer = setTimeout(
@@ -49,14 +48,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
         </div>
       </header>
 
-      {nearLimit && billing?.limit != null && (
-        <a className={`alert ${billing.customers >= billing.limit ? 'alert-error' : 'alert-ok'}`} href="#/plan">
-          <Crown size={16} />{' '}
-          {billing.customers >= billing.limit
-            ? t('{n} of {limit} customers: new numbers can’t be added on the Free plan. Become a Founding Shop →', { n: num(billing.customers), limit: num(billing.limit) })
-            : t('{n} of {limit} customers on the Free plan. See Founding Shop →', { n: num(billing.customers), limit: num(billing.limit) })}
-        </a>
-      )}
+      <LimitStrip meter />
 
       <div className="chips" role="tablist">
         {chips.map(({ id, label, icon: Icon }) => (

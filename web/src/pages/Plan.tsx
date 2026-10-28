@@ -1,31 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BellRing, Check, Crown, Infinity as InfinityIcon, Lock, MessageCircle, RotateCcw, ShieldCheck, Star, Users, X } from 'lucide-react';
-import { api, num, parseTime, type Billing, type Merchant } from '../api';
+import { api, num, parseTime, type Merchant } from '../api';
+import { payFounding, price, refreshBilling, useBilling } from '../billing';
 import { t, useLang } from '../i18n';
-import { ErrorText, Skeleton, confetti, toast, useAction } from '../ui';
+import { ErrorText, Skeleton, useAction } from '../ui';
 
 // The shop's plan: Free (a customer limit) or Founding Shop, bought once for life or for a year through Razorpay's
 // checkout. Founding Shop has no customer limit, sends customers WhatsApp messages by itself and asks for Google
 // reviews. Only the first few shops can be Founding Shops; the page says how many places are left.
 
 type Kind = 'lifetime' | 'yearly';
-type Order = { orderId: string; amount: number; keyId: string; shop: string; phone: string; email: string };
-type CheckoutAnswer = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
-type RazorpayCheckout = new (options: object) => { open: () => void; on: (event: string, fn: (r: { error?: { description?: string } }) => void) => void };
 
-/** Razorpay's checkout script, loaded the first time someone pays. */
-function loadCheckout() {
-  const w = window as unknown as { Razorpay?: RazorpayCheckout };
-  if (w.Razorpay) return Promise.resolve(w.Razorpay);
-  return new Promise<RazorpayCheckout>((resolve, reject) => {
-    const s = Object.assign(document.createElement('script'), { src: 'https://checkout.razorpay.com/v1/checkout.js', async: true });
-    s.onload = () => (w.Razorpay ? resolve(w.Razorpay) : reject(new Error('Could not open the payment page')));
-    s.onerror = () => reject(new Error('Could not open the payment page. Check your internet and try again.'));
-    document.head.appendChild(s);
-  });
-}
-
-const price = (paise: number) => `₹${num(paise / 100)}`;
 const date = (sqlTime: string) => parseTime(sqlTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** What Founding Shop adds, in the order a shop owner cares about. */
@@ -49,60 +34,15 @@ const COMPARE: [string, boolean | string, boolean | string][] = [
 
 export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant: (m: Merchant) => void }) {
   useLang();
-  const [b, setB] = useState<Billing | null>(null);
+  const b = useBilling();
   const [kind, setKind] = useState<Kind>('lifetime');
   const { busy, error, setError, run } = useAction();
-  const load = useCallback(() => void api<Billing>('billing').then(setB, (e: Error) => setError(e.message)), [setError]);
-  useEffect(load, [load]);
-
-  const activated = (next: Billing) => {
-    setB(next);
-    void api<Merchant>('me').then(onMerchant); // the counter and Settings switch to the Founding Shop extras
-  };
+  useEffect(() => void refreshBilling().catch((e: Error) => setError(e.message)), [setError]);
 
   const buy = () =>
-    void run(async () => {
-      const [Razorpay, order] = await Promise.all([loadCheckout(), api<Order>('billing/order', 'POST', { kind })]);
-      await new Promise<void>((resolve, reject) => {
-        const checkout = new Razorpay({
-          key: order.keyId,
-          order_id: order.orderId,
-          amount: order.amount,
-          currency: 'INR',
-          name: 'Regularhood',
-          description: kind === 'lifetime' ? 'Founding Shop · lifetime' : 'Founding Shop · 1 year',
-          prefill: { name: order.shop, contact: order.phone, email: order.email },
-          notes: { shop: order.shop },
-          theme: { color: '#047857' },
-          handler: (r: CheckoutAnswer) =>
-            void api<Billing>('billing/verify', 'POST', { orderId: r.razorpay_order_id, paymentId: r.razorpay_payment_id, signature: r.razorpay_signature }).then(
-              (next) => {
-                activated(next);
-                confetti();
-                toast(t('Welcome, Founding Shop #{n}!', { n: next.foundingNo ?? '' }));
-                resolve();
-              },
-              // Paid, but our check failed: Razorpay's webhook will still switch the plan on.
-              () => {
-                toast(t('Payment received. Your plan will switch on in a few minutes.'));
-                setTimeout(() => void api<Billing>('billing').then(activated), 5000);
-                resolve();
-              },
-            ),
-          modal: {
-            ondismiss: () => {
-              void api('billing/checkout-event', 'POST', { orderId: order.orderId, event: 'closed' }).catch(() => {});
-              resolve();
-            },
-          },
-        });
-        checkout.on('payment.failed', (r) => {
-          void api('billing/checkout-event', 'POST', { orderId: order.orderId, event: 'failed', reason: r.error?.description ?? '' }).catch(() => {});
-          reject(new Error(r.error?.description || 'Payment failed'));
-        });
-        checkout.open();
-      });
-    });
+    void run(() =>
+      payFounding(kind, () => void api<Merchant>('me').then(onMerchant)), // the counter and Settings switch to the Founding Shop extras
+    );
 
   if (!b) {
     return (

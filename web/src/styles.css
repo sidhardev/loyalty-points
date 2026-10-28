@@ -4608,6 +4608,265 @@ circle.trend-views {
   background: linear-gradient(90deg, var(--gold), #d97706);
 }
 
+/* the Free plan's limit, on every screen: grey while there's room, amber from 40, red when full; tapping opens the plan */
+
+.limit-bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.limit-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-fill);
+  transition: width 0.4s ease;
+}
+
+.is-warn .limit-bar span {
+  background: #d97706;
+}
+
+.is-full .limit-bar span {
+  background: var(--bad);
+}
+
+.limit-pill,
+.limit-card,
+.limit-strip,
+.limit-after {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.limit-pill {
+  display: grid;
+  flex: none;
+  gap: 4px;
+  min-width: 58px;
+  margin-right: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.limit-pill.is-warn,
+.limit-card.is-warn,
+.limit-strip.is-warn {
+  border-color: #f3c46b;
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.limit-pill.is-full,
+.limit-card.is-full,
+.limit-strip.is-full {
+  border-color: color-mix(in srgb, var(--bad) 38%, transparent);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+/* on small phones the limit pill needs the room, so Install shows only its icon */
+@media (max-width: 420px) {
+  .topbar-install span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap; /* still read out by screen readers */
+  }
+}
+
+.founding-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  margin-right: 4px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.limit-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 14px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.limit-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.limit-card-top b {
+  color: var(--ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.limit-card .limit-bar,
+.limit-strip .limit-bar {
+  height: 6px;
+}
+
+.limit-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--brand-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.is-full .limit-go {
+  color: var(--bad);
+}
+
+.limit-strip {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.limit-strip-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.limit-strip-text {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.limit-after {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* the Founding Shop sheet: what you get, two prices, one button */
+
+.sheet.plan-sheet {
+  position: relative;
+  gap: 14px;
+}
+
+.sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.plan-sheet-hero {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.plan-sheet-hero .plan-crown {
+  width: 52px;
+  height: 52px;
+}
+
+.plan-sheet-hero h2 {
+  font-size: 22px;
+}
+
+.plan-sheet-hero p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.plan-sheet-perks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  list-style: none;
+}
+
+.plan-sheet-perks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.plan-sheet-perks svg {
+  flex: none;
+  color: var(--brand-ink);
+}
+
+.plan-sheet-seats {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.plan-sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.plan-sheet-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.plan-sheet-more {
+  justify-self: center;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
 /* where the shop stands */
 
 .plan-now {

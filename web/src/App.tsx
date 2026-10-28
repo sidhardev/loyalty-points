@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Download, LogOut, Settings as SettingsIcon, Stamp, Users } from 'lucide-react';
 import { api, getToken, LOGGED_OUT, setToken, type Merchant } from './api';
 import { enableTranslation, LangToggle, t, useLang } from './i18n';
+import { clearBilling, LimitCard, LimitPill, PlanHost, refreshBilling } from './billing';
 import { AdminApp } from './pages/Admin';
 import { AuthPage, ResetPassword } from './pages/Auth';
 import { CustomerPage } from './pages/CustomerPage';
@@ -41,9 +42,10 @@ const NAV = [
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-function Shell({ merchant, onLogout, children }: { merchant: Merchant; onLogout: () => void; children: ReactNode }) {
+function Shell({ merchant, onMerchant, onLogout, children }: { merchant: Merchant; onMerchant: (m: Merchant) => void; onLogout: () => void; children: ReactNode }) {
   useLang(); // the nav follows the chosen language
   const hash = useHash();
+  useEffect(() => void refreshBilling().catch(() => {}), [merchant.id]); // the plan and customer limit, shown on every screen
   const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
 
   return (
@@ -57,6 +59,7 @@ function Shell({ merchant, onLogout, children }: { merchant: Merchant; onLogout:
             <Icon size={19} /> {t(label)}
           </a>
         ))}
+        <LimitCard />
         <div className="side-foot">
           <LangToggle />
           <InstallButton className="side-link">
@@ -78,8 +81,9 @@ function Shell({ merchant, onLogout, children }: { merchant: Merchant; onLogout:
         <a href="#/" className="brand">
           <Logo /> <span>{merchant.name}</span>
         </a>
-        <InstallButton className="btn btn-soft btn-sm">
-          <Download size={16} /> {t('Install')}
+        <LimitPill />
+        <InstallButton className="btn btn-soft btn-sm topbar-install">
+          <Download size={16} /> <span>{t('Install')}</span>
         </InstallButton>
         <LangToggle />
       </header>
@@ -95,6 +99,7 @@ function Shell({ merchant, onLogout, children }: { merchant: Merchant; onLogout:
           </a>
         ))}
       </nav>
+      <PlanHost onMerchant={onMerchant} />
     </div>
   );
 }
@@ -117,6 +122,7 @@ function ShopApp() {
   const logout = () => {
     setToken(null);
     setMerchant(null);
+    clearBilling();
     location.hash = '/';
   };
 
@@ -130,7 +136,7 @@ function ShopApp() {
   else page = <Counter merchant={merchant} onSaved={setMerchant} />;
 
   return (
-    <Shell merchant={merchant} onLogout={logout}>
+    <Shell merchant={merchant} onMerchant={setMerchant} onLogout={logout}>
       {page}
     </Shell>
   );
