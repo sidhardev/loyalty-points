@@ -1,12 +1,31 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { AlertTriangle, BadgeIndianRupee, CalendarPlus, Crown, MessageCircle, RotateCcw, Settings2, Store, TrendingUp, Users } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  BadgeIndianRupee,
+  CalendarClock,
+  CalendarPlus,
+  Crown,
+  Filter,
+  History,
+  MessageCircle,
+  RefreshCw,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+  Store,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { num, parseTime, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, Skeleton, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
 
 // Admin → Plans: everything about Free and Founding Shop in one place. The offer (on sale or not, places, prices, the
 // Free plan's customer limit, grace days), the money, every Founding Shop with its state, every payment with a refund
-// button (through Razorpay), and Free shops close to their limit with a WhatsApp nudge.
+// button (through Razorpay), and Free shops close to their limit with a WhatsApp nudge. Below that, watching the payments:
+// whether Razorpay is live and its webhooks arrive, how checkouts end, yearly plans due for renewal, each payment's story
+// and a "check with Razorpay" for one that didn't switch the plan on.
 
 type Settings = { salesOpen: boolean; seats: number; lifetimePaise: number; yearlyPaise: number; freeCustomers: number; graceDays: number };
 type FoundingShop = {
@@ -27,7 +46,9 @@ type Payment = {
   name: string;
   kind: 'lifetime' | 'yearly';
   amount_paise: number;
-  status: 'created' | 'paid' | 'refunded';
+  status: 'created' | 'paid' | 'failed' | 'refunded';
+  phone: string | null;
+  failure_reason: string | null;
   razorpay_order_id: string;
   razorpay_payment_id: string | null;
   razorpay_refund_id: string | null;
@@ -38,12 +59,17 @@ type Payment = {
 type Overview = {
   settings: Settings;
   seats: { total: number; left: number; taken: number };
-  money: { paid: number; month: number; refunded: number; abandoned: number };
+  money: { paid: number; month: number; refunded: number; abandoned: number; failed: number };
   founding: FoundingShop[];
   payments: Payment[];
   nearLimit: { id: number; name: string; phone: string | null; customers: number }[];
   razorpay: { keyId: string; test: boolean; webhook: boolean };
+  health: { lastWebhook: string | null; webhooks: number; rejected: number; verifyFailed: number; mismatched: number };
+  funnel: { started: number; paid: number; failed: number; closed: number; shops: number };
+  events: PayEvent[];
 };
+type PayEvent = { id: number; created_at: string; event: string; detail: string; paymentId?: number | null; shopId?: number | null; name?: string | null };
+type SyncAnswer = { result: { attempts?: number; captured?: boolean; authorized?: boolean; checked?: number; fixed?: number }; overview: Overview };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const STATE: Record<FoundingShop['state'], { label: string; tone: string }> = {
@@ -56,7 +82,22 @@ const PAY_STATUS: Record<Payment['status'], { label: string; tone: string }> = {
   paid: { label: 'Paid', tone: 'ok' },
   refunded: { label: 'Refunded', tone: 'none' },
   created: { label: 'Not paid', tone: 'wait' },
+  failed: { label: 'Failed', tone: 'bad' },
 };
+const EVENT: Record<string, { label: string; tone: string }> = {
+  order: { label: 'Checkout opened', tone: 'none' },
+  closed: { label: 'Closed without paying', tone: 'wait' },
+  failed: { label: 'Payment failed', tone: 'bad' },
+  verified: { label: 'Checkout confirmed', tone: 'ok' },
+  verify_failed: { label: 'Checkout answer rejected', tone: 'bad' },
+  webhook: { label: 'Razorpay webhook', tone: 'none' },
+  webhook_rejected: { label: 'Webhook rejected', tone: 'bad' },
+  amount_mismatch: { label: 'Wrong amount', tone: 'bad' },
+  activated: { label: 'Plan switched on', tone: 'ok' },
+  refunded: { label: 'Refunded', tone: 'none' },
+  synced: { label: 'Checked with Razorpay', tone: 'none' },
+};
+const eventLabel = (e: string) => EVENT[e] ?? { label: e, tone: 'none' };
 const day = (sqlTime: string) => parseTime(sqlTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const daysLeft = (sqlTime: string) => Math.ceil((Date.parse(`${sqlTime.replace(' ', 'T')}Z`) - Date.now()) / 86_400_000);
 
@@ -146,6 +187,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
   const [filter, setFilter] = useState<'all' | Payment['status']>('paid');
   const [refunding, setRefunding] = useState<Payment | null>(null);
   const [toFree, setToFree] = useState(true);
+  const [story, setStory] = useState<{ payment: Payment; events: PayEvent[] | null } | null>(null);
   const { busy, error, setError, run } = useAction();
   const load = useCallback(() => void api<Overview>('plans').then(setData, (e: Error) => setError(e.message)), [api, setError]);
   useEffect(load, [load]);
@@ -177,6 +219,57 @@ export function PlansPage({ api }: { api: AdminApi }) {
       toast(`Refunded ${inr(refunding.amount_paise)} to ${refunding.name}`);
       setRefunding(null);
     });
+
+  const sync = (p?: Payment) =>
+    void run(async () => {
+      const r = await api<SyncAnswer>(p ? `plans/payments/${p.id}/sync` : 'plans/sync', 'POST');
+      setData(r.overview);
+      if (p) {
+        toast(
+          r.result.captured
+            ? `${p.name} had paid: plan switched on`
+            : r.result.authorized
+              ? 'Authorised but not captured yet: capture it in the Razorpay dashboard'
+              : `Not paid at Razorpay (${num(r.result.attempts ?? 0)} attempt${r.result.attempts === 1 ? '' : 's'})`,
+        );
+        if (story?.payment.id === p.id) openStory(r.overview.payments.find((x) => x.id === p.id) ?? p);
+      } else toast(r.result.checked ? `Checked ${num(r.result.checked)} unpaid payment(s): ${num(r.result.fixed ?? 0)} switched on` : 'No unpaid payments in the last 3 days');
+    });
+  const openStory = (payment: Payment) => {
+    setStory({ payment, events: null });
+    void api<PayEvent[]>(`plans/payments/${payment.id}/events`).then(
+      (events) => setStory((s) => (s?.payment.id === payment.id ? { payment, events } : s)),
+      (e: Error) => setError(e.message),
+    );
+  };
+
+  const h = data.health;
+  const f = data.funnel;
+  const live = Boolean(data.razorpay.keyId) && !data.razorpay.test;
+  const webhookAge = h.lastWebhook ? (Date.now() - parseTime(h.lastWebhook).getTime()) / 86_400_000 : null;
+  const checks: { ok: boolean | null; label: string; text: string }[] = [
+    {
+      ok: live,
+      label: 'Razorpay keys',
+      text: !data.razorpay.keyId ? 'Not set on the server' : data.razorpay.test ? `Test keys (${data.razorpay.keyId.slice(0, 13)}…): no real money` : `Live (${data.razorpay.keyId.slice(0, 13)}…)`,
+    },
+    { ok: data.razorpay.webhook, label: 'Webhook secret', text: data.razorpay.webhook ? 'Set' : 'Missing: plans only switch on while the shop’s page stays open' },
+    {
+      ok: h.lastWebhook ? true : f.paid ? false : null,
+      label: 'Last webhook',
+      text: h.lastWebhook ? `${when(h.lastWebhook)}${webhookAge !== null && webhookAge > 7 && f.started ? ' · none for a week' : ''}` : 'None yet',
+    },
+    { ok: h.rejected ? false : true, label: 'Rejected webhooks, 7 days', text: h.rejected ? `${num(h.rejected)}: is RAZORPAY_WEBHOOK_SECRET the same as in Razorpay?` : 'None' },
+    { ok: h.verifyFailed || h.mismatched ? false : true, label: 'Checks that failed, 7 days', text: h.verifyFailed || h.mismatched ? `${num(h.verifyFailed)} checkout answers, ${num(h.mismatched)} wrong amounts` : 'None' },
+  ];
+  const pct = (n: number) => (f.started ? `${Math.round((n / f.started) * 100)}%` : '–');
+  const renewals = data.founding
+    .filter((s) => s.plan === 'yearly' && s.plan_expires_at && (s.state !== 'active' || daysLeft(s.plan_expires_at) <= 30))
+    .sort((a, b) => (a.plan_expires_at ?? '').localeCompare(b.plan_expires_at ?? ''));
+  const renewNudge = (s: FoundingShop) =>
+    `Namaste! 🙏 Regularhood Founding Shop ka aapka saal ${s.plan_expires_at ? day(s.plan_expires_at) : ''} ko ${s.state === 'active' ? 'khatam ho raha hai' : 'khatam ho gaya'}. ${inr(data.settings.yearlyPaise)} mein ek saal aur: app mein Settings → Your plan → Renew. Aapke ${num(s.customers)} customers ka sab data waisa hi rahega.`;
+  const retryNudge = (p: Payment) =>
+    `Namaste! 🙏 Regularhood Founding Shop ka payment poora nahi hua${p.failure_reason ? ` (${p.failure_reason})` : ''}. Koi dikkat ho to batayiye, ya app mein Settings → Your plan se dobara try kar sakte hain.`;
 
   const lifetime = data.founding.filter((s) => s.plan === 'lifetime').length;
   const yearly = data.founding.filter((s) => s.plan === 'yearly');
@@ -235,9 +328,102 @@ export function PlansPage({ api }: { api: AdminApi }) {
             <RotateCcw size={16} /> Refunded
           </span>
           <strong>{inr(data.money.refunded)}</strong>
-          <em>{num(data.money.abandoned)} checkouts started but not paid</em>
+          <em>
+            {num(data.money.abandoned)} checkouts not paid{data.money.failed ? ` · ${num(data.money.failed)} failed` : ''}
+          </em>
         </div>
       </section>
+
+      <div className="grid-2 plans-grid">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <ShieldCheck size={18} /> Payment health
+            </h2>
+            <button className="btn btn-ghost btn-sm" disabled={busy || !data.razorpay.keyId} onClick={() => sync()} title="Ask Razorpay about every unpaid payment of the last 3 days">
+              <RefreshCw size={15} /> Check unpaid
+            </button>
+          </div>
+          <ul className="rows">
+            {checks.map((c) => (
+              <li key={c.label}>
+                <div className="row-item">
+                  <div className="row-main">
+                    <strong>{c.label}</strong>
+                    <span>{c.text}</span>
+                  </div>
+                  <span className={`cw-chip cw-chip-${c.ok === null ? 'none' : c.ok ? 'ok' : 'bad'}`}>{c.ok === null ? 'waiting' : c.ok ? 'OK' : 'Check'}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Filter size={18} /> Checkouts, last 30 days
+            </h2>
+            <span className="muted small">{num(f.shops)} shops</span>
+          </div>
+          {f.started ? (
+            <div className="plans-funnel">
+              {[
+                { label: 'Opened the checkout', n: f.started, tone: 'none' },
+                { label: 'Paid', n: f.paid, tone: 'ok' },
+                { label: 'Failed', n: f.failed, tone: 'bad' },
+                { label: 'Closed without paying', n: f.closed, tone: 'wait' },
+                { label: 'Left open', n: Math.max(0, f.started - f.paid - f.failed - f.closed), tone: 'wait' },
+              ].map((r) => (
+                <div key={r.label} className="plans-funnel-row">
+                  <span>{r.label}</span>
+                  <div className="plans-funnel-bar">
+                    <i className={`tone-${r.tone}`} style={{ width: f.started ? `${(r.n / f.started) * 100}%` : 0 }} />
+                  </div>
+                  <strong>
+                    {num(r.n)} <em>{pct(r.n)}</em>
+                  </strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted small">No shop has opened the checkout in the last 30 days.</p>
+          )}
+        </section>
+      </div>
+
+      {renewals.length > 0 && (
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <CalendarClock size={18} /> Renewals
+            </h2>
+            <span className="muted small">Yearly plans ending within 30 days, in grace or ended</span>
+          </div>
+          <ul className="rows">
+            {renewals.map((s) => (
+              <li key={s.id}>
+                <div className="row-item">
+                  <div className="row-main">
+                    <a href={`#/shops/${s.id}`}>
+                      <strong>{s.name}</strong>
+                    </a>
+                    <span>
+                      <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>{' '}
+                      {s.plan_expires_at && (daysLeft(s.plan_expires_at) >= 0 ? `ends ${day(s.plan_expires_at)} (${daysLeft(s.plan_expires_at)} days)` : `ended ${day(s.plan_expires_at)}`)} ·{' '}
+                      {num(s.customers)} customers
+                    </span>
+                  </div>
+                  {s.phone && (
+                    <a className="btn btn-soft btn-sm" href={whatsapp(s.phone, renewNudge(s))} target="_blank" rel="noreferrer">
+                      <MessageCircle size={15} /> WhatsApp
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid-2 plans-grid">
         <OfferSettings s={data.settings} onSave={save} busy={busy} />
@@ -339,7 +525,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
             <BadgeIndianRupee size={18} /> Payments
           </h2>
           <div className="seg seg-sm" role="group" aria-label="Show">
-            {(['paid', 'refunded', 'created', 'all'] as const).map((k) => (
+            {(['paid', 'failed', 'created', 'refunded', 'all'] as const).map((k) => (
               <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>
                 {k === 'all' ? 'All' : PAY_STATUS[k].label} ({num(k === 'all' ? data.payments.length : data.payments.filter((p) => p.status === k).length)})
               </button>
@@ -374,9 +560,23 @@ export function PlansPage({ api }: { api: AdminApi }) {
                     <td>
                       <span className={`cw-chip cw-chip-${PAY_STATUS[p.status].tone}`}>{PAY_STATUS[p.status].label}</span>
                       {p.refunded_at && <span className="muted small"> {when(p.refunded_at)}</span>}
+                      {p.failure_reason && <div className="muted small">{p.failure_reason}</div>}
                     </td>
                     <td className="small mono">{p.razorpay_payment_id ?? p.razorpay_order_id}</td>
-                    <td>
+                    <td className="plans-actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => openStory(p)} title="Every step of this payment">
+                        <History size={15} /> Story
+                      </button>
+                      {(p.status === 'created' || p.status === 'failed') && (
+                        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => sync(p)} title="Ask Razorpay whether this was paid">
+                          <RefreshCw size={15} /> Check
+                        </button>
+                      )}
+                      {(p.status === 'created' || p.status === 'failed') && p.phone && (
+                        <a className="btn btn-ghost btn-sm" href={whatsapp(p.phone, retryNudge(p))} target="_blank" rel="noreferrer">
+                          <MessageCircle size={15} />
+                        </a>
+                      )}
                       {p.status === 'paid' && (
                         <button className="btn btn-ghost btn-sm danger" disabled={busy} onClick={() => (setToFree(true), setRefunding(p))}>
                           <RotateCcw size={15} /> Refund
@@ -392,6 +592,70 @@ export function PlansPage({ api }: { api: AdminApi }) {
           <p className="muted small">Nothing here.</p>
         )}
       </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>
+            <Activity size={18} /> Payment activity
+          </h2>
+          <span className="muted small">The last 100 steps, newest first</span>
+        </div>
+        {data.events.length ? (
+          <ul className="rows plans-events">
+            {data.events.map((e) => (
+              <li key={e.id}>
+                <div className="row-item">
+                  <div className="row-main">
+                    <span>
+                      <span className={`cw-chip cw-chip-${eventLabel(e.event).tone}`}>{eventLabel(e.event).label}</span>{' '}
+                      {e.shopId ? (
+                        <a href={`#/shops/${e.shopId}`}>
+                          <strong>{e.name}</strong>
+                        </a>
+                      ) : null}
+                    </span>
+                    {e.detail && <span className="small mono">{e.detail}</span>}
+                  </div>
+                  <span className="muted small">{when(e.created_at)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted small">Nothing yet. Every checkout, webhook and plan switch shows here.</p>
+        )}
+      </section>
+
+      {story && (
+        <Sheet title={`${story.payment.name} · ${inr(story.payment.amount_paise)} ${story.payment.kind}`} onClose={() => setStory(null)}>
+          <p className="muted small mono">
+            {story.payment.razorpay_order_id}
+            {story.payment.razorpay_payment_id ? ` · ${story.payment.razorpay_payment_id}` : ''}
+          </p>
+          {story.events === null ? (
+            <Skeleton h={120} />
+          ) : story.events.length ? (
+            <ol className="plans-story">
+              {story.events.map((e) => (
+                <li key={e.id}>
+                  <span className={`cw-chip cw-chip-${eventLabel(e.event).tone}`}>{eventLabel(e.event).label}</span>
+                  <span className="muted small">{when(e.created_at)}</span>
+                  {e.detail && <div className="small mono">{e.detail}</div>}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="muted small">No steps recorded: this payment is from before the payment log existed.</p>
+          )}
+          {(story.payment.status === 'created' || story.payment.status === 'failed') && (
+            <div className="actions">
+              <button className="btn btn-primary" disabled={busy} onClick={() => sync(story.payment)}>
+                <RefreshCw size={16} /> Check with Razorpay
+              </button>
+            </div>
+          )}
+        </Sheet>
+      )}
 
       {refunding && (
         <Sheet title={`Refund ${inr(refunding.amount_paise)} to ${refunding.name}?`} onClose={() => setRefunding(null)}>

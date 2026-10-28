@@ -89,9 +89,17 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
                 resolve();
               },
             ),
-          modal: { ondismiss: () => resolve() },
+          modal: {
+            ondismiss: () => {
+              void api('billing/checkout-event', 'POST', { orderId: order.orderId, event: 'closed' }).catch(() => {});
+              resolve();
+            },
+          },
         });
-        checkout.on('payment.failed', (r) => reject(new Error(r.error?.description || 'Payment failed')));
+        checkout.on('payment.failed', (r) => {
+          void api('billing/checkout-event', 'POST', { orderId: order.orderId, event: 'failed', reason: r.error?.description ?? '' }).catch(() => {});
+          reject(new Error(r.error?.description || 'Payment failed'));
+        });
         checkout.open();
       });
     });

@@ -5084,6 +5084,89 @@ circle.trend-views {
   margin: 0;
 }
 
+.plans-funnel {
+  display: grid;
+  gap: 10px;
+}
+
+.plans-funnel-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.2fr) 2fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13.5px;
+}
+
+.plans-funnel-row strong em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.plans-funnel-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.plans-funnel-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--muted);
+}
+
+.plans-funnel-bar i.tone-ok {
+  background: var(--brand-fill);
+}
+
+.plans-funnel-bar i.tone-bad {
+  background: var(--bad);
+}
+
+.plans-funnel-bar i.tone-wait {
+  background: var(--gold);
+}
+
+.plans-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.plans-events {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.plans-story {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--line);
+  display: grid;
+  gap: 12px;
+}
+
+.plans-story li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+@media (max-width: 560px) {
+  .plans-funnel-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .plans-funnel-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }

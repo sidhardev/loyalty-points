@@ -588,6 +588,23 @@ const MIGRATIONS: string[] = [
     AND merchant_id IN (SELECT id FROM merchants WHERE plan NOT IN ('lifetime', 'yearly'));
   UPDATE merchants SET founding_no = NULL WHERE plan NOT IN ('lifetime', 'yearly');
   `,
+
+  // 29: watching payments from Admin → Plans. Every step of a payment (checkout opened, closed or failed, the checkout's
+  // answer, each Razorpay webhook, the plan switching on, a refund, a sync with Razorpay) is kept as an event, and a
+  // payment that failed says why.
+  `
+  ALTER TABLE payments ADD COLUMN failure_reason TEXT;
+  CREATE TABLE payment_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    payment_id INTEGER REFERENCES payments(id) ON DELETE CASCADE,
+    merchant_id INTEGER REFERENCES merchants(id) ON DELETE CASCADE,
+    event TEXT NOT NULL, -- see PaymentEvent in billing.ts
+    detail TEXT NOT NULL DEFAULT ''
+  );
+  CREATE INDEX idx_payment_events_payment ON payment_events (payment_id);
+  CREATE INDEX idx_payment_events_time ON payment_events (created_at);
+  `,
 ];
 
 const INDEXES = `

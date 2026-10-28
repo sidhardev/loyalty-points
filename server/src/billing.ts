@@ -28,9 +28,30 @@ import { customerLimit, effectivePlan, planSettings, prices, savePlanSettings, s
 // Razorpay's webhook, whichever arrives first. Both are one-time payments; a yearly plan is renewed by paying again.
 // Kept on its own so other payment providers can be added next to it.
 //
+// Every step is kept in payment_events so Admin → Plans can show a payment's whole story, spot a webhook that stopped
+// arriving, and ask Razorpay directly (sync) when a shop says it paid but the plan didn't switch on.
+//
 // Settings (server/.env, deploy/.env): RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 
 type Kind = 'lifetime' | 'yearly';
+/**
+ * order: the shop opened the checkout · closed: it closed the checkout without paying · failed: a payment attempt failed
+ * (the checkout or Razorpay's payment.failed) · verified / verify_failed: the checkout's signed answer · webhook /
+ * webhook_rejected: a Razorpay webhook, and one whose signature didn't match · amount_mismatch: paid a different amount ·
+ * activated: the plan switched on · refunded · synced: an admin asked Razorpay for the order's payments.
+ */
+export type PaymentEvent =
+  | 'order'
+  | 'closed'
+  | 'failed'
+  | 'verified'
+  | 'verify_failed'
+  | 'webhook'
+  | 'webhook_rejected'
+  | 'amount_mismatch'
+  | 'activated'
+  | 'refunded'
+  | 'synced';
 type PaymentRow = {
   id: number;
   merchant_id: number;
@@ -38,7 +59,7 @@ type PaymentRow = {
   amount_paise: number;
   razorpay_order_id: string;
   razorpay_payment_id: string | null;
-  status: string;
+  status: string; // created | paid | failed | refunded
 };
 
 const keyId = () => process.env.RAZORPAY_KEY_ID ?? '';
@@ -47,14 +68,14 @@ const keySecret = () => process.env.RAZORPAY_KEY_SECRET ?? '';
 /** Overridable only for local testing against a stand-in server. */
 const API_BASE = (process.env.RAZORPAY_API_BASE || 'https://api.razorpay.com').replace(/\/$/, '');
 
-/** One call to Razorpay's API with our key; its JSON answer, or a readable error. */
-async function razorpay<T>(path: string, body: object): Promise<T> {
+/** One call to Razorpay's API with our key (a POST with `body`, else a GET); its JSON answer, or a readable error. */
+async function razorpay<T>(path: string, body?: object): Promise<T> {
   let res: globalThis.Response;
   try {
     res = await fetch(`${API_BASE}/v1/${path}`, {
-      method: 'POST',
+      method: body ? 'POST' : 'GET',
       headers: { authorization: `Basic ${Buffer.from(`${keyId()}:${keySecret()}`).toString('base64')}`, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(20_000),
     });
   } catch (error) {
@@ -116,9 +137,10 @@ export class Billing {
       notes: { merchant_id: String(merchantId), kind },
     });
     if (!body.id) throw new ServiceUnavailableException('Razorpay could not start the payment');
-    this.db.sql
+    const { lastInsertRowid } = this.db.sql
       .prepare('INSERT INTO payments (merchant_id, kind, amount_paise, razorpay_order_id) VALUES (?, ?, ?, ?)')
       .run(merchantId, kind, amount, body.id);
+    this.event(Number(lastInsertRowid), merchantId, 'order', `${kind}, ₹${amount / 100}${renewing ? ', renewal' : ''}`);
     return { orderId: body.id, amount, keyId: keyId(), shop: m.name, phone: m.phone ?? '', email: m.email ?? '' };
   }
 
@@ -126,38 +148,106 @@ export class Billing {
   verify(merchantId: number, b: { orderId?: string; paymentId?: string; signature?: string }) {
     const orderId = String(b?.orderId ?? '');
     const paymentId = String(b?.paymentId ?? '');
-    if (!signedBy(keySecret(), `${orderId}|${paymentId}`, b?.signature)) throw new BadRequestException('This payment could not be confirmed');
     const p = this.payment(orderId);
     if (!p || p.merchant_id !== merchantId) throw new BadRequestException('This payment is not for your shop');
-    this.activate(p, paymentId);
+    if (!signedBy(keySecret(), `${orderId}|${paymentId}`, b?.signature)) {
+      this.event(p.id, merchantId, 'verify_failed', `signature didn't match for ${paymentId || 'no payment id'}`);
+      throw new BadRequestException('This payment could not be confirmed');
+    }
+    this.event(p.id, merchantId, 'verified', paymentId);
+    this.activate(p, paymentId, 'checkout');
     return this.status(merchantId);
   }
 
-  /** Razorpay's webhook: payment.captured or order.paid switches the plan on, if /verify hasn't already. */
+  /** What happened in the shop's checkout that Razorpay only tells the page: closed without paying, or an attempt failed. */
+  checkoutEvent(merchantId: number, b: { orderId?: string; event?: string; reason?: string }) {
+    const p = this.payment(String(b?.orderId ?? ''));
+    if (!p || p.merchant_id !== merchantId) return { ok: true };
+    const reason = String(b?.reason ?? '').slice(0, 300);
+    if (b?.event === 'closed') this.event(p.id, merchantId, 'closed', '');
+    else if (b?.event === 'failed') this.fail(p, reason || 'Payment failed', 'checkout');
+    return { ok: true };
+  }
+
+  /**
+   * Razorpay's webhook: payment.captured or order.paid switches the plan on, if /verify hasn't already; payment.failed
+   * records why. Every webhook is kept as an event, so Admin → Plans can tell when they stop arriving.
+   */
   webhook(raw: Buffer | undefined, signature: string | undefined, payload: WebhookPayload) {
-    if (!raw || !signedBy(process.env.RAZORPAY_WEBHOOK_SECRET ?? '', raw, signature)) return 'ignored';
-    if (payload.event !== 'payment.captured' && payload.event !== 'order.paid') return 'ok';
+    if (!raw || !signedBy(process.env.RAZORPAY_WEBHOOK_SECRET ?? '', raw, signature)) {
+      // Anyone can post here, so only a short note is kept.
+      this.event(null, null, 'webhook_rejected', `${String(payload?.event ?? 'unknown').slice(0, 40)}${signature ? ", signature didn't match" : ', no signature'}`);
+      return 'ignored';
+    }
     const pay = payload.payload?.payment?.entity;
     const p = pay?.order_id ? this.payment(pay.order_id) : undefined;
+    this.event(p?.id ?? null, p?.merchant_id ?? null, 'webhook', `${payload.event ?? 'unknown'}${pay?.id ? ` · ${pay.id}` : ''}${pay?.method ? ` · ${pay.method}` : ''}`);
     if (!p || !pay?.id) return 'ok';
-    if (pay.amount !== p.amount_paise) {
-      console.error(`Razorpay paid ${pay.amount} for order ${p.razorpay_order_id}, expected ${p.amount_paise}`);
+    if (payload.event === 'payment.failed') {
+      this.fail(p, pay.error_description || 'Payment failed', 'webhook');
       return 'ok';
     }
-    this.activate(p, pay.id);
+    if (payload.event !== 'payment.captured' && payload.event !== 'order.paid') return 'ok';
+    if (pay.amount !== p.amount_paise) {
+      console.error(`Razorpay paid ${pay.amount} for order ${p.razorpay_order_id}, expected ${p.amount_paise}`);
+      this.event(p.id, p.merchant_id, 'amount_mismatch', `paid ₹${(pay.amount ?? 0) / 100}, expected ₹${p.amount_paise / 100}`);
+      return 'ok';
+    }
+    this.activate(p, pay.id, 'webhook');
     return 'ok';
+  }
+
+  /**
+   * Asks Razorpay for the order's payments and acts on the answer: a captured payment switches the plan on (a webhook
+   * that never came), a failed one records why. For a shop that says it paid but is still on the Free plan.
+   */
+  async sync(paymentId: number) {
+    const p = this.db.sql.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId) as PaymentRow | undefined;
+    if (!p) throw new BadRequestException('Payment not found');
+    if (!keyId() || !keySecret()) throw new ServiceUnavailableException('Razorpay keys are not set on the server');
+    const { items = [] } = await razorpay<{ items?: RazorpayPayment[] }>(`orders/${p.razorpay_order_id}/payments`);
+    const captured = items.find((i) => i.status === 'captured' && i.amount === p.amount_paise);
+    const authorized = items.some((i) => i.status === 'authorized');
+    const summary = items.length ? items.map((i) => `${i.id} ${i.status}${i.method ? ` (${i.method})` : ''}`).join(', ') : 'no payment attempts';
+    this.event(p.id, p.merchant_id, 'synced', summary);
+    if (captured) this.activate(p, captured.id, 'sync');
+    else {
+      const failed = items.filter((i) => i.status === 'failed').at(-1);
+      if (failed && !authorized) this.fail(p, failed.error_description || 'Payment failed', 'sync');
+    }
+    return { attempts: items.length, captured: Boolean(captured), authorized };
+  }
+
+  /** sync() for every payment of the last 3 days that isn't paid yet. */
+  async syncRecent() {
+    const open = this.db.sql
+      .prepare("SELECT id FROM payments WHERE status IN ('created', 'failed') AND created_at >= datetime('now', '-3 days') ORDER BY id")
+      .all() as { id: number }[];
+    let fixed = 0;
+    for (const { id } of open) if ((await this.sync(id)).captured) fixed++;
+    return { checked: open.length, fixed };
+  }
+
+  /** A failed attempt. The shop can try again in the same order, so a later success still switches the plan on. */
+  private fail(p: PaymentRow, reason: string, from: string) {
+    this.db.sql.prepare("UPDATE payments SET status = 'failed', failure_reason = ? WHERE id = ? AND status IN ('created', 'failed')").run(reason.slice(0, 300), p.id);
+    this.event(p.id, p.merchant_id, 'failed', `${reason.slice(0, 300)} (${from})`);
+  }
+
+  event(paymentId: number | null, merchantId: number | null, event: PaymentEvent, detail: string) {
+    this.db.sql.prepare('INSERT INTO payment_events (payment_id, merchant_id, event, detail) VALUES (?, ?, ?, ?)').run(paymentId, merchantId, event, detail);
   }
 
   /**
    * Switches the plan on, once per order. Lifetime has no end; a year is added to whatever is left of the current one.
    * A payment that arrives after the last seat went is still honoured: the shop paid.
    */
-  private activate(p: PaymentRow, paymentId: string) {
+  private activate(p: PaymentRow, paymentId: string, from: 'checkout' | 'webhook' | 'sync') {
     this.db.transaction(() => {
       const fresh = this.payment(p.razorpay_order_id)!;
-      if (fresh.status !== 'created') return;
+      if (fresh.status !== 'created' && fresh.status !== 'failed') return;
       this.db.sql
-        .prepare("UPDATE payments SET status = 'paid', razorpay_payment_id = ?, paid_at = datetime('now') WHERE id = ?")
+        .prepare("UPDATE payments SET status = 'paid', razorpay_payment_id = ?, paid_at = datetime('now'), failure_reason = NULL WHERE id = ?")
         .run(paymentId, p.id);
       const m = this.loyalty.merchant(p.merchant_id);
       const no = m.founding_no ?? ((this.db.sql.prepare('SELECT MAX(founding_no) AS n FROM merchants').get() as { n: number | null }).n ?? 0) + 1;
@@ -170,6 +260,7 @@ export class Billing {
           .run(from, no, m.id);
       }
       this.loyalty.log(m.id, 'shop', 'plan', `Became Founding Shop #${no} (${p.kind}, ₹${p.amount_paise / 100})`);
+      this.event(p.id, m.id, 'activated', `Founding Shop #${no}, ${p.kind}, by the ${from}`);
     });
   }
 
@@ -191,6 +282,7 @@ export class Billing {
       this.db.sql.prepare("UPDATE payments SET status = 'refunded', razorpay_refund_id = ?, refunded_at = datetime('now') WHERE id = ?").run(r.id ?? null, p.id);
       if (toFree) this.db.sql.prepare("UPDATE merchants SET plan = 'free', plan_expires_at = NULL WHERE id = ?").run(p.merchant_id);
       this.loyalty.log(p.merchant_id, 'admin', 'plan', `Support refunded ₹${p.amount_paise / 100}${toFree ? ' and moved the shop to the Free plan' : ''}`);
+      this.event(p.id, p.merchant_id, 'refunded', `${r.id ?? 'refund'}${toFree ? ', shop moved to Free' : ''}`);
     });
     return p;
   }
@@ -202,7 +294,11 @@ export class Billing {
 
 const sqlNow = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-type WebhookPayload = { event?: string; payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number } } } };
+type RazorpayPayment = { id: string; status: string; amount: number; method?: string; error_description?: string };
+type WebhookPayload = {
+  event?: string;
+  payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number; method?: string; error_description?: string } } };
+};
 
 @Controller('api/billing')
 export class BillingController {
@@ -226,6 +322,13 @@ export class BillingController {
     return this.billing.verify(merchantId, body);
   }
 
+  @Post('checkout-event')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  checkoutEvent(@MerchantId() merchantId: number, @Body() body: { orderId?: string; event?: string; reason?: string }) {
+    return this.billing.checkoutEvent(merchantId, body);
+  }
+
   /** Razorpay retries anything but a 2xx, so this always answers 200 and drops what it can't check. */
   @Post('webhook')
   @HttpCode(200)
@@ -234,7 +337,11 @@ export class BillingController {
   }
 }
 
-/** Admin → Plans: prices, places and limits; every Founding Shop and payment; refunds and extensions. */
+/**
+ * Admin → Plans: prices, places and limits; every Founding Shop and payment; refunds and extensions; and watching the
+ * payments themselves: whether Razorpay is live and its webhooks arrive, how many checkouts end in a payment, each
+ * payment's story, and a sync with Razorpay for one that didn't switch the plan on.
+ */
 @Controller('api/admin/plans')
 @UseGuards(AdminGuard)
 export class BillingAdminController {
@@ -253,7 +360,8 @@ export class BillingAdminController {
         `SELECT COALESCE(SUM(amount_paise) FILTER (WHERE status = 'paid'), 0) AS paid,
            COALESCE(SUM(amount_paise) FILTER (WHERE status = 'paid' AND paid_at >= date('now', 'start of month')), 0) AS month,
            COALESCE(SUM(amount_paise) FILTER (WHERE status = 'refunded'), 0) AS refunded,
-           COUNT(*) FILTER (WHERE status = 'created' AND created_at < datetime('now', '-1 hour')) AS abandoned
+           COUNT(*) FILTER (WHERE status = 'created' AND created_at < datetime('now', '-1 hour')) AS abandoned,
+           COUNT(*) FILTER (WHERE status = 'failed') AS failed
          FROM payments`,
       )
       .get();
@@ -280,8 +388,8 @@ export class BillingAdminController {
     }));
     const payments = sql
       .prepare(
-        `SELECT p.id, p.merchant_id AS shopId, m.name, p.kind, p.amount_paise, p.status, p.razorpay_order_id, p.razorpay_payment_id,
-           p.razorpay_refund_id, p.created_at, p.paid_at, p.refunded_at
+        `SELECT p.id, p.merchant_id AS shopId, m.name, m.phone, p.kind, p.amount_paise, p.status, p.razorpay_order_id, p.razorpay_payment_id,
+           p.razorpay_refund_id, p.failure_reason, p.created_at, p.paid_at, p.refunded_at
          FROM payments p JOIN merchants m ON m.id = p.merchant_id ORDER BY p.id DESC LIMIT 300`,
       )
       .all();
@@ -301,7 +409,59 @@ export class BillingAdminController {
       payments,
       nearLimit,
       razorpay: { keyId: keyId(), test: keyId().startsWith('rzp_test_'), webhook: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) },
+      health: sql
+        .prepare(
+          `SELECT (SELECT MAX(created_at) FROM payment_events WHERE event = 'webhook') AS lastWebhook,
+             COUNT(*) FILTER (WHERE event = 'webhook') AS webhooks,
+             COUNT(*) FILTER (WHERE event = 'webhook_rejected') AS rejected,
+             COUNT(*) FILTER (WHERE event = 'verify_failed') AS verifyFailed,
+             COUNT(*) FILTER (WHERE event = 'amount_mismatch') AS mismatched
+           FROM payment_events WHERE created_at >= datetime('now', '-7 days')`,
+        )
+        .get(),
+      // The last 30 days of checkouts: how many were opened and how they ended.
+      funnel: sql
+        .prepare(
+          `SELECT COUNT(*) AS started,
+             COUNT(*) FILTER (WHERE status IN ('paid', 'refunded')) AS paid,
+             COUNT(*) FILTER (WHERE status = 'failed') AS failed,
+             COUNT(*) FILTER (WHERE status = 'created' AND EXISTS (SELECT 1 FROM payment_events e WHERE e.payment_id = p.id AND e.event = 'closed')) AS closed,
+             COUNT(DISTINCT merchant_id) AS shops
+           FROM payments p WHERE created_at >= datetime('now', '-30 days')`,
+        )
+        .get(),
+      events: sql
+        .prepare(
+          `SELECT e.id, e.created_at, e.event, e.detail, e.payment_id AS paymentId, e.merchant_id AS shopId, m.name
+           FROM payment_events e LEFT JOIN merchants m ON m.id = e.merchant_id ORDER BY e.id DESC LIMIT 100`,
+        )
+        .all(),
     };
+  }
+
+  /** One payment's story, oldest first. */
+  @Get('payments/:id/events')
+  paymentEvents(@Param('id', ParseIntPipe) id: number) {
+    return this.db.sql.prepare('SELECT id, created_at, event, detail FROM payment_events WHERE payment_id = ? ORDER BY id').all(id);
+  }
+
+  /** Asks Razorpay what happened to this payment's order, and switches the plan on if it was paid. */
+  @Post('payments/:id/sync')
+  @HttpCode(200)
+  async sync(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number) {
+    const r = await this.billing.sync(id);
+    const p = this.db.sql.prepare('SELECT merchant_id FROM payments WHERE id = ?').get(id) as { merchant_id: number };
+    this.audit(adminId, p.merchant_id, 'plan', `Checked payment ${id} with Razorpay: ${r.attempts} attempt(s)${r.captured ? ', paid: plan switched on' : ''}`);
+    return { result: r, overview: this.overview() };
+  }
+
+  /** The same for every unpaid payment of the last 3 days. */
+  @Post('sync')
+  @HttpCode(200)
+  async syncRecent(@AdminId() adminId: number) {
+    const r = await this.billing.syncRecent();
+    if (r.fixed) this.audit(adminId, null, 'plan', `Checked ${r.checked} unpaid payments with Razorpay: ${r.fixed} were paid, plans switched on`);
+    return { result: r, overview: this.overview() };
   }
 
   @Put('settings')
