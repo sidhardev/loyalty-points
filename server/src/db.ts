@@ -579,6 +579,15 @@ const MIGRATIONS: string[] = [
   ALTER TABLE wa_messages ADD COLUMN media_name TEXT; -- a document's file name
   ALTER TABLE wa_messages ADD COLUMN media_size INTEGER; -- bytes
   `,
+
+  // 28: payments before going live were Razorpay test mode, not money: they're removed so revenue starts at ₹0, and
+  // shops that aren't Founding Shops lose the number they got from them, so the first real Founding Shop is #1.
+  // (The copy made before this upgrade keeps them.)
+  `
+  DELETE FROM payments WHERE created_at < '2026-10-29'
+    AND merchant_id IN (SELECT id FROM merchants WHERE plan NOT IN ('lifetime', 'yearly'));
+  UPDATE merchants SET founding_no = NULL WHERE plan NOT IN ('lifetime', 'yearly');
+  `,
 ];
 
 const INDEXES = `
