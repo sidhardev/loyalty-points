@@ -2706,7 +2706,8 @@ body.referral-body {
   background: var(--brand-soft);
 }
 
-.side-foot {
+/* scoped to the admin panel: the shop app's sidebar has its own .side-foot (a column, at min-width 900px) */
+.admin-side .side-foot {
   display: flex;
   align-items: center;
   gap: 2px;
