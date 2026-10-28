@@ -10,6 +10,7 @@ import { Customers } from './pages/Customers';
 import { Counter } from './pages/Counter';
 import { ActivityLog } from './pages/ActivityLog';
 import { Join, OldLink, Wallet } from './pages/Public';
+import { PartnerPage, PartnerSignup } from './pages/Partner';
 import { Plan } from './pages/Plan';
 import { Referral } from './pages/Referral';
 import { Settings } from './pages/Settings';
@@ -144,6 +145,9 @@ function ShopApp() {
 
 function Route() {
   if (location.pathname === '/admin') return <AdminApp />;
+  if (location.pathname === '/partners') return <PartnerSignup />;
+  const partner = location.pathname.match(/^\/partner\/([^/]+)/)?.[1];
+  if (partner) return <PartnerPage token={decodeURIComponent(partner)} />;
   const reset = location.pathname.match(/^\/reset\/([^/]+)/)?.[1];
   if (reset) return <ResetPassword token={decodeURIComponent(reset)} />;
   const [, kind, id] = location.pathname.match(/^\/(w|join|c|r)\/([^/]+)/) ?? [];

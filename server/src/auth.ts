@@ -22,7 +22,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypt
 import type { Request } from 'express';
 import { isFounding } from './plans';
 import { Db, randomToken } from './db';
-import { CARD_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
+import { CARD_SOURCE, cleanCode, PARTNER_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
@@ -145,12 +145,18 @@ export class AuthController {
         ? (this.db.sql.prepare('SELECT id FROM merchants WHERE join_code = ?').get(from.campaign) as { id: number } | undefined)
         : undefined;
 
+    // A partner's link makes the shop theirs (partners.ts); an unknown or stopped code counts for nobody.
+    const partner =
+      from.source === PARTNER_SOURCE && from.campaign
+        ? (this.db.sql.prepare('SELECT id FROM partners WHERE code = ? AND disabled_at IS NULL').get(cleanCode(from.campaign)) as { id: number } | undefined)
+        : undefined;
+
     const { lastInsertRowid } = this.db.sql
       .prepare(
         `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
-           signup_ref, signup_landing, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           signup_ref, signup_landing, referred_by, partner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(name, email || null, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null);
+      .run(name, email || null, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null);
     return this.session(Number(lastInsertRowid));
   }
 

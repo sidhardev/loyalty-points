@@ -9,6 +9,14 @@ import './styles.css';
 // sign-up count for it.
 const shared = location.pathname.match(/^\/r\/([\w-]{1,40})\/?$/)?.[1];
 if (shared && !new URLSearchParams(location.search).has('utm_source')) history.replaceState(null, '', `/r/${shared}?utm_source=shop&utm_medium=referral&utm_campaign=${shared}`);
+// A partner's link (/?p=<code>, pages/Partner.tsx) is tagged the same way, keeping anything else on it (?lang=ml).
+const params = new URLSearchParams(location.search);
+const partner = params.get('p')?.match(/^[\w-]{1,20}$/)?.[0];
+if (partner && !params.has('utm_source')) {
+  params.delete('p');
+  for (const [key, value] of Object.entries({ utm_source: 'partner', utm_medium: 'partner', utm_campaign: partner })) params.set(key, value);
+  history.replaceState(null, '', `${location.pathname}?${params}${location.hash}`);
+}
 
 // The homepage arrives prerendered (scripts/prerender.mjs), so React takes over that HTML instead of redrawing it.
 const root = document.getElementById('root')!;

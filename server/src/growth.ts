@@ -8,7 +8,13 @@ export const CARD_SOURCE = 'card';
 /** A shop's own share link (/r/<join code>), from its status images and WhatsApp messages. */
 export const SHOP_SOURCE = 'shop';
 
-export type Attribution = { source: string; medium: string; campaign: string; ref: string; landing: string };
+/** A commission partner's link (/?p=<code>), see partners.ts. */
+export const PARTNER_SOURCE = 'partner';
+
+/** A partner's code from what was typed: letters and digits only, upper case. */
+export const cleanCode = (value: unknown) => (typeof value === 'string' ? value.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 20) : '');
+
+export type Attribution ={ source: string; medium: string; campaign: string; ref: string; landing: string };
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 

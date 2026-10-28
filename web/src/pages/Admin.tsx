@@ -14,6 +14,7 @@ import {
   Mail,
   MessageCircle,
   MessagesSquare,
+  Handshake,
   Rocket,
   Gift,
   KeyRound,
@@ -45,6 +46,7 @@ import { PlansPage } from './AdminPlans';
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
+import { PartnersPage } from './AdminPartners';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageEvent, type PageView } from './Visits';
@@ -1368,6 +1370,15 @@ const NAV: { group: string; items: NavItem[] }[] = [
         ],
       },
       {
+        path: '/partners',
+        label: 'Partners',
+        icon: Handshake,
+        subs: [
+          ['payouts', 'Payouts'],
+          ['partners', 'Partners'],
+        ],
+      },
+      {
         path: '/visits',
         label: 'Visits',
         icon: Globe2,
@@ -1596,6 +1607,8 @@ export function AdminApp() {
     <ChatsPage api={adminApi} />
   ) : hash.startsWith('/leads') ? (
     <LeadsPage api={adminApi} />
+  ) : hash.startsWith('/partners') ? (
+    <PartnersPage api={adminApi} />
   ) : hash.startsWith('/playbooks') ? (
     <PlaybooksPage api={adminApi} />
   ) : hash.startsWith('/status') ? (

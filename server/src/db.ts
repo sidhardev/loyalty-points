@@ -605,6 +605,37 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_payment_events_payment ON payment_events (payment_id);
   CREATE INDEX idx_payment_events_time ON payment_events (created_at);
   `,
+
+  // 30: partners who bring shops for a commission (partners.ts): business partners (billing software, distributors) and
+  // individual agents. A shop that signs up from a partner's link (/?p=<code>) is theirs; the payouts the admin has sent
+  // are kept so each goes out once.
+  `
+  CREATE TABLE partners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE, -- public, in their link: DIVU42
+    token TEXT NOT NULL UNIQUE, -- secret, their own page: /partner/<token>
+    kind TEXT NOT NULL CHECK (kind IN ('agent', 'business')),
+    name TEXT NOT NULL,
+    business TEXT NOT NULL DEFAULT '', -- a business partner's company
+    phone TEXT NOT NULL, -- WhatsApp, as readPhone writes it
+    upi TEXT NOT NULL DEFAULT '',
+    city TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    disabled_at TEXT -- stopped by an admin: their link no longer counts, nothing new is earned
+  );
+  ALTER TABLE merchants ADD COLUMN partner_id INTEGER REFERENCES partners(id);
+  CREATE INDEX idx_merchants_partner ON merchants (partner_id);
+  CREATE TABLE partner_payouts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    partner_id INTEGER NOT NULL REFERENCES partners(id),
+    kind TEXT NOT NULL CHECK (kind IN ('active', 'payment')),
+    ref_id INTEGER NOT NULL, -- 'active': the shop (merchants.id) · 'payment': payments.id
+    amount_paise INTEGER NOT NULL,
+    admin_id INTEGER,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (kind, ref_id)
+  );
+  `,
 ];
 
 const INDEXES = `

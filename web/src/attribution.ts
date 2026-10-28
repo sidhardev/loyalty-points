@@ -1,7 +1,7 @@
 // Where a would-be shop owner first came from, kept in this browser and sent with the sign-up (server/src/growth.ts),
 // so Admin → Growth can count sign-ups per source. First visit wins for 60 days, except that a tracked link
-// (utm_source or ?ref=) replaces a plain direct visit. Only the homepage, shops' share links (/r/…) and the shop app
-// count; customer pages don't.
+// (utm_source or ?ref=) replaces a plain direct visit, and a partner's link (?p=) replaces any other source. Only the
+// homepage, shops' share links (/r/…) and the shop app count; customer pages don't.
 
 const KEY = 'lp_src';
 const KEEP_MS = 60 * 86_400_000;
@@ -29,7 +29,9 @@ export function rememberArrival() {
     // No usable referrer.
   }
   const before = read();
-  if (before && (before.source || before.ref || !(source || ref))) return;
+  // A partner's link wins over anything before it except another partner's: the first partner who sent them keeps the shop.
+  const partnerNow = source === 'partner' && before?.source !== 'partner';
+  if (before && (before.source || before.ref || !(source || ref)) && !partnerNow) return;
   const now: Attribution = {
     source,
     medium: (params.get('utm_medium') ?? '').slice(0, 60),
