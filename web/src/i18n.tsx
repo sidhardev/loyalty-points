@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
-// English / Hindi for the customer's card and the shop's own screens (switched with LangToggle, remembered per phone).
+// English / Hindi / Malayalam for the customer's card and the shop's own screens (switched with LangToggle, remembered per phone).
 // Texts are looked up by their English wording; {name}-style placeholders are filled in after translating.
 
 export type Lang = 'en' | 'hi' | 'ml';
@@ -358,8 +358,8 @@ const HI: Record<string, string> = {
   'Not now': 'अभी नहीं',
 };
 
-// Malayalam for the customer's card pages only (shops in Kerala send their card messages in Malayalam).
-// The shop's own screens have no Malayalam yet and stay in English.
+// Malayalam for the customer's card pages and the shop's own screens (for shops in Kerala).
+// Any text missing here falls back to English.
 const ML: Record<string, string> = {
   // member card and wallet
   'Add your card to your home screen': 'നിങ്ങളുടെ കാർഡ് ഹോം സ്ക്രീനിൽ ചേർക്കൂ',
@@ -386,6 +386,312 @@ const ML: Record<string, string> = {
   'Got {reward}': '{reward} കിട്ടി',
   'No visits yet.': 'ഇതുവരെ സന്ദർശനങ്ങളില്ല.',
   'Liked {shop}? Rate it on Google': '{shop} ഇഷ്ടപ്പെട്ടോ? Google-ൽ റിവ്യൂ ചെയ്യൂ',
+
+  // the shop's screens
+  'Add visit': 'സന്ദർശനം ചേർക്കൂ',
+  Customers: 'കസ്റ്റമർമാർ',
+  Settings: 'സെറ്റിങ്സ്',
+  'Install app': 'ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യൂ',
+  'Your loyalty card': 'നിങ്ങളുടെ ലോയൽറ്റി കാർഡ്',
+  'One rule for every customer. You can change it later in Settings.': 'എല്ലാ കസ്റ്റമർക്കും ഒരേ നിയമം. പിന്നീട് സെറ്റിങ്സിൽ മാറ്റാം.',
+  Every: 'ഓരോ',
+  'visits, the customer gets': 'സന്ദർശനത്തിനും കസ്റ്റമർക്ക് കിട്ടുന്നത്',
+  'Free chai': 'ഫ്രീ കോഫി',
+  Start: 'തുടങ്ങൂ',
+  Save: 'സേവ് ചെയ്യൂ',
+  'Saving…': 'സേവ് ചെയ്യുന്നു…',
+  Saved: 'സേവ് ചെയ്തു',
+  'Every {n} visits →': 'ഓരോ {n} സന്ദർശനത്തിനും →',
+  'Customer’s phone number': 'കസ്റ്റമറുടെ ഫോൺ നമ്പർ',
+  '🎁 reward due': '🎁 സമ്മാനം ബാക്കി',
+  Clear: 'മായ്ക്കൂ',
+  'Adding…': 'ചേർക്കുന്നു…',
+  Today: 'ഇന്ന്',
+  visit: 'സന്ദർശനം',
+  visits: 'സന്ദർശനം',
+  'reward given': 'സമ്മാനം നൽകി',
+  'rewards given': 'സമ്മാനം നൽകി',
+  'Give {reward} now': 'ഇപ്പോൾ {reward} നൽകൂ',
+  'Visit already counted today.': 'ഇന്നത്തെ സന്ദർശനം നേരത്തേ ചേർത്തു.',
+  'This is visit {n}.': 'ഇത് {n}-ാമത്തെ സന്ദർശനം.',
+  'Their card is full.': 'കാർഡ് നിറഞ്ഞു.',
+  Given: 'നൽകി',
+  'Not now — give it next time': 'ഇപ്പോൾ വേണ്ട — അടുത്ത തവണ നൽകാം',
+  'Wrong number? Undo': 'നമ്പർ തെറ്റിയോ? തിരിച്ചെടുക്കൂ',
+  'Reward given 🎉': 'സമ്മാനം നൽകി 🎉',
+  'Their card starts again.': 'കാർഡ് വീണ്ടും ആദ്യം മുതൽ.',
+  'Already counted today': 'ഇന്ന് നേരത്തേ ചേർത്തു',
+  'One visit a day.': 'ദിവസം ഒരു സന്ദർശനം.',
+  '{n} more for {reward}.': 'ഇനി {n} കൂടി, പിന്നെ {reward}.',
+  'New customer!': 'പുതിയ കസ്റ്റമർ!',
+  'Send card on WhatsApp': 'WhatsApp-ൽ കാർഡ് അയയ്ക്കൂ',
+  'Next customer': 'അടുത്ത കസ്റ്റമർ',
+  'Visit removed': 'സന്ദർശനം നീക്കി',
+
+  // customers
+  All: 'എല്ലാം',
+  'Reward waiting': 'സമ്മാനം ബാക്കി',
+  'Not seen {n} days': '{n} ദിവസമായി വന്നിട്ടില്ല',
+  customer: 'കസ്റ്റമർ',
+  customers: 'കസ്റ്റമർ',
+  shown: 'കാണിക്കുന്നു',
+  'Everyone who visited': 'വന്ന എല്ലാവരും',
+  'Search phone number': 'ഫോൺ നമ്പർ തിരയൂ',
+  'Tap Remind to open WhatsApp with a ready message.': '“ഓർമ്മിപ്പിക്കൂ” ടാപ്പ് ചെയ്താൽ തയ്യാറായ മെസേജുമായി WhatsApp തുറക്കും.',
+  Sent: 'അയച്ചു',
+  Remind: 'ഓർമ്മിപ്പിക്കൂ',
+  Reward: 'സമ്മാനം',
+  'No number matches': 'ഈ നമ്പർ കണ്ടില്ല',
+  'Everyone came back recently 🎉': 'എല്ലാവരും ഈയിടെ വന്നിട്ടുണ്ട് 🎉',
+  'No rewards waiting': 'സമ്മാനങ്ങളൊന്നും ബാക്കിയില്ല',
+  'No customers yet': 'ഇതുവരെ കസ്റ്റമർമാരില്ല',
+  'Add a visit with a phone number — the customer shows up here.': 'ഫോൺ നമ്പർ നൽകി സന്ദർശനം ചേർക്കൂ — കസ്റ്റമർ ഇവിടെ കാണും.',
+  'Add a visit': 'സന്ദർശനം ചേർക്കൂ',
+  'no visits yet': 'ഇതുവരെ സന്ദർശനമില്ല',
+  'came today': 'ഇന്ന് വന്നു',
+  'came yesterday': 'ഇന്നലെ വന്നു',
+  'came {n} days ago': '{n} ദിവസം മുമ്പ് വന്നു',
+  'Number changed': 'നമ്പർ മാറ്റി',
+  'Change number': 'നമ്പർ മാറ്റൂ',
+  'Phone number': 'ഫോൺ നമ്പർ',
+  '{reward} given 🎉': '{reward} നൽകി 🎉',
+  'Undo this visit?': 'ഈ സന്ദർശനം തിരിച്ചെടുക്കണോ?',
+  'Undo this reward?': 'ഈ സമ്മാനം തിരിച്ചെടുക്കണോ?',
+  '{when} will be taken off their card.': '{when}-ലെ എൻട്രി കാർഡിൽ നിന്ന് നീക്കും.',
+  Undo: 'തിരിച്ചെടുക്കൂ',
+  Undone: 'തിരിച്ചെടുത്തു',
+  undone: 'തിരിച്ചെടുത്തു',
+  'Delete {phone}?': '{phone} നീക്കം ചെയ്യണോ?',
+  'Their stamps and history will be deleted. This can’t be undone.': 'ഇവരുടെ എല്ലാ സന്ദർശനങ്ങളും ചരിത്രവും മായും. ഇത് തിരിച്ചെടുക്കാൻ പറ്റില്ല.',
+  Delete: 'നീക്കം ചെയ്യൂ',
+  'Customer deleted': 'കസ്റ്റമറെ നീക്കം ചെയ്തു',
+  'Give {reward}': '{reward} നൽകൂ',
+  'All visits': 'ആകെ സന്ദർശനം',
+  Rewards: 'സമ്മാനങ്ങൾ',
+  'Last visit': 'അവസാന സന്ദർശനം',
+  '{n}d ago': '{n} ദിവസം മുമ്പ്',
+  'Send card': 'കാർഡ് അയയ്ക്കൂ',
+  'See their card': 'ഇവരുടെ കാർഡ് കാണൂ',
+
+  // settings
+  'Settings saved': 'സെറ്റിങ്സ് സേവ് ചെയ്തു',
+  'Your card': 'നിങ്ങളുടെ കാർഡ്',
+  "Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.":
+    'എണ്ണം മാറ്റിയാലും എല്ലാവരുടെയും സന്ദർശനങ്ങൾ നിലനിൽക്കും. ആവശ്യത്തിന് സന്ദർശനം ഉള്ളവർക്ക് അടുത്ത തവണ സമ്മാനം കിട്ടും.',
+  Shop: 'കട',
+  'Shop name': 'കടയുടെ പേര്',
+  'Your WhatsApp number': 'നിങ്ങളുടെ WhatsApp നമ്പർ',
+  "Only for Regularhood support. Customers don't see it.": 'Regularhood സപ്പോർട്ടിന് മാത്രം. കസ്റ്റമർമാർക്ക് കാണാനാവില്ല.',
+  'WhatsApp message to customers': 'കസ്റ്റമർമാർക്കുള്ള WhatsApp മെസേജ്',
+  'Saved on this phone right away.': 'ഈ ഫോണിൽ ഉടനെ സേവ് ആകും.',
+  Reminders: 'ഓർമ്മപ്പെടുത്തൽ',
+  'Days without a visit before a customer counts as “not seen”': 'എത്ര ദിവസം വരാതിരുന്നാൽ കസ്റ്റമർ “വന്നിട്ടില്ല” എന്നതിൽ കാണണം',
+  'Save settings': 'സെറ്റിങ്സ് സേവ് ചെയ്യൂ',
+  'Counter poster': 'കൗണ്ടർ പോസ്റ്റർ',
+  'Put it where people pay, so customers know about your card and tell you their number.': 'പണം കൊടുക്കുന്നിടത്ത് ഒട്ടിക്കൂ, അപ്പോൾ കസ്റ്റമർമാർ കാർഡിനെ കുറിച്ച് അറിയുകയും നമ്പർ പറയുകയും ചെയ്യും.',
+  Green: 'പച്ച',
+  'Light (saves ink)': 'ലൈറ്റ് (മഷി ലാഭിക്കും)',
+  'Hindi lines': 'ഹിന്ദി വരികൾ',
+  'Print (A4)': 'പ്രിന്റ് (A4)',
+  'Download PNG': 'PNG ഡൗൺലോഡ് ചെയ്യൂ',
+  'Your data': 'നിങ്ങളുടെ ഡാറ്റ',
+  'Activity log': 'ആക്റ്റിവിറ്റി ലോഗ്',
+  'Rewards given, undos, deleted customers and changes': 'നൽകിയ സമ്മാനങ്ങൾ, തിരിച്ചെടുത്തവ, നീക്കിയ കസ്റ്റമർമാർ, മാറ്റങ്ങൾ',
+  'Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.': 'സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡ് ചെയ്യൂ (Excel-ലോ Google Sheets-ലോ തുറക്കും). ബാക്കപ്പായി ഒരു കോപ്പി സൂക്ഷിക്കൂ.',
+  'Preparing…': 'തയ്യാറാക്കുന്നു…',
+  'Visit history': 'സന്ദർശന ചരിത്രം',
+  Downloaded: 'ഡൗൺലോഡ് ചെയ്തു',
+  Account: 'അക്കൗണ്ട്',
+  'App language': 'ആപ്പിന്റെ ഭാഷ',
+  'Dark mode': 'ഡാർക്ക് മോഡ്',
+  'Turn on': 'ഓൺ ചെയ്യൂ',
+  'Turn off': 'ഓഫ് ചെയ്യൂ',
+  'Log out?': 'ലോഗ് ഔട്ട് ചെയ്യണോ?',
+  'Log out': 'ലോഗ് ഔട്ട്',
+
+  // plan (Free or Founding Shop)
+  'Your plan': 'നിങ്ങളുടെ പ്ലാൻ',
+  'Customer limit and Founding Shop': 'കസ്റ്റമർ ലിമിറ്റും ഫൗണ്ടിങ് ഷോപ്പും',
+  Free: 'ഫ്രീ',
+  'Early shop': 'ആദ്യകാല കട',
+  'Founding Shop #{n}': 'ഫൗണ്ടിങ് ഷോപ്പ് #{n}',
+  'For life': 'എന്നേക്കും',
+  'Until {date}': '{date} വരെ',
+  '{n} customers · no limit': '{n} കസ്റ്റമർ · ലിമിറ്റ് ഇല്ല',
+  '{n} of {limit} customers on the Free plan': 'ഫ്രീ പ്ലാനിൽ {limit}-ൽ {n} കസ്റ്റമർ',
+  'Your yearly plan has ended. Renew to add new customers again.': 'നിങ്ങളുടെ വാർഷിക പ്ലാൻ കഴിഞ്ഞു. പുതിയ കസ്റ്റമർമാരെ ചേർക്കാൻ പുതുക്കൂ.',
+  'Become a Founding Shop': 'ഫൗണ്ടിങ് ഷോപ്പ് ആകൂ',
+  'All places taken': 'എല്ലാ സ്ഥാനങ്ങളും തീർന്നു',
+  '{left} of {total} places left': '{total}-ൽ {left} സ്ഥാനം ബാക്കി',
+  'Unlimited customers': 'എത്ര കസ്റ്റമർമാരെ വേണമെങ്കിലും',
+  'Best value': 'ഏറ്റവും ലാഭം',
+  'Welcome, Founding Shop #{n}!': 'സ്വാഗതം, ഫൗണ്ടിങ് ഷോപ്പ് #{n}!',
+  'Payment received. Your plan will switch on in a few minutes.': 'പേയ്മെന്റ് കിട്ടി. കുറച്ച് മിനിറ്റിനുള്ളിൽ പ്ലാൻ ഓണാകും.',
+  'See Founding Shop': 'ഫൗണ്ടിങ് ഷോപ്പ് കാണൂ',
+  '{n} of {limit} customers: new numbers can’t be added on the Free plan. Become a Founding Shop →':
+    '{limit}-ൽ {n} കസ്റ്റമർ: ഫ്രീ പ്ലാനിൽ പുതിയ നമ്പറുകൾ ചേർക്കാനാവില്ല. ഫൗണ്ടിങ് ഷോപ്പ് ആകൂ →',
+  '{n} of {limit} customers on the Free plan. See Founding Shop →': 'ഫ്രീ പ്ലാനിൽ {limit}-ൽ {n} കസ്റ്റമർ. ഫൗണ്ടിങ് ഷോപ്പ് കാണൂ →',
+  'The Free plan’s customer limit is reached. Become a Founding Shop to add more.': 'ഫ്രീ പ്ലാനിലെ കസ്റ്റമർ ലിമിറ്റ് കഴിഞ്ഞു. കൂടുതൽ ചേർക്കാൻ ഫൗണ്ടിങ് ഷോപ്പ് ആകൂ.',
+  'Founding Shop is not on sale right now': 'ഫൗണ്ടിങ് ഷോപ്പ് ഇപ്പോൾ ലഭ്യമല്ല',
+  'Not on sale right now': 'ഇപ്പോൾ ലഭ്യമല്ല',
+  Limited: 'പരിമിതം',
+  'All Founding Shop places are taken': 'ഫൗണ്ടിങ് ഷോപ്പിന്റെ എല്ലാ സ്ഥാനങ്ങളും തീർന്നു',
+  'Payments are not set up yet. Please try again later.': 'പേയ്മെന്റ് ഇതുവരെ തയ്യാറായിട്ടില്ല. കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കൂ.',
+  'Current plan': 'ഇപ്പോഴത്തെ പ്ലാൻ',
+  left: 'ബാക്കി',
+  'You joined before plans existed, so you keep unlimited customers. Founding Shop adds automatic WhatsApp and Google reviews.':
+    'പ്ലാനുകൾ വരുന്നതിന് മുമ്പ് ചേർന്നതുകൊണ്ട് നിങ്ങൾക്ക് കസ്റ്റമർ ലിമിറ്റ് ഇല്ല. ഫൗണ്ടിങ് ഷോപ്പിൽ ഓട്ടോമാറ്റിക് WhatsApp-ഉം Google റിവ്യൂകളും കൂടി കിട്ടും.',
+  'Set up automatic WhatsApp and reviews': 'ഓട്ടോമാറ്റിക് WhatsApp-ഉം റിവ്യൂകളും സെറ്റ് ചെയ്യൂ',
+  'Renew or go lifetime': 'പുതുക്കൂ അല്ലെങ്കിൽ ലൈഫ്ടൈം എടുക്കൂ',
+  'For shops that want regulars to come back without chasing them.': 'പിന്നാലെ നടക്കാതെ തന്നെ സ്ഥിരം കസ്റ്റമർമാർ തിരിച്ചുവരണം എന്ന് ആഗ്രഹിക്കുന്ന കടകൾക്ക്.',
+  'No customer limit. Every regular gets a card.': 'കസ്റ്റമർ ലിമിറ്റ് ഇല്ല. ഓരോ സ്ഥിരം കസ്റ്റമർക്കും കാർഡ്.',
+  'Their card after every visit and “reward ready”, sent for you. No tapping at the counter.':
+    'ഓരോ സന്ദർശനത്തിനും ശേഷം കാർഡും “സമ്മാനം തയ്യാർ” മെസേജും ഞങ്ങൾ അയയ്ക്കും. കൗണ്ടറിൽ ഒന്നും ടാപ്പ് ചെയ്യേണ്ട.',
+  '“We miss you” by itself': '“നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” തനിയെ',
+  'Customers who stop coming get a reminder with their stamps, once.': 'വരാതായ കസ്റ്റമർമാർക്ക് അവരുടെ സ്റ്റാമ്പുകളോടെ ഒരു തവണ ഓർമ്മപ്പെടുത്തൽ.',
+  'More Google reviews': 'കൂടുതൽ Google റിവ്യൂകൾ',
+  'After a reward, customers get your review link. More reviews, higher on Maps.': 'സമ്മാനം കിട്ടിയ ശേഷം കസ്റ്റമർക്ക് നിങ്ങളുടെ റിവ്യൂ ലിങ്ക് പോകും. കൂടുതൽ റിവ്യൂ, Maps-ൽ മുകളിൽ.',
+  'Founding price, locked': 'ഫൗണ്ടിങ് വില, ലോക്ക്',
+  'Every feature we add later, without paying more.': 'പിന്നീട് വരുന്ന എല്ലാ ഫീച്ചറുകളും, കൂടുതൽ പണം നൽകാതെ.',
+  'Choose how to pay': 'പണം അടയ്ക്കുന്ന രീതി തിരഞ്ഞെടുക്കൂ',
+  Lifetime: 'ലൈഫ്ടൈം',
+  Yearly: 'വാർഷികം',
+  'Pay once, use for good. Same as {y} years of yearly.': 'ഒരിക്കൽ അടയ്ക്കൂ, എന്നും ഉപയോഗിക്കൂ. {y} വർഷത്തെ വാർഷിക തുകയ്ക്ക് തുല്യം.',
+  'Renew each year at the same price. Nothing charged automatically.': 'എല്ലാ വർഷവും ഇതേ വിലയ്ക്ക് പുതുക്കൂ. തനിയെ ഒന്നും പിടിക്കില്ല.',
+  once: 'ഒരു തവണ',
+  '/ year': '/ വർഷം',
+  'Opening payment…': 'പേയ്മെന്റ് തുറക്കുന്നു…',
+  'Pay {price} with UPI': 'UPI വഴി {price} അടയ്ക്കൂ',
+  'UPI, cards, net banking via Razorpay': 'Razorpay വഴി UPI, കാർഡ്, നെറ്റ് ബാങ്കിങ്',
+  'Full refund within 7 days': '7 ദിവസത്തിനുള്ളിൽ മുഴുവൻ റീഫണ്ട്',
+  Policy: 'പോളിസി',
+  'No auto-debit': 'ഓട്ടോ-ഡെബിറ്റ് ഇല്ല',
+  'Free vs Founding Shop': 'ഫ്രീ vs ഫൗണ്ടിങ് ഷോപ്പ്',
+  Founding: 'ഫൗണ്ടിങ്',
+  Unlimited: 'അൺലിമിറ്റഡ്',
+  'Stamp card, poster, status image': 'സ്റ്റാമ്പ് കാർഡ്, പോസ്റ്റർ, സ്റ്റാറ്റസ് ചിത്രം',
+  'Send card on WhatsApp (one tap)': 'WhatsApp-ൽ കാർഡ് അയയ്ക്കൽ (ഒറ്റ ടാപ്പ്)',
+  'Card and “reward ready” sent automatically': 'കാർഡും “സമ്മാനം തയ്യാർ” മെസേജും തനിയെ',
+  '“We miss you” sent automatically': '“നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” തനിയെ',
+  'Google review requests': 'Google റിവ്യൂ അഭ്യർത്ഥന',
+  Yes: 'ഉണ്ട്',
+  No: 'ഇല്ല',
+
+  // automatic WhatsApp (Settings) and Google reviews
+  'Automatic WhatsApp': 'ഓട്ടോമാറ്റിക് WhatsApp',
+  'Founding Shop': 'ഫൗണ്ടിങ് ഷോപ്പ്',
+  'We message your customers for you, from Regularhood’s WhatsApp number. You don’t tap anything.':
+    'Regularhood-ന്റെ WhatsApp നമ്പറിൽ നിന്ന് നിങ്ങളുടെ കസ്റ്റമർമാർക്ക് ഞങ്ങൾ മെസേജ് അയയ്ക്കും. നിങ്ങൾ ഒന്നും ടാപ്പ് ചെയ്യേണ്ട.',
+  'Card after every visit': 'ഓരോ സന്ദർശനത്തിനും ശേഷം കാർഡ്',
+  'Their stamps and a link to their card, once a day.': 'അവരുടെ സ്റ്റാമ്പുകളും കാർഡിന്റെ ലിങ്കും, ദിവസം ഒരു തവണ.',
+  'Reward ready': 'സമ്മാനം തയ്യാർ',
+  'On the visit that fills the card.': 'കാർഡ് നിറയുന്ന സന്ദർശനത്തിൽ.',
+  'We miss you': 'നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു',
+  'Once, when a customer stops coming for your “not seen” days.': 'ഒരു തവണ, നിങ്ങൾ വെച്ച “വന്നിട്ടില്ല” ദിവസങ്ങളോളം കസ്റ്റമർ വരാതിരുന്നാൽ.',
+  'Google review request': 'Google റിവ്യൂ അഭ്യർത്ഥന',
+  'After a reward is given. Needs your review link below.': 'സമ്മാനം നൽകിയ ശേഷം. താഴെ നിങ്ങളുടെ റിവ്യൂ ലിങ്ക് ചേർക്കണം.',
+  Card: 'കാർഡ്',
+  'Review request': 'റിവ്യൂ അഭ്യർത്ഥന',
+  'Message language': 'മെസേജിന്റെ ഭാഷ',
+  'Your settings are saved. Messages start as soon as Regularhood’s WhatsApp number is approved by Meta — we’ll tell you.':
+    'നിങ്ങളുടെ സെറ്റിങ്സ് സേവ് ചെയ്തു. Regularhood-ന്റെ WhatsApp നമ്പറിന് Meta അനുമതി കിട്ടിയാലുടൻ മെസേജുകൾ തുടങ്ങും — ഞങ്ങൾ അറിയിക്കാം.',
+  'Your Google review link': 'നിങ്ങളുടെ Google റിവ്യൂ ലിങ്ക്',
+  'Find it in Google Maps → your shop → “Ask for reviews” (or Google Business Profile → Get more reviews).':
+    'Google Maps → നിങ്ങളുടെ കട → “Ask for reviews” എന്നതിൽ കിട്ടും (അല്ലെങ്കിൽ Google Business Profile → Get more reviews).',
+  '{n} of {quota} messages this month': 'ഈ മാസം {quota}-ൽ {n} മെസേജ്',
+  'Starts again on the 1st. When it runs out, the counter shows the manual WhatsApp button again.':
+    'എല്ലാ മാസവും 1-ന് വീണ്ടും തുടങ്ങും. തീർന്നാൽ കൗണ്ടറിൽ വീണ്ടും WhatsApp ബട്ടൺ കാണിക്കും.',
+  'not sent': 'പോയില്ല',
+  read: 'വായിച്ചു',
+  delivered: 'എത്തി',
+  sent: 'അയച്ചു',
+  'Review link saved': 'റിവ്യൂ ലിങ്ക് സേവ് ചെയ്തു',
+  'Review link removed': 'റിവ്യൂ ലിങ്ക് നീക്കി',
+  'Paste the review link from your Google Business Profile': 'നിങ്ങളുടെ Google Business Profile-ൽ നിന്ന് റിവ്യൂ ലിങ്ക് പേസ്റ്റ് ചെയ്യൂ',
+  'Use your Google review link (it starts with https://g.page/ or https://search.google.com/)':
+    'നിങ്ങളുടെ Google റിവ്യൂ ലിങ്ക് നൽകൂ (ഇത് https://g.page/ അല്ലെങ്കിൽ https://search.google.com/ എന്ന് തുടങ്ങും)',
+  'Automatic WhatsApp and Google reviews are part of Founding Shop': 'ഓട്ടോമാറ്റിക് WhatsApp-ഉം Google റിവ്യൂകളും ഫൗണ്ടിങ് ഷോപ്പിൽ കിട്ടും',
+  'Card sent on WhatsApp automatically': 'കാർഡ് WhatsApp-ൽ തനിയെ അയച്ചു',
+  '“Reward ready” sent on WhatsApp': '“സമ്മാനം തയ്യാർ” WhatsApp-ൽ അയച്ചു',
+  'Google review request sent on WhatsApp': 'Google റിവ്യൂ അഭ്യർത്ഥന WhatsApp-ൽ അയച്ചു',
+  'Ask for a Google review': 'Google റിവ്യൂ ചോദിക്കൂ',
+  Cancel: 'റദ്ദാക്കൂ',
+
+  // activity log
+  'Every reward, undo and change — by your shop or by Regularhood support.': 'എല്ലാ സമ്മാനവും തിരിച്ചെടുത്തവയും മാറ്റങ്ങളും — നിങ്ങളുടെ കടയോ Regularhood സപ്പോർട്ടോ ചെയ്തത്.',
+  'Needs a look': 'ശ്രദ്ധിക്കൂ',
+  Customer: 'കസ്റ്റമർ',
+  Support: 'സപ്പോർട്ട്',
+  'Nothing here yet': 'ഇവിടെ ഇതുവരെ ഒന്നുമില്ല',
+  'Rewards given, undos, deleted customers and setting changes show up here.': 'നൽകിയ സമ്മാനങ്ങൾ, തിരിച്ചെടുത്തവ, നീക്കിയ കസ്റ്റമർമാർ, സെറ്റിങ്സ് മാറ്റങ്ങൾ എന്നിവ ഇവിടെ കാണും.',
+
+  // share
+  'Share your shop': 'നിങ്ങളുടെ കട ഷെയർ ചെയ്യൂ',
+  'Put it on your WhatsApp status or Instagram so customers know about your card. Other shop owners can get Regularhood from your link.':
+    'WhatsApp സ്റ്റാറ്റസിലോ Instagram-ലോ ഇടൂ, കസ്റ്റമർമാർ കാർഡിനെ കുറിച്ച് അറിയട്ടെ. മറ്റ് കടക്കാർക്ക് നിങ്ങളുടെ ലിങ്കിൽ നിന്ന് Regularhood എടുക്കാം.',
+  'Share image': 'ചിത്രം ഷെയർ ചെയ്യൂ',
+  Download: 'ഡൗൺലോഡ്',
+  'Send on WhatsApp': 'WhatsApp-ൽ അയയ്ക്കൂ',
+  'To customers': 'കസ്റ്റമർമാർക്ക്',
+  'To other shop owners': 'മറ്റ് കടക്കാർക്ക്',
+  'Your share link': 'നിങ്ങളുടെ ഷെയർ ലിങ്ക്',
+  'Bring shops, get rewards': 'കടകളെ കൊണ്ടുവരൂ, സമ്മാനം നേടൂ',
+
+  // referral page (/r/<code>)
+  '{shop} invited you': '{shop} നിങ്ങളെ ക്ഷണിച്ചു',
+  'A loyalty card for your shop, like {shop} has': '{shop}-ന് ഉള്ളതുപോലെ ഒരു ലോയൽറ്റി കാർഡ്, നിങ്ങളുടെ കടയ്ക്കും',
+  'A loyalty card for your shop': 'നിങ്ങളുടെ കടയ്ക്ക് ഒരു ലോയൽറ്റി കാർഡ്',
+  'Type the customer’s phone number, tap “Add visit”': 'കസ്റ്റമറുടെ ഫോൺ നമ്പർ ടൈപ്പ് ചെയ്ത് “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ',
+  'On the last visit, the app says “Give the reward”': 'അവസാന സന്ദർശനത്തിൽ ആപ്പ് പറയും “സമ്മാനം നൽകൂ”',
+  'Customers keep coming back. Free to start.': 'കസ്റ്റമർമാർ വീണ്ടും വീണ്ടും വരും. തുടങ്ങാൻ സൗജന്യം.',
+  'Add 20 visits and we send you a free counter standee with your shop name.': '20 സന്ദർശനം ചേർത്താൽ നിങ്ങളുടെ കടയുടെ പേരുള്ള കൗണ്ടർ സ്റ്റാൻഡി ഞങ്ങൾ സൗജന്യമായി അയയ്ക്കും.',
+  'You already have a shop account': 'നിങ്ങൾക്ക് ഇതിനകം കട അക്കൗണ്ട് ഉണ്ട്',
+  'Open my shop': 'എന്റെ കട തുറക്കൂ',
+  'Start your card': 'നിങ്ങളുടെ കാർഡ് തുടങ്ങൂ',
+  'Free, and ready in under a minute.': 'സൗജന്യം, ഒരു മിനിറ്റിനുള്ളിൽ തയ്യാർ.',
+  'WhatsApp number': 'WhatsApp നമ്പർ',
+  optional: 'നിർബന്ധമില്ല',
+  Email: 'ഇമെയിൽ',
+  'By creating an account you agree to the': 'അക്കൗണ്ട് ഉണ്ടാക്കുന്നതോടെ നിങ്ങൾ ഇവ അംഗീകരിക്കുന്നു:',
+  Terms: 'നിബന്ധനകൾ',
+  and: 'കൂടാതെ',
+  'Privacy policy': 'സ്വകാര്യതാ നയം',
+  Password: 'പാസ്‌വേഡ്',
+  'At least 8 characters': 'കുറഞ്ഞത് 8 അക്ഷരം',
+  'Please wait…': 'ഒന്ന് കാത്തിരിക്കൂ…',
+  'Create my shop account': 'എന്റെ കട അക്കൗണ്ട് ഉണ്ടാക്കൂ',
+  'Already have an account?': 'അക്കൗണ്ട് ഉണ്ടോ?',
+  'Log in': 'ലോഗിൻ',
+  'See how Regularhood works': 'Regularhood എങ്ങനെ പ്രവർത്തിക്കുന്നു എന്ന് കാണൂ',
+  'Send your link to other shop owners': 'നിങ്ങളുടെ ലിങ്ക് മറ്റ് കടക്കാർക്ക് അയയ്ക്കൂ',
+  'A counter standee': 'ഒരു കൗണ്ടർ സ്റ്റാൻഡി',
+  'with your shop name and rule, for the first shop you bring': 'നിങ്ങളുടെ കടയുടെ പേരും നിയമവും ഉള്ളത്, ആദ്യത്തെ കടയെ കൊണ്ടുവരുമ്പോൾ',
+  '₹{amount} on UPI': 'UPI-യിൽ ₹{amount}',
+  'for every {n} shops you bring': 'നിങ്ങൾ കൊണ്ടുവരുന്ന ഓരോ {n} കടയ്ക്കും',
+  '{n} earned': '{n} തവണ കിട്ടി',
+  '{n} more shops for the next ₹{amount}': 'അടുത്ത ₹{amount}-ന് ഇനി {n} കട കൂടി',
+  'Sent ✓': 'അയച്ചു ✓',
+  'On its way 🎉': 'ഉടൻ എത്തും 🎉',
+  'A shop counts once it adds {visits} visits on {days} different days.': '{days} വ്യത്യസ്ത ദിവസങ്ങളിലായി {visits} സന്ദർശനം ചേർത്താൽ ഒരു കട കണക്കാക്കും.',
+  'We message you on WhatsApp to send your reward.': 'സമ്മാനം അയയ്ക്കാൻ ഞങ്ങൾ നിങ്ങൾക്ക് WhatsApp ചെയ്യും.',
+  '{n} shops joined': '{n} കടകൾ ചേർന്നു',
+  '{n} active': '{n} ആക്ടീവ്',
+  '{n} not yet': '{n} ഇനിയും ഇല്ല',
+  'Active ✓': 'ആക്ടീവ് ✓',
+  'Not yet': 'ഇനിയും ഇല്ല',
+  '{x} of {n} days': '{x} / {n} ദിവസം',
+  '{x} of {n} visits': '{x} / {n} സന്ദർശനം',
+  'Shops that sign up from your link or your image show up here.': 'നിങ്ങളുടെ ലിങ്കിൽ നിന്നോ ചിത്രത്തിൽ നിന്നോ ചേരുന്ന കടകൾ ഇവിടെ കാണും.',
+  'You joined from another shop’s link: you get a counter standee too once you add {visits} visits.': 'നിങ്ങൾ മറ്റൊരു കടയുടെ ലിങ്കിൽ നിന്നാണ് ചേർന്നത്: {visits} സന്ദർശനം ചേർത്താൽ നിങ്ങൾക്കും കൗണ്ടർ സ്റ്റാൻഡി കിട്ടും.',
+  'Tell customers about your card': 'നിങ്ങളുടെ കാർഡിനെ കുറിച്ച് കസ്റ്റമർമാരോട് പറയൂ',
+  'A ready image for your WhatsApp status and Instagram, in Hindi or English.': 'WhatsApp സ്റ്റാറ്റസിനും Instagram-നും തയ്യാറായ ചിത്രം, ഹിന്ദിയിലോ English-ലോ.',
+  Share: 'ഷെയർ',
+
+  // messages from the server
+  'Enter the 10-digit phone number': '10 അക്ക ഫോൺ നമ്പർ നൽകൂ',
+  'Another customer already has this phone number': 'ഈ നമ്പർ ഇതിനകം മറ്റൊരു കസ്റ്റമറുടേതാണ്',
+  'The reward for this visit was already given — undo the reward first': 'ഈ സന്ദർശനത്തിന്റെ സമ്മാനം നേരത്തേ നൽകി — ആദ്യം സമ്മാനം തിരിച്ചെടുക്കൂ',
+  'Write what the customer gets, e.g. Free chai': 'കസ്റ്റമർക്ക് എന്ത് കിട്ടും എന്ന് എഴുതൂ, ഉദാ: ഫ്രീ കോഫി',
 
   // footer
   'Rewards by Regularhood': 'Regularhood വഴി സമ്മാനങ്ങൾ',
@@ -416,7 +722,7 @@ const isLang = (l: string | null): l is Lang => l === 'en' || l === 'hi' || l ==
 
 function initial(): Lang {
   try {
-    // A card link from a Malayalam message carries ?lang=ml. Not saved: only the card pages have Malayalam.
+    // A card link from a Malayalam message carries ?lang=ml. Not saved, so a shared link doesn't change the phone's choice.
     const fromLink = new URLSearchParams(location.search).get('lang');
     if (isLang(fromLink)) return fromLink;
     const saved = localStorage.getItem(KEY);
@@ -475,7 +781,7 @@ export function withIcon(text: string, icon: ReactNode) {
   );
 }
 
-/** EN / हिं switch shown on customer pages, plus മ once a Malayalam card link set the language. */
+/** EN / हिं / മ switch shown on customer pages and in the shop app. */
 export function LangToggle() {
   const lang = useLang();
   return (
@@ -486,11 +792,9 @@ export function LangToggle() {
       <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi">
         हिं
       </button>
-      {lang === 'ml' && (
-        <button className={lang === 'ml' ? 'active' : ''} onClick={() => setLang('ml')} aria-pressed={lang === 'ml'} lang="ml">
-          മ
-        </button>
-      )}
+      <button className={lang === 'ml' ? 'active' : ''} onClick={() => setLang('ml')} aria-pressed={lang === 'ml'} lang="ml">
+        മ
+      </button>
     </div>
   );
 }

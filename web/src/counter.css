@@ -390,6 +390,12 @@
   margin-left: 6px;
 }
 
+/* three languages: narrower buttons so the shop name still fits on a 360px phone */
+.topbar .lang-toggle button {
+  min-width: 34px;
+  padding: 0 8px;
+}
+
 .side-foot .lang-toggle {
   justify-self: start;
   margin: 0 0 8px 10px;

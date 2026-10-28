@@ -45,15 +45,15 @@ function useFonts() {
   }, []);
 }
 
-/** The homepage is in English and Hindi only (Malayalam covers just the customer's card). */
-type Lang = 'en' | 'hi';
+/** The homepage's languages: the app's three (i18n.tsx). A ?lang=ml link opens it in Malayalam. */
+type Lang = 'en' | 'hi' | 'ml';
 
 /** The visitor's language, shared with the customer pages (i18n.tsx). English until hydrated, like the prerendered page. */
 function usePageLang(): Lang {
   const stored = useLang();
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  return ready && stored === 'hi' ? 'hi' : 'en';
+  return ready ? stored : 'en';
 }
 
 /** Scroll reveals: `.rv` elements start hidden only once JavaScript runs, and show as they come into view. Elements
@@ -97,7 +97,7 @@ function useReveals() {
 
 type ExKey = 'cafe' | 'salon' | 'kirana' | 'bakery' | 'gym' | 'sweets';
 type ExText = { type: string; reward: string; short: string; line: string };
-type Example = { key: ExKey; icon: typeof Coffee; shop: string; needed: number; en: ExText; hi: ExText };
+type Example = { key: ExKey; icon: typeof Coffee; shop: string; needed: number; en: ExText; hi: ExText; ml: ExText };
 
 const EXAMPLES: Example[] = [
   {
@@ -107,6 +107,7 @@ const EXAMPLES: Example[] = [
     needed: 5,
     en: { type: 'Café', reward: 'a free cappuccino.', short: 'Free cappuccino', line: 'Regulars who come for their morning coffee' },
     hi: { type: 'कैफ़े', reward: 'मुफ़्त कैपुचीनो।', short: 'मुफ़्त कैपुचीनो', line: 'सुबह की कॉफ़ी वाले पक्के ग्राहक' },
+    ml: { type: 'കഫേ', reward: 'ഒരു ഫ്രീ കാപ്പുച്ചിനോ.', short: 'ഫ്രീ കാപ്പുച്ചിനോ', line: 'രാവിലത്തെ കോഫിക്ക് സ്ഥിരം വരുന്നവർ' },
   },
   {
     key: 'salon',
@@ -115,6 +116,7 @@ const EXAMPLES: Example[] = [
     needed: 4,
     en: { type: 'Salon', reward: 'a free head massage.', short: 'Free head massage', line: 'Clients who come back every few weeks' },
     hi: { type: 'सैलून', reward: 'मुफ़्त हेड मसाज।', short: 'मुफ़्त हेड मसाज', line: 'हर कुछ हफ़्ते में लौटने वाले ग्राहक' },
+    ml: { type: 'സലൂൺ', reward: 'ഒരു ഫ്രീ ഹെഡ് മസാജ്.', short: 'ഫ്രീ ഹെഡ് മസാജ്', line: 'ഏതാനും ആഴ്ച കൂടുമ്പോൾ തിരികെ വരുന്നവർ' },
   },
   {
     key: 'kirana',
@@ -123,6 +125,7 @@ const EXAMPLES: Example[] = [
     needed: 10,
     en: { type: 'Kirana', reward: '₹50 off the bill.', short: '₹50 off', line: 'Families who shop with you every week' },
     hi: { type: 'किराना', reward: 'बिल पर ₹50 की छूट।', short: '₹50 की छूट', line: 'हर हफ़्ते सामान लेने वाले परिवार' },
+    ml: { type: 'പലചരക്ക് കട', reward: 'ബില്ലിൽ ₹50 കിഴിവ്.', short: '₹50 കിഴിവ്', line: 'എല്ലാ ആഴ്ചയും സാധനം വാങ്ങുന്ന കുടുംബങ്ങൾ' },
   },
   {
     key: 'bakery',
@@ -131,6 +134,7 @@ const EXAMPLES: Example[] = [
     needed: 6,
     en: { type: 'Bakery', reward: 'a free pastry.', short: 'Free pastry', line: 'The evening snack crowd' },
     hi: { type: 'बेकरी', reward: 'मुफ़्त पेस्ट्री।', short: 'मुफ़्त पेस्ट्री', line: 'शाम के नाश्ते वाले ग्राहक' },
+    ml: { type: 'ബേക്കറി', reward: 'ഒരു ഫ്രീ പേസ്ട്രി.', short: 'ഫ്രീ പേസ്ട്രി', line: 'വൈകുന്നേരത്തെ സ്നാക്സിന് വരുന്നവർ' },
   },
   {
     key: 'gym',
@@ -139,6 +143,7 @@ const EXAMPLES: Example[] = [
     needed: 12,
     en: { type: 'Gym', reward: 'a free protein shake.', short: 'Free protein shake', line: 'Members who show up — so they keep showing up' },
     hi: { type: 'जिम', reward: 'मुफ़्त प्रोटीन शेक।', short: 'मुफ़्त प्रोटीन शेक', line: 'रोज़ आने वाले मेंबर — ताकि आते रहें' },
+    ml: { type: 'ജിം', reward: 'ഒരു ഫ്രീ പ്രോട്ടീൻ ഷേക്ക്.', short: 'ഫ്രീ പ്രോട്ടീൻ ഷേക്ക്', line: 'ദിവസവും വരുന്ന മെമ്പർമാർ — അവർ വന്നുകൊണ്ടേയിരിക്കാൻ' },
   },
   {
     key: 'sweets',
@@ -147,6 +152,7 @@ const EXAMPLES: Example[] = [
     needed: 8,
     en: { type: 'Sweet shop', reward: '250g kaju katli, free.', short: 'Free kaju katli', line: 'Festival rush and the daily regulars' },
     hi: { type: 'मिठाई', reward: '250g काजू कतली मुफ़्त।', short: 'मुफ़्त काजू कतली', line: 'त्योहार की भीड़ और रोज़ के ग्राहक' },
+    ml: { type: 'സ്വീറ്റ്സ് കട', reward: '250g കാജു കട്‌ലി ഫ്രീ.', short: 'ഫ്രീ കാജു കട്‌ലി', line: 'ഉത്സവത്തിരക്കും ദിവസേനയുള്ള സ്ഥിരക്കാരും' },
   },
 ];
 
@@ -435,9 +441,146 @@ const COPY = {
     finalSub: 'सेटअप में एक मिनट। पहला स्टैम्प आज ही लग सकता है।',
     footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', shipping: 'डिलीवरी', contact: 'संपर्क', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
   },
+  ml: {
+    login: 'ലോഗ് ഇൻ',
+    start: 'സൗജന്യമായി തുടങ്ങൂ',
+    open: 'നിങ്ങളുടെ കട തുറക്കൂ',
+    eyebrow: 'ഓരോ ലോക്കൽ കടയ്ക്കും ഒരു ലോയൽറ്റി കാർഡ്',
+    h1: (n: number) => `ഓരോ ${n}-ാം സന്ദർശനത്തിലും,`,
+    sub: 'കസ്റ്റമറുടെ ഫോൺ നമ്പറിൽ ഒരു സ്റ്റാമ്പ് കാർഡ്. നമ്പർ ടൈപ്പ് ചെയ്ത് “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ — സമ്മാനം എപ്പോൾ കൊടുക്കണമെന്ന് ആപ്പ് പറയും. കസ്റ്റമർക്ക് ആപ്പ് വേണ്ട, QR വേണ്ട, പോയിന്റുകളും വേണ്ട.',
+    watch: 'എങ്ങനെയെന്ന് കാണൂ',
+    note: 'സൗജന്യം · കാർഡ് വേണ്ട · 1 മിനിറ്റിൽ റെഡി',
+    pickLabel: 'നിങ്ങളുടേത് പോലെയുള്ള ഒരു കട തിരഞ്ഞെടുക്കൂ',
+    demoHint: 'പരീക്ഷിച്ചു നോക്കൂ — “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ',
+    demoAdd: 'സന്ദർശനം ചേർക്കൂ',
+    demoVisit: (n: number, of: number) => `സന്ദർശനം ${n} / ${of}`,
+    demoLeft: (n: number, r: string) => `${r} കിട്ടാൻ ഇനി ${n} മാത്രം`,
+    demoGive: (r: string) => `ഇപ്പോൾ ${r} കൊടുക്കൂ`,
+    demoGiven: 'കൊടുത്തു',
+    demoAgain: 'വീണ്ടും തുടങ്ങൂ',
+    floatSent: 'കാർഡ് WhatsApp-ൽ അയച്ചു',
+    floatVisit: '+1 സന്ദർശനം',
+    rule: (n: number, r: string) => `ഓരോ ${n} സന്ദർശനത്തിനും → ${r}`,
+    filmKicker: 'കൗണ്ടറിൽ കാണൂ',
+    filmTitle: '15 സെക്കൻഡ്. രണ്ട് ടാപ്പ്. ജീവിതകാലം മുഴുവൻ ഒരു കസ്റ്റമർ.',
+    scenes: [
+      ['കസ്റ്റമർ നമ്പർ പറയുന്നു', 'ആപ്പ് തുറക്കേണ്ട, QR സ്കാൻ ചെയ്യേണ്ട. സ്ഥിരം കസ്റ്റമർമാർ 4 അക്കത്തിൽ തന്നെ തെളിയും.'],
+      ['നിങ്ങൾ “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യുന്നു', 'ഒരു വലിയ ബട്ടൺ. അവരുടെ കാർഡിൽ ഒരു സ്റ്റാമ്പ് വീഴും.'],
+      ['കാർഡ് WhatsApp-ൽ എത്തുന്നു', 'ഇനി എത്ര സന്ദർശനം ബാക്കിയുണ്ടെന്ന് അവർ കാണും — മലയാളത്തിലോ ഹിന്ദിയിലോ ഇംഗ്ലീഷിലോ.'],
+      ['അവസാന സന്ദർശനത്തിൽ ആപ്പ് പറയും', '“ഇപ്പോൾ സമ്മാനം കൊടുക്കൂ.” “കൊടുത്തു” ടാപ്പ് ചെയ്താൽ കാർഡ് വീണ്ടും തുടങ്ങും.'],
+    ],
+    filmPlay: 'പ്ലേ',
+    filmPause: 'നിർത്തൂ',
+    filmReplay: 'വീണ്ടും കാണൂ',
+    customerSays: 'എന്റെ നമ്പർ',
+    waName: 'നിങ്ങളുടെ കാർഡ്',
+    scrollKicker: 'ഇത് എന്തുകൊണ്ട് ഫലിക്കുന്നു',
+    scrollTitle: 'ഏതാണ്ട് നിറഞ്ഞ കാർഡിനായി ആളുകൾ തിരികെ വരും.',
+    scrollSub: 'ഓരോ സ്റ്റാമ്പും നാളെയും നിങ്ങളെ തന്നെ തിരഞ്ഞെടുക്കാൻ ഒരു കാരണമാണ് — തൊട്ടടുത്ത കടയെയല്ല.',
+    scrollVisit: (k: number) => `സന്ദർശനം ${k}`,
+    scrollStart: 'ആദ്യ സന്ദർശനം',
+    scrollDone: (r: string) => `${r}!`,
+    howKicker: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു',
+    howTitle: 'മൂന്ന് ഘട്ടം. പഠിക്കാൻ ഒന്നുമില്ല.',
+    steps: [
+      ['ഒരു നിയമം വെക്കൂ', 'എത്ര സന്ദർശനം, എന്ത് സമ്മാനം എന്ന് തിരഞ്ഞെടുക്കൂ. അതാണ് നിങ്ങളുടെ മുഴുവൻ ലോയൽറ്റി പ്രോഗ്രാം.'],
+      ['നമ്പർ ടൈപ്പ് ചെയ്യൂ, സന്ദർശനം ചേർക്കൂ', 'കൗണ്ടറിലെ ഏത് ഫോണോ ടാബ്‌ലെറ്റോ കമ്പ്യൂട്ടറോ മതി. അവരുടെ കാർഡ് ഉടൻ WhatsApp-ൽ എത്തും.'],
+      ['ആപ്പ് പറയുമ്പോൾ സമ്മാനം കൊടുക്കൂ', 'അവസാന സന്ദർശനത്തിൽ സ്ക്രീൻ ഓറഞ്ച് ആകും. “കൊടുത്തു” ടാപ്പ് ചെയ്യൂ — കഴിഞ്ഞു.'],
+    ],
+    howEvery: 'ഓരോ',
+    howVisits: 'സന്ദർശനത്തിനും',
+    howReward: 'സമ്മാനം',
+    howPhone: 'കസ്റ്റമറുടെ നമ്പർ',
+    everyKicker: 'കഫേകൾക്ക് മാത്രമല്ല',
+    everyTitle: 'ഒരു കാർഡ്. എല്ലാ തരം കടകൾക്കും.',
+    everySub: 'ആളുകൾ നിങ്ങളുടെ അടുത്ത് വീണ്ടും വീണ്ടും വരുന്നുണ്ടെങ്കിൽ, ഇത് നിങ്ങൾക്കുള്ളതാണ്. നിയമം നിങ്ങൾ തീരുമാനിക്കൂ — ചില ആശയങ്ങൾ ഇതാ.',
+    everyRule: (n: number) => `ഓരോ ${n} സന്ദർശനത്തിനും`,
+    everyTry: 'ഈ കടയ്ക്ക് വേണ്ടി കാണൂ',
+    custKicker: 'നിങ്ങളുടെ കസ്റ്റമർമാർക്ക്',
+    custTitle: 'ഒന്നും ഡൗൺലോഡ് ചെയ്യേണ്ട. ഒന്നും ഓർക്കേണ്ട.',
+    custSub: 'അവരുടെ കാർഡ് അവരുടെ ഫോൺ നമ്പറിലാണ്. ഒറ്റ ടാപ്പിൽ WhatsApp-ൽ എത്തും; ഏത് ബ്രൗസറിലും തുറക്കും, സമ്മാനം എത്ര അടുത്താണെന്ന് കൃത്യമായി കാണിക്കും.',
+    bubble: (shop: string, x: number, n: number, r: string) => `${shop}: സന്ദർശനം ${x}/${n} ✓ ${r} കിട്ടാൻ ഇനി ${n - x} മാത്രം! 🎁`,
+    cardLeft: (n: number, r: string) => `${r} കിട്ടാൻ ഇനി ${n} സന്ദർശനം`,
+    whyKicker: 'കടക്കാർ ഇത് തിരഞ്ഞെടുക്കുന്നത് എന്തുകൊണ്ട്',
+    why: [
+      ['കൗണ്ടറിൽ ആർക്കും ഉപയോഗിക്കാം', 'ഒരു കീപാഡും ഒരു ബട്ടണും. ട്രെയിനിങ് വേണ്ട, മാനുവൽ വേണ്ട.', Smartphone],
+      ['എല്ലാ കസ്റ്റമർക്കും പറ്റും', 'ഫോൺ നമ്പർ മാത്രം മതി. സൈൻ-അപ്പ് വേണ്ട, ആപ്പ് വേണ്ട, QR വേണ്ട, PIN വേണ്ട.', Phone],
+      ['വരാതായവരെ തിരികെ കൊണ്ടുവരൂ', '30 ദിവസമായി വരാത്തവരെ കാണൂ, ഒറ്റ ടാപ്പിൽ “ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” അയക്കൂ.', UserX],
+      ['നിങ്ങളുടെ കസ്റ്റമർമാർ നിങ്ങളുടേത് തന്നെ', 'നിങ്ങളുടെ ലിസ്റ്റ് ഞങ്ങൾ വിൽക്കില്ല, പരസ്യത്തിന് ഉപയോഗിക്കില്ല. എപ്പോൾ വേണമെങ്കിലും എല്ലാം ഡൗൺലോഡ് ചെയ്യാം.', Lock],
+    ] as const,
+    autoKicker: 'ഫൗണ്ടിങ് ഷോപ്പ്',
+    autoTitle: 'സമയം കിട്ടാത്ത ഫോളോ-അപ്പുകൾ. നിങ്ങൾക്കായി ഞങ്ങൾ അയക്കും.',
+    autoSub: 'Regularhood-ന്റെ WhatsApp നമ്പർ ശരിയായ സമയത്ത്, നിങ്ങളുടെ കടയുടെ പേരിൽ കസ്റ്റമർമാർക്ക് എഴുതും, നിങ്ങൾ കൗണ്ടറിൽ തിരക്കിലായിരിക്കുമ്പോഴും.',
+    autoSteps: [
+      {
+        when: 'ഓരോ സന്ദർശനത്തിനും ശേഷം',
+        tag: (n: number) => `സന്ദർശനം ${n - 2}`,
+        time: 'വൈകുന്നേരം 6:42',
+        text: (shop: string, n: number, r: string) => `${shop}-ലെ നിങ്ങളുടെ സന്ദർശനം രേഖപ്പെടുത്തി.\n${n}-ൽ ${n - 2} സ്റ്റാമ്പ് — ${r} കിട്ടാൻ ഇനി 2 മാത്രം.`,
+        button: 'എന്റെ കാർഡ് കാണൂ',
+      },
+      {
+        when: 'കാർഡ് നിറയുമ്പോൾ',
+        tag: (n: number) => `സന്ദർശനം ${n}`,
+        time: 'വൈകുന്നേരം 7:15',
+        text: (shop: string, _n: number, r: string) => `സന്തോഷ വാർത്ത! ${shop}-ൽ നിങ്ങളുടെ ${r} തയ്യാർ. അടുത്ത തവണ നമ്പർ പറഞ്ഞാൽ മതി.`,
+        button: 'എന്റെ കാർഡ് കാണൂ',
+      },
+      {
+        when: 'വരാതാകുമ്പോൾ',
+        tag: () => '30-ാം ദിവസം, ഒരിക്കൽ',
+        time: 'രാവിലെ 11:30',
+        text: (shop: string, _n: number, r: string) => `${shop}-ൽ ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു. രണ്ട് സന്ദർശനം കൂടി, ${r} നിങ്ങളുടേത്.`,
+        button: 'എന്റെ കാർഡ് കാണൂ',
+      },
+      {
+        when: 'സമ്മാനത്തിന് ശേഷം',
+        tag: () => 'അതേ ദിവസം',
+        time: 'വൈകുന്നേരം 7:20',
+        text: (shop: string) => `${shop} സന്ദർശിച്ചതിന് നന്ദി. ഒരു Google റിവ്യൂ ഞങ്ങൾക്ക് വലിയ സഹായമാണ്.`,
+        button: 'Google-ൽ റിവ്യൂ ചെയ്യൂ',
+      },
+    ],
+    autoAlso: [
+      ['എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും', 'ഓരോ സ്ഥിരക്കാരനും ഒരു കാർഡ്. പരിധിയില്ല.'],
+      ['നിങ്ങളുടെ വില, ലോക്ക്', 'ഇനി വരുന്ന എല്ലാ ഫീച്ചറുകളും, അധിക പണം ഇല്ലാതെ.'],
+      ['നിങ്ങളുടെ ഇഷ്ടം', 'ഓരോ മെസേജും ഓൺ/ഓഫ് ചെയ്യാം. ഇപ്പോൾ ഹിന്ദിയിലും ഇംഗ്ലീഷിലും, മലയാളം ഉടൻ. കസ്റ്റമർക്ക് STOP എന്ന് മറുപടി നൽകാം.'],
+    ] as const,
+    autoCta: 'ഫൗണ്ടിങ് വില കാണൂ',
+    shopsKicker: 'ഇതിനകം Regularhood-ൽ',
+    shopsTitle: 'Regularhood ഉപയോഗിക്കുന്ന കടകൾ',
+    priceKicker: 'വില',
+    priceTitle: (seats: number) => `തുടങ്ങാൻ സൗജന്യം. ആദ്യത്തെ ${seats} കടകൾക്ക് ഫൗണ്ടിങ് വില.`,
+    priceSub: (free: number) =>
+      `${free} കസ്റ്റമർമാർ വരെ സൗജന്യമായി തുടങ്ങൂ. സ്ഥിരക്കാർ കൂടുമ്പോൾ ഫൗണ്ടിങ് ഷോപ്പ് ആകൂ: WhatsApp മെസേജുകളും Google റിവ്യൂകളും തനിയെ, ഇനി ഒരിക്കലും കിട്ടാത്ത വിലയ്ക്ക്.`,
+    priceFree: { name: 'ഫ്രീ', per: 'എന്നും', limit: (n: number) => `${n} കസ്റ്റമർമാർ വരെ` },
+    priceList: ['മലയാളം, ഹിന്ദി, ഇംഗ്ലീഷ് ഭാഷകളിൽ കസ്റ്റമർ കാർഡ്', 'ഒറ്റ ടാപ്പിൽ കാർഡ് WhatsApp-ൽ അയക്കൂ', 'കൗണ്ടർ പോസ്റ്ററും WhatsApp സ്റ്റാറ്റസ് ഇമേജും', 'സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡും ദിവസേന ബാക്കപ്പും'],
+    founding: {
+      name: 'ഫൗണ്ടിങ് ഷോപ്പ്',
+      once: 'ഒരിക്കൽ, എന്നേക്കും',
+      yearly: (price: string) => `അല്ലെങ്കിൽ വർഷം ${price}`,
+      list: [
+        'എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും',
+        'കാർഡും “സമ്മാനം തയ്യാർ” മെസേജും WhatsApp-ൽ തനിയെ',
+        '“ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” റിമൈൻഡറുകൾ, തനിയെ',
+        'ഓരോ സമ്മാനത്തിനും ശേഷം Google റിവ്യൂ അഭ്യർത്ഥന',
+        'ഫൗണ്ടിങ് വില ലോക്ക്, എല്ലാ പുതിയ ഫീച്ചറുകളോടും കൂടി',
+      ],
+      only: (seats: number) => `ആദ്യത്തെ ${seats} കടകൾക്ക് മാത്രം`,
+      left: (left: number, total: number) => (left ? `${total}-ൽ ${left} സ്ഥാനം ബാക്കി` : 'എല്ലാ സ്ഥാനങ്ങളും നിറഞ്ഞു'),
+      closed: 'ഇപ്പോൾ ലഭ്യമല്ല',
+      cta: 'സൗജന്യമായി തുടങ്ങൂ, എപ്പോൾ വേണമെങ്കിലും അപ്ഗ്രേഡ് ചെയ്യാം',
+    },
+    create: 'നിങ്ങളുടെ കട ഉണ്ടാക്കൂ',
+    faqKicker: 'ചോദ്യങ്ങൾ',
+    faqTitle: 'കൗണ്ടറിൽ ചോദിച്ചത്.',
+    finalTitle: 'നിങ്ങളുടെ അടുത്ത സ്ഥിരം കസ്റ്റമർ ഇന്ന് തന്നെ വരും.',
+    finalSub: 'സെറ്റപ്പിന് ഒരു മിനിറ്റ്. ആദ്യ സ്റ്റാമ്പ് ഇന്ന് തന്നെ വീഴാം.',
+    footer: { how: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു', price: 'വില', shops: 'നിങ്ങളുടെ തരം കടയ്ക്ക്', cities: 'നഗരം അനുസരിച്ച്', guides: 'ഗൈഡുകൾ', login: 'കട ലോഗ് ഇൻ', privacy: 'പ്രൈവസി', terms: 'നിബന്ധനകൾ', refunds: 'റീഫണ്ട്', shipping: 'ഡെലിവറി', contact: 'ബന്ധപ്പെടുക', tag: 'ആദ്യ സന്ദർശനം മുതൽ “എന്നും വരുന്നയാൾ” വരെ.' },
+  },
 };
 
-type Copy = (typeof COPY)['en'] | (typeof COPY)['hi'];
+type Copy = (typeof COPY)['en'] | (typeof COPY)['hi'] | (typeof COPY)['ml'];
 
 // Also published (in English) as FAQPage structured data by scripts/prerender.mjs.
 export const FAQ = [
@@ -458,6 +601,16 @@ const FAQ_HI = [
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
   ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। शुरुआती दुकानें एक बार (हमेशा के लिए) या साल में एक बार पेमेंट करके फ़ाउंडिंग शॉप बन सकती हैं (कीमत ऊपर देखें): जितने चाहें ग्राहक, ग्राहकों को WhatsApp मैसेज अपने आप, और Google रिव्यू की रिक्वेस्ट। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
+] as const;
+
+const FAQ_ML = [
+  ['എന്റെ തരം കടയ്ക്ക് ഇത് പറ്റുമോ?', 'ഒരേ ആളുകൾ വീണ്ടും വീണ്ടും വരുന്നുണ്ടെങ്കിൽ — കഫേ, സലൂൺ, പലചരക്ക് കട, ബേക്കറി, ജിം, സ്വീറ്റ്സ് കട, ഫാർമസി, ടിഫിൻ സർവീസ് — പറ്റും. സന്ദർശനങ്ങളുടെ എണ്ണവും സമ്മാനവും നിങ്ങൾ തിരഞ്ഞെടുക്കൂ.'],
+  ['എന്റെ കസ്റ്റമർമാർക്ക് ആപ്പ് വേണോ?', 'വേണ്ട. അവരുടെ ഫോൺ നമ്പർ വെച്ച് നിങ്ങൾ സന്ദർശനം ചേർക്കും. അവരുടെ കാർഡ് WhatsApp ലിങ്കിൽ നിന്ന് ഏത് ബ്രൗസറിലും തുറക്കും — ഒന്നും ഇൻസ്റ്റാൾ ചെയ്യേണ്ട.'],
+  ['കസ്റ്റമർക്ക് സ്മാർട്ട്ഫോൺ ഇല്ലെങ്കിലോ?', 'എന്നാലും പ്രവർത്തിക്കും. സന്ദർശനങ്ങൾ അവരുടെ ഫോൺ നമ്പറിലാണ് കണക്കാക്കുന്നത്, സമ്മാനം എപ്പോൾ കൊടുക്കണമെന്ന് ആപ്പ് കൗണ്ടറിൽ തന്നെ പറയും.'],
+  ['കൗണ്ടറിൽ എന്താണ് വേണ്ടത്?', 'ഇന്റർനെറ്റ് ഉള്ള ഏത് ഫോണോ ടാബ്‌ലെറ്റോ കമ്പ്യൂട്ടറോ. ബ്രൗസറിൽ Regularhood തുറക്കൂ, അല്ലെങ്കിൽ ഹോം സ്ക്രീനിൽ ചേർക്കൂ.'],
+  ['ഒരു ദിവസം രണ്ട് സ്റ്റാമ്പ് കിട്ടുമോ?', 'ഇല്ല. ഒരു ഫോൺ നമ്പർ ദിവസം ഒരിക്കൽ മാത്രമേ കണക്കാക്കൂ, അതുകൊണ്ട് അബദ്ധത്തിൽ രണ്ട് തവണ ചേരില്ല. ഏത് സന്ദർശനവും സമ്മാനവും തിരിച്ചെടുക്കാം.'],
+  ['നിയമം പിന്നീട് മാറ്റാമോ?', 'മാറ്റാം. സെറ്റിംഗ്സിൽ എപ്പോൾ വേണമെങ്കിലും സന്ദർശനങ്ങളുടെ എണ്ണമോ സമ്മാനമോ മാറ്റൂ. എല്ലാവരുടെയും പഴയ സന്ദർശനങ്ങൾ അതുപോലെ നിൽക്കും.'],
+  ['ഇതിന് എത്ര ചെലവാകും?', 'ഫ്രീ പ്ലാനിന്റെ കസ്റ്റമർ പരിധി വരെ സൗജന്യം. ആദ്യത്തെ കടകൾക്ക് ഒരിക്കൽ (എന്നേക്കും) അല്ലെങ്കിൽ വർഷത്തിൽ ഒരിക്കൽ പണമടച്ച് ഫൗണ്ടിങ് ഷോപ്പ് ആകാം (വില മുകളിൽ കാണാം): എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും, കസ്റ്റമർമാർക്ക് WhatsApp മെസേജുകൾ തനിയെ, Google റിവ്യൂ അഭ്യർത്ഥനകൾ. UPI വഴി പണമടയ്ക്കാം; 7 ദിവസത്തിനകം മുഴുവൻ റീഫണ്ട്.'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -530,6 +683,9 @@ function Nav({ c, lang }: { c: Copy; lang: Lang }) {
               </button>
               <button className={lang === 'hi' ? 'active' : ''} onClick={() => setLang('hi')} aria-pressed={lang === 'hi'} lang="hi" data-track="nav: Hindi">
                 हिं
+              </button>
+              <button className={lang === 'ml' ? 'active' : ''} onClick={() => setLang('ml')} aria-pressed={lang === 'ml'} lang="ml" data-track="nav: Malayalam">
+                മ
               </button>
             </div>
             {signedIn ? (
@@ -784,8 +940,15 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
   );
 }
 
+/** More kinds of shop for the scrolling strip, after the examples. */
+const MORE_SHOPS: Record<Lang, string[]> = {
+  en: ['Pharmacy', 'Tiffin', 'Juice bar', 'Chai stall', 'Laundry'],
+  hi: ['मेडिकल', 'टिफ़िन', 'जूस बार', 'चाय की दुकान', 'लॉन्ड्री'],
+  ml: ['ഫാർമസി', 'ടിഫിൻ', 'ജ്യൂസ് ബാർ', 'ബ്യൂട്ടി പാർലർ', 'ലോൺട്രി'],
+};
+
 function Marquee({ lang }: { lang: Lang }) {
-  const items = [...EXAMPLES.map((e) => e[lang].type), ...(lang === 'hi' ? ['मेडिकल', 'टिफ़िन', 'जूस बार', 'चाय की दुकान', 'लॉन्ड्री'] : ['Pharmacy', 'Tiffin', 'Juice bar', 'Chai stall', 'Laundry'])];
+  const items = [...EXAMPLES.map((e) => e[lang].type), ...MORE_SHOPS[lang]];
   const row = (
     <div className="lp-marquee-row">
       {items.map((s, i) => (
@@ -1366,7 +1529,7 @@ function Pricing({ c }: { c: Copy }) {
 }
 
 function Faq({ c, lang }: { c: Copy; lang: Lang }) {
-  const list = lang === 'hi' ? FAQ_HI : FAQ;
+  const list = { en: FAQ, hi: FAQ_HI, ml: FAQ_ML }[lang];
   return (
     <section className="lp-section lp-wrap" id="faq" data-section="faq">
       <p className="lp-kicker rv">{c.faqKicker}</p>

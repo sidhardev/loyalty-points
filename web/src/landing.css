@@ -267,6 +267,44 @@
   }
 }
 
+/* Malayalam: wide letters and long words, so a smaller headline, plain-spaced eyebrow and a tighter nav on phones. */
+.lp[lang='ml'] .lp-hero h1 {
+  font-size: clamp(28px, 6.2vw, 72px);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.lp[lang='ml'] .lp-eyebrow {
+  max-width: 100%;
+  letter-spacing: 0.02em;
+}
+
+.lp[lang='ml'] .lp-btn {
+  white-space: normal;
+  text-align: center;
+}
+
+.lp[lang='ml'] .lp-how-row {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .lp[lang='ml'] .lp-nav-end {
+    gap: 6px;
+  }
+
+  .lp[lang='ml'] .lp-lang button {
+    min-width: 30px;
+    padding: 5px 6px;
+  }
+
+  .lp[lang='ml'] .lp-nav .lp-btn-sm {
+    padding-inline: 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+
 /* ---------------------------------------------------------------- hero */
 
 .lp-hero {
