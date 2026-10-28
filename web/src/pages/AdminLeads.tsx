@@ -22,6 +22,7 @@ import { num, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
 import { WaThread, WhatsAppBar, useWhatsApp, type WaOverview } from './AdminWhatsApp';
+import { Sub } from './AdminSub';
 
 // Admin → Leads: finds shops on Google Maps that could use Regularhood (server/src/leads.ts), scores them, and has
 // Gemini write a pitch for each — a WhatsApp message (Hinglish and Hindi), what to say on a call, answers to the usual
@@ -186,7 +187,7 @@ export function LeadsPage({ api }: { api: AdminApi }) {
       {!data.key.source && <p className="alert alert-error">No Google Maps key yet: press “Add Google Maps key” below to start finding shops.</p>}
       {!data.geminiReady && (
         <p className="alert alert-error">
-          No Gemini key, so pitches can’t be written. Add one in <a href="#/seo">SEO pages</a>.
+          No Gemini key, so pitches can’t be written. Add one in <a href="#/seo/ai">SEO pages → AI calls &amp; key</a>.
         </p>
       )}
 
@@ -246,63 +247,67 @@ export function LeadsPage({ api }: { api: AdminApi }) {
         </div>
       </section>
 
-      <SearchCard api={api} data={data} inr={inr} onDone={(id) => (setSearchId(id), setStatus(''), setShown(PAGE), load())} onSettings={load} />
+      <Sub id="leads">
+        <SearchCard api={api} data={data} inr={inr} onDone={(id) => (setSearchId(id), setStatus(''), setShown(PAGE), load())} onSettings={load} />
 
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Users size={18} /> Leads
-          </h2>
-          <div className="actions" style={{ margin: 0 }}>
-            <button className="btn btn-sm btn-soft" disabled={!!bulk || !data.geminiReady} onClick={() => void pitchTop(5)}>
-              <Wand2 size={15} /> {bulk || 'Write pitches for the top 5'}
-            </button>
-            {wa?.ready && (
-              <button className="btn btn-sm btn-primary" disabled={!!bulk} onClick={() => void sendTop(10)}>
-                <Send size={15} /> Send intro to the top 10
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Users size={18} /> Leads
+            </h2>
+            <div className="actions" style={{ margin: 0 }}>
+              <button className="btn btn-sm btn-soft" disabled={!!bulk || !data.geminiReady} onClick={() => void pitchTop(5)}>
+                <Wand2 size={15} /> {bulk || 'Write pitches for the top 5'}
               </button>
-            )}
+              {wa?.ready && (
+                <button className="btn btn-sm btn-primary" disabled={!!bulk} onClick={() => void sendTop(10)}>
+                  <Send size={15} /> Send intro to the top 10
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="seg seg-scroll">
-          {(['', 'new', 'contacted', 'interested', 'joined', 'not_interested'] as const).map((s) => (
-            <button key={s} className={status === s ? 'active' : ''} onClick={() => (setStatus(s), setShown(PAGE))}>
-              {s ? `${STATUS[s]} (${count(s)})` : `All (${data.leads.length})`}
-            </button>
-          ))}
-        </div>
-        <div className="leads-filters">
-          <input value={q} onChange={(e) => (setQ(e.target.value), setShown(PAGE))} placeholder="Search name, area, phone" aria-label="Search leads" />
-          <select value={searchId} onChange={(e) => (setSearchId(Number(e.target.value)), setShown(PAGE))} aria-label="From search">
-            <option value={0}>All searches</option>
-            {data.searches.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.shop_type} · {s.area}
-              </option>
-            ))}
-          </select>
-          <label className="poster-check">
-            <input type="checkbox" checked={onlyMobile} onChange={(e) => (setOnlyMobile(e.target.checked), setShown(PAGE))} /> Only WhatsApp numbers
-          </label>
-        </div>
-        {list.length ? (
-          <div className="leads-list">
-            {list.slice(0, shown).map((l) => (
-              <LeadItem key={l.id} lead={l} api={api} wa={wa} onOpen={() => setOpenId(l.id)} onChange={setLead} onSent={refresh} />
-            ))}
-            {list.length > shown && (
-              <button className="btn btn-soft" onClick={() => setShown(shown + PAGE)}>
-                Show more ({num(list.length - shown)} left)
+          <div className="seg seg-scroll">
+            {(['', 'new', 'contacted', 'interested', 'joined', 'not_interested'] as const).map((s) => (
+              <button key={s} className={status === s ? 'active' : ''} onClick={() => (setStatus(s), setShown(PAGE))}>
+                {s ? `${STATUS[s]} (${count(s)})` : `All (${data.leads.length})`}
               </button>
-            )}
+            ))}
           </div>
-        ) : (
-          <EmptyState icon={Search} title={data.leads.length ? 'No leads match' : 'No leads yet'} text={data.leads.length ? 'Try another filter.' : 'Search for a kind of shop in an area above.'} />
-        )}
-      </section>
+          <div className="leads-filters">
+            <input value={q} onChange={(e) => (setQ(e.target.value), setShown(PAGE))} placeholder="Search name, area, phone" aria-label="Search leads" />
+            <select value={searchId} onChange={(e) => (setSearchId(Number(e.target.value)), setShown(PAGE))} aria-label="From search">
+              <option value={0}>All searches</option>
+              {data.searches.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.shop_type} · {s.area}
+                </option>
+              ))}
+            </select>
+            <label className="poster-check">
+              <input type="checkbox" checked={onlyMobile} onChange={(e) => (setOnlyMobile(e.target.checked), setShown(PAGE))} /> Only WhatsApp numbers
+            </label>
+          </div>
+          {list.length ? (
+            <div className="leads-list">
+              {list.slice(0, shown).map((l) => (
+                <LeadItem key={l.id} lead={l} api={api} wa={wa} onOpen={() => setOpenId(l.id)} onChange={setLead} onSent={refresh} />
+              ))}
+              {list.length > shown && (
+                <button className="btn btn-soft" onClick={() => setShown(shown + PAGE)}>
+                  Show more ({num(list.length - shown)} left)
+                </button>
+              )}
+            </div>
+          ) : (
+            <EmptyState icon={Search} title={data.leads.length ? 'No leads match' : 'No leads yet'} text={data.leads.length ? 'Try another filter.' : 'Search for a kind of shop in an area above.'} />
+          )}
+        </section>
+      </Sub>
 
-      <HistoryCard data={data} usd={usd} inr={inr} />
+      <Sub id="costs">
+        <HistoryCard data={data} usd={usd} inr={inr} />
+      </Sub>
 
       {open && <PitchSheet lead={open} api={api} wa={wa} geminiReady={data.geminiReady} usd={usd} onChange={setLead} onDeleted={load} onWa={refresh} onClose={() => setOpenId(0)} />}
     </>

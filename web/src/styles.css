@@ -2600,49 +2600,211 @@ body.referral-body {
 
 /* ---------------------------------------------------------------- superadmin */
 
+/* A sidebar of groups; the open page's subtabs show under it and as a strip on the page.
+   Collapsed, it's a rail of icons whose subtabs open on hover. On phones it's a drawer. */
+
 .admin {
+  --side-w: 248px;
+  display: grid;
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
   min-height: 100vh;
   background: var(--bg);
 }
 
-.admin-bar {
+.admin-rail {
+  --side-w: 64px;
+}
+
+.admin-side {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
+  height: 100vh;
+  border-right: 1px solid var(--line);
   background: var(--surface);
 }
 
-.admin-bar .brand {
-  margin-right: 8px;
+.admin-side .brand {
+  padding: 14px 16px 10px;
 }
 
-.admin-bar nav {
-  display: flex;
+.admin-side nav {
   flex: 1;
-  gap: 4px;
-  min-width: 0;
-  overflow-x: auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 10px 14px;
 }
 
-.admin-bar nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 10px;
+.side-label {
+  padding: 14px 10px 4px;
   color: var(--muted);
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.side-item {
+  position: relative;
+}
+
+.side-item > a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.admin-bar nav a.active {
+.side-item > a span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side-item > a:hover,
+.side-subs a:hover {
+  background: var(--surface-2);
+}
+
+.side-item.active > a {
   background: var(--brand-soft);
   color: var(--brand-ink);
+}
+
+.side-subs {
+  display: none;
+  margin: 2px 0 6px 19px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.side-item.active .side-subs {
+  display: grid;
+}
+
+.side-subs b {
+  display: none;
+}
+
+.side-subs a {
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.side-subs a.active {
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+}
+
+.side-foot {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.side-foot .admin-email {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side-foot .icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+/* collapsed to a rail of icons */
+.admin-rail .admin-side nav {
+  overflow: visible;
+}
+
+.admin-rail .brand span,
+.admin-rail .side-label,
+.admin-rail .side-item > a span,
+.admin-rail .side-item > a .nav-badge,
+.admin-rail .admin-email {
+  display: none;
+}
+
+.admin-rail .admin-side .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.admin-rail .side-group + .side-group {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-rail .side-item > a {
+  justify-content: center;
+}
+
+.admin-rail .side-item:has(.nav-badge) > a::after,
+.side-dot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  content: '';
+}
+
+.admin-rail .side-subs,
+.admin-rail .side-item.active .side-subs {
+  display: none;
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  min-width: 190px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-rail .side-item:hover .side-subs,
+.admin-rail .side-item:focus-within .side-subs {
+  display: grid;
+}
+
+.admin-rail .side-subs b {
+  display: block;
+  padding: 4px 10px 6px;
+  font-size: 13px;
+}
+
+.admin-rail .side-foot {
+  flex-direction: column;
+}
+
+.admin-top,
+.side-scrim {
+  display: none;
+}
+
+.admin-main {
+  min-width: 0;
 }
 
 .admin-page {
@@ -2653,15 +2815,146 @@ body.referral-body {
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 24px 24px 40px;
   animation: page-in 0.35s var(--ease);
 }
 
-@media (max-width: 700px) {
-  .admin-email,
-  .admin-bar nav a span,
-  .admin-bar .brand span {
+/* the subtab strip sits right under the page's heading */
+.admin-page > .page-head {
+  order: -2;
+}
+
+.admin-tabs {
+  order: -1;
+  display: flex;
+  gap: 4px;
+  margin-top: -6px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-tabs a {
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.admin-tabs a:hover {
+  color: var(--ink);
+}
+
+.admin-tabs a.active {
+  border-bottom-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* a subtab can leave one card of a two-up row: let it take the full width */
+.admin-page .grid-2:has(> :only-child),
+.admin-page .cw-layout:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-page .grid-2:empty {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .admin,
+  .admin-rail {
+    --side-w: 264px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-side {
+    position: fixed;
+    left: 0;
+    width: var(--side-w);
+    transform: translateX(-100%);
+    transition: transform 0.2s var(--ease);
+  }
+
+  .admin-drawer .admin-side {
+    transform: none;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* the rail is a desktop thing: the drawer always shows labels */
+  .admin-rail .admin-side nav {
+    overflow-y: auto;
+  }
+
+  .admin-rail .brand span,
+  .admin-rail .side-label,
+  .admin-rail .side-item > a span,
+  .admin-rail .side-item > a .nav-badge,
+  .admin-rail .admin-email {
+    display: revert;
+  }
+
+  .admin-rail .side-item > a,
+  .admin-rail .admin-side .brand {
+    justify-content: flex-start;
+  }
+
+  .admin-rail .admin-side .brand {
+    padding-inline: 16px;
+  }
+
+  .admin-rail .side-item:has(.nav-badge) > a::after {
     display: none;
+  }
+
+  .admin-rail .side-item.active .side-subs {
+    display: grid;
+    position: static;
+    margin: 2px 0 6px 19px;
+    padding: 0 0 0 10px;
+    border: 0;
+    border-left: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .admin-rail .side-subs b,
+  .side-rail-btn {
+    display: none;
+  }
+
+  .admin-rail .side-foot {
+    flex-direction: row;
+  }
+
+  .admin-drawer .side-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    border: 0;
+    background: var(--scrim);
+  }
+
+  .admin-top {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .admin-top .icon-btn {
+    position: relative;
+  }
+
+  .admin-page {
+    padding: 18px 16px 40px;
   }
 }
 

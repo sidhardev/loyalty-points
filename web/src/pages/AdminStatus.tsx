@@ -3,6 +3,7 @@ import { Copy, Download, ExternalLink, History, Image, MessageCircle, Trash2, Wa
 import { when } from '../api';
 import { EmptyState, ErrorText, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
+import { Sub } from './AdminSub';
 
 // Admin → WhatsApp status: Gemini (server/src/status.ts) writes ideas for Hindi WhatsApp status images. Each comes as a
 // prompt to paste into Gemini or ChatGPT, with one of the logos below attached so the image uses the real logo.
@@ -134,29 +135,37 @@ export function StatusPage({ api }: { api: AdminApi }) {
 
       {!data.keySet && (
         <p className="alert alert-error">
-          No Gemini API key yet. Add one in <a href="#/seo">SEO pages</a> first.
+          No Gemini API key yet. Add one in <a href="#/seo/ai">SEO pages → AI calls &amp; key</a> first.
         </p>
       )}
 
       <div className="grid-2">
-        <GenerateCard api={api} disabled={!data.keySet} onDone={load} />
-        <LogosCard />
+        <Sub id="ideas">
+          <GenerateCard api={api} disabled={!data.keySet} onDone={load} />
+        </Sub>
+        <Sub id="brand">
+          <LogosCard />
+        </Sub>
       </div>
 
-      <InstagramPostsCard />
+      <Sub id="brand">
+        <InstagramPostsCard />
+      </Sub>
 
-      {latest ? <BatchCard batch={latest} onDelete={() => void remove(latest)} open /> : <EmptyState icon={Image} title="No ideas yet" text="Pick a theme and press Write ideas." />}
+      <Sub id="ideas">
+        {latest ? <BatchCard batch={latest} onDelete={() => void remove(latest)} open /> : <EmptyState icon={Image} title="No ideas yet" text="Pick a theme and press Write ideas." />}
 
-      {older.length > 0 && (
-        <>
-          <h2 className="status-older">
-            <History size={18} /> Earlier ideas
-          </h2>
-          {older.map((b) => (
-            <BatchCard key={b.id} batch={b} onDelete={() => void remove(b)} />
-          ))}
-        </>
-      )}
+        {older.length > 0 && (
+          <>
+            <h2 className="status-older">
+              <History size={18} /> Earlier ideas
+            </h2>
+            {older.map((b) => (
+              <BatchCard key={b.id} batch={b} onDelete={() => void remove(b)} />
+            ))}
+          </>
+        )}
+      </Sub>
     </>
   );
 }

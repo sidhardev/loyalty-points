@@ -3,6 +3,7 @@ import { BookOpen, Copy, KeyRound, Printer, Sparkles, Trash2 } from 'lucide-reac
 import { when } from '../api';
 import { EmptyState, ErrorText, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
+import { Sub } from './AdminSub';
 
 // Admin → Playbooks: type a business we're pitching and Claude Haiku 5.5 writes the one-page Loyalty Playbook the cold
 // message promised ("3 simple reward ideas for your kind of business"), plus the reply to send with it. Print it to PDF
@@ -112,74 +113,84 @@ export function PlaybooksPage({ api }: { api: AdminApi }) {
           </p>
         </div>
       </header>
-      {data.key.source ? (
-        <NewPlaybook
-          api={api}
-          onDone={(id) => {
-            setOpenId(id);
-            load();
-          }}
-        />
-      ) : null}
-      <KeyCard api={api} info={data.key} onChange={load} />
-      {open && (
+      <Sub id="list">
+        {data.key.source ? (
+          <NewPlaybook
+            api={api}
+            onDone={(id) => {
+              setOpenId(id);
+              load();
+            }}
+          />
+        ) : (
+          <p className="alert alert-error">
+            No Anthropic API key yet. Add one in <a href="#/playbooks/key">API key</a> to write playbooks.
+          </p>
+        )}
+      </Sub>
+      <Sub id="key">
+        <KeyCard api={api} info={data.key} onChange={load} />
+      </Sub>
+      <Sub id="list">
+        {open && (
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <BookOpen size={18} /> {open.business}
+              </h2>
+              <div className="playbook-actions">
+                <button className="btn btn-ghost" onClick={() => copy(asText(open.playbook), 'Playbook')}>
+                  <Copy size={16} /> Copy text
+                </button>
+                <button className="btn btn-ghost" onClick={() => copy(open.playbook.message, 'Message')}>
+                  <Copy size={16} /> Copy message
+                </button>
+                <button className="btn btn-primary" onClick={() => printPlaybook(open.playbook, open.business)}>
+                  <Printer size={16} /> Print / PDF
+                </button>
+              </div>
+            </div>
+            <PlaybookSheet p={open.playbook} />
+            <div className="playbook-message">
+              <strong>Message to send with it</strong>
+              <p>{open.playbook.message}</p>
+            </div>
+          </section>
+        )}
         <section className="card">
           <div className="card-head">
-            <h2>
-              <BookOpen size={18} /> {open.business}
-            </h2>
-            <div className="playbook-actions">
-              <button className="btn btn-ghost" onClick={() => copy(asText(open.playbook), 'Playbook')}>
-                <Copy size={16} /> Copy text
-              </button>
-              <button className="btn btn-ghost" onClick={() => copy(open.playbook.message, 'Message')}>
-                <Copy size={16} /> Copy message
-              </button>
-              <button className="btn btn-primary" onClick={() => printPlaybook(open.playbook, open.business)}>
-                <Printer size={16} /> Print / PDF
-              </button>
+            <h2>All playbooks</h2>
+          </div>
+          {data.playbooks.length ? (
+            <div className="table-wrap">
+              <table className="admin-table">
+                <tbody>
+                  {data.playbooks.map((p) => (
+                    <tr key={p.id} className={p.id === open?.id ? 'playbook-row-open' : ''}>
+                      <td>
+                        <button className="playbook-open" onClick={() => setOpenId(p.id)}>
+                          {p.business}
+                        </button>
+                        <div className="muted small">
+                          {p.businessType} · {p.city}
+                        </div>
+                      </td>
+                      <td className="muted small">{when(p.created_at)}</td>
+                      <td>
+                        <button className="btn btn-ghost" aria-label={`Delete the playbook for ${p.business}`} onClick={() => void remove(p)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-          <PlaybookSheet p={open.playbook} />
-          <div className="playbook-message">
-            <strong>Message to send with it</strong>
-            <p>{open.playbook.message}</p>
-          </div>
+          ) : (
+            <EmptyState icon={BookOpen} title="No playbooks yet" text="Write one above when a business says yes to your message." />
+          )}
         </section>
-      )}
-      <section className="card">
-        <div className="card-head">
-          <h2>All playbooks</h2>
-        </div>
-        {data.playbooks.length ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <tbody>
-                {data.playbooks.map((p) => (
-                  <tr key={p.id} className={p.id === open?.id ? 'playbook-row-open' : ''}>
-                    <td>
-                      <button className="playbook-open" onClick={() => setOpenId(p.id)}>
-                        {p.business}
-                      </button>
-                      <div className="muted small">
-                        {p.businessType} · {p.city}
-                      </div>
-                    </td>
-                    <td className="muted small">{when(p.created_at)}</td>
-                    <td>
-                      <button className="btn btn-ghost" aria-label={`Delete the playbook for ${p.business}`} onClick={() => void remove(p)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState icon={BookOpen} title="No playbooks yet" text="Write one above when a business says yes to your message." />
-        )}
-      </section>
+      </Sub>
     </>
   );
 }

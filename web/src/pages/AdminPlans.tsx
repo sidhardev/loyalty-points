@@ -20,6 +20,7 @@ import {
 import { num, parseTime, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, Skeleton, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
+import { Sub } from './AdminSub';
 
 // Admin → Plans: everything about Free and Founding Shop in one place. The offer (on sale or not, places, prices, the
 // Free plan's customer limit, grace days), the money, every Founding Shop with its state, every payment with a refund
@@ -334,109 +335,76 @@ export function PlansPage({ api }: { api: AdminApi }) {
         </div>
       </section>
 
-      <div className="grid-2 plans-grid">
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <ShieldCheck size={18} /> Payment health
-            </h2>
-            <button className="btn btn-ghost btn-sm" disabled={busy || !data.razorpay.keyId} onClick={() => sync()} title="Ask Razorpay about every unpaid payment of the last 3 days">
-              <RefreshCw size={15} /> Check unpaid
-            </button>
-          </div>
-          <ul className="rows">
-            {checks.map((c) => (
-              <li key={c.label}>
-                <div className="row-item">
-                  <div className="row-main">
-                    <strong>{c.label}</strong>
-                    <span>{c.text}</span>
-                  </div>
-                  <span className={`cw-chip cw-chip-${c.ok === null ? 'none' : c.ok ? 'ok' : 'bad'}`}>{c.ok === null ? 'waiting' : c.ok ? 'OK' : 'Check'}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Filter size={18} /> Checkouts, last 30 days
-            </h2>
-            <span className="muted small">{num(f.shops)} shops</span>
-          </div>
-          {f.started ? (
-            <div className="plans-funnel">
-              {[
-                { label: 'Opened the checkout', n: f.started, tone: 'none' },
-                { label: 'Paid', n: f.paid, tone: 'ok' },
-                { label: 'Failed', n: f.failed, tone: 'bad' },
-                { label: 'Closed without paying', n: f.closed, tone: 'wait' },
-                { label: 'Left open', n: Math.max(0, f.started - f.paid - f.failed - f.closed), tone: 'wait' },
-              ].map((r) => (
-                <div key={r.label} className="plans-funnel-row">
-                  <span>{r.label}</span>
-                  <div className="plans-funnel-bar">
-                    <i className={`tone-${r.tone}`} style={{ width: f.started ? `${(r.n / f.started) * 100}%` : 0 }} />
-                  </div>
-                  <strong>
-                    {num(r.n)} <em>{pct(r.n)}</em>
-                  </strong>
-                </div>
-              ))}
+      <Sub id="health">
+        <div className="grid-2 plans-grid">
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <ShieldCheck size={18} /> Payment health
+              </h2>
+              <button className="btn btn-ghost btn-sm" disabled={busy || !data.razorpay.keyId} onClick={() => sync()} title="Ask Razorpay about every unpaid payment of the last 3 days">
+                <RefreshCw size={15} /> Check unpaid
+              </button>
             </div>
-          ) : (
-            <p className="muted small">No shop has opened the checkout in the last 30 days.</p>
-          )}
-        </section>
-      </div>
-
-      {renewals.length > 0 && (
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <CalendarClock size={18} /> Renewals
-            </h2>
-            <span className="muted small">Yearly plans ending within 30 days, in grace or ended</span>
-          </div>
-          <ul className="rows">
-            {renewals.map((s) => (
-              <li key={s.id}>
-                <div className="row-item">
-                  <div className="row-main">
-                    <a href={`#/shops/${s.id}`}>
-                      <strong>{s.name}</strong>
-                    </a>
-                    <span>
-                      <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>{' '}
-                      {s.plan_expires_at && (daysLeft(s.plan_expires_at) >= 0 ? `ends ${day(s.plan_expires_at)} (${daysLeft(s.plan_expires_at)} days)` : `ended ${day(s.plan_expires_at)}`)} ·{' '}
-                      {num(s.customers)} customers
-                    </span>
-                  </div>
-                  {s.phone && (
-                    <a className="btn btn-soft btn-sm" href={whatsapp(s.phone, renewNudge(s))} target="_blank" rel="noreferrer">
-                      <MessageCircle size={15} /> WhatsApp
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="grid-2 plans-grid">
-        <OfferSettings s={data.settings} onSave={save} busy={busy} />
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Store size={18} /> Close to the Free limit
-            </h2>
-            <span className="muted small">{num(Math.ceil(data.settings.freeCustomers * 0.7))}+ customers</span>
-          </div>
-          {data.nearLimit.length ? (
             <ul className="rows">
-              {data.nearLimit.map((s) => (
+              {checks.map((c) => (
+                <li key={c.label}>
+                  <div className="row-item">
+                    <div className="row-main">
+                      <strong>{c.label}</strong>
+                      <span>{c.text}</span>
+                    </div>
+                    <span className={`cw-chip cw-chip-${c.ok === null ? 'none' : c.ok ? 'ok' : 'bad'}`}>{c.ok === null ? 'waiting' : c.ok ? 'OK' : 'Check'}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Filter size={18} /> Checkouts, last 30 days
+              </h2>
+              <span className="muted small">{num(f.shops)} shops</span>
+            </div>
+            {f.started ? (
+              <div className="plans-funnel">
+                {[
+                  { label: 'Opened the checkout', n: f.started, tone: 'none' },
+                  { label: 'Paid', n: f.paid, tone: 'ok' },
+                  { label: 'Failed', n: f.failed, tone: 'bad' },
+                  { label: 'Closed without paying', n: f.closed, tone: 'wait' },
+                  { label: 'Left open', n: Math.max(0, f.started - f.paid - f.failed - f.closed), tone: 'wait' },
+                ].map((r) => (
+                  <div key={r.label} className="plans-funnel-row">
+                    <span>{r.label}</span>
+                    <div className="plans-funnel-bar">
+                      <i className={`tone-${r.tone}`} style={{ width: f.started ? `${(r.n / f.started) * 100}%` : 0 }} />
+                    </div>
+                    <strong>
+                      {num(r.n)} <em>{pct(r.n)}</em>
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted small">No shop has opened the checkout in the last 30 days.</p>
+            )}
+          </section>
+        </div>
+      </Sub>
+
+      <Sub id="shops">
+        {renewals.length > 0 && (
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <CalendarClock size={18} /> Renewals
+              </h2>
+              <span className="muted small">Yearly plans ending within 30 days, in grace or ended</span>
+            </div>
+            <ul className="rows">
+              {renewals.map((s) => (
                 <li key={s.id}>
                   <div className="row-item">
                     <div className="row-main">
@@ -444,11 +412,13 @@ export function PlansPage({ api }: { api: AdminApi }) {
                         <strong>{s.name}</strong>
                       </a>
                       <span>
-                        {num(s.customers)} of {num(data.settings.freeCustomers)} customers{s.customers >= data.settings.freeCustomers ? ' · at the limit' : ''}
+                        <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>{' '}
+                        {s.plan_expires_at && (daysLeft(s.plan_expires_at) >= 0 ? `ends ${day(s.plan_expires_at)} (${daysLeft(s.plan_expires_at)} days)` : `ended ${day(s.plan_expires_at)}`)} ·{' '}
+                        {num(s.customers)} customers
                       </span>
                     </div>
                     {s.phone && (
-                      <a className="btn btn-soft btn-sm" href={whatsapp(s.phone, nudge(s.customers))} target="_blank" rel="noreferrer">
+                      <a className="btn btn-soft btn-sm" href={whatsapp(s.phone, renewNudge(s))} target="_blank" rel="noreferrer">
                         <MessageCircle size={15} /> WhatsApp
                       </a>
                     )}
@@ -456,175 +426,218 @@ export function PlansPage({ api }: { api: AdminApi }) {
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="muted small">No Free shop is near its limit yet. They show here from 70% full: the ones most likely to pay.</p>
-          )}
-        </section>
+          </section>
+        )}
+      </Sub>
+
+      <div className="grid-2 plans-grid">
+        <Sub id="offer">
+          <OfferSettings s={data.settings} onSave={save} busy={busy} />
+        </Sub>
+        <Sub id="shops">
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Store size={18} /> Close to the Free limit
+              </h2>
+              <span className="muted small">{num(Math.ceil(data.settings.freeCustomers * 0.7))}+ customers</span>
+            </div>
+            {data.nearLimit.length ? (
+              <ul className="rows">
+                {data.nearLimit.map((s) => (
+                  <li key={s.id}>
+                    <div className="row-item">
+                      <div className="row-main">
+                        <a href={`#/shops/${s.id}`}>
+                          <strong>{s.name}</strong>
+                        </a>
+                        <span>
+                          {num(s.customers)} of {num(data.settings.freeCustomers)} customers{s.customers >= data.settings.freeCustomers ? ' · at the limit' : ''}
+                        </span>
+                      </div>
+                      {s.phone && (
+                        <a className="btn btn-soft btn-sm" href={whatsapp(s.phone, nudge(s.customers))} target="_blank" rel="noreferrer">
+                          <MessageCircle size={15} /> WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">No Free shop is near its limit yet. They show here from 70% full: the ones most likely to pay.</p>
+            )}
+          </section>
+        </Sub>
       </div>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Crown size={18} /> Founding Shops
-          </h2>
-          <span className="muted small">Change a plan by hand (paid by UPI, a mistake) from the shop’s page</span>
-        </div>
-        {data.founding.length ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Shop</th>
-                  <th>Plan</th>
-                  <th>Since</th>
-                  <th>Ends</th>
-                  <th className="num">Customers</th>
-                  <th className="num">Paid</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {data.founding.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.founding_no ?? '–'}</td>
-                    <td>
-                      <a href={`#/shops/${s.id}`}>
-                        <strong>{s.name}</strong>
-                      </a>
-                    </td>
-                    <td>
-                      <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>
-                    </td>
-                    <td className="small">{s.since ? day(s.since) : 'by hand'}</td>
-                    <td className="small">
-                      {s.plan === 'lifetime' ? 'never' : s.plan_expires_at ? `${day(s.plan_expires_at)} (${daysLeft(s.plan_expires_at) >= 0 ? `${daysLeft(s.plan_expires_at)} days` : 'ended'})` : '–'}
-                    </td>
-                    <td className="num">{num(s.customers)}</td>
-                    <td className="num">{inr(s.paid)}</td>
-                    <td>
-                      {s.plan === 'yearly' && (
-                        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => extend(s)} title="Add one year, free">
-                          <CalendarPlus size={15} /> +1 year
-                        </button>
-                      )}
-                    </td>
+      <Sub id="shops">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Crown size={18} /> Founding Shops
+            </h2>
+            <span className="muted small">Change a plan by hand (paid by UPI, a mistake) from the shop’s page</span>
+          </div>
+          {data.founding.length ? (
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Shop</th>
+                    <th>Plan</th>
+                    <th>Since</th>
+                    <th>Ends</th>
+                    <th className="num">Customers</th>
+                    <th className="num">Paid</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState icon={Crown} title="No Founding Shops yet" text="They show here as soon as a shop pays." />
-        )}
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <BadgeIndianRupee size={18} /> Payments
-          </h2>
-          <div className="seg seg-sm" role="group" aria-label="Show">
-            {(['paid', 'failed', 'created', 'refunded', 'all'] as const).map((k) => (
-              <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>
-                {k === 'all' ? 'All' : PAY_STATUS[k].label} ({num(k === 'all' ? data.payments.length : data.payments.filter((p) => p.status === k).length)})
-              </button>
-            ))}
-          </div>
-        </div>
-        {payments.length ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Shop</th>
-                  <th>Plan</th>
-                  <th className="num">Amount</th>
-                  <th>Status</th>
-                  <th>Razorpay</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((p) => (
-                  <tr key={p.id}>
-                    <td className="small">{when(p.paid_at ?? p.created_at)}</td>
-                    <td>
-                      <a href={`#/shops/${p.shopId}`}>
-                        <strong>{p.name}</strong>
-                      </a>
-                    </td>
-                    <td>{p.kind}</td>
-                    <td className="num">{inr(p.amount_paise)}</td>
-                    <td>
-                      <span className={`cw-chip cw-chip-${PAY_STATUS[p.status].tone}`}>{PAY_STATUS[p.status].label}</span>
-                      {p.refunded_at && <span className="muted small"> {when(p.refunded_at)}</span>}
-                      {p.failure_reason && <div className="muted small">{p.failure_reason}</div>}
-                    </td>
-                    <td className="small mono">{p.razorpay_payment_id ?? p.razorpay_order_id}</td>
-                    <td className="plans-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => openStory(p)} title="Every step of this payment">
-                        <History size={15} /> Story
-                      </button>
-                      {(p.status === 'created' || p.status === 'failed') && (
-                        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => sync(p)} title="Ask Razorpay whether this was paid">
-                          <RefreshCw size={15} /> Check
-                        </button>
-                      )}
-                      {(p.status === 'created' || p.status === 'failed') && p.phone && (
-                        <a className="btn btn-ghost btn-sm" href={whatsapp(p.phone, retryNudge(p))} target="_blank" rel="noreferrer">
-                          <MessageCircle size={15} />
+                </thead>
+                <tbody>
+                  {data.founding.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.founding_no ?? '–'}</td>
+                      <td>
+                        <a href={`#/shops/${s.id}`}>
+                          <strong>{s.name}</strong>
                         </a>
-                      )}
-                      {p.status === 'paid' && (
-                        <button className="btn btn-ghost btn-sm danger" disabled={busy} onClick={() => (setToFree(true), setRefunding(p))}>
-                          <RotateCcw size={15} /> Refund
-                        </button>
-                      )}
-                    </td>
+                      </td>
+                      <td>
+                        <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>
+                      </td>
+                      <td className="small">{s.since ? day(s.since) : 'by hand'}</td>
+                      <td className="small">
+                        {s.plan === 'lifetime' ? 'never' : s.plan_expires_at ? `${day(s.plan_expires_at)} (${daysLeft(s.plan_expires_at) >= 0 ? `${daysLeft(s.plan_expires_at)} days` : 'ended'})` : '–'}
+                      </td>
+                      <td className="num">{num(s.customers)}</td>
+                      <td className="num">{inr(s.paid)}</td>
+                      <td>
+                        {s.plan === 'yearly' && (
+                          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => extend(s)} title="Add one year, free">
+                            <CalendarPlus size={15} /> +1 year
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState icon={Crown} title="No Founding Shops yet" text="They show here as soon as a shop pays." />
+          )}
+        </section>
+      </Sub>
+
+      <Sub id="payments">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <BadgeIndianRupee size={18} /> Payments
+            </h2>
+            <div className="seg seg-sm" role="group" aria-label="Show">
+              {(['paid', 'failed', 'created', 'refunded', 'all'] as const).map((k) => (
+                <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>
+                  {k === 'all' ? 'All' : PAY_STATUS[k].label} ({num(k === 'all' ? data.payments.length : data.payments.filter((p) => p.status === k).length)})
+                </button>
+              ))}
+            </div>
+          </div>
+          {payments.length ? (
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Shop</th>
+                    <th>Plan</th>
+                    <th className="num">Amount</th>
+                    <th>Status</th>
+                    <th>Razorpay</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="muted small">Nothing here.</p>
-        )}
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Activity size={18} /> Payment activity
-          </h2>
-          <span className="muted small">The last 100 steps, newest first</span>
-        </div>
-        {data.events.length ? (
-          <ul className="rows plans-events">
-            {data.events.map((e) => (
-              <li key={e.id}>
-                <div className="row-item">
-                  <div className="row-main">
-                    <span>
-                      <span className={`cw-chip cw-chip-${eventLabel(e.event).tone}`}>{eventLabel(e.event).label}</span>{' '}
-                      {e.shopId ? (
-                        <a href={`#/shops/${e.shopId}`}>
-                          <strong>{e.name}</strong>
+                </thead>
+                <tbody>
+                  {payments.map((p) => (
+                    <tr key={p.id}>
+                      <td className="small">{when(p.paid_at ?? p.created_at)}</td>
+                      <td>
+                        <a href={`#/shops/${p.shopId}`}>
+                          <strong>{p.name}</strong>
                         </a>
-                      ) : null}
-                    </span>
-                    {e.detail && <span className="small mono">{e.detail}</span>}
+                      </td>
+                      <td>{p.kind}</td>
+                      <td className="num">{inr(p.amount_paise)}</td>
+                      <td>
+                        <span className={`cw-chip cw-chip-${PAY_STATUS[p.status].tone}`}>{PAY_STATUS[p.status].label}</span>
+                        {p.refunded_at && <span className="muted small"> {when(p.refunded_at)}</span>}
+                        {p.failure_reason && <div className="muted small">{p.failure_reason}</div>}
+                      </td>
+                      <td className="small mono">{p.razorpay_payment_id ?? p.razorpay_order_id}</td>
+                      <td className="plans-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => openStory(p)} title="Every step of this payment">
+                          <History size={15} /> Story
+                        </button>
+                        {(p.status === 'created' || p.status === 'failed') && (
+                          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => sync(p)} title="Ask Razorpay whether this was paid">
+                            <RefreshCw size={15} /> Check
+                          </button>
+                        )}
+                        {(p.status === 'created' || p.status === 'failed') && p.phone && (
+                          <a className="btn btn-ghost btn-sm" href={whatsapp(p.phone, retryNudge(p))} target="_blank" rel="noreferrer">
+                            <MessageCircle size={15} />
+                          </a>
+                        )}
+                        {p.status === 'paid' && (
+                          <button className="btn btn-ghost btn-sm danger" disabled={busy} onClick={() => (setToFree(true), setRefunding(p))}>
+                            <RotateCcw size={15} /> Refund
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted small">Nothing here.</p>
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Activity size={18} /> Payment activity
+            </h2>
+            <span className="muted small">The last 100 steps, newest first</span>
+          </div>
+          {data.events.length ? (
+            <ul className="rows plans-events">
+              {data.events.map((e) => (
+                <li key={e.id}>
+                  <div className="row-item">
+                    <div className="row-main">
+                      <span>
+                        <span className={`cw-chip cw-chip-${eventLabel(e.event).tone}`}>{eventLabel(e.event).label}</span>{' '}
+                        {e.shopId ? (
+                          <a href={`#/shops/${e.shopId}`}>
+                            <strong>{e.name}</strong>
+                          </a>
+                        ) : null}
+                      </span>
+                      {e.detail && <span className="small mono">{e.detail}</span>}
+                    </div>
+                    <span className="muted small">{when(e.created_at)}</span>
                   </div>
-                  <span className="muted small">{when(e.created_at)}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted small">Nothing yet. Every checkout, webhook and plan switch shows here.</p>
-        )}
-      </section>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">Nothing yet. Every checkout, webhook and plan switch shows here.</p>
+          )}
+        </section>
+      </Sub>
 
       {story && (
         <Sheet title={`${story.payment.name} · ${inr(story.payment.amount_paise)} ${story.payment.kind}`} onClose={() => setStory(null)}>

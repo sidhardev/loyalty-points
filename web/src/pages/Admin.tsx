@@ -19,6 +19,9 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pause,
   Phone,
   Play,
@@ -45,6 +48,7 @@ import { LeadsPage } from './AdminLeads';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageEvent, type PageView } from './Visits';
+import { Sub, SubtabContext } from './AdminSub';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
 // Uses its own login (admin accounts are created on the server: npm run create-admin -w server -- <email>).
@@ -979,146 +983,152 @@ function GrowthPage() {
       </header>
       <ErrorText text={error} />
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Rocket size={18} /> Funnel
-          </h2>
-          <span className="muted small">last {days} days</span>
-        </div>
-        {!data ? (
-          <SkeletonRows count={4} />
-        ) : (
-          <div className="funnel">
-            {steps.map((s) => (
-              <div className="funnel-step" key={s.label}>
-                <span>{s.label}</span>
-                <div className="funnel-bar">
-                  <i style={{ width: `${(s.value / max) * 100}%` }} />
-                </div>
-                <strong>
-                  {num(s.value)}
-                  <em>{s.note}</em>
-                </strong>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Globe2 size={18} /> By source
-          </h2>
-        </div>
-        {!data ? (
-          <SkeletonRows count={3} />
-        ) : data.sources.length ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Source</th>
-                  <th className="num">Visitors</th>
-                  <th className="num">Sign-ups</th>
-                  <th className="num">Started</th>
-                  <th className="num">Active</th>
-                  <th className="num">Visitor → sign-up</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.sources.map((r) => (
-                  <tr key={r.source}>
-                    <td>
-                      <strong>{sourceName(r.source)}</strong>
-                    </td>
-                    <td className="num">{num(r.visitors)}</td>
-                    <td className="num">{num(r.signups)}</td>
-                    <td className="num">{num(r.started)}</td>
-                    <td className="num">{num(r.active)}</td>
-                    <td className="num">{r.visitors ? pct(r.signups, r.visitors) : '–'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState icon={Globe2} title="No visits or sign-ups yet" text="Share a tracking link (below) to get started." />
-        )}
-      </section>
-
-      <div className="grid-2">
+      <Sub id="funnel">
         <section className="card">
           <div className="card-head">
             <h2>
-              <Users size={18} /> Shops bringing shops
+              <Rocket size={18} /> Funnel
             </h2>
+            <span className="muted small">last {days} days</span>
           </div>
-          <p className="muted small" style={{ margin: 0 }}>
-            Customers see a small “Run a shop? Get it free” link on their stamp card. These shops' customers clicked it.
-          </p>
           {!data ? (
-            <SkeletonRows count={2} />
-          ) : data.cards.length ? (
-            <ul className="rows">
-              {data.cards.map((c) => (
-                <li key={`${c.shopId}-${c.shop}`}>
-                  <div className="row-item">
-                    <span className="row-main">
-                      <strong>{c.shopId ? <a href={`#/shops/${c.shopId}`}>{c.shop}</a> : c.shop}</strong>
-                      <span>
-                        {num(c.visitors)} visitors · {num(c.signups)} sign-ups
-                      </span>
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <SkeletonRows count={4} />
           ) : (
-            <p className="muted small">None yet.</p>
+            <div className="funnel">
+              {steps.map((s) => (
+                <div className="funnel-step" key={s.label}>
+                  <span>{s.label}</span>
+                  <div className="funnel-bar">
+                    <i style={{ width: `${(s.value / max) * 100}%` }} />
+                  </div>
+                  <strong>
+                    {num(s.value)}
+                    <em>{s.note}</em>
+                  </strong>
+                </div>
+              ))}
+            </div>
           )}
         </section>
 
         <section className="card">
           <div className="card-head">
             <h2>
-              <Store size={18} /> Latest sign-ups
+              <Globe2 size={18} /> By source
             </h2>
-            <a href="#/follow-up" className="small">
-              Follow up
-            </a>
           </div>
           {!data ? (
             <SkeletonRows count={3} />
-          ) : data.signups.length ? (
-            <ul className="rows">
-              {data.signups.slice(0, 12).map((s) => (
-                <li key={s.id}>
-                  <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
-                    <span className="row-main">
-                      <strong>
-                        {s.name} <StatusBadge status={s.status} />
-                      </strong>
-                      <span>
-                        joined {ago(s.created_at)}
-                        {s.referred_by_name ? ` · via ${s.referred_by_name}` : s.signup_campaign ? ` · ${s.signup_campaign}` : ''}
-                      </span>
-                    </span>
-                    <span className="source-chip">{sourceName(s.source)}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+          ) : data.sources.length ? (
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th className="num">Visitors</th>
+                    <th className="num">Sign-ups</th>
+                    <th className="num">Started</th>
+                    <th className="num">Active</th>
+                    <th className="num">Visitor → sign-up</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.sources.map((r) => (
+                    <tr key={r.source}>
+                      <td>
+                        <strong>{sourceName(r.source)}</strong>
+                      </td>
+                      <td className="num">{num(r.visitors)}</td>
+                      <td className="num">{num(r.signups)}</td>
+                      <td className="num">{num(r.started)}</td>
+                      <td className="num">{num(r.active)}</td>
+                      <td className="num">{r.visitors ? pct(r.signups, r.visitors) : '–'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <p className="muted small">No sign-ups in this period.</p>
+            <EmptyState icon={Globe2} title="No visits or sign-ups yet" text="Share a tracking link (below) to get started." />
           )}
         </section>
-      </div>
+      </Sub>
 
-      <ReferralRewardsCard />
+      <Sub id="signups">
+        <div className="grid-2">
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Users size={18} /> Shops bringing shops
+              </h2>
+            </div>
+            <p className="muted small" style={{ margin: 0 }}>
+              Customers see a small “Run a shop? Get it free” link on their stamp card. These shops' customers clicked it.
+            </p>
+            {!data ? (
+              <SkeletonRows count={2} />
+            ) : data.cards.length ? (
+              <ul className="rows">
+                {data.cards.map((c) => (
+                  <li key={`${c.shopId}-${c.shop}`}>
+                    <div className="row-item">
+                      <span className="row-main">
+                        <strong>{c.shopId ? <a href={`#/shops/${c.shopId}`}>{c.shop}</a> : c.shop}</strong>
+                        <span>
+                          {num(c.visitors)} visitors · {num(c.signups)} sign-ups
+                        </span>
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">None yet.</p>
+            )}
+          </section>
 
-      <LinkBuilder />
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Store size={18} /> Latest sign-ups
+              </h2>
+              <a href="#/follow-up" className="small">
+                Follow up
+              </a>
+            </div>
+            {!data ? (
+              <SkeletonRows count={3} />
+            ) : data.signups.length ? (
+              <ul className="rows">
+                {data.signups.slice(0, 12).map((s) => (
+                  <li key={s.id}>
+                    <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
+                      <span className="row-main">
+                        <strong>
+                          {s.name} <StatusBadge status={s.status} />
+                        </strong>
+                        <span>
+                          joined {ago(s.created_at)}
+                          {s.referred_by_name ? ` · via ${s.referred_by_name}` : s.signup_campaign ? ` · ${s.signup_campaign}` : ''}
+                        </span>
+                      </span>
+                      <span className="source-chip">{sourceName(s.source)}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">No sign-ups in this period.</p>
+            )}
+          </section>
+        </div>
+
+        <ReferralRewardsCard />
+      </Sub>
+
+      <Sub id="links">
+        <LinkBuilder />
+      </Sub>
     </>
   );
 }
@@ -1315,26 +1325,152 @@ const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; e
 
 // ---------------------------------------------------------------- shell
 
-const NAV = [
-  { path: '/', label: 'Overview', icon: LayoutDashboard },
-  { path: '/shops', label: 'Shops', icon: Store },
-  { path: '/plans', label: 'Plans', icon: BadgeIndianRupee },
-  { path: '/growth', label: 'Growth', icon: Rocket },
-  { path: '/follow-up', label: 'Follow up', icon: Phone },
-  { path: '/leads', label: 'Leads', icon: Target },
-  { path: '/playbooks', label: 'Playbooks', icon: BookOpen },
-  { path: '/chats', label: 'Chats', icon: MessagesSquare },
-  { path: '/customer-whatsapp', label: 'Customer WhatsApp', icon: BellRing },
-  { path: '/seo', label: 'SEO pages', icon: FileText },
-  { path: '/status', label: 'WhatsApp status', icon: MessageCircle },
-  { path: '/visits', label: 'Visits', icon: Globe2 },
-  { path: '/log', label: 'Admin log', icon: ScrollText },
+type NavItem = { path: string; label: string; icon: typeof Store; subs?: [id: string, label: string][] };
+
+// Sidebar groups. A page's subs split its cards into subtabs (#/plans/health); the first is the default.
+const NAV: { group: string; items: NavItem[] }[] = [
+  { group: '', items: [{ path: '/', label: 'Overview', icon: LayoutDashboard }] },
+  {
+    group: 'Shops',
+    items: [
+      { path: '/shops', label: 'Shops', icon: Store },
+      { path: '/follow-up', label: 'Follow up', icon: Phone },
+      { path: '/log', label: 'Admin log', icon: ScrollText },
+    ],
+  },
+  {
+    group: 'Money',
+    items: [
+      {
+        path: '/plans',
+        label: 'Plans',
+        icon: BadgeIndianRupee,
+        subs: [
+          ['payments', 'Payments'],
+          ['health', 'Payment health'],
+          ['shops', 'Paying shops'],
+          ['offer', 'Offer'],
+        ],
+      },
+    ],
+  },
+  {
+    group: 'Growth',
+    items: [
+      {
+        path: '/growth',
+        label: 'Growth',
+        icon: Rocket,
+        subs: [
+          ['funnel', 'Funnel'],
+          ['signups', 'Sign-ups & referrals'],
+          ['links', 'Tracking links'],
+        ],
+      },
+      {
+        path: '/visits',
+        label: 'Visits',
+        icon: Globe2,
+        subs: [
+          ['traffic', 'Traffic'],
+          ['homepage', 'Homepage'],
+          ['recent', 'Recent views'],
+        ],
+      },
+      {
+        path: '/leads',
+        label: 'Leads',
+        icon: Target,
+        subs: [
+          ['leads', 'Find & pitch'],
+          ['costs', 'Cost log'],
+        ],
+      },
+    ],
+  },
+  {
+    group: 'WhatsApp',
+    items: [
+      { path: '/chats', label: 'Chats', icon: MessagesSquare },
+      {
+        path: '/customer-whatsapp',
+        label: 'Customer WhatsApp',
+        icon: BellRing,
+        subs: [
+          ['messages', 'Messages'],
+          ['setup', 'Setup'],
+        ],
+      },
+      {
+        path: '/status',
+        label: 'WhatsApp status',
+        icon: MessageCircle,
+        subs: [
+          ['ideas', 'Ideas'],
+          ['brand', 'Logos & posts'],
+        ],
+      },
+    ],
+  },
+  {
+    group: 'Content',
+    items: [
+      {
+        path: '/seo',
+        label: 'SEO pages',
+        icon: FileText,
+        subs: [
+          ['pages', 'Pages'],
+          ['queue', 'Queue & schedule'],
+          ['ai', 'AI calls & key'],
+        ],
+      },
+      {
+        path: '/playbooks',
+        label: 'Playbooks',
+        icon: BookOpen,
+        subs: [
+          ['list', 'Playbooks'],
+          ['key', 'API key'],
+        ],
+      },
+    ],
+  },
 ];
+
+const NAV_ITEMS = NAV.flatMap((g) => g.items);
+const RAIL = 'lp_admin_rail';
+
+/** The sidebar item a hash belongs to, and its open subtab (null when the page has none). */
+function navAt(hash: string) {
+  const item = NAV_ITEMS.find((i) => i.path !== '/' && (hash === i.path || hash.startsWith(`${i.path}/`))) ?? NAV_ITEMS[0];
+  const want = hash.slice(item.path.length + 1).split('/')[0];
+  const sub = item.subs ? (item.subs.find(([id]) => id === want) ?? item.subs[0])[0] : null;
+  return { item, sub };
+}
 
 function AdminShell({ email, onLogout, children }: { email: string; onLogout: () => void; children: ReactNode }) {
   const hash = useAdminHash();
   const theme = useTheme();
-  const active = (path: string) => (path === '/' ? hash === '/' : hash.startsWith(path));
+  const { item: current, sub } = navAt(hash);
+  const [rail, setRail] = useState(() => {
+    try {
+      return localStorage.getItem(RAIL) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleRail = () => {
+    setRail(!rail);
+    try {
+      localStorage.setItem(RAIL, rail ? '' : '1');
+    } catch {
+      // Remembered for this visit only.
+    }
+  };
+  // On phones the sidebar is a drawer; picking a page closes it.
+  const [drawer, setDrawer] = useState(false);
+  useEffect(() => setDrawer(false), [hash]);
   // WhatsApp replies not opened yet, on the Chats menu item.
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -1345,31 +1481,77 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
     addEventListener(WA_UNREAD, onChats);
     return () => (clearInterval(timer), removeEventListener(WA_UNREAD, onChats));
   }, [hash]);
+  // A shop's own page is a new page; a subtab of the same page keeps it (and its loaded data).
+  const pageKey = /^\/shops\/\d+/.test(hash) ? hash : current.path;
+
   return (
-    <div className="admin">
-      <header className="admin-bar">
+    <div className={`admin${rail ? ' admin-rail' : ''}${drawer ? ' admin-drawer' : ''}`}>
+      <aside className="admin-side">
         <a href="#/" className="brand">
           <Logo /> <span>Regularhood Admin</span>
         </a>
         <nav>
-          {NAV.map(({ path, label, icon: Icon }) => (
-            <a key={path} href={`#${path}`} className={active(path) ? 'active' : ''}>
-              <Icon size={17} /> <span>{label}</span>
-              {path === '/chats' && unread > 0 && <em className="nav-badge">{unread}</em>}
-            </a>
+          {NAV.map(({ group, items }) => (
+            <div key={group} className="side-group">
+              {group && <p className="side-label">{group}</p>}
+              {items.map(({ path, label, icon: Icon, subs }) => (
+                <div key={path} className={`side-item${path === current.path ? ' active' : ''}`}>
+                  <a href={`#${path}`} title={rail ? label : undefined}>
+                    <Icon size={18} /> <span>{label}</span>
+                    {path === '/chats' && unread > 0 && <em className="nav-badge">{unread}</em>}
+                  </a>
+                  {subs && (
+                    <div className="side-subs">
+                      <b>{label}</b>
+                      {subs.map(([id, subLabel]) => (
+                        <a key={id} href={`#${path}/${id}`} className={path === current.path && id === sub ? 'active' : ''}>
+                          {subLabel}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           ))}
         </nav>
-        <span className="admin-email muted small">{email}</span>
-        <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
-          <theme.Icon size={19} />
-        </button>
-        <button className="icon-btn" onClick={onLogout} aria-label="Log out">
-          <LogOut size={19} />
-        </button>
-      </header>
-      <main className="admin-page" key={hash}>
-        {children}
-      </main>
+        <div className="side-foot">
+          <span className="admin-email muted small">{email}</span>
+          <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
+            <theme.Icon size={18} />
+          </button>
+          <button className="icon-btn side-rail-btn" onClick={toggleRail} aria-label={rail ? 'Expand the sidebar' : 'Collapse the sidebar'}>
+            {rail ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+          <button className="icon-btn" onClick={onLogout} aria-label="Log out">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </aside>
+      <button className="side-scrim" onClick={() => setDrawer(false)} aria-label="Close the menu" />
+      <div className="admin-main">
+        <header className="admin-top">
+          <button className="icon-btn" onClick={() => setDrawer(true)} aria-label="Open the menu">
+            <Menu size={20} />
+            {unread > 0 && <i className="side-dot" />}
+          </button>
+          <a href="#/" className="brand">
+            <Logo /> <span>Regularhood Admin</span>
+          </a>
+        </header>
+        <main className="admin-page" key={pageKey}>
+          {current.subs && (
+            <nav className="admin-tabs">
+              {current.subs.map(([id, label]) => (
+                <a key={id} href={`#${current.path}/${id}`} className={id === sub ? 'active' : ''}>
+                  {label}
+                </a>
+              ))}
+            </nav>
+          )}
+          <SubtabContext.Provider value={sub}>{children}</SubtabContext.Provider>
+        </main>
+      </div>
     </div>
   );
 }

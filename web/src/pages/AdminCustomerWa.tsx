@@ -21,6 +21,7 @@ import { num, when } from '../api';
 import { ErrorText, Sheet, Skeleton, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
 import { WhatsAppSettings, useWhatsApp } from './AdminWhatsApp';
+import { Sub } from './AdminSub';
 
 // Admin → Customer WhatsApp: the messages Regularhood's number sends Founding Shops' customers by itself
 // (server/src/automessages.ts). The page is the setup, in order — number, webhook, templates, a test message, go live —
@@ -183,179 +184,181 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
       </header>
       <ErrorText text={error} />
 
-      <div className="cw-layout">
-        <section className="card cw-setup">
-          <div className="card-head">
-            <h2>
-              <Settings2 size={18} /> Setup
-            </h2>
-            <span className="muted small">
-              {[data.steps.number, data.steps.webhook, allApproved, !!data.steps.tested, data.steps.live].filter(Boolean).length} of 5 done
-            </span>
-          </div>
-          <ol className="cw-steps">
-            <Step n={1} done={data.steps.number} title="Connect your WhatsApp Business number">
-              {data.steps.number ? (
-                <>
-                  <p className="cw-fact">
-                    <Phone size={15} />
-                    {phone ? (
-                      <>
-                        <strong>{phone.verified_name}</strong> {phone.display_phone_number} · quality <strong>{phone.quality_rating ?? '–'}</strong> · daily limit{' '}
-                        {phone.messaging_limit_tier ?? '–'}
-                      </>
-                    ) : (
-                      <>Number ID {data.phoneNumberId} · checking with Meta…</>
-                    )}
-                  </p>
-                </>
-              ) : (
-                <p className="muted small">
-                  In Meta for Developers: your app → WhatsApp → API setup. Copy the Phone number ID and the WhatsApp Business Account ID, and make a permanent
-                  token (Business settings → System users).
-                </p>
-              )}
-              <div className="actions">{settingsButton(data.steps.number ? 'Change number or token' : 'Add number and token')}</div>
-            </Step>
-
-            <Step n={2} done={data.steps.webhook} title="Receive deliveries and STOP replies">
-              <p className="muted small">
-                The webhook tells us when a message was delivered or read and when a customer replies STOP, so they’re never messaged again. It needs the app
-                secret and the callback URL in Meta.
-              </p>
-              <p className="cw-fact">
-                <Webhook size={15} />
-                App secret {data.appSecret ? 'saved' : 'missing'} · {data.lastWebhook ? `last message from Meta ${when(data.lastWebhook)}` : 'nothing received from Meta yet'}
-              </p>
-              <div className="actions">{settingsButton('Webhook settings')}</div>
-            </Step>
-
-            <Step n={3} done={allApproved} warn={rejected.length > 0} title="Get the 8 message templates approved">
-              <p className="muted small">
-                WhatsApp only lets a business start a chat with an approved template. There are 4 messages, each in Hindi and English. Meta reviews them in
-                minutes to a day.
-              </p>
-              <div className="actions">
-                <button className="btn btn-primary btn-sm" disabled={tplAction.busy || !data.steps.number || missing === 0} onClick={sendForReview}>
-                  <Send size={15} /> {templates === null ? 'Send to Meta for review' : missing ? `Send ${missing} to Meta for review` : 'All sent to Meta'}
-                </button>
-                <button className="btn btn-soft btn-sm" disabled={tplAction.busy || !data.steps.number} onClick={loadTemplates}>
-                  <RefreshCw size={15} /> Check status
-                </button>
-                {templates && <span className="muted small">{approved} of {templates.length} approved</span>}
-              </div>
-              <ErrorText text={tplAction.error} />
-              {rejected.length > 0 && (
-                <p className="alert alert-error small">
-                  Rejected: {rejected.map((t) => `${t.name} (${t.lang})`).join(', ')}. See why in Meta (WhatsApp Manager → Message templates), delete it there, then
-                  send it again here.
-                </p>
-              )}
-            </Step>
-
-            <Step n={4} done={!!data.steps.tested} title="Send yourself a test">
-              <p className="muted small">Sends one template with sample values (Sharma Sweets) to any WhatsApp number, so you see what customers get.</p>
-              <form className="cw-test" onSubmit={sendTest}>
-                <input value={test.phone} onChange={(e) => setTest({ ...test, phone: e.target.value })} placeholder="Your WhatsApp number" inputMode="tel" aria-label="Phone number" required />
-                <select value={test.kind} onChange={(e) => setTest({ ...test, kind: e.target.value as Kind })} aria-label="Message">
-                  {KINDS.map((k) => (
-                    <option key={k.kind} value={k.kind}>
-                      {k.title}
-                    </option>
-                  ))}
-                </select>
-                <div className="seg seg-sm" role="group" aria-label="Language">
-                  {(['hi', 'en'] as const).map((l) => (
-                    <button key={l} type="button" className={test.lang === l ? 'active' : ''} onClick={() => setTest({ ...test, lang: l })}>
-                      {l === 'hi' ? 'हिंदी' : 'English'}
-                    </button>
-                  ))}
-                </div>
-                <button className="btn btn-primary btn-sm" disabled={busy || !data.steps.number}>
-                  <Send size={15} /> Send test
-                </button>
-              </form>
-              {templates && status(test.kind, test.lang) !== 'APPROVED' && (
-                <p className="muted small">That template isn’t approved yet ({status(test.kind, test.lang).toLowerCase()}), so Meta will refuse it.</p>
-              )}
-              {data.steps.tested && <p className="cw-fact ok">Last test sent {when(data.steps.tested)}</p>}
-            </Step>
-
-            <Step n={5} done={data.steps.live} title="Go live">
-              <div className="cw-quota">
-                <label>
-                  Messages per Founding Shop a month
-                  <input type="number" min="0" value={quota} onChange={(e) => setQuota(e.target.value)} />
-                </label>
-                <button className="btn btn-soft btn-sm" disabled={busy || quota === String(data.quota)} onClick={saveQuota}>
-                  Save
-                </button>
-              </div>
-              <p className="muted small">At most {maxPerShop} a month per shop if every message is billed as marketing; most are utility messages, which cost far less.</p>
-              <div className="cw-live-row">
-                <div>
-                  <strong>{data.steps.live ? 'Customers are getting messages' : 'Automatic messages are off'}</strong>
-                  <span className="muted small">
-                    {data.steps.live ? 'Turning off stops new messages at once. Shops’ settings are kept.' : 'Until then the counter shows the manual WhatsApp button.'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={data.steps.live}
-                  aria-label="Send automatic messages"
-                  className={`switch ${data.steps.live ? 'on' : ''}`}
-                  disabled={busy || !data.steps.number}
-                  onClick={() => void setLive(!data.steps.live)}
-                />
-              </div>
-            </Step>
-          </ol>
-        </section>
-
-        <section className="card cw-templates">
-          <div className="card-head">
-            <h2>
-              <MessageCircle size={18} /> What customers get
-            </h2>
-            <div className="seg seg-sm" role="group" aria-label="Preview language">
-              {(['hi', 'en'] as const).map((l) => (
-                <button key={l} className={preview === l ? 'active' : ''} onClick={() => setPreview(l)}>
-                  {l === 'hi' ? 'हिंदी' : 'English'}
-                </button>
-              ))}
+      <Sub id="setup">
+        <div className="cw-layout">
+          <section className="card cw-setup">
+            <div className="card-head">
+              <h2>
+                <Settings2 size={18} /> Setup
+              </h2>
+              <span className="muted small">
+                {[data.steps.number, data.steps.webhook, allApproved, !!data.steps.tested, data.steps.live].filter(Boolean).length} of 5 done
+              </span>
             </div>
-          </div>
-          {KINDS.map(({ kind, title, when: sentWhen, icon: Icon }) => {
-            const t = data.templates[kind];
-            return (
-              <div key={kind} className="cw-template">
-                <div className="cw-template-head">
-                  <span className="auto-icon">
-                    <Icon size={16} />
-                  </span>
+            <ol className="cw-steps">
+              <Step n={1} done={data.steps.number} title="Connect your WhatsApp Business number">
+                {data.steps.number ? (
+                  <>
+                    <p className="cw-fact">
+                      <Phone size={15} />
+                      {phone ? (
+                        <>
+                          <strong>{phone.verified_name}</strong> {phone.display_phone_number} · quality <strong>{phone.quality_rating ?? '–'}</strong> · daily limit{' '}
+                          {phone.messaging_limit_tier ?? '–'}
+                        </>
+                      ) : (
+                        <>Number ID {data.phoneNumberId} · checking with Meta…</>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <p className="muted small">
+                    In Meta for Developers: your app → WhatsApp → API setup. Copy the Phone number ID and the WhatsApp Business Account ID, and make a permanent
+                    token (Business settings → System users).
+                  </p>
+                )}
+                <div className="actions">{settingsButton(data.steps.number ? 'Change number or token' : 'Add number and token')}</div>
+              </Step>
+
+              <Step n={2} done={data.steps.webhook} title="Receive deliveries and STOP replies">
+                <p className="muted small">
+                  The webhook tells us when a message was delivered or read and when a customer replies STOP, so they’re never messaged again. It needs the app
+                  secret and the callback URL in Meta.
+                </p>
+                <p className="cw-fact">
+                  <Webhook size={15} />
+                  App secret {data.appSecret ? 'saved' : 'missing'} · {data.lastWebhook ? `last message from Meta ${when(data.lastWebhook)}` : 'nothing received from Meta yet'}
+                </p>
+                <div className="actions">{settingsButton('Webhook settings')}</div>
+              </Step>
+
+              <Step n={3} done={allApproved} warn={rejected.length > 0} title="Get the 8 message templates approved">
+                <p className="muted small">
+                  WhatsApp only lets a business start a chat with an approved template. There are 4 messages, each in Hindi and English. Meta reviews them in
+                  minutes to a day.
+                </p>
+                <div className="actions">
+                  <button className="btn btn-primary btn-sm" disabled={tplAction.busy || !data.steps.number || missing === 0} onClick={sendForReview}>
+                    <Send size={15} /> {templates === null ? 'Send to Meta for review' : missing ? `Send ${missing} to Meta for review` : 'All sent to Meta'}
+                  </button>
+                  <button className="btn btn-soft btn-sm" disabled={tplAction.busy || !data.steps.number} onClick={loadTemplates}>
+                    <RefreshCw size={15} /> Check status
+                  </button>
+                  {templates && <span className="muted small">{approved} of {templates.length} approved</span>}
+                </div>
+                <ErrorText text={tplAction.error} />
+                {rejected.length > 0 && (
+                  <p className="alert alert-error small">
+                    Rejected: {rejected.map((t) => `${t.name} (${t.lang})`).join(', ')}. See why in Meta (WhatsApp Manager → Message templates), delete it there, then
+                    send it again here.
+                  </p>
+                )}
+              </Step>
+
+              <Step n={4} done={!!data.steps.tested} title="Send yourself a test">
+                <p className="muted small">Sends one template with sample values (Sharma Sweets) to any WhatsApp number, so you see what customers get.</p>
+                <form className="cw-test" onSubmit={sendTest}>
+                  <input value={test.phone} onChange={(e) => setTest({ ...test, phone: e.target.value })} placeholder="Your WhatsApp number" inputMode="tel" aria-label="Phone number" required />
+                  <select value={test.kind} onChange={(e) => setTest({ ...test, kind: e.target.value as Kind })} aria-label="Message">
+                    {KINDS.map((k) => (
+                      <option key={k.kind} value={k.kind}>
+                        {k.title}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="seg seg-sm" role="group" aria-label="Language">
+                    {(['hi', 'en'] as const).map((l) => (
+                      <button key={l} type="button" className={test.lang === l ? 'active' : ''} onClick={() => setTest({ ...test, lang: l })}>
+                        {l === 'hi' ? 'हिंदी' : 'English'}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="btn btn-primary btn-sm" disabled={busy || !data.steps.number}>
+                    <Send size={15} /> Send test
+                  </button>
+                </form>
+                {templates && status(test.kind, test.lang) !== 'APPROVED' && (
+                  <p className="muted small">That template isn’t approved yet ({status(test.kind, test.lang).toLowerCase()}), so Meta will refuse it.</p>
+                )}
+                {data.steps.tested && <p className="cw-fact ok">Last test sent {when(data.steps.tested)}</p>}
+              </Step>
+
+              <Step n={5} done={data.steps.live} title="Go live">
+                <div className="cw-quota">
+                  <label>
+                    Messages per Founding Shop a month
+                    <input type="number" min="0" value={quota} onChange={(e) => setQuota(e.target.value)} />
+                  </label>
+                  <button className="btn btn-soft btn-sm" disabled={busy || quota === String(data.quota)} onClick={saveQuota}>
+                    Save
+                  </button>
+                </div>
+                <p className="muted small">At most {maxPerShop} a month per shop if every message is billed as marketing; most are utility messages, which cost far less.</p>
+                <div className="cw-live-row">
                   <div>
-                    <strong>{title}</strong>
+                    <strong>{data.steps.live ? 'Customers are getting messages' : 'Automatic messages are off'}</strong>
                     <span className="muted small">
-                      {sentWhen} · {t.category.toLowerCase()}
+                      {data.steps.live ? 'Turning off stops new messages at once. Shops’ settings are kept.' : 'Until then the counter shows the manual WhatsApp button.'}
                     </span>
                   </div>
-                  <span className="cw-chips">
-                    <span className="muted small">hi</span> <StatusChip status={status(kind, 'hi')} /> <span className="muted small">en</span>{' '}
-                    <StatusChip status={status(kind, 'en')} />
-                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={data.steps.live}
+                    aria-label="Send automatic messages"
+                    className={`switch ${data.steps.live ? 'on' : ''}`}
+                    disabled={busy || !data.steps.number}
+                    onClick={() => void setLive(!data.steps.live)}
+                  />
                 </div>
-                <div className="cw-bubble" lang={preview}>
-                  <p>{fill(t.body[preview], t.example)}</p>
-                  <span className="cw-bubble-btn">
-                    <ExternalLink size={14} /> {t.button[preview]}
-                  </span>
-                </div>
+              </Step>
+            </ol>
+          </section>
+
+          <section className="card cw-templates">
+            <div className="card-head">
+              <h2>
+                <MessageCircle size={18} /> What customers get
+              </h2>
+              <div className="seg seg-sm" role="group" aria-label="Preview language">
+                {(['hi', 'en'] as const).map((l) => (
+                  <button key={l} className={preview === l ? 'active' : ''} onClick={() => setPreview(l)}>
+                    {l === 'hi' ? 'हिंदी' : 'English'}
+                  </button>
+                ))}
               </div>
-            );
-          })}
-        </section>
-      </div>
+            </div>
+            {KINDS.map(({ kind, title, when: sentWhen, icon: Icon }) => {
+              const t = data.templates[kind];
+              return (
+                <div key={kind} className="cw-template">
+                  <div className="cw-template-head">
+                    <span className="auto-icon">
+                      <Icon size={16} />
+                    </span>
+                    <div>
+                      <strong>{title}</strong>
+                      <span className="muted small">
+                        {sentWhen} · {t.category.toLowerCase()}
+                      </span>
+                    </div>
+                    <span className="cw-chips">
+                      <span className="muted small">hi</span> <StatusChip status={status(kind, 'hi')} /> <span className="muted small">en</span>{' '}
+                      <StatusChip status={status(kind, 'en')} />
+                    </span>
+                  </div>
+                  <div className="cw-bubble" lang={preview}>
+                    <p>{fill(t.body[preview], t.example)}</p>
+                    <span className="cw-bubble-btn">
+                      <ExternalLink size={14} /> {t.button[preview]}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        </div>
+      </Sub>
 
       <section className="stats cw-stats">
         <div className="stat">
@@ -388,86 +391,88 @@ export function CustomerWhatsAppPage({ api }: { api: AdminApi }) {
         </div>
       </section>
 
-      <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Crown size={18} /> Founding Shops
-            </h2>
-            <span className="muted small">allowance {num(data.quota)} a month each</span>
-          </div>
-          {data.shops.length ? (
-            <div className="table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Shop</th>
-                    <th className="num">Sent</th>
-                    <th className="num">Failed</th>
-                    <th>Set up</th>
-                    <th>Last</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.shops.map((s) => (
-                    <tr key={s.id} onClick={() => (location.hash = `/shops/${s.id}`)}>
-                      <td>
-                        <a href={`#/shops/${s.id}`}>
-                          <strong>{s.name}</strong>
-                        </a>
-                      </td>
-                      <td className="num">
-                        {num(s.sent)}
-                        {s.sent >= data.quota && <span className="cw-chip cw-chip-bad"> used up</span>}
-                      </td>
-                      <td className="num">{num(s.failed)}</td>
-                      <td className="small">
-                        {s.kinds_on}/4 on{s.has_review ? '' : ' · no review link'}
-                      </td>
-                      <td className="small">{s.last_at ? when(s.last_at) : '–'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <Sub id="messages">
+        <div className="grid-2">
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Crown size={18} /> Founding Shops
+              </h2>
+              <span className="muted small">allowance {num(data.quota)} a month each</span>
             </div>
-          ) : (
-            <p className="muted small">No Founding Shops yet.</p>
-          )}
-        </section>
+            {data.shops.length ? (
+              <div className="table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Shop</th>
+                      <th className="num">Sent</th>
+                      <th className="num">Failed</th>
+                      <th>Set up</th>
+                      <th>Last</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.shops.map((s) => (
+                      <tr key={s.id} onClick={() => (location.hash = `/shops/${s.id}`)}>
+                        <td>
+                          <a href={`#/shops/${s.id}`}>
+                            <strong>{s.name}</strong>
+                          </a>
+                        </td>
+                        <td className="num">
+                          {num(s.sent)}
+                          {s.sent >= data.quota && <span className="cw-chip cw-chip-bad"> used up</span>}
+                        </td>
+                        <td className="num">{num(s.failed)}</td>
+                        <td className="small">
+                          {s.kinds_on}/4 on{s.has_review ? '' : ' · no review link'}
+                        </td>
+                        <td className="small">{s.last_at ? when(s.last_at) : '–'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="muted small">No Founding Shops yet.</p>
+            )}
+          </section>
 
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <MessageCircle size={18} /> Latest messages
-            </h2>
-            <button className="btn btn-ghost btn-sm" onClick={load}>
-              <RefreshCw size={14} /> Refresh
-            </button>
-          </div>
-          {data.recent.length ? (
-            <ul className="rows">
-              {data.recent.map((m) => (
-                <li key={m.id}>
-                  <div className="row-item">
-                    <span className={`activity-icon ${m.status === 'failed' ? 'warn' : 'earn'}`}>{m.status === 'failed' ? <XCircle size={16} /> : <CheckCheck size={16} />}</span>
-                    <div className="row-main">
-                      <strong>
-                        {KIND_NAME[m.kind]} · {m.shop ?? 'Test'}
-                      </strong>
-                      <span>
-                        {prettyPhone(m.phone)} · {when(m.created_at)} · {m.status}
-                        {m.error ? ` · ${m.error}` : ''}
-                      </span>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <MessageCircle size={18} /> Latest messages
+              </h2>
+              <button className="btn btn-ghost btn-sm" onClick={load}>
+                <RefreshCw size={14} /> Refresh
+              </button>
+            </div>
+            {data.recent.length ? (
+              <ul className="rows">
+                {data.recent.map((m) => (
+                  <li key={m.id}>
+                    <div className="row-item">
+                      <span className={`activity-icon ${m.status === 'failed' ? 'warn' : 'earn'}`}>{m.status === 'failed' ? <XCircle size={16} /> : <CheckCheck size={16} />}</span>
+                      <div className="row-main">
+                        <strong>
+                          {KIND_NAME[m.kind]} · {m.shop ?? 'Test'}
+                        </strong>
+                        <span>
+                          {prettyPhone(m.phone)} · {when(m.created_at)} · {m.status}
+                          {m.error ? ` · ${m.error}` : ''}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted small">Nothing sent yet.</p>
-          )}
-        </section>
-      </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">Nothing sent yet.</p>
+            )}
+          </section>
+        </div>
+      </Sub>
 
       {settingsOpen && wa.wa && (
         <Sheet title="WhatsApp settings" wide onClose={() => (setSettingsOpen(false), load())}>

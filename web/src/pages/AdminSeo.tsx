@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Bot, Eye, FileText, Globe, IndianRupee, KeyRound, Plus, RefreshCw, Rocket, Settings2, Trash2, Undo2, Upload, Wand2 } from 'lucide-react';
 import { num, when } from '../api';
 import { EmptyState, ErrorText, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
+import { Sub } from './AdminSub';
 
 // Admin → SEO pages: AI-written landing pages for each kind of shop (/for/<slug>) and city (/city/<slug>), written a few a day
 // by Gemini on the server (server/src/seo.ts). Here: the schedule and budget, the queue of shop types, each page, and
@@ -119,9 +120,11 @@ export function SeoPage({ api, adminToken }: { api: AdminApi; adminToken: () => 
         </div>
       </header>
 
-      {!data.keySet && <p className="alert alert-error">No Gemini API key yet. Add one below; until then nothing is written.</p>}
+      {!data.keySet && <p className="alert alert-error">No Gemini API key yet. Add one in <a href="#/seo/ai">AI calls &amp; key</a>; until then nothing is written.</p>}
 
-      <KeyCard api={api} info={data.key} model={s.model} onChanged={load} />
+      <Sub id="ai">
+        <KeyCard api={api} info={data.key} model={s.model} onChanged={load} />
+      </Sub>
 
       <section className="stats">
         <div className="stat">
@@ -162,167 +165,173 @@ export function SeoPage({ api, adminToken }: { api: AdminApi; adminToken: () => 
         </div>
       </section>
 
-      <div className="grid-2">
-        <SettingsCard api={api} settings={s} onSaved={load} />
-        <QueueCard api={api} onAdded={load} />
-      </div>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <FileText size={18} /> Pages
-          </h2>
-          <button className="btn btn-sm btn-primary" disabled={!!busyId || !data.keySet || !counts('queued')} onClick={() => void act(-1, 'seo/generate-next', 'POST', 'Page written')}>
-            <Wand2 size={15} /> {busyId === -1 ? 'Writing… (up to a minute)' : 'Write next now'}
-          </button>
+      <Sub id="queue">
+        <div className="grid-2">
+          <SettingsCard api={api} settings={s} onSaved={load} />
+          <QueueCard api={api} onAdded={load} />
         </div>
-        <div className="seg seg-scroll">
-          {(['', 'published', 'draft', 'queued', 'failed'] as const).map((f) => (
-            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
-              {f ? `${STATUS[f]} (${counts(f)})` : `All (${data.pages.length})`}
+      </Sub>
+
+      <Sub id="pages">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <FileText size={18} /> Pages
+            </h2>
+            <button className="btn btn-sm btn-primary" disabled={!!busyId || !data.keySet || !counts('queued')} onClick={() => void act(-1, 'seo/generate-next', 'POST', 'Page written')}>
+              <Wand2 size={15} /> {busyId === -1 ? 'Writing… (up to a minute)' : 'Write next now'}
             </button>
-          ))}
-        </div>
-        {list.length ? (
-          <div className="table-wrap">
-            <table className="admin-table seo-table">
-              <thead>
-                <tr>
-                  <th>Page</th>
-                  <th>Status</th>
-                  <th className="num">Views</th>
-                  <th className="num">Cost</th>
-                  <th>Updated</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <strong>
-                        {p.topic} {p.kind === 'city' && <span className="source-chip">City</span>} <span className="source-chip">{p.lang === 'hi' ? 'हिंदी' : 'English'}</span>
-                      </strong>
-                      <span className="muted small">
-                        {p.status === 'published' ? (
-                          <a href={pagePath(p)} target="_blank" rel="noreferrer">
-                            {pagePath(p)}
-                          </a>
-                        ) : (
-                          pagePath(p)
-                        )}
-                        {p.title ? ` · ${p.title}` : ''}
-                      </span>
-                      {p.error && <span className="small" style={{ color: 'var(--bad)' }}>{p.error}</span>}
-                    </td>
-                    <td>
-                      <span className={`status seo-${p.status}`}>{STATUS[p.status]}</span>
-                      {p.stale ? (
-                        <span className="muted small" title="Written for the points system. It stays live and is rewritten for the stamp card shortly after the server starts.">
-                          {' '}
-                          · old text, rewriting
+          </div>
+          <div className="seg seg-scroll">
+            {(['', 'published', 'draft', 'queued', 'failed'] as const).map((f) => (
+              <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+                {f ? `${STATUS[f]} (${counts(f)})` : `All (${data.pages.length})`}
+              </button>
+            ))}
+          </div>
+          {list.length ? (
+            <div className="table-wrap">
+              <table className="admin-table seo-table">
+                <thead>
+                  <tr>
+                    <th>Page</th>
+                    <th>Status</th>
+                    <th className="num">Views</th>
+                    <th className="num">Cost</th>
+                    <th>Updated</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <strong>
+                          {p.topic} {p.kind === 'city' && <span className="source-chip">City</span>} <span className="source-chip">{p.lang === 'hi' ? 'हिंदी' : 'English'}</span>
+                        </strong>
+                        <span className="muted small">
+                          {p.status === 'published' ? (
+                            <a href={pagePath(p)} target="_blank" rel="noreferrer">
+                              {pagePath(p)}
+                            </a>
+                          ) : (
+                            pagePath(p)
+                          )}
+                          {p.title ? ` · ${p.title}` : ''}
                         </span>
-                      ) : null}
-                    </td>
-                    <td className="num">{num(p.views)}</td>
-                    <td className="num">{p.cost_usd ? inr(p.cost_usd) : '–'}</td>
-                    <td>{p.generated_at ? when(p.generated_at) : '–'}</td>
-                    <td>
-                      <div className="seo-actions">
-                        {p.status !== 'queued' && p.status !== 'failed' && (
-                          <button className="icon-btn" title="Preview" onClick={() => void preview(p)}>
-                            <Eye size={17} />
+                        {p.error && <span className="small" style={{ color: 'var(--bad)' }}>{p.error}</span>}
+                      </td>
+                      <td>
+                        <span className={`status seo-${p.status}`}>{STATUS[p.status]}</span>
+                        {p.stale ? (
+                          <span className="muted small" title="Written for the points system. It stays live and is rewritten for the stamp card shortly after the server starts.">
+                            {' '}
+                            · old text, rewriting
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="num">{num(p.views)}</td>
+                      <td className="num">{p.cost_usd ? inr(p.cost_usd) : '–'}</td>
+                      <td>{p.generated_at ? when(p.generated_at) : '–'}</td>
+                      <td>
+                        <div className="seo-actions">
+                          {p.status !== 'queued' && p.status !== 'failed' && (
+                            <button className="icon-btn" title="Preview" onClick={() => void preview(p)}>
+                              <Eye size={17} />
+                            </button>
+                          )}
+                          {p.status === 'draft' && (
+                            <button className="icon-btn" title="Publish" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/publish`, 'POST', 'Published')}>
+                              <Upload size={17} />
+                            </button>
+                          )}
+                          {p.status === 'published' && (
+                            <button className="icon-btn" title="Take offline (back to draft)" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/unpublish`, 'POST', 'Taken offline')}>
+                              <Undo2 size={17} />
+                            </button>
+                          )}
+                          {p.status === 'failed' && (
+                            <button className="icon-btn" title="Put back in the queue" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/retry`, 'POST', 'Back in the queue')}>
+                              <RefreshCw size={17} />
+                            </button>
+                          )}
+                          <button
+                            className="icon-btn"
+                            title={p.status === 'queued' ? 'Write now' : 'Rewrite'}
+                            disabled={!!busyId || !data.keySet}
+                            onClick={async () => {
+                              if (p.status === 'published' && !(await confirmDialog({ title: `Rewrite “${p.topic}”?`, body: 'The live page is replaced by a new version.', confirm: 'Rewrite' }))) return;
+                              void act(p.id, `seo/pages/${p.id}/generate`, 'POST', 'Page written');
+                            }}
+                          >
+                            {busyId === p.id ? <RefreshCw size={17} className="spin" /> : <Wand2 size={17} />}
                           </button>
-                        )}
-                        {p.status === 'draft' && (
-                          <button className="icon-btn" title="Publish" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/publish`, 'POST', 'Published')}>
-                            <Upload size={17} />
+                          <button
+                            className="icon-btn"
+                            title="Delete"
+                            disabled={!!busyId}
+                            onClick={async () => {
+                              if (!(await confirmDialog({ title: `Delete “${p.topic}” (${p.lang})?`, body: 'It disappears from the site and the sitemap.', confirm: 'Delete', danger: true }))) return;
+                              void act(p.id, `seo/pages/${p.id}`, 'DELETE', 'Deleted');
+                            }}
+                          >
+                            <Trash2 size={17} />
                           </button>
-                        )}
-                        {p.status === 'published' && (
-                          <button className="icon-btn" title="Take offline (back to draft)" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/unpublish`, 'POST', 'Taken offline')}>
-                            <Undo2 size={17} />
-                          </button>
-                        )}
-                        {p.status === 'failed' && (
-                          <button className="icon-btn" title="Put back in the queue" disabled={!!busyId} onClick={() => void act(p.id, `seo/pages/${p.id}/retry`, 'POST', 'Back in the queue')}>
-                            <RefreshCw size={17} />
-                          </button>
-                        )}
-                        <button
-                          className="icon-btn"
-                          title={p.status === 'queued' ? 'Write now' : 'Rewrite'}
-                          disabled={!!busyId || !data.keySet}
-                          onClick={async () => {
-                            if (p.status === 'published' && !(await confirmDialog({ title: `Rewrite “${p.topic}”?`, body: 'The live page is replaced by a new version.', confirm: 'Rewrite' }))) return;
-                            void act(p.id, `seo/pages/${p.id}/generate`, 'POST', 'Page written');
-                          }}
-                        >
-                          {busyId === p.id ? <RefreshCw size={17} className="spin" /> : <Wand2 size={17} />}
-                        </button>
-                        <button
-                          className="icon-btn"
-                          title="Delete"
-                          disabled={!!busyId}
-                          onClick={async () => {
-                            if (!(await confirmDialog({ title: `Delete “${p.topic}” (${p.lang})?`, body: 'It disappears from the site and the sitemap.', confirm: 'Delete', danger: true }))) return;
-                            void act(p.id, `seo/pages/${p.id}`, 'DELETE', 'Deleted');
-                          }}
-                        >
-                          <Trash2 size={17} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState icon={FileText} title="No pages here" text="Add kinds of shops to the queue, or add the suggested ones." />
-        )}
-      </section>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState icon={FileText} title="No pages here" text="Add kinds of shops to the queue, or add the suggested ones." />
+          )}
+        </section>
+      </Sub>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Bot size={18} /> AI calls
-          </h2>
-          <span className="muted small">latest 40 · priced at {usd(s.priceInUsd)} / {usd(s.priceOutUsd)} per 1M tokens in / out</span>
-        </div>
-        {data.usage.length ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Model</th>
-                  <th className="num">Tokens in</th>
-                  <th className="num">Tokens out</th>
-                  <th className="num">Cost</th>
-                  <th>Result</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.usage.map((u) => (
-                  <tr key={u.id}>
-                    <td>{when(u.ts)}</td>
-                    <td>{u.model}</td>
-                    <td className="num">{num(u.input_tokens)}</td>
-                    <td className="num">{num(u.output_tokens)}</td>
-                    <td className="num">
-                      {usd(u.cost_usd)} <span className="muted small">{inr(u.cost_usd)}</span>
-                    </td>
-                    <td>{u.ok ? 'OK' : <span style={{ color: 'var(--bad)' }}>{u.error}</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Sub id="ai">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Bot size={18} /> AI calls
+            </h2>
+            <span className="muted small">latest 40 · priced at {usd(s.priceInUsd)} / {usd(s.priceOutUsd)} per 1M tokens in / out</span>
           </div>
-        ) : (
-          <p className="muted small">No AI calls yet.</p>
-        )}
-      </section>
+          {data.usage.length ? (
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Model</th>
+                    <th className="num">Tokens in</th>
+                    <th className="num">Tokens out</th>
+                    <th className="num">Cost</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.usage.map((u) => (
+                    <tr key={u.id}>
+                      <td>{when(u.ts)}</td>
+                      <td>{u.model}</td>
+                      <td className="num">{num(u.input_tokens)}</td>
+                      <td className="num">{num(u.output_tokens)}</td>
+                      <td className="num">
+                        {usd(u.cost_usd)} <span className="muted small">{inr(u.cost_usd)}</span>
+                      </td>
+                      <td>{u.ok ? 'OK' : <span style={{ color: 'var(--bad)' }}>{u.error}</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted small">No AI calls yet.</p>
+          )}
+        </section>
+      </Sub>
     </>
   );
 }

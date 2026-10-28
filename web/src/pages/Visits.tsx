@@ -3,6 +3,7 @@ import { Activity, BarChart3, Clock, Eye, Globe2, Home, MousePointerClick, Refre
 import { LANDING_SECTIONS } from '../analytics';
 import { num } from '../api';
 import { ErrorText, Skeleton } from '../ui';
+import { Sub } from './AdminSub';
 
 // Superadmin → Visits: website traffic from the site's own tracker (src/analytics.ts). The server returns raw page
 // views and everything is counted here. Days follow this browser's time zone, so "Today" means your today.
@@ -615,116 +616,122 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
         ))}
       </section>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <BarChart3 size={18} /> Traffic
-          </h2>
-          <div className="legend">
-            <span>
-              <i className="dot dot-visitors" /> Visitors
-            </span>
-            <span>
-              <i className="dot dot-views" /> Page views
-            </span>
+      <Sub id="traffic">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <BarChart3 size={18} /> Traffic
+            </h2>
+            <div className="legend">
+              <span>
+                <i className="dot dot-visitors" /> Visitors
+              </span>
+              <span>
+                <i className="dot dot-views" /> Page views
+              </span>
+            </div>
           </div>
-        </div>
-        {filtered.length ? <TrendChart points={points} /> : views ? <p className="muted small">No visits in this range yet.</p> : <Skeleton h={240} />}
-      </section>
+          {filtered.length ? <TrendChart points={points} /> : views ? <p className="muted small">No visits in this range yet.</p> : <Skeleton h={240} />}
+        </section>
 
-      <div className="grid-2 visits-grid">
-        <Ranked
-          title={
-            <span className="seg">
-              <button className={pagesMode === 'all' ? 'active' : ''} onClick={() => setPagesMode('all')}>
-                Top pages
-              </button>
-              <button className={pagesMode === 'entry' ? 'active' : ''} onClick={() => setPagesMode('entry')}>
-                Entry pages
-              </button>
-            </span>
-          }
-          rows={pages}
-          total={stats.views}
-          onPick={pick('path')}
-          columns="pages"
-        />
-        <Ranked title="Where visitors come from" rows={sources} total={stats.visits} onPick={pick('source')} />
-        <Ranked title="Countries" rows={countries} total={stats.visits} onPick={pick('country')} />
-        <Ranked
-          title={
-            <span className="seg">
-              {(['device', 'browser', 'os'] as const).map((t) => (
-                <button key={t} className={tech === t ? 'active' : ''} onClick={() => setTech(t)}>
-                  {DIM_LABEL[t]}
+        <div className="grid-2 visits-grid">
+          <Ranked
+            title={
+              <span className="seg">
+                <button className={pagesMode === 'all' ? 'active' : ''} onClick={() => setPagesMode('all')}>
+                  Top pages
                 </button>
-              ))}
-            </span>
-          }
-          rows={techRows}
-          total={stats.visits}
-          onPick={pick(tech)}
-        />
-      </div>
-
-      {views && <HomepageInsights views={filtered} allViews={views} events={events} />}
-
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Eye size={18} /> Recent page views
-          </h2>
-          <span className="muted small">latest 30</span>
+                <button className={pagesMode === 'entry' ? 'active' : ''} onClick={() => setPagesMode('entry')}>
+                  Entry pages
+                </button>
+              </span>
+            }
+            rows={pages}
+            total={stats.views}
+            onPick={pick('path')}
+            columns="pages"
+          />
+          <Ranked title="Where visitors come from" rows={sources} total={stats.visits} onPick={pick('source')} />
+          <Ranked title="Countries" rows={countries} total={stats.visits} onPick={pick('country')} />
+          <Ranked
+            title={
+              <span className="seg">
+                {(['device', 'browser', 'os'] as const).map((t) => (
+                  <button key={t} className={tech === t ? 'active' : ''} onClick={() => setTech(t)}>
+                    {DIM_LABEL[t]}
+                  </button>
+                ))}
+              </span>
+            }
+            rows={techRows}
+            total={stats.visits}
+            onPick={pick(tech)}
+          />
         </div>
-        <div className="table-wrap">
-          <table className="admin-table visits-table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Page</th>
-                <th>From</th>
-                <th>Where</th>
-                <th>Device</th>
-                <th className="num">Time</th>
-                <th className="num">Scroll</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((v) => (
-                <tr key={v.id}>
-                  <td>{new Date(v.ts).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                  <td>
-                    <strong>{v.path}</strong>
-                    {v.ret && <span className="muted small"> · returning</span>}
-                  </td>
-                  <td>
-                    {!v.ref && !v.utmSource && v.refUrl.includes(location.hostname.replace(/^www\./, '')) ? (
-                      <span className="muted">Internal link</span>
-                    ) : (
-                      source(v)
-                    )}
-                  </td>
-                  <td>
-                    {flag(v.country)} {countryName(v.country)}
-                  </td>
-                  <td>
-                    {v.device} · {v.browser}
-                  </td>
-                  <td className="num">{v.dur !== undefined ? duration(v.dur) : <span className="muted">reading…</span>}</td>
-                  <td className="num">{v.scroll !== undefined ? `${v.scroll}%` : '—'}</td>
-                </tr>
-              ))}
-              {!recent.length && (
+      </Sub>
+
+      <Sub id="homepage">
+        {views && <HomepageInsights views={filtered} allViews={views} events={events} />}
+      </Sub>
+
+      <Sub id="recent">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Eye size={18} /> Recent page views
+            </h2>
+            <span className="muted small">latest 30</span>
+          </div>
+          <div className="table-wrap">
+            <table className="admin-table visits-table">
+              <thead>
                 <tr>
-                  <td colSpan={7} className="muted">
-                    {views ? 'No visits yet.' : 'Loading…'}
-                  </td>
+                  <th>When</th>
+                  <th>Page</th>
+                  <th>From</th>
+                  <th>Where</th>
+                  <th>Device</th>
+                  <th className="num">Time</th>
+                  <th className="num">Scroll</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {recent.map((v) => (
+                  <tr key={v.id}>
+                    <td>{new Date(v.ts).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>
+                      <strong>{v.path}</strong>
+                      {v.ret && <span className="muted small"> · returning</span>}
+                    </td>
+                    <td>
+                      {!v.ref && !v.utmSource && v.refUrl.includes(location.hostname.replace(/^www\./, '')) ? (
+                        <span className="muted">Internal link</span>
+                      ) : (
+                        source(v)
+                      )}
+                    </td>
+                    <td>
+                      {flag(v.country)} {countryName(v.country)}
+                    </td>
+                    <td>
+                      {v.device} · {v.browser}
+                    </td>
+                    <td className="num">{v.dur !== undefined ? duration(v.dur) : <span className="muted">reading…</span>}</td>
+                    <td className="num">{v.scroll !== undefined ? `${v.scroll}%` : '—'}</td>
+                  </tr>
+                ))}
+                {!recent.length && (
+                  <tr>
+                    <td colSpan={7} className="muted">
+                      {views ? 'No visits yet.' : 'Loading…'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </Sub>
 
       <p className="muted small">
         Visitors are counted per day with a random id that resets daily; a visit is one browser tab session. Time on page counts only while the
