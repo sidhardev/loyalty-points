@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, FileText, MessagesSquare, Paperclip, RefreshCw, Search, Send, Sparkles, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Bot, FileText, MessagesSquare, Paperclip, RefreshCw, Search, Send, Sparkles, UserPlus, X } from 'lucide-react';
 import { when } from '../api';
 import { Avatar, EmptyState, ErrorText, Sheet, SkeletonRows, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
@@ -11,6 +11,7 @@ import { WaBubble, WhatsAppBar, fileSize, useWhatsApp, type WaMessage } from './
 // People who aren't leads show under their WhatsApp profile name and can be saved as a lead from the chat.
 // Photos, videos, voice notes and documents show in the chat (kept in Supabase), and can be sent with the paperclip
 // or pasted into the reply box; the reply then goes as the file's caption.
+// A lead's chat shows how far the reply bot (server/src/wabot.ts) got, and the bot can be paused to answer by hand.
 
 type Chat = {
   phone: string;
@@ -31,6 +32,8 @@ type Chat = {
   notes: string | null;
   opted_out: number;
   window_open: number | null;
+  bot_step: string | null;
+  bot_paused: number | null;
   link: string;
 };
 type Data = { chats: Chat[]; unread: number; ready: boolean; missing: string[]; storage: { ready: boolean; lastError: { at: string; message: string } | null } };
@@ -40,6 +43,16 @@ export const WA_UNREAD = 'wa-unread';
 
 const LEAD_STATUS: Record<string, string> = { new: 'New', contacted: 'Contacted', interested: 'Interested', joined: 'Joined', not_interested: 'Not interested' };
 const TITLE = 'Superadmin · Regularhood';
+/** How far the reply bot got: the last thing it sent. */
+const BOT_STEP: Record<string, string> = {
+  howto: 'Saw how it works',
+  video: 'Saw the video',
+  price: 'Saw the price',
+  faq: 'Asking questions',
+  signup: 'Got the sign-up link',
+  human: 'Wants to talk to you',
+  later: 'Said later',
+};
 const pretty = (phone: string) => (phone.startsWith('91') && phone.length === 12 ? `+91 ${phone.slice(2, 7)} ${phone.slice(7)}` : `+${phone}`);
 const display = (c: Chat) => c.name ?? c.profile_name ?? pretty(c.phone);
 const preview = (body: string) => (/^\[\w+\]$/.test(body) ? body.replace(/^\[(\w+)\]$/, (_, k: string) => ({ image: '📷 Photo', audio: '🎤 Voice message', video: '🎬 Video', document: '📄 Document' })[k] ?? `[${k}]`) : body);
@@ -261,6 +274,12 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
       toast(done);
       onChanged();
     });
+  const setBot = (paused: boolean) =>
+    void run(async () => {
+      await api(`whatsapp/chats/${chat.phone}/bot`, 'PUT', { paused });
+      toast(paused ? 'Bot paused: you answer this chat' : 'Bot answers button taps again');
+      onChanged();
+    });
   const setStatus = (status: string) =>
     void run(async () => {
       await api(`leads/${chat.lead_id}`, 'PUT', { status });
@@ -310,6 +329,18 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
           <RefreshCw size={17} />
         </button>
       </header>
+      {chat.lead_id && (
+        <p className="chat-bot small">
+          <Bot size={15} />
+          <span>
+            {chat.bot_paused ? 'Bot paused' : 'Bot on'}
+            {chat.bot_step ? ` · ${BOT_STEP[chat.bot_step] ?? chat.bot_step}` : ' · starts when they tap yes'}
+          </span>
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setBot(!chat.bot_paused)}>
+            {chat.bot_paused ? 'Resume bot' : 'Pause bot'}
+          </button>
+        </p>
+      )}
       {chat.notes && <p className="chat-notes small">📝 {chat.notes}</p>}
 
       <div className="chat-body">

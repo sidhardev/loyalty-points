@@ -4498,6 +4498,21 @@ circle.trend-views {
   color: var(--gold);
 }
 
+.chat-bot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 8px 4px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.chat-bot span {
+  flex: 1;
+  min-width: 0;
+}
+
 .chat-day {
   align-self: center;
   margin: 6px 0 2px;

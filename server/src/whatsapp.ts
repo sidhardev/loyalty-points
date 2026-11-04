@@ -28,8 +28,8 @@ import { MAX_FILE_BYTES, Storage } from './storage';
 
 // WhatsApp Cloud API (Meta) for the lead finder. A shop that hasn't messaged us can only be sent an approved template:
 // a short intro with the shop's name and kind, and two quick-reply buttons. When the owner taps "yes" (or writes back),
-// WhatsApp lets us send free-form messages for 24 hours, so the AI pitch with the sign-up link goes out by itself and
-// the admin can chat from the panel. "Not now" or STOP marks the lead not interested and it is never messaged again.
+// WhatsApp lets us send free-form messages for 24 hours, so the reply bot (wabot.ts) walks them through how it works,
+// the price and the sign-up link with buttons, and the admin can chat from the panel. "Not now" or STOP marks the lead not interested and it is never messaged again.
 //
 // Meta tells us about deliveries, reads, replies and what each message was billed as through the webhook
 // (/api/whatsapp/webhook, checked with the app secret). Costs: the price per marketing message is a setting (Meta's
@@ -47,7 +47,8 @@ export type WaSettings = {
   templateLang: string;
   templateParams: number; // how many {{n}} the template body has: 1 = shop name, 2 = kind of shop, 3 = area
   templateBody: string; // the body text, kept to show what was sent
-  autoPitch: boolean; // send the AI pitch when an owner taps yes or replies
+  autoPitch: boolean; // run the reply bot (wabot.ts) when an owner taps yes or replies
+  demoVideoUrl: string; // an https link to an MP4 (H.264 + AAC, under 16 MB): the bot's "Video dikhao" button, hidden when empty
   dailyLimit: number; // templates per 24 hours
   marketingPriceUsd: number; // per delivered marketing message
   utilityPriceUsd: number;
@@ -66,6 +67,7 @@ const DEFAULTS: WaSettings = {
   templateParams: 0,
   templateBody: '',
   autoPitch: true,
+  demoVideoUrl: `${SITE}/demo.mp4`, // reel-1 (brand/instagram), served from web/public
   dailyLimit: 50,
   marketingPriceUsd: 0.0107,
   utilityPriceUsd: 0.0014,
@@ -97,8 +99,11 @@ export const SUGGESTED_TEMPLATES = {
 const API_BASE = (process.env.WHATSAPP_API_BASE || 'https://graph.facebook.com').replace(/\/$/, '');
 
 // Quick-reply buttons and the usual typed answers. (\b doesn't work after Devanagari, hence the lookahead.)
-const YES = /^(ha+n|haa|ji|yes|ok|okay|sure|batao|bataiye|interested|हाँ|हां|जी|बताइए|बताओ)(?=$|[\s,.!?।🙏])/iu;
-const NO = /^(stop|unsubscribe|nahi|nahin|no|not now|abhi nahi|mat bhejo|नहीं|अभी नहीं|बंद)(?=$|[\s,.!?।🙏])/iu;
+export const YES = /^(ha+n|haa|ji|yes|ok|okay|sure|batao|bataiye|interested|हाँ|हां|जी|बताइए|बताओ)(?=$|[\s,.!?।🙏])/iu;
+export const NO = /^(stop|unsubscribe|nahi|nahin|no|not now|abhi nahi|mat bhejo|नहीं|अभी नहीं|बंद)(?=$|[\s,.!?।🙏])/iu;
+
+/** A lead's message, for the reply bot: `id` is the button or list row they tapped, if any. */
+export type LeadReply = { phone: string; leadId: number; said: string; type: string; id: string | null; yes: boolean };
 
 type LeadLite = { id: number; name: string; category: string; shop_type: string; area: string; phone: string; mobile: number; wa_opted_out: number; last_inbound_at: string | null; pitch: string | null; status: string };
 type GraphError = { error?: { message?: string; code?: number; error_data?: { details?: string } } };
@@ -113,6 +118,9 @@ export class WhatsApp {
     private readonly leads: LeadsService,
     private readonly storage: Storage,
   ) {}
+
+  /** The reply bot (wabot.ts) registers itself here, since it sends through this service. */
+  bot?: { reply(r: LeadReply): Promise<void>; goodbye(phone: string, leadId: number, said: string): Promise<void> };
 
   // ---------------------------------------------------------------- settings and secrets
 
@@ -159,6 +167,11 @@ export class WhatsApp {
       s.templateBody = String(input.templateBody ?? '').slice(0, 1100);
     }
     if (input.autoPitch !== undefined) s.autoPitch = Boolean(input.autoPitch);
+    if (input.demoVideoUrl !== undefined) {
+      const url = String(input.demoVideoUrl).trim().slice(0, 500);
+      if (url && !/^https:\/\/\S+$/i.test(url)) throw new BadRequestException('The demo video is an https:// link to an MP4 file');
+      s.demoVideoUrl = url;
+    }
     if (input.customerMessages !== undefined) s.customerMessages = Boolean(input.customerMessages);
     if (input.customerQuota !== undefined) s.customerQuota = Math.round(num(input.customerQuota, 'Messages per shop a month', 0, 10_000));
     if (input.dailyLimit !== undefined) s.dailyLimit = Math.round(num(input.dailyLimit, 'Messages per day', 0, 10_000));
@@ -588,13 +601,16 @@ export class WhatsApp {
     await this.sendTextTo(waDigits(l.phone), text, leadId);
   }
 
-  /** A free-form message to any number that wrote to us in the last 24 hours (a lead or not). */
-  async sendTextTo(phone: string, text: string, leadId = this.leadByPhone(phone)?.id ?? null) {
+  /**
+   * A free-form message to any number that wrote to us in the last 24 hours (a lead or not). `goodbye` sends it even
+   * though they just asked not to be messaged: the bot's one line confirming that.
+   */
+  async sendTextTo(phone: string, text: string, leadId = this.leadByPhone(phone)?.id ?? null, goodbye = false) {
     const s = this.settings();
     const body = text.trim().slice(0, 4000);
     if (!body) throw new BadRequestException('Write a message');
     if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Set up WhatsApp first');
-    if (this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
+    if (!goodbye && this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
     if (!this.chatWindowOpen(phone)) throw new BadRequestException('WhatsApp only allows free messages within 24 hours of their last reply. Send the template instead.');
     try {
       const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
@@ -604,6 +620,27 @@ export class WhatsApp {
       this.record({ leadId, phone, direction: 'out', wamid: r.messages?.[0]?.id, kind: 'text', body, status: 'sent' });
     } catch (error) {
       this.record({ leadId, phone, direction: 'out', kind: 'text', body, status: 'failed', error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  /**
+   * Reply buttons, a list or a link button (Meta's "interactive" message), within the 24 hours like a free message.
+   * `body` is what the chat in the panel shows.
+   */
+  async sendInteractive(phone: string, interactive: object, body: string, leadId: number | null) {
+    const s = this.settings();
+    if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Set up WhatsApp first');
+    if (this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
+    if (!this.chatWindowOpen(phone)) throw new BadRequestException('WhatsApp only allows free messages within 24 hours of their last reply.');
+    try {
+      const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
+        method: 'POST',
+        body: { messaging_product: 'whatsapp', to: phone, type: 'interactive', interactive },
+      });
+      this.record({ leadId, phone, direction: 'out', wamid: r.messages?.[0]?.id, kind: 'interactive', body, status: 'sent' });
+    } catch (error) {
+      this.record({ leadId, phone, direction: 'out', kind: 'interactive', body, status: 'failed', error: (error as Error).message });
       throw error;
     }
   }
@@ -796,6 +833,8 @@ export class WhatsApp {
            l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status, l.notes,
            (SELECT name FROM wa_contacts c WHERE c.phone = m.phone) AS profile_name,
            EXISTS (SELECT 1 FROM wa_optouts o WHERE o.phone = m.phone) AS opted_out,
+           (SELECT step FROM wa_bot b WHERE b.phone = m.phone) AS bot_step,
+           (SELECT paused FROM wa_bot b WHERE b.phone = m.phone) AS bot_paused,
            MAX(CASE WHEN m.direction = 'in' THEN m.created_at END) >= datetime('now', '-1 day') AS window_open
          FROM wa_messages m
          LEFT JOIN leads l ON l.id = (SELECT id FROM leads WHERE replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') = m.phone ORDER BY id LIMIT 1)
@@ -906,6 +945,7 @@ export class WhatsApp {
           const text =
             m.button?.text ??
             m.interactive?.button_reply?.title ??
+            m.interactive?.list_reply?.title ??
             m.text?.body ??
             (file?.caption?.trim() || undefined) ??
             (at?.latitude != null
@@ -929,6 +969,7 @@ export class WhatsApp {
             if (row) void this.keepMedia(row.id);
           }
           const said = text.trim();
+          const wasOptedOut = this.optedOut(phone);
           // STOP (or "not now") from anyone stops our messages; START lets them be messaged again.
           if (NO.test(said)) this.db.sql.prepare('INSERT OR IGNORE INTO wa_optouts (phone) VALUES (?)').run(phone);
           else if (/^start$/i.test(said)) {
@@ -940,12 +981,13 @@ export class WhatsApp {
 
           if (NO.test(said)) {
             this.db.sql.prepare("UPDATE leads SET wa_opted_out = 1, status = CASE WHEN status = 'joined' THEN status ELSE 'not_interested' END WHERE id = ?").run(lead.id);
+            if (s.autoPitch && this.bot && !wasOptedOut) await this.bot.goodbye(phone, lead.id, said).catch((e) => console.error(`WhatsApp bot goodbye to ${phone} failed:`, (e as Error).message));
           } else if (!this.optedOut(phone)) {
             this.db.sql.prepare("UPDATE leads SET status = 'interested' WHERE id = ? AND status IN ('new', 'contacted')").run(lead.id);
-            // The first "yes" (or any first reply) gets the pitch with the sign-up link, once.
-            const pitched = this.db.sql.prepare("SELECT 1 FROM wa_messages WHERE lead_id = ? AND direction = 'out' AND kind = 'text' AND status != 'failed'").get(lead.id);
-            if (s.autoPitch && !pitched && (YES.test(said) || m.type === 'text')) {
-              await this.sendPitch(lead.id).catch((e) => console.error(`WhatsApp pitch to lead ${lead.id} failed:`, (e as Error).message));
+            // Button taps and the first reply go to the bot; what they type later waits for the admin.
+            if (s.autoPitch && this.bot) {
+              const id = m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id ?? null;
+              await this.bot.reply({ phone, leadId: lead.id, said, type: m.type, id, yes: YES.test(said) }).catch((e) => console.error(`WhatsApp bot reply to ${phone} failed:`, (e as Error).message));
             }
           }
         }
@@ -967,7 +1009,7 @@ type WebhookPayload = {
           type: string;
           text?: { body?: string };
           button?: { text?: string; payload?: string };
-          interactive?: { button_reply?: { title?: string } };
+          interactive?: { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } };
           image?: WebhookFile;
           video?: WebhookFile;
           audio?: WebhookFile;
@@ -1187,6 +1229,19 @@ export class WhatsAppAdminController {
     const mime = String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream';
     await this.wa.sendMediaTo(p, req.body, mime, String(name), String(caption));
     return this.wa.chat(p);
+  }
+
+  /** Pauses the reply bot in this chat (the admin answers) or lets it answer button taps again. */
+  @Put('chats/:phone/bot')
+  bot(@Param('phone') phone: string, @Body() body: { paused?: boolean }) {
+    const p = this.digits(phone);
+    this.db.sql
+      .prepare(
+        `INSERT INTO wa_bot (phone, lead_id, step, paused) VALUES (?, ?, 'human', ?)
+         ON CONFLICT(phone) DO UPDATE SET paused = excluded.paused, updated_at = datetime('now')`,
+      )
+      .run(p, this.wa.leadByPhone(p)?.id ?? null, body?.paused ? 1 : 0);
+    return { paused: Boolean(body?.paused) };
   }
 
   @Post('chats/:phone/lead')

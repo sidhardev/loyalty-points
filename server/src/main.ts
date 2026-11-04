@@ -23,6 +23,7 @@ import { StatusAdminController } from './status';
 import { Storage } from './storage';
 import { LeadsAdminController, LeadsService } from './leads';
 import { PlaybookAdminController, PlaybookService } from './playbook';
+import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
@@ -32,7 +33,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
   controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, Storage, WhatsApp],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, Storage, WhatsApp, WaBot],
 })
 class AppModule {}
 

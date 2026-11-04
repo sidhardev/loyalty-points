@@ -17,6 +17,7 @@ export type WaSettings = {
   templateParams: number;
   templateBody: string;
   autoPitch: boolean;
+  demoVideoUrl: string;
   dailyLimit: number;
   marketingPriceUsd: number;
   utilityPriceUsd: number;
@@ -336,8 +337,12 @@ export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; w
 
       <h3 className="wa-step">5. Limits and prices</h3>
       <label className="poster-check">
-        <input type="checkbox" checked={form.autoPitch} onChange={(e) => set('autoPitch', e.target.checked)} /> When an owner taps yes or replies, send them the AI
-        pitch with the sign-up link straight away
+        <input type="checkbox" checked={form.autoPitch} onChange={(e) => set('autoPitch', e.target.checked)} /> When an owner taps yes or replies, the reply bot
+        answers with buttons: how it works, the price, questions and their sign-up link (free, inside the 24 hours)
+      </label>
+      <label>
+        Demo video for the bot (https link to an MP4 under 16 MB; no link hides the “Video dikhao” button)
+        <input type="url" value={form.demoVideoUrl} onChange={(e) => set('demoVideoUrl', e.target.value)} placeholder="https://regularhood.in/demo.mp4" />
       </label>
       <div className="form-row wa-4">
         <label>
@@ -365,6 +370,7 @@ export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; w
           onClick={() =>
             save({
               autoPitch: form.autoPitch,
+              demoVideoUrl: form.demoVideoUrl,
               dailyLimit: form.dailyLimit,
               marketingPriceUsd: form.marketingPriceUsd,
               utilityPriceUsd: form.utilityPriceUsd,
@@ -510,7 +516,7 @@ export function WaBubble({ m, timeOnly }: { m: WaMessage; timeOnly?: boolean }) 
       {m.media && <WaFile m={m} file={m.media} />}
       {!(m.media && media) && <p>{media ? (MEDIA[media] ?? `[${media}]`) : m.body}</p>}
       <span>
-        {m.kind === 'template' ? 'intro · ' : ''}
+        {m.kind === 'template' ? 'intro · ' : m.kind === 'interactive' ? 'bot · ' : ''}
         {time}
         {m.direction === 'out' && (m.status === 'failed' ? ` · failed: ${failReason(m.error)}` : <> {TICKS[m.status]}</>)}
         {m.cost_usd ? ` · $${m.cost_usd.toFixed(4)}` : ''}

@@ -636,6 +636,21 @@ const MIGRATIONS: string[] = [
     UNIQUE (kind, ref_id)
   );
   `,
+
+  // 31: the reply bot for leads (wabot.ts): where each conversation is in the button flow, whether the admin has taken
+  // it over, and when the sign-up link and the reminder after it went out.
+  `
+  CREATE TABLE wa_bot (
+    phone TEXT PRIMARY KEY, -- digits with country code
+    lead_id INTEGER REFERENCES leads(id) ON DELETE SET NULL,
+    lang TEXT NOT NULL DEFAULT 'hinglish', -- 'hinglish' | 'hindi', from how they first replied
+    step TEXT NOT NULL, -- howto | video | price | faq | signup | human | later
+    paused INTEGER NOT NULL DEFAULT 0, -- 1 = the admin answers, the bot stays quiet
+    signup_at TEXT, -- the sign-up link was sent
+    nudged_at TEXT, -- the "any trouble?" reminder after it was sent
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 const INDEXES = `
