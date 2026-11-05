@@ -9,8 +9,8 @@ import { Db } from './db';
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|whatsapp|telegram|lighthouse|headless|phantom|puppeteer|playwright|curl|wget|python|axios|node-fetch|go-http/i;
 const ID = /^[a-z0-9-]{8,40}$/i;
 const KEEP_DAYS = 400;
-const EVENT_KINDS = ['click', 'section', 'signup'] as const;
-const EVENTS_PER_VIEW = 60;
+const EVENT_KINDS = ['click', 'section', 'signup', 'scroll', 'form', 'dwell'] as const;
+const EVENTS_PER_VIEW = 150;
 
 export type PageView = {
   id: string;
@@ -33,15 +33,20 @@ export type PageView = {
   ret: boolean;
   dur?: number;
   scroll?: number;
+  /** The homepage section on screen when they left. */
+  exit?: string;
 };
 
-/** Something a visitor did during a page view: clicked a tracked button, reached a homepage section, signed up. */
-export type PageEvent = { view: string; kind: (typeof EVENT_KINDS)[number]; name: string; ts: string };
+/**
+ * Something a visitor did during a page view: clicked a button or link, reached a homepage section, scrolled a quarter
+ * further, started on a form field, signed up; or 'dwell': how long (value, ms) a homepage section was on screen.
+ */
+export type PageEvent = { view: string; kind: (typeof EVENT_KINDS)[number]; name: string; ts: string; value?: number };
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : '');
 
 /** Wallet, bill and reset links carry secrets, so only their kind is kept. Join codes are public (shop posters). */
-export const maskPath = (path: string) => path.replace(/^\/(w|c|reset)\/[^/]+/, '/$1/…');
+export const maskPath = (path: string) => path.replace(/^\/(w|c|reset|partner)\/[^/]+/, '/$1/…');
 
 /** The page a visitor came from, minus anything secret in it (an internal wallet link, say). */
 function safeRefUrl(url: string) {
@@ -149,6 +154,7 @@ type Row = {
   ret: number;
   dur: number | null;
   scroll: number | null;
+  exit_section: string | null;
 };
 
 @Injectable()
@@ -179,32 +185,43 @@ export class AnalyticsStore implements OnModuleDestroy {
   }
 
   /** "Leave" can be sent more than once per view; only a longer visible time replaces the stored one. */
-  finishView(id: string, dur: number, scroll: number) {
+  finishView(id: string, dur: number, scroll: number, exit: string) {
     this.db.sql
       .prepare(
-        `UPDATE page_views SET dur = :dur, scroll = MAX(COALESCE(scroll, 0), :scroll)
+        `UPDATE page_views SET dur = :dur, scroll = MAX(COALESCE(scroll, 0), :scroll), exit_section = COALESCE(NULLIF(:exit, ''), exit_section)
          WHERE id = :id AND (dur IS NULL OR dur < :dur) AND ts >= :since`,
       )
-      .run({ id, dur, scroll, since: new Date(Date.now() - 86_400_000).toISOString() });
+      .run({ id, dur, scroll, exit, since: new Date(Date.now() - 86_400_000).toISOString() });
   }
 
-  /** Events count only for a page view from the last day, each once, and at most EVENTS_PER_VIEW per view. */
-  addEvent(view: string, kind: PageEvent['kind'], name: string) {
+  /**
+   * Events count only for a page view from the last day, each once, and at most EVENTS_PER_VIEW per view. A 'dwell' is
+   * sent again each time the visitor leaves the tab; the longer time is kept.
+   */
+  addEvent(view: string, kind: PageEvent['kind'], name: string, value: number | null) {
     const now = new Date().toISOString();
+    const since = new Date(Date.now() - 86_400_000).toISOString();
+    if (value !== null) {
+      const updated = this.db.sql
+        .prepare('UPDATE page_events SET value = MAX(COALESCE(value, 0), :value) WHERE view_id = :view AND kind = :kind AND name = :name')
+        .run({ view, kind, name, value });
+      if (Number(updated.changes)) return;
+    }
     this.db.sql
       .prepare(
-        `INSERT OR IGNORE INTO page_events (view_id, kind, name, ts, day)
-         SELECT id, :kind, :name, :now, :day FROM page_views
+        `INSERT OR IGNORE INTO page_events (view_id, kind, name, ts, day, value)
+         SELECT id, :kind, :name, :now, :day, :value FROM page_views
          WHERE id = :view AND ts >= :since AND (SELECT COUNT(*) FROM page_events WHERE view_id = :view) < :max`,
       )
-      .run({ view, kind, name, now, day: now.slice(0, 10), since: new Date(Date.now() - 86_400_000).toISOString(), max: EVENTS_PER_VIEW });
+      .run({ view, kind, name, now, value, day: now.slice(0, 10), since, max: EVENTS_PER_VIEW });
   }
 
   /** Events on the UTC days from..to. */
   events(from: string, to: string): PageEvent[] {
-    return this.db.sql
-      .prepare('SELECT view_id AS view, kind, name, ts FROM page_events WHERE day BETWEEN ? AND ? ORDER BY ts')
-      .all(from, to) as PageEvent[];
+    const rows = this.db.sql
+      .prepare('SELECT view_id AS view, kind, name, ts, value FROM page_events WHERE day BETWEEN ? AND ? ORDER BY ts')
+      .all(from, to) as (Omit<PageEvent, 'value'> & { value: number | null })[];
+    return rows.map(({ value, ...e }) => (value !== null ? { ...e, value } : e));
   }
 
   /** Every view on the UTC days from..to (YYYY-MM-DD); the dashboard does the counting. */
@@ -230,6 +247,7 @@ export class AnalyticsStore implements OnModuleDestroy {
       sid: r.sid,
       ret: r.ret === 1,
       ...(r.dur !== null ? { dur: r.dur, scroll: r.scroll ?? 0 } : {}),
+      ...(r.exit_section ? { exit: r.exit_section } : {}),
     }));
   }
 
@@ -256,14 +274,16 @@ export class AnalyticsController {
       const dur = Math.round(Number(body.dur));
       const scroll = Math.round(Number(body.scroll));
       if (!(dur >= 0 && dur < 6 * 3600_000)) return;
-      this.store.finishView(String(body.id), dur, Math.min(100, Math.max(0, scroll || 0)));
+      this.store.finishView(String(body.id), dur, Math.min(100, Math.max(0, scroll || 0)), clip(body.at, 40));
       return;
     }
 
     if (body.t === 'event') {
       const kind = EVENT_KINDS.find((k) => k === body.kind);
       const name = clip(body.name, 100).trim();
-      if (kind && name) this.store.addEvent(String(body.id), kind, name);
+      const value = Math.round(Number(body.value));
+      const timed = kind === 'dwell' && value >= 0 && value < 6 * 3600_000;
+      if (kind && name && (kind !== 'dwell' || timed)) this.store.addEvent(String(body.id), kind, name, timed ? value : null);
       return;
     }
 

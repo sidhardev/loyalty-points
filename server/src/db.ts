@@ -663,6 +663,13 @@ const MIGRATIONS: string[] = [
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+
+  // 33: a visit's journey in Admin → Visits: how long each homepage section was on screen (page_events.value, ms, for
+  // kind 'dwell'), and the section a visitor left from.
+  `
+  ALTER TABLE page_events ADD COLUMN value INTEGER;
+  ALTER TABLE page_views ADD COLUMN exit_section TEXT;
+  `,
 ];
 
 const INDEXES = `

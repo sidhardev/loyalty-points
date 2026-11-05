@@ -2,8 +2,10 @@
 // Sends one "view" when a page opens and a "leave" with the time the page was actually visible and
 // how far it was scrolled. The visitor id is random and changes every day; the session id lives
 // only as long as the browser tab. Visits from a browser that has opened /admin are not counted.
-// Also records what visitors do: clicks on elements marked data-track="<name>", homepage sections (data-section)
-// they scroll to, and sign-ups. The superadmin sees the numbers under Admin → Visits.
+// Also records what visitors do: clicks (elements marked data-track="<name>", and on public pages any link or button by
+// its text), homepage sections (data-section) they scroll to and how long each stayed on screen, the section they left
+// from, how far down other pages they scrolled, which form fields they started on (the field's name, never what was
+// typed), and sign-ups. The superadmin sees the numbers and each visit's journey under Admin → Visits.
 
 const IGNORE_KEY = 'lp_sa_ignore';
 
@@ -23,7 +25,10 @@ const randomId = () =>
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 
 /** Wallet, bill and reset links carry secrets, so only their kind is sent (the server masks them too). */
-const maskPath = (path: string) => path.replace(/^\/(w|c|reset)\/[^/]+/, '/$1/…');
+const maskPath = (path: string) => path.replace(/^\/(w|c|reset|partner)\/[^/]+/, '/$1/…');
+
+/** Pages whose buttons can carry a customer's or shop's details: only data-track clicks are recorded there. */
+const PRIVATE = /^\/(app|w|c|reset|partner)(\/|$)/;
 
 function send(body: object) {
   const data = JSON.stringify(body);
@@ -51,9 +56,39 @@ export const LANDING_SECTIONS: [string, string][] = [
 /** The page view being recorded in this tab, if any (none when this browser is excluded). */
 let viewId: string | null = null;
 
+type EventKind = 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell';
+
 /** Records something the visitor did during this page view. Each name counts once per view. */
-export function trackEvent(kind: 'click' | 'section' | 'signup', name: string) {
-  if (viewId) send({ t: 'event', id: viewId, kind, name: name.slice(0, 100) });
+export function trackEvent(kind: EventKind, name: string, value?: number) {
+  if (viewId) send({ t: 'event', id: viewId, kind, name: name.slice(0, 100), ...(value !== undefined ? { value: Math.round(value) } : {}) });
+}
+
+/** Time each homepage section has been the one in the middle of the screen (ms), and the one there now. */
+const dwell = new Map<string, number>();
+let currentSection = '';
+
+const squash = (text: string | null | undefined, max = 60) => (text ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+
+/** A readable name for a link or button nobody marked with data-track: its text, and where a link goes. */
+function clickName(el: Element) {
+  const label = squash(el.getAttribute('aria-label') || (el as HTMLElement).innerText || el.getAttribute('title'));
+  if (!label) return '';
+  const href = el.tagName === 'A' ? el.getAttribute('href') : null;
+  if (!href) return `button: ${label}`;
+  try {
+    const url = new URL(href, location.href);
+    const to = url.host === location.host ? `${maskPath(url.pathname)}${url.hash}` : url.protocol.startsWith('http') ? url.host : url.protocol.replace(':', '');
+    return `link: ${label} → ${to}`;
+  } catch {
+    return `link: ${label}`;
+  }
+}
+
+/** The name of a form field, never its value: its label, else its placeholder or name. */
+function fieldName(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
+  // A label's first line is its name; hints under it ("We never share it") are left out.
+  const label = el.labels?.[0]?.innerText.split('\n')[0] || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || el.type;
+  return squash(label, 50);
 }
 
 /** Records each [data-section] element once the visitor scrolls to it. Returns a cleanup function. */
@@ -75,8 +110,16 @@ export function watchSections(root: ParentNode = document) {
   );
   // Start a moment after load, so the page view reaches the server before its first section does.
   const start = setTimeout(() => root.querySelectorAll('[data-section]').forEach((el) => io.observe(el)), 1500);
+  // Each second the page is in front, the section across the middle of the screen gets the time.
+  const tick = setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    const el = document.elementFromPoint(innerWidth / 2, innerHeight * 0.45)?.closest<HTMLElement>('[data-section]');
+    currentSection = el?.dataset.section ?? currentSection;
+    if (el?.dataset.section) dwell.set(el.dataset.section, (dwell.get(el.dataset.section) ?? 0) + 1000);
+  }, 1000);
   return () => {
     clearTimeout(start);
+    clearInterval(tick);
     io.disconnect();
   };
 }
@@ -128,27 +171,52 @@ export function trackPageView() {
     ret: returning,
   });
 
-  // Clicks on anything marked data-track (buttons, links); captured before a link navigates away.
+  // Clicks on anything marked data-track (buttons, links), and on public pages any other link or button;
+  // captured before a link navigates away.
+  const open = !PRIVATE.test(location.pathname);
   document.addEventListener(
     'click',
     (e) => {
-      const el = (e.target as Element | null)?.closest?.('[data-track]');
-      const name = el?.getAttribute('data-track');
-      if (name) trackEvent('click', name);
+      const target = e.target as Element | null;
+      const name = target?.closest?.('[data-track]')?.getAttribute('data-track');
+      if (name) return trackEvent('click', name);
+      const el = open ? target?.closest?.('a[href], button, summary, [role="button"], [role="tab"]') : null;
+      const generic = el && clickName(el);
+      if (generic) trackEvent('click', generic);
     },
     { capture: true },
   );
+
+  // The first time each form field is used: shows who started signing up and where they gave up. Never the value.
+  if (!/^\/(w|c|reset|partner)\//.test(location.pathname)) {
+    document.addEventListener('focusin', (e) => {
+      const el = e.target as HTMLElement;
+      if (el instanceof HTMLInputElement && ['hidden', 'checkbox', 'radio', 'submit', 'button'].includes(el.type)) return;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+        const field = fieldName(el);
+        if (field) trackEvent('form', field);
+      }
+    });
+  }
 
   // Count only time the page is in front of the reader.
   let visibleSince = document.visibilityState === 'visible' ? performance.now() : 0;
   let visible = 0;
   let maxScroll = 0;
+  const marks = new Set<number>();
 
   const measureScroll = () => {
     const doc = document.documentElement;
     const total = doc.scrollHeight - innerHeight;
     const pct = total > 0 ? (scrollY / total) * 100 : 100;
     maxScroll = Math.max(maxScroll, Math.min(100, Math.round(pct)));
+    // Milestones on the way down, each once, so the journey shows when they got how far.
+    for (const mark of [25, 50, 75, 100]) {
+      if (maxScroll >= mark && !marks.has(mark) && scrollY > 0) {
+        marks.add(mark);
+        trackEvent('scroll', `${mark}%`);
+      }
+    }
   };
   addEventListener('scroll', measureScroll, { passive: true });
   // The page renders after this runs, so measure once it has content.
@@ -159,7 +227,8 @@ export function trackPageView() {
       visible += performance.now() - visibleSince;
       visibleSince = 0;
     }
-    send({ t: 'leave', id, dur: Math.round(visible), scroll: maxScroll });
+    send({ t: 'leave', id, dur: Math.round(visible), scroll: maxScroll, at: currentSection });
+    for (const [section, ms] of dwell) trackEvent('dwell', section, ms);
   };
 
   document.addEventListener('visibilitychange', () => {

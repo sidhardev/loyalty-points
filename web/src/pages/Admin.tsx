@@ -1400,6 +1400,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
         subs: [
           ['traffic', 'Traffic'],
           ['homepage', 'Homepage'],
+          ['journeys', 'Visitor journeys'],
           ['recent', 'Recent views'],
         ],
       },

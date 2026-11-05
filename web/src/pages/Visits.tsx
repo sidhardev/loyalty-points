@@ -4,6 +4,7 @@ import { LANDING_SECTIONS } from '../analytics';
 import { num } from '../api';
 import { ErrorText, Skeleton } from '../ui';
 import { Sub } from './AdminSub';
+import { countryName, duration, flag, isSignupButton, JourneySheet, Journeys, localDay, pageLabel, source } from './VisitJourneys';
 
 // Superadmin → Visits: website traffic from the site's own tracker (src/analytics.ts). The server returns raw page
 // views and everything is counted here. Days follow this browser's time zone, so "Today" means your today.
@@ -29,10 +30,12 @@ export type PageView = {
   ret: boolean;
   dur?: number;
   scroll?: number;
+  /** The homepage section on screen when they left. */
+  exit?: string;
 };
 
-/** Something a visitor did during a page view (see src/analytics.ts). */
-export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup'; name: string; ts: string };
+/** Something a visitor did during a page view (see src/analytics.ts); a 'dwell' carries ms in value. */
+export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell'; name: string; ts: string; value?: number };
 
 type Range = 'today' | '7d' | '30d' | '90d' | 'custom';
 type Dim = 'path' | 'source' | 'country' | 'device' | 'browser' | 'os';
@@ -53,8 +56,6 @@ const addDays = (date: string, n: number) => {
   d.setUTCDate(d.getUTCDate() + n);
   return iso(d);
 };
-/** Local calendar date (YYYY-MM-DD) of a moment, in this browser's time zone. */
-const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const localToday = () => localDay(new Date());
 
 function stored<T>(key: string, fallback: T): T {
@@ -98,27 +99,8 @@ function niceTicks(max: number) {
   return [0, 1, 2, 3, 4].map((i) => i * step);
 }
 
-const regionNames = (() => {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'region' });
-  } catch {
-    return undefined;
-  }
-})();
-const countryName = (code: string) => (code ? (regionNames?.of(code) ?? code) : 'Unknown');
-const flag = (code: string) =>
-  code.length === 2 ? String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '🌐';
-
-const source = (v: PageView) => v.utmSource || v.ref || 'Direct';
 const visitorKey = (v: PageView) => `${localDay(new Date(v.ts))}|${v.vid || v.sid || v.id}`;
 
-function duration(ms: number) {
-  if (!ms) return '0s';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  return m < 60 ? `${m}m ${s % 60}s` : `${Math.floor(m / 60)}h ${m % 60}m`;
-}
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
@@ -287,12 +269,6 @@ function group(list: PageView[], key: (v: PageView) => string, label: (k: string
     .sort((a, b) => b.visitors - a.visitors || b.views - a.views);
 }
 
-/** Readable name for a path; masked secret links get a description instead. */
-const pageLabel = (path: string) =>
-  path === '/w/…' ? 'Customer wallet' : path === '/c/…' ? 'Bill QR claim' : path === '/reset/…' ? 'Password reset' : path.startsWith('/join/') ? 'Join a shop' : '';
-
-/** Buttons that lead to the sign-up form. */
-const isSignupButton = (name: string) => /start free|create your shop/i.test(name);
 
 /**
  * Homepage: which buttons visitors click, how far down they read, and which clicks end in a sign-up in the same visit
@@ -446,6 +422,8 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
   const [loading, setLoading] = useState(false);
   const [tech, setTech] = useState<'device' | 'browser' | 'os'>('device');
   const [pagesMode, setPagesMode] = useState<'all' | 'entry'>('all');
+  const [journey, setJourney] = useState<string | null>(null);
+  const closeJourney = useCallback(() => setJourney(null), []);
 
   const [from, to] = useMemo((): [string, string] => {
     const t = localToday();
@@ -674,13 +652,15 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
         {views && <HomepageInsights views={filtered} allViews={views} events={events} />}
       </Sub>
 
+      <Sub id="journeys">{views && <Journeys views={filtered} allViews={views} events={events} onOpen={setJourney} />}</Sub>
+
       <Sub id="recent">
         <section className="card">
           <div className="card-head">
             <h2>
               <Eye size={18} /> Recent page views
             </h2>
-            <span className="muted small">latest 30</span>
+            <span className="muted small">latest 30 · tap a row for the whole visit</span>
           </div>
           <div className="table-wrap">
             <table className="admin-table visits-table">
@@ -697,7 +677,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
               </thead>
               <tbody>
                 {recent.map((v) => (
-                  <tr key={v.id}>
+                  <tr key={v.id} className="visits-row-open" onClick={() => setJourney(v.sid || v.id)} title="See this whole visit">
                     <td>{new Date(v.ts).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                     <td>
                       <strong>{v.path}</strong>
@@ -732,6 +712,8 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
           </div>
         </section>
       </Sub>
+
+      {journey && views && <JourneySheet journeyKey={journey} allViews={views} events={events} onOpen={setJourney} onClose={closeJourney} />}
 
       <p className="muted small">
         Visitors are counted per day with a random id that resets daily; a visit is one browser tab session. Time on page counts only while the
