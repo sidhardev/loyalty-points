@@ -278,12 +278,34 @@ export class WhatsApp {
   async templates() {
     const s = this.settings();
     if (!s.wabaId) throw new BadRequestException('Add the WhatsApp Business Account ID first');
-    const r = await this.graph<{ data?: { name: string; language: string; status: string; category: string; components?: { type: string; text?: string }[] }[] }>(
-      `${s.wabaId}/message_templates?fields=name,language,status,category,components&limit=100`,
-    );
+    const r = await this.graph<{
+      data?: {
+        name: string;
+        language: string;
+        status: string;
+        category: string;
+        components?: { type: string; format?: string; text?: string; buttons?: { type: string; text?: string; url?: string }[] }[];
+      }[];
+    }>(`${s.wabaId}/message_templates?fields=name,language,status,category,components&limit=100`);
+    const vars = (text = '') => new Set(text.match(/\{\{\d+\}\}/g) ?? []).size;
     return (r.data ?? []).map((t) => {
       const body = t.components?.find((c) => c.type === 'BODY')?.text ?? '';
-      return { name: t.name, language: t.language, status: t.status, category: t.category, body, params: new Set(body.match(/\{\{\d+\}\}/g) ?? []).size };
+      const header = t.components?.find((c) => c.type === 'HEADER');
+      const buttons = t.components?.find((c) => c.type === 'BUTTONS')?.buttons ?? [];
+      const urlButton = buttons.findIndex((b) => b.type === 'URL' && vars(b.url) > 0);
+      return {
+        name: t.name,
+        language: t.language,
+        status: t.status,
+        category: t.category,
+        body,
+        params: vars(body),
+        // For sending any template from Chats: a text header with a variable, a photo/video/document header (not
+        // supported there), and a link button whose address ends in a variable.
+        header: header ? { format: header.format ?? 'TEXT', text: header.text ?? '', params: vars(header.text) } : null,
+        buttons: buttons.map((b) => b.text ?? '').filter(Boolean),
+        urlButton: urlButton >= 0 ? { index: urlButton, url: buttons[urlButton].url ?? '' } : null,
+      };
     });
   }
 
@@ -447,6 +469,88 @@ export class WhatsApp {
       if (/\(131026\)/.test(message)) this.db.sql.prepare('UPDATE leads SET mobile = 0 WHERE id = ?').run(leadId);
       throw error;
     }
+  }
+
+  /**
+   * Any approved template to any number (Admin → Chats: a new contact, or a chat past the 24 hours). `params` fill the
+   * body's {{1}}, {{2}}…; `headerParam` a text header's {{1}}; `buttonParam` the end of a link button's address. Same
+   * limits as the intro: opted-out numbers, the daily cap and the monthly budget.
+   */
+  async sendTemplateTo(phone: string, input: { name?: string; language?: string; params?: unknown[]; headerParam?: string; buttonParam?: string }) {
+    const s = this.settings();
+    if (!s.phoneNumberId || !this.token()) throw new BadRequestException('Set up WhatsApp first');
+    if (this.optedOut(phone)) throw new BadRequestException('This number asked not to be messaged');
+    const t = (await this.templates()).find((x) => x.name === input.name && x.language === input.language);
+    if (!t) throw new BadRequestException('That template isn’t on this WhatsApp account');
+    if (t.status !== 'APPROVED') throw new BadRequestException(`${t.name} isn’t approved yet (${t.status.toLowerCase()})`);
+    if (t.header && t.header.format !== 'TEXT') throw new BadRequestException('Templates with a photo, video or document on top can’t be sent from here yet');
+    const clean = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const values = Array.from({ length: t.params }, (_, i) => clean(input.params?.[i]));
+    if (values.some((v) => !v)) throw new BadRequestException('Fill in every {{…}} in the template');
+    const headerValue = clean(input.headerParam);
+    if (t.header?.params && !headerValue) throw new BadRequestException('Fill in the template’s heading');
+    const buttonValue = clean(input.buttonParam).replace(/\s/g, '');
+    if (t.urlButton && !buttonValue) throw new BadRequestException('Fill in the end of the button’s link');
+    const price = t.category === 'UTILITY' ? s.utilityPriceUsd : s.marketingPriceUsd;
+    if (this.sentToday() >= s.dailyLimit) throw new BadRequestException(`Today's limit of ${s.dailyLimit} template messages is reached (change it in WhatsApp settings)`);
+    if (this.monthCost().usd + price > s.monthlyBudgetUsd + 1e-9) throw new BadRequestException(`This month's WhatsApp budget ($${s.monthlyBudgetUsd}) is used up`);
+
+    const fillIn = (text: string, vals: string[]) => vals.reduce((x, v, i) => x.replaceAll(`{{${i + 1}}}`, v), text);
+    const body = [t.header?.text ? `*${fillIn(t.header.text, [headerValue])}*` : '', fillIn(t.body, values)].filter(Boolean).join('\n');
+    const components = [
+      ...(t.header?.params ? [{ type: 'header', parameters: [{ type: 'text', text: headerValue }] }] : []),
+      ...(values.length ? [{ type: 'body', parameters: values.map((v) => ({ type: 'text', text: v })) }] : []),
+      ...(t.urlButton ? [{ type: 'button', sub_type: 'url', index: String(t.urlButton.index), parameters: [{ type: 'text', text: buttonValue }] }] : []),
+    ];
+    const lead = this.leadByPhone(phone);
+    try {
+      const r = await this.graph<{ messages?: { id: string }[] }>(`${s.phoneNumberId}/messages`, {
+        method: 'POST',
+        body: {
+          messaging_product: 'whatsapp',
+          to: phone,
+          type: 'template',
+          template: { name: t.name, language: { code: t.language }, ...(components.length ? { components } : {}) },
+        },
+      });
+      this.record({ leadId: lead?.id ?? null, phone, direction: 'out', wamid: r.messages?.[0]?.id, kind: 'template', body, status: 'sent' });
+      if (lead)
+        this.db.sql
+          .prepare(
+            `UPDATE leads SET status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END,
+               contacted_at = COALESCE(contacted_at, datetime('now')), updated_at = datetime('now') WHERE id = ?`,
+          )
+          .run(lead.id);
+    } catch (error) {
+      this.record({ leadId: lead?.id ?? null, phone, direction: 'out', kind: 'template', body, status: 'failed', error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  // ---------------------------------------------------------------- saved contacts (Admin → Chats)
+
+  contacts() {
+    return this.db.sql.prepare('SELECT phone, name, note, created_at FROM wa_saved_contacts ORDER BY name COLLATE NOCASE').all();
+  }
+
+  /** Adds or renames a contact. `keepName` leaves an existing contact as it is (the shop's WhatsApp button only fills gaps). */
+  saveContact(phone: string, input: { name?: string; note?: string; keepName?: boolean }) {
+    const name = String(input.name ?? '').trim().slice(0, 120);
+    const existing = this.db.sql.prepare('SELECT name, note FROM wa_saved_contacts WHERE phone = ?').get(phone) as { name: string; note: string } | undefined;
+    if (existing && input.keepName) return { phone };
+    if (!name && !existing) throw new BadRequestException('Give the contact a name');
+    const note = input.note === undefined ? (existing?.note ?? '') : String(input.note).trim().slice(0, 500);
+    this.db.sql
+      .prepare(
+        `INSERT INTO wa_saved_contacts (phone, name, note) VALUES (?, ?, ?)
+         ON CONFLICT(phone) DO UPDATE SET name = excluded.name, note = excluded.note, updated_at = datetime('now')`,
+      )
+      .run(phone, name || existing!.name, note);
+    return { phone };
+  }
+
+  deleteContact(phone: string) {
+    this.db.sql.prepare('DELETE FROM wa_saved_contacts WHERE phone = ?').run(phone);
   }
 
   /** Whether automatic messages to shops' customers can go out: switched on in the panel, with a number and token. */
@@ -832,6 +936,8 @@ export class WhatsApp {
            (SELECT status FROM wa_messages x WHERE x.phone = m.phone ORDER BY x.created_at DESC, x.id DESC LIMIT 1) AS last_status,
            l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status, l.notes,
            (SELECT name FROM wa_contacts c WHERE c.phone = m.phone) AS profile_name,
+           (SELECT name FROM wa_saved_contacts c WHERE c.phone = m.phone) AS saved_name,
+           (SELECT note FROM wa_saved_contacts c WHERE c.phone = m.phone) AS saved_note,
            EXISTS (SELECT 1 FROM wa_optouts o WHERE o.phone = m.phone) AS opted_out,
            (SELECT step FROM wa_bot b WHERE b.phone = m.phone) AS bot_step,
            (SELECT paused FROM wa_bot b WHERE b.phone = m.phone) AS bot_paused,
@@ -843,6 +949,21 @@ export class WhatsApp {
          LIMIT 300`,
       )
       .all()
+      // Saved contacts nobody has messaged yet, so a new number can be opened and sent a template.
+      .concat(
+        this.db.sql
+          .prepare(
+            `SELECT s.phone, 0 AS last_id, s.created_at AS last_at, 0 AS messages, 0 AS unread, NULL AS last_in, '' AS last_body,
+               'out' AS last_direction, '' AS last_status, l.id AS lead_id, l.name, l.category, l.shop_type, l.area, l.status AS lead_status, l.notes,
+               NULL AS profile_name, s.name AS saved_name, s.note AS saved_note,
+               EXISTS (SELECT 1 FROM wa_optouts o WHERE o.phone = s.phone) AS opted_out, NULL AS bot_step, NULL AS bot_paused, 0 AS window_open
+             FROM wa_saved_contacts s
+             LEFT JOIN leads l ON l.id = (SELECT id FROM leads WHERE replace(replace(replace(phone, '+', ''), ' ', ''), '-', '') = s.phone ORDER BY id LIMIT 1)
+             WHERE NOT EXISTS (SELECT 1 FROM wa_messages m WHERE m.phone = s.phone)
+             ORDER BY s.created_at DESC`,
+          )
+          .all(),
+      )
       .map((c) => {
         const row = c as { lead_id: number | null; phone: string };
         // The sign-up link for quick replies: a lead's own (so a sign-up marks it joined), else one Growth counts as WhatsApp chats.
@@ -1242,6 +1363,42 @@ export class WhatsAppAdminController {
       )
       .run(p, this.wa.leadByPhone(p)?.id ?? null, body?.paused ? 1 : 0);
     return { paused: Boolean(body?.paused) };
+  }
+
+  /** Any approved template to this number: a new contact, or a chat past the 24 hours. */
+  @Post('chats/:phone/template')
+  @HttpCode(200)
+  async chatTemplate(
+    @AdminId() adminId: number,
+    @Param('phone') phone: string,
+    @Body() body: { name?: string; language?: string; params?: unknown[]; headerParam?: string; buttonParam?: string },
+  ) {
+    const p = this.digits(phone);
+    await this.wa.sendTemplateTo(p, body ?? {});
+    this.audit(adminId, `Sent the WhatsApp template ${String(body?.name ?? '').slice(0, 80)} to +${p}`);
+    return this.wa.chat(p);
+  }
+
+  @Get('contacts')
+  contacts() {
+    return this.wa.contacts();
+  }
+
+  /** Adds or renames a contact; the number can be typed any way (10 digits are taken as Indian). */
+  @Post('contacts')
+  @HttpCode(200)
+  saveContact(@Body() body: { phone?: string; name?: string; note?: string; keepName?: boolean }) {
+    let p = waDigits(String(body?.phone ?? ''));
+    if (p.length === 11 && p.startsWith('0')) p = p.slice(1);
+    if (p.length === 10) p = `91${p}`;
+    if (p.length < 11 || p.length > 15) throw new BadRequestException('Enter a WhatsApp number, e.g. 98765 43210 or +91 98765 43210');
+    return this.wa.saveContact(p, body ?? {});
+  }
+
+  @Delete('contacts/:phone')
+  deleteContact(@Param('phone') phone: string) {
+    this.wa.deleteContact(this.digits(phone));
+    return { ok: true };
   }
 
   @Post('chats/:phone/lead')

@@ -651,6 +651,18 @@ const MIGRATIONS: string[] = [
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+
+  // 32: contacts saved from Admin → Chats (any number, a lead or not), so a new number can be messaged with a template
+  // and shows in the chats under the name given here.
+  `
+  CREATE TABLE wa_saved_contacts (
+    phone TEXT PRIMARY KEY, -- digits with country code
+    name TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 const INDEXES = `

@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, Bot, FileText, MessagesSquare, Paperclip, RefreshCw, Search, Send, Sparkles, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Bot, ContactRound, FileText, MessageSquarePlus, MessagesSquare, Paperclip, RefreshCw, Search, Send, Sparkles, Trash2, UserPlus, X } from 'lucide-react';
 import { when } from '../api';
 import { Avatar, EmptyState, ErrorText, Sheet, SkeletonRows, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
@@ -25,6 +25,8 @@ type Chat = {
   lead_id: number | null;
   name: string | null;
   profile_name: string | null;
+  saved_name: string | null; // a contact saved here (New chat, or a shop's WhatsApp button)
+  saved_note: string | null;
   category: string | null;
   shop_type: string | null;
   area: string | null;
@@ -54,7 +56,23 @@ const BOT_STEP: Record<string, string> = {
   later: 'Said later',
 };
 const pretty = (phone: string) => (phone.startsWith('91') && phone.length === 12 ? `+91 ${phone.slice(2, 7)} ${phone.slice(7)}` : `+${phone}`);
-const display = (c: Chat) => c.name ?? c.profile_name ?? pretty(c.phone);
+const display = (c: Chat) => c.saved_name ?? c.name ?? c.profile_name ?? pretty(c.phone);
+
+/** An approved template as Meta lists it (server/src/whatsapp.ts templates()). */
+type Template = {
+  name: string;
+  language: string;
+  status: string;
+  category: string;
+  body: string;
+  params: number;
+  header: { format: string; text: string; params: number } | null;
+  buttons: string[];
+  urlButton: { index: number; url: string } | null;
+};
+const fillIn = (text: string, values: string[]) => values.reduce((t, v, i) => t.replaceAll(`{{${i + 1}}}`, v || `{{${i + 1}}}`), text);
+/** The chat to open from the address: #/chats/919876543210 (a shop's WhatsApp button links here). */
+const fromHash = () => location.hash.match(/^#\/chats\/(\d{8,15})/)?.[1] ?? '';
 const preview = (body: string) => (/^\[\w+\]$/.test(body) ? body.replace(/^\[(\w+)\]$/, (_, k: string) => ({ image: '📷 Photo', audio: '🎤 Voice message', video: '🎬 Video', document: '📄 Document' })[k] ?? `[${k}]`) : body);
 const utc = (t: string) => new Date(`${t.replace(' ', 'T')}Z`);
 const MAX_FILE = 50 * 1024 * 1024; // Supabase's free plan keeps files up to 50 MB
@@ -81,9 +99,19 @@ function dayLabel(d: Date) {
 export function ChatsPage({ api }: { api: AdminApi }) {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState('');
-  const [open, setOpen] = useState('');
-  const [filter, setFilter] = useState<'' | 'unread' | 'leads'>('');
+  const [open, setOpen] = useState(fromHash);
+  const [filter, setFilter] = useState<'' | 'unread' | 'leads' | 'contacts'>('');
   const [q, setQ] = useState('');
+  const [adding, setAdding] = useState(false);
+  useEffect(() => {
+    const onHash = () => fromHash() && setOpen(fromHash());
+    addEventListener('hashchange', onHash);
+    return () => removeEventListener('hashchange', onHash);
+  }, []);
+  // Picking another chat drops the deep link, so a reload doesn't jump back to it.
+  useEffect(() => {
+    if (fromHash() && fromHash() !== open) history.replaceState(null, '', '#/chats');
+  }, [open]);
   const { wa, reload: reloadWa } = useWhatsApp(api);
   const load = useCallback(
     () =>
@@ -116,7 +144,8 @@ export function ChatsPage({ api }: { api: AdminApi }) {
     (c) =>
       (filter !== 'unread' || c.unread > 0) &&
       (filter !== 'leads' || c.lead_id) &&
-      (!needle || `${display(c)} ${c.phone} ${c.area ?? ''} ${c.last_body}`.toLowerCase().includes(needle)),
+      (filter !== 'contacts' || c.saved_name) &&
+      (!needle || `${display(c)} ${c.phone} ${c.area ?? ''} ${c.saved_note ?? ''} ${c.last_body}`.toLowerCase().includes(needle)),
   );
   const current = data.chats.find((c) => c.phone === open);
 
@@ -127,10 +156,23 @@ export function ChatsPage({ api }: { api: AdminApi }) {
           <h1>WhatsApp chats</h1>
           <p>
             Every conversation on the WhatsApp API number, newest first{unread ? `: ${unread} new ${unread === 1 ? 'reply' : 'replies'}` : ''}. You can write back
-            freely for 24 hours after someone’s last message.
+            freely for 24 hours after someone’s last message. New numbers start with an approved template.
           </p>
         </div>
+        <button className="btn btn-primary" onClick={() => setAdding(true)}>
+          <MessageSquarePlus size={17} /> New chat
+        </button>
       </header>
+      {adding && (
+        <ContactSheet
+          api={api}
+          onClose={() => setAdding(false)}
+          onSaved={(phone) => {
+            load();
+            setOpen(phone);
+          }}
+        />
+      )}
 
       {wa && <WhatsAppBar api={api} wa={wa} onChanged={() => (reloadWa(), load())} />}
       {data && !data.storage.ready && (
@@ -162,6 +204,7 @@ export function ChatsPage({ api }: { api: AdminApi }) {
                   ['', 'All'],
                   ['unread', `Unread${unread ? ` (${unread})` : ''}`],
                   ['leads', 'Leads'],
+                  ['contacts', 'Contacts'],
                 ] as const
               ).map(([f, label]) => (
                 <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
@@ -183,8 +226,14 @@ export function ChatsPage({ api }: { api: AdminApi }) {
                       </span>
                       <span className="chat-row-bottom">
                         <span className="chat-preview">
-                          {c.last_direction === 'out' ? (c.last_status === 'read' ? '✓✓ ' : c.last_status === 'failed' ? '⚠ ' : '✓ ') : ''}
-                          {preview(c.last_body)}
+                          {c.messages === 0 ? (
+                            <em>New contact · send a template</em>
+                          ) : (
+                            <>
+                              {c.last_direction === 'out' ? (c.last_status === 'read' ? '✓✓ ' : c.last_status === 'failed' ? '⚠ ' : '✓ ') : ''}
+                              {preview(c.last_body)}
+                            </>
+                          )}
                         </span>
                         {c.unread > 0 ? <span className="chat-unread">{c.unread}</span> : c.lead_id ? <span className="chat-tag">lead</span> : null}
                       </span>
@@ -197,13 +246,22 @@ export function ChatsPage({ api }: { api: AdminApi }) {
             <EmptyState
               icon={MessagesSquare}
               title={data.chats.length ? 'No chats match' : 'No chats yet'}
-              text={data.chats.length ? 'Try another filter.' : 'Send intros from Leads; replies show up here.'}
+              text={data.chats.length ? 'Try another filter.' : 'Start one with New chat, or send intros from Leads; replies show up here.'}
             />
           )}
         </aside>
         <div className="chat-pane">
           {current ? (
-            <Conversation key={current.phone} api={api} chat={current} onBack={() => setOpen('')} onChanged={load} />
+            <Conversation
+              key={current.phone}
+              api={api}
+              chat={current}
+              onBack={() => {
+                setOpen('');
+                if (fromHash()) history.replaceState(null, '', '#/chats');
+              }}
+              onChanged={load}
+            />
           ) : (
             <div className="chat-empty muted">
               <MessagesSquare size={32} />
@@ -221,6 +279,8 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
   const [text, setText] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [picking, setPicking] = useState(false);
   const { busy, error, run } = useAction();
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -312,6 +372,9 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
               .join(' · ') || 'Not a lead yet'}
           </span>
         </div>
+        <button className="icon-btn" onClick={() => setEditing(true)} aria-label={chat.saved_name ? 'Edit contact' : 'Save contact'} title={chat.saved_name ? 'Edit contact' : 'Save contact'}>
+          <ContactRound size={17} />
+        </button>
         {chat.lead_id ? (
           <select className={`lead-status s-${chat.lead_status}`} value={chat.lead_status ?? 'new'} disabled={busy} onChange={(e) => setStatus(e.target.value)} aria-label="Lead status">
             {Object.entries(LEAD_STATUS).map(([k, v]) => (
@@ -342,6 +405,7 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
         </p>
       )}
       {chat.notes && <p className="chat-notes small">📝 {chat.notes}</p>}
+      {chat.saved_note && <p className="chat-notes small">📇 {chat.saved_note}</p>}
 
       <div className="chat-body">
         {messages ? (
@@ -380,6 +444,9 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
                   <Sparkles size={13} /> Send AI pitch
                 </button>
               )}
+              <button type="button" className="chip" disabled={busy} onClick={() => setPicking(true)}>
+                <FileText size={13} /> Template
+              </button>
             </div>
             <form
               className="chat-compose"
@@ -451,20 +518,218 @@ function Conversation({ api, chat, onBack, onChanged }: { api: AdminApi; chat: C
             <p className="muted small">
               {lastIn ? 'More than 24 hours since their last message, so' : 'They haven’t written yet, so'} WhatsApp only allows the approved template.
             </p>
-            {chat.lead_id && (
-              <div className="actions">
+            <div className="actions">
+              <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setPicking(true)}>
+                <FileText size={15} /> Send a template
+              </button>
+              {chat.lead_id && (
                 <button className="btn btn-soft btn-sm" disabled={busy} onClick={() => send(`whatsapp/leads/${chat.lead_id}/template`, undefined, 'Intro sent')}>
                   <Send size={15} /> Send the intro template
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
         <ErrorText text={error} />
       </footer>
 
       {saving && <SaveLead api={api} chat={chat} onClose={() => setSaving(false)} onSaved={onChanged} />}
+      {editing && <ContactSheet api={api} chat={chat} onClose={() => setEditing(false)} onSaved={onChanged} onDeleted={chat.messages === 0 ? onBack : undefined} />}
+      {picking && (
+        <TemplateSheet
+          api={api}
+          chat={chat}
+          onClose={() => setPicking(false)}
+          onSent={(m) => {
+            setMessages(m);
+            count.current = m.length;
+            onChanged();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/** Adds a number to chat with (New chat), or renames / removes a saved contact. */
+function ContactSheet({
+  api,
+  chat,
+  onClose,
+  onSaved,
+  onDeleted,
+}: {
+  api: AdminApi;
+  chat?: Chat;
+  onClose: () => void;
+  onSaved: (phone: string) => void;
+  onDeleted?: () => void;
+}) {
+  const [phone, setPhone] = useState(chat ? `+${chat.phone}` : '');
+  const [name, setName] = useState(chat ? (chat.saved_name ?? chat.name ?? chat.profile_name ?? '') : '');
+  const [note, setNote] = useState(chat?.saved_note ?? '');
+  const { busy, error, run } = useAction();
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      const r = await api<{ phone: string }>('whatsapp/contacts', 'POST', { phone, name, note });
+      toast(chat?.saved_name ? 'Contact updated' : 'Contact saved');
+      onSaved(r.phone);
+      onClose();
+    });
+  };
+  const remove = () =>
+    void run(async () => {
+      await api(`whatsapp/contacts/${chat!.phone}`, 'DELETE');
+      toast('Contact removed');
+      onSaved(chat!.phone);
+      onDeleted?.();
+      onClose();
+    });
+  return (
+    <Sheet title={chat ? (chat.saved_name ? 'Edit contact' : 'Save contact') : 'New chat'} onClose={onClose}>
+      <form className="wa-settings" onSubmit={save}>
+        <label>
+          WhatsApp number
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="98765 43210 or +91 98765 43210"
+            inputMode="tel"
+            readOnly={Boolean(chat)}
+            autoFocus={!chat}
+          />
+        </label>
+        <label>
+          Name
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ramesh, Sharma Kirana Store" autoFocus={Boolean(chat)} />
+        </label>
+        <label>
+          Note (optional, only you see it)
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. met at the market, wants a demo" />
+        </label>
+        <ErrorText text={error} />
+        <div className="actions">
+          <button className="btn btn-primary" disabled={busy || !phone.trim() || !name.trim()}>
+            {chat ? <ContactRound size={16} /> : <MessageSquarePlus size={16} />} {chat ? 'Save contact' : 'Save and open chat'}
+          </button>
+          {chat?.saved_name && (
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={remove}>
+              <Trash2 size={16} /> Remove contact
+            </button>
+          )}
+        </div>
+        {!chat && (
+          <p className="muted small" style={{ margin: 0 }}>
+            10-digit numbers are taken as Indian (+91). WhatsApp lets a business start a chat only with an approved template; once they reply, you can write
+            freely for 24 hours.
+          </p>
+        )}
+      </form>
+    </Sheet>
+  );
+}
+
+/** Picks one of the account's approved templates, fills its {{…}} and sends it to this chat's number. */
+function TemplateSheet({ api, chat, onClose, onSent }: { api: AdminApi; chat: Chat; onClose: () => void; onSent: (m: WaMessage[]) => void }) {
+  const [templates, setTemplates] = useState<Template[] | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [pick, setPick] = useState('');
+  const [params, setParams] = useState<string[]>([]);
+  const [headerParam, setHeaderParam] = useState('');
+  const [buttonParam, setButtonParam] = useState('');
+  const { busy, error, run } = useAction();
+  const name = chat.saved_name ?? chat.name ?? chat.profile_name ?? '';
+  useEffect(() => {
+    void api<Template[]>('whatsapp/templates').then(
+      (all) => setTemplates(all.filter((t) => t.status === 'APPROVED' && (!t.header || t.header.format === 'TEXT'))),
+      (e) => setLoadError((e as Error).message),
+    );
+  }, [api]);
+  const t = templates?.find((x) => `${x.name}|${x.language}` === pick);
+  const choose = (key: string) => {
+    setPick(key);
+    const next = templates?.find((x) => `${x.name}|${x.language}` === key);
+    // {{1}} is nearly always the person's or shop's name.
+    setParams(Array.from({ length: next?.params ?? 0 }, (_, i) => (i === 0 ? name : '')));
+    setHeaderParam(next?.header?.params ? name : '');
+    setButtonParam('');
+  };
+  const send = (e: FormEvent) => {
+    e.preventDefault();
+    if (!t) return;
+    void run(async () => {
+      const m = await api<WaMessage[]>(`whatsapp/chats/${chat.phone}/template`, 'POST', { name: t.name, language: t.language, params, headerParam, buttonParam });
+      toast('Template sent');
+      onSent(m);
+      onClose();
+    });
+  };
+  const ready = t && params.every((p) => p.trim()) && (!t.header?.params || headerParam.trim()) && (!t.urlButton || buttonParam.trim());
+  return (
+    <Sheet title={`Send a template to ${display(chat)}`} onClose={onClose}>
+      <form className="wa-settings" onSubmit={send}>
+        {loadError ? (
+          <ErrorText text={loadError} />
+        ) : !templates ? (
+          <SkeletonRows count={2} />
+        ) : !templates.length ? (
+          <p className="muted small">No approved templates yet. Create one in Leads → WhatsApp API settings and wait for Meta to approve it.</p>
+        ) : (
+          <>
+            <label>
+              Template
+              <select value={pick} onChange={(e) => choose(e.target.value)} autoFocus>
+                <option value="">Choose an approved template</option>
+                {templates.map((x) => (
+                  <option key={`${x.name}|${x.language}`} value={`${x.name}|${x.language}`}>
+                    {x.name} · {x.language} · {x.category.toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {t?.header?.params ? (
+              <label>
+                Heading {'{{1}}'}
+                <input value={headerParam} onChange={(e) => setHeaderParam(e.target.value)} />
+              </label>
+            ) : null}
+            {params.map((p, i) => (
+              <label key={i}>
+                {`{{${i + 1}}}`}
+                <input value={p} onChange={(e) => setParams((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))} placeholder={i === 0 ? 'e.g. their name or shop name' : ''} />
+              </label>
+            ))}
+            {t?.urlButton && (
+              <label>
+                Button link: {t.urlButton.url.replace(/\{\{\d+\}\}/, '…')}
+                <input value={buttonParam} onChange={(e) => setButtonParam(e.target.value)} placeholder="what goes in place of …" />
+              </label>
+            )}
+            {t && (
+              <div className="tpl-preview">
+                {t.header?.text && <strong>{fillIn(t.header.text, [headerParam])}</strong>}
+                <p>{fillIn(t.body, params)}</p>
+                {t.buttons.length > 0 && (
+                  <span className="muted small">
+                    {t.buttons.map((b) => `[${b}]`).join(' ')}
+                  </span>
+                )}
+              </div>
+            )}
+            <ErrorText text={error} />
+            <div className="actions">
+              <button className="btn btn-primary" disabled={busy || !ready}>
+                <Send size={16} /> {busy ? 'Sending…' : 'Send template'}
+              </button>
+            </div>
+            <p className="muted small" style={{ margin: 0 }}>
+              Counts toward the daily limit and monthly budget like the intro. Templates with a photo or video on top aren’t listed.
+            </p>
+          </>
+        )}
+      </form>
+    </Sheet>
   );
 }
 

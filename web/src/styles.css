@@ -4498,6 +4498,22 @@ circle.trend-views {
   color: var(--gold);
 }
 
+/* Admin → Chats → Send a template: the message as it will arrive. */
+.tpl-preview {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, var(--bg));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tpl-preview p {
+  margin: 0;
+}
+
 .chat-bot {
   display: flex;
   align-items: center;

@@ -37,7 +37,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { daysAgo, num, rupees, when, whatsapp } from '../api';
+import { daysAgo, num, rupees, when } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
@@ -184,17 +184,32 @@ function nudge(s: Shop) {
   return `Hi! This is the Regularhood team, thanks for signing up ${s.name}. Can we help you add your first visit? Just type the customer's phone number and tap Add visit — and print your counter poster from Settings so customers know about your card. Happy to set it up with you on a call.`;
 }
 
-/** WhatsApp / call / email buttons for a shop; using one records the contact in the admin log. */
+/** Saves the number as a contact in Admin → Chats (keeping an existing name) and opens its chat there. */
+function openWaChat(phone: string, name: string, then?: () => void) {
+  void adminApi<{ phone: string }>('whatsapp/contacts', 'POST', { phone, name, keepName: true }).then(
+    (r) => {
+      then?.();
+      location.hash = `/chats/${r.phone}`;
+    },
+    (e) => toast((e as Error).message, 'error'),
+  );
+}
+
+/**
+ * WhatsApp / call / email buttons for a shop; using one records the contact in the admin log. WhatsApp opens the shop's
+ * chat in Admin → Chats (sent from the business number), saving the shop as a contact there if it isn't one yet.
+ */
 function ContactButtons({ shop, onDone, compact }: { shop: Shop; onDone: () => void; compact?: boolean }) {
   const record = (channel: 'whatsapp' | 'call' | 'email' | 'visit') =>
     void adminApi(`shops/${shop.id}/contacted`, 'POST', { channel }).then(onDone, (e) => toast((e as Error).message, 'error'));
+  const openChat = () => openWaChat(shop.phone!, shop.name, () => record('whatsapp'));
   const size = compact ? 'btn-sm' : '';
   return (
     <div className="follow-actions">
       {shop.phone && (
-        <a className={`btn ${size} btn-whatsapp`} href={whatsapp(shop.phone, nudge(shop))} target="_blank" rel="noreferrer" onClick={() => record('whatsapp')}>
+        <button className={`btn ${size} btn-whatsapp`} onClick={openChat} title="Open this shop's chat in Admin → Chats">
           <MessageCircle size={16} /> WhatsApp
-        </a>
+        </button>
       )}
       {shop.phone && (
         <a className={`btn ${size} btn-soft`} href={`tel:${shop.phone}`} onClick={() => record('call')}>
@@ -1187,9 +1202,9 @@ function ReferralRewardsCard() {
                   <span>{why(d)}</span>
                 </span>
                 {d.phone && (
-                  <a className="btn btn-sm btn-whatsapp" href={whatsapp(d.phone, ask(d))} target="_blank" rel="noreferrer">
+                  <button className="btn btn-sm btn-whatsapp" onClick={() => openWaChat(d.phone!, d.name)} title={ask(d)}>
                     <MessageCircle size={15} /> Ask
-                  </a>
+                  </button>
                 )}
                 <button className="btn btn-sm btn-soft" disabled={busy} onClick={() => void markSent(d)}>
                   <Check size={15} /> Sent
