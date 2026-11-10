@@ -537,7 +537,7 @@ ${g.blocks.map(block).join('\n')}
 </div></section>
 <section style="padding-top:0"><div class="wrap">
   <h2 style="font-size:24px">${t.moreGuides}</h2>
-  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a></div>
+  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
 </div></section>
 </main>`;
   return shell({ lang, site, path: here, title: g.title, description: g.description, alternates, jsonLd, body });
@@ -553,7 +553,7 @@ export function renderGuideHub(site: string, lang: SeoLang, guides: Guide[], has
   <h1>${t.guidesTitle}</h1>
   <p class="intro">${t.guidesIntro}</p>
   <div class="hub">${guides.map((g) => `<a href="${guidePath(lang, g.slug)}"><b>${esc(g.h1)}</b><span>${esc(g.description)}</span></a>`).join('')}</div>
-  <p style="margin-top:28px"><a href="${path(lang)}">${t.forShops} →</a>${hasTwin ? ` · <a href="${guidePath(other)}" hreflang="${other}">${t.twin}</a>` : ''}</p>
+  <p style="margin-top:28px"><a href="${path(lang)}">${t.forShops} →</a> · <a href="${path(lang, '', 'city')}">${t.inYourCity} →</a>${hasTwin ? ` · <a href="${guidePath(other)}" hreflang="${other}">${t.twin}</a>` : ''}</p>
 </div></main>`;
   const alternates: { lang: SeoLang; path: string }[] = hasTwin ? [{ lang: 'en', path: guidePath('en') }, { lang: 'hi', path: guidePath('hi') }] : [{ lang, path: here }];
   return shell({ lang, site, path: here, title: `${t.guidesTitle} · Regularhood`, description: t.guidesIntro, alternates, body, noindex: !guides.length });

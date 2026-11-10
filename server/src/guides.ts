@@ -30,6 +30,7 @@ export type Guide = {
 const UPDATED = '2026-10-19';
 const ADDED = '2026-10-22';
 const ADDED_OCT26 = '2026-10-26';
+const ADDED_NOV10 = '2026-11-10';
 
 const en: Guide[] = [
   {
@@ -780,6 +781,137 @@ const en: Guide[] = [
       { q: 'Should I send these on WhatsApp or SMS?', a: 'WhatsApp, if they have it. Customers already chat with shops they know there, and a personal message reads very differently from a bulk SMS.' },
     ],
   },
+  {
+    slug: 'follow-up-message-for-repeat-service',
+    name: 'Follow-up message for repeat service',
+    title: 'Follow-Up Message Asking a Customer for Repeat Service (Examples)',
+    description: 'How to write a short, polite follow-up message asking a customer for a repeat service or order, with offer ideas (free add-on, 10% off) and ready examples.',
+    eyebrow: 'Follow-up messages',
+    h1: 'How to write a follow-up message asking a customer to come back',
+    intro:
+      'A good follow-up message has three parts: a polite greeting that shows you remember them, one small offer that gives them a reason to come, and a clear, easy next step. Below is a simple way to write one, the offers that work best, and finished examples you can copy.',
+    updated: ADDED_NOV10,
+    blocks: [
+      {
+        h2: 'Step 1: Write a short and polite message',
+        steps: [
+          { title: 'Greet them by name', text: '“Hello Priya ji” reads like a person. “Dear Customer” reads like a bulk message.' },
+          { title: 'Say who you are and when they last came', text: '“It’s been about a month since your last visit to Style Studio” shows you remember them.' },
+          { title: 'Make one easy ask', text: '“Would you like to book your next visit this week?” — one question, nothing to fill in.' },
+          { title: 'End warmly, with the shop’s name', text: '“We’d love to see you again. — Style Studio”' },
+        ],
+      },
+      {
+        h2: 'Step 2: Pick an offer that brings repeat customers',
+        table: {
+          head: ['Offer', 'Example', 'Works best for'],
+          rows: [
+            ['Free add-on', 'A free hair wash with any haircut', 'Salons, parlours, spas, laundry'],
+            ['10% discount', '10% off your next visit, valid till the 30th', 'A one-time push, bigger bills'],
+            ['Free gift', 'A small free gift on your next order', 'Shops, bakeries, boutiques'],
+            ['Free delivery', 'Free home delivery on your next order', 'Kirana, pharmacy, tiffin'],
+            ['Reward that’s close', 'One more visit and your free gift is ready', 'Any shop with a loyalty card'],
+          ],
+        },
+        p: ['Choose one offer per message. Two or three offers together look like an advertisement and the customer remembers none of them.'],
+      },
+      {
+        h2: 'Step 3: The finished message — examples',
+        list: [
+          'Repeat service (salon): “Hello Priya ji, it’s been about a month since your last visit to Style Studio. Book your next haircut this week and get a free hair wash with it. We’d love to see you again!”',
+          'Repeat service (laundry): “Hi Rahul, this is Sharma Laundry. It’s been two weeks since your last order — give us your clothes this week and get 10% off. We can pick them up tomorrow morning.”',
+          'Repeat order (shop): “Hello Anjali ji, thank you for shopping at Gupta Store last month. On your next order you get a small free gift and free home delivery. Just reply to this message with your list.”',
+          'Reward is close: “Hi Amit, you have 4 of 5 stamps at Sweet Corner. One more visit and your free gift is ready. See you soon!”',
+        ],
+      },
+      {
+        h2: 'Mistakes to avoid',
+        list: [
+          'Long paragraphs — keep it to two or three lines.',
+          'All capitals, many emojis or “LIMITED OFFER!!!”.',
+          'Sending the same message every week.',
+          'An offer without a date — add “valid till the 30th” so it feels real.',
+          'Forgetting your shop’s name, so they don’t know who wrote.',
+        ],
+      },
+      {
+        h2: 'Knowing who to send it to',
+        p: [
+          'The hardest part isn’t writing the message — it’s knowing which customers haven’t come back. Regularhood counts visits on each customer’s phone number, shows a list of customers who haven’t returned for a while, and gives you a ready “we miss you” WhatsApp message for each, sent from your own WhatsApp. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How do I write a polite message asking a customer for a repeat service?', a: 'Greet them by name, say when they last visited, give one small offer like a free add-on or 10% off, and ask one easy question such as “Would you like to book this week?”. Sign off with your shop’s name.' },
+      { q: 'What offers attract repeat customers?', a: 'A free add-on, a small free gift, free delivery, 10% off the next visit, or a reminder that their loyalty reward is close. Free add-ons usually feel bigger to the customer and cost you less than a discount.' },
+      { q: 'How long should a follow-up message be?', a: 'Two or three short lines — short enough to read on the phone lock screen without opening the chat.' },
+      { q: 'When should I send a follow-up message?', a: 'Around the time they’d usually come back: a month after a haircut, two weeks after a laundry order, or when they’re one visit away from a reward.' },
+    ],
+  },
+  {
+    slug: 'restaurant-loyalty-program',
+    name: 'Restaurant loyalty program',
+    title: 'Restaurant Loyalty Program in India: Simple Setup, No App',
+    description: 'How to run a loyalty program for a restaurant, dhaba or café in India: a visit card on the customer’s phone number, rewards that protect your margin, WhatsApp follow-ups. Free to start.',
+    eyebrow: 'Restaurant loyalty',
+    h1: 'A loyalty program for your restaurant that guests actually use',
+    intro:
+      'Big restaurant chains run loyalty apps with points, tiers and wallets. A neighbourhood restaurant doesn’t need any of that. Guests who eat with you twice a month already like you — they just need a small reason to choose you over the new place down the road.',
+    updated: ADDED_NOV10,
+    blocks: [
+      {
+        h2: 'Why points apps don’t work for most restaurants',
+        list: [
+          'Guests won’t download an app to eat a meal.',
+          '“1 point per ₹100, 500 points = ₹50” is too much maths at the billing counter.',
+          'QR codes at the table need the guest to scan, sign up and remember a login.',
+          'Most of these tools charge monthly fees built for chains, not a single outlet.',
+        ],
+      },
+      {
+        h2: 'The simple version: visits, not points',
+        steps: [
+          { title: 'Count visits on the phone number', text: 'At billing, type the guest’s number and add a visit. Nothing for the guest to install or sign up for.' },
+          { title: 'Set one rule', text: 'Every 5 visits, a free dessert or starter. One sentence the staff can say and the guest can remember.' },
+          { title: 'Tell the guest at the table or counter', text: '“You’ve got your first stamp — four more and your dessert is on us.”' },
+          { title: 'Bring back the ones who stop coming', text: 'A family that ate every Sunday and hasn’t come for a month gets a short, warm WhatsApp message.' },
+        ],
+      },
+      {
+        h2: 'Reward ideas that protect your margin',
+        table: {
+          head: ['Reward', 'Why it works'],
+          rows: [
+            ['Free dessert', 'High perceived value, low food cost'],
+            ['Free starter', 'Guests often order more mains around it'],
+            ['Free lassi or cold drink', 'Cheap for you, feels generous'],
+            ['Free delivery on the next order', 'Moves regulars to your own ordering, not an aggregator'],
+            ['A dish of the guest’s choice under ₹150', 'Feels personal, capped cost'],
+          ],
+        },
+        p: ['Avoid “free full meal” or flat bill discounts — they cost far more than they bring back.'],
+      },
+      {
+        h2: 'How many visits per reward',
+        p: [
+          'For a lunch place or dhaba with daily regulars, 8 to 10 visits works. For a family restaurant people visit a few times a month, keep it to 4 or 5 so the reward arrives within two months.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood is a visit card on the guest’s phone number. You choose the rule — every N visits (3 to 10), one reward — and at billing you type the number and tap Add visit. The app tells you when the reward is due.',
+          'You can send guests their card on WhatsApp in one tap, print a counter poster with your rule, and see a list of guests who haven’t come back with a ready “we miss you” message. Works on any phone, tablet or computer. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'What is the best loyalty program for a small restaurant?', a: 'A visit-based card on the guest’s phone number: every few visits, one free dish. No app for the guest, nothing to explain, and staff can run it in seconds at billing.' },
+      { q: 'Do restaurant guests need to download an app?', a: 'Not with Regularhood. Their visits are saved on their phone number, and their card opens from a WhatsApp link in the browser.' },
+      { q: 'Does it work for dhabas, cafés and cloud kitchens?', a: 'Yes. Any place where the same people come back — dine-in or delivery — can count visits and reward them.' },
+      { q: 'How much does a restaurant loyalty program cost?', a: 'Regularhood is free to start. The real cost is the reward itself, so pick something with a low food cost like a dessert or a drink.' },
+    ],
+  },
 ];
 
 const hi: Guide[] = [
@@ -917,7 +1049,7 @@ const hi: Guide[] = [
   {
     slug: 'how-to-get-repeat-customers',
     name: 'ग्राहक को बार-बार कैसे बुलाएँ',
-    title: 'दुकान पर ग्राहक बार-बार कैसे आएँ: 10 आसान तरीके',
+    title: 'ग्राहक बार-बार दुकान पर कैसे आएँ? पक्के ग्राहक बनाने के 10 तरीके',
     description: 'छोटी दुकान पर पक्के ग्राहक बनाने के 10 आसान तरीके: नाम याद रखें, विज़िट पर इनाम दें, WhatsApp पर संपर्क रखें और दूर हुए ग्राहकों को वापस बुलाएँ।',
     eyebrow: 'पक्के ग्राहक',
     h1: 'ग्राहक बार-बार कैसे आएँ: छोटी दुकानों के लिए 10 तरीके',
@@ -1096,8 +1228,8 @@ const hi: Guide[] = [
   {
     slug: 'how-to-increase-shop-sales',
     name: 'दुकान की बिक्री कैसे बढ़ाएँ',
-    title: 'दुकान की बिक्री कैसे बढ़ाएँ: कम ख़र्च वाले 8 तरीके',
-    description: 'भारत की छोटी दुकान की बिक्री बढ़ाने के काम के तरीके: पक्के ग्राहकों की ज़्यादा विज़िट, लौटने लायक इनाम, WhatsApp और काउंटर। शुरू करना मुफ़्त।',
+    title: 'दुकान में बिक्री कैसे बढ़ाएँ? 8 आसान तरीके, बिना विज्ञापन',
+    description: 'दुकान की सेल कैसे बढ़ाएँ (dukan ki sale kaise badhaye)? पक्के ग्राहकों को बार-बार बुलाने, इनाम, WhatsApp स्टेटस और काउंटर के 8 आज़माए तरीके। मुफ़्त।',
     eyebrow: 'दुकान की बिक्री',
     h1: 'बिना विज्ञापन के अपनी दुकान की बिक्री कैसे बढ़ाएँ',
     intro:
@@ -1151,8 +1283,8 @@ const hi: Guide[] = [
   {
     slug: 'win-back-old-customers',
     name: 'पुराने ग्राहक वापस लाएँ',
-    title: 'दुकान पर आना बंद कर चुके ग्राहकों को वापस कैसे लाएँ',
-    description: 'छोटी दुकान पुराने ग्राहकों को वापस कैसे लाए: जानें कौन आना बंद कर गया, WhatsApp पर छोटा मैसेज भेजें और आने की वजह दें। शुरू करना मुफ़्त।',
+    title: 'पुराने ग्राहक वापस कैसे लाएँ? 3 कदम + तैयार WhatsApp मैसेज',
+    description: 'जो ग्राहक दुकान पर आना बंद कर गए, उन्हें वापस कैसे बुलाएँ: कौन गया यह जानें, कॉपी करने लायक WhatsApp मैसेज भेजें और आने की वजह दें। मुफ़्त।',
     eyebrow: 'ग्राहक वापस लाएँ',
     h1: 'आना बंद कर चुके ग्राहकों को वापस कैसे लाएँ',
     intro:
@@ -1331,8 +1463,8 @@ const hi: Guide[] = [
   {
     slug: 'get-customers-for-new-shop',
     name: 'नई दुकान के लिए ग्राहक',
-    title: 'नई दुकान पर ग्राहक कैसे लाएँ — और उन्हें पक्का ग्राहक कैसे बनाएँ',
-    description: 'अभी दुकान खोली है? इलाके में पहले ग्राहक कैसे लाएँ और आसान इनाम, WhatsApp और काउंटर से उन्हें पक्का ग्राहक कैसे बनाएँ। शुरू करना मुफ़्त।',
+    title: 'दुकान पर ग्राहक कैसे आएँ? नई दुकान के लिए पहला महीना, हफ़्ते-दर-हफ़्ते',
+    description: 'नई दुकान पर ग्राहक कैसे लाएँ (dukan par grahak kaise badhaye)? पहले ग्राहक लाने और उन्हें पक्का ग्राहक बनाने का हफ़्ते-दर-हफ़्ते प्लान। मुफ़्त शुरू करें।',
     eyebrow: 'नई दुकान',
     h1: 'नई दुकान पर ग्राहक कैसे लाएँ और उन्हें पक्का ग्राहक कैसे बनाएँ',
     intro:
@@ -1529,6 +1661,165 @@ const hi: Guide[] = [
       { q: 'कौन-सा ऑफ़र ग्राहकों को दोबारा लाता है?', a: 'मुफ़्त ऐड-ऑन या बार-बार आने पर इनाम अक्सर छूट से बेहतर काम करता है। यह तोहफ़े जैसा लगता है और ग्राहकों को अगली सेल का इंतज़ार करना नहीं सिखाता।' },
       { q: 'ग्राहकों को कितनी बार मैसेज करें?', a: 'कम। जब उनके काम का हो — सर्विस ड्यू हो, इनाम पास हो, लंबे समय से न आए हों — तब एक मैसेज अच्छा लगता है। रोज़ के मैसेज स्पैम लगते हैं।' },
       { q: 'WhatsApp पर भेजें या SMS पर?', a: 'WhatsApp पर, अगर उनके पास है। ग्राहक जानी-पहचानी दुकानों से वहीं बात करते हैं, और निजी मैसेज बल्क SMS से बिल्कुल अलग लगता है।' },
+    ],
+  },
+  {
+    slug: 'customer-bulane-ke-upay',
+    name: 'दुकान में ग्राहक बुलाने के उपाय',
+    title: 'दुकान में ग्राहक बुलाने का मंत्र: 9 उपाय जो सच में काम करते हैं',
+    description: 'दुकान में ग्राहक कैसे बढ़ाएँ (dukan me grahak kaise badhaye)? ग्राहक बुलाने का असली मंत्र — पक्के ग्राहक, इनाम, WhatsApp और काउंटर। आज से शुरू करें, मुफ़्त।',
+    eyebrow: 'ग्राहक बढ़ाने के उपाय',
+    h1: 'दुकान में ग्राहक बुलाने का असली मंत्र: 9 आसान उपाय',
+    intro:
+      'हर दुकानदार चाहता है कि उसकी दुकान पर भीड़ रहे। कोई पूजा-पाठ करता है, कोई नींबू-मिर्च लटकाता है — आस्था अपनी जगह है। पर जो दुकानें सालों तक चलती हैं, उनका असली मंत्र एक ही है: जो ग्राहक एक बार आया, वह बार-बार आए। यहाँ 9 उपाय हैं जो कोई भी दुकान आज से कर सकती है।',
+    updated: ADDED_NOV10,
+    blocks: [
+      {
+        h2: 'ग्राहक बुलाने के 9 उपाय',
+        steps: [
+          { title: 'हर ग्राहक को नाम से पहचानें', text: '“आइए शर्मा जी” सुनकर ग्राहक को लगता है यह उसकी अपनी दुकान है। यही सबसे पुराना और सबसे पक्का मंत्र है।' },
+          { title: 'बार-बार आने पर इनाम दें', text: 'हर 5 विज़िट पर एक छोटा मुफ़्त तोहफ़ा। ग्राहक के पास बगल वाली दुकान छोड़कर आपके पास आने की वजह होती है।' },
+          { title: 'काउंटर पर अपना ऑफ़र लिखकर लगाएँ', text: 'जहाँ पैसे दिए जाते हैं, वहाँ एक छोटा पोस्टर: “हर 5 विज़िट पर तोहफ़ा मुफ़्त”। लोग ख़ुद पूछते हैं।' },
+          { title: 'रोज़ WhatsApp स्टेटस लगाएँ', text: 'नया माल, आज का स्पेशल, आपका इनाम का नियम — आपके नंबर वाले सब ग्राहक मुफ़्त में देखते हैं।' },
+          { title: 'जो चीज़ सबसे ज़्यादा बिकती है, वह कभी ख़त्म न हो', text: 'ग्राहक अपनी रोज़ की चीज़ लेने आया और नहीं मिली, तो वह दूसरी दुकान आज़माएगा।' },
+          { title: 'दुकान साफ़ और रोशन रखें', text: 'बाहर से अंदर दिखे, सामान साफ़ सजा हो, दाम लिखे हों। अंधेरी, भरी हुई दुकान में नया ग्राहक अंदर नहीं आता।' },
+          { title: 'Google पर अपनी दुकान डालें', text: 'Google Business Profile मुफ़्त है। फ़ोटो, समय और फ़ोन नंबर डालें, और ख़ुश ग्राहकों से रिव्यू माँगें।' },
+          { title: 'देखें कौन आना बंद कर गया', text: 'पुराना ग्राहक चुपचाप चला जाता है। समय रहते पता चले तो उसे वापस बुलाना आसान है।' },
+          { title: 'एक प्यारा-सा मैसेज भेजें', text: '“नमस्ते सुरेश जी, काफ़ी दिनों से आप नहीं आए — सब ठीक है? आपका इंतज़ार रहेगा।” बस इतना काफ़ी है।' },
+        ],
+      },
+      {
+        h2: 'नया ग्राहक लाना महँगा, पुराने को बुलाना सस्ता',
+        p: [
+          'पैम्फ़लेट, अख़बार का विज्ञापन, भारी छूट — इनमें पैसा लगता है और पता नहीं चलता कि कोई आया या नहीं। जो ग्राहक पहले से आपको जानता है, उसे महीने में एक बार और बुलाना लगभग मुफ़्त है।',
+          'अगर आपके 100 पक्के ग्राहक महीने में बस एक बार और आएँ, तो वह 100 नई विज़िट हैं — बिना किसी विज्ञापन के।',
+        ],
+      },
+      {
+        h2: 'जो उपाय अक्सर काम नहीं करते',
+        list: [
+          'बहुत भारी छूट — ग्राहक एक बार आता है और अगली सेल का इंतज़ार करता है।',
+          'अनजान नंबरों पर बल्क SMS — स्पैम लगता है।',
+          'ग्राहकों से कोई ऐप डाउनलोड करवाना — ज़्यादातर नहीं करते।',
+          'हर हफ़्ते नया ऑफ़र — ग्राहक कोई भी याद नहीं रखता।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood इनमें से कई उपाय एक टैप में करता है। आप एक नियम तय करते हैं — हर N विज़िट (3 से 10) पर एक इनाम — फिर काउंटर पर ग्राहक का फ़ोन नंबर लिखकर Add visit दबाते हैं। इनाम कब देना है, ऐप बताता है।',
+          'काउंटर पोस्टर और WhatsApp स्टेटस की फ़ोटो तैयार मिलती है, और न लौटे ग्राहकों की लिस्ट तैयार “हम आपको मिस कर रहे हैं” मैसेज के साथ। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'दुकान में ग्राहक बुलाने का सबसे अच्छा मंत्र क्या है?', a: 'जो ग्राहक एक बार आया, उसे बार-बार आने की वजह दें: नाम से पहचानें, हर कुछ विज़िट पर छोटा इनाम दें, और जो आना बंद कर दे उसे प्यार से याद दिलाएँ।' },
+      { q: 'दुकान पर ग्राहक कैसे बढ़ाएँ बिना पैसे खर्च किए?', a: 'WhatsApp स्टेटस, Google Business Profile, काउंटर पोस्टर और पुराने ग्राहकों को एक निजी मैसेज — ये सब मुफ़्त हैं और पक्के ग्राहकों पर सबसे जल्दी असर करते हैं।' },
+      { q: 'नई दुकान पर ग्राहक कैसे आएँ?', a: 'पहले हफ़्ते से हर ग्राहक का नंबर लें, उसे इनाम का नियम बताएँ और Google पर दुकान डालें। जो दो-तीन बार लौटे, उन्हें पक्का ग्राहक बनाएँ।' },
+      { q: 'क्या टोटके या मंत्र से दुकान चलती है?', a: 'आस्था हर किसी की अपनी है। पर दुकान रोज़ ग्राहकों की वापसी से चलती है — अच्छी सर्विस, सही माल और याद रखा गया ग्राहक, यही असली टोटका है।' },
+    ],
+  },
+  {
+    slug: 'follow-up-message-for-repeat-service',
+    name: 'ग्राहक को दोबारा बुलाने का फ़ॉलो-अप मैसेज',
+    title: 'ग्राहक को दोबारा सर्विस के लिए फ़ॉलो-अप मैसेज कैसे लिखें (उदाहरण)',
+    description: 'ग्राहक को दोबारा सर्विस या ऑर्डर के लिए छोटा, विनम्र फ़ॉलो-अप मैसेज कैसे लिखें — मुफ़्त ऐड-ऑन, 10% छूट जैसे ऑफ़र और तैयार उदाहरण।',
+    eyebrow: 'फ़ॉलो-अप मैसेज',
+    h1: 'ग्राहक को दोबारा बुलाने का फ़ॉलो-अप मैसेज कैसे लिखें',
+    intro:
+      'अच्छे फ़ॉलो-अप मैसेज के तीन हिस्से होते हैं: नाम लेकर विनम्र नमस्ते, आने की एक छोटी वजह (ऑफ़र), और एक आसान अगला कदम। नीचे लिखने का तरीका, सबसे अच्छे ऑफ़र और तैयार उदाहरण हैं।',
+    updated: ADDED_NOV10,
+    blocks: [
+      {
+        h2: 'कदम 1: छोटा और विनम्र मैसेज लिखें',
+        steps: [
+          { title: 'नाम से नमस्ते करें', text: '“नमस्ते प्रिया जी” अपनापन लगता है, “प्रिय ग्राहक” बल्क मैसेज लगता है।' },
+          { title: 'बताएँ कि आप कौन हैं और वे कब आए थे', text: '“स्टाइल स्टूडियो में आपकी पिछली विज़िट को लगभग एक महीना हो गया।”' },
+          { title: 'एक आसान सवाल पूछें', text: '“क्या इस हफ़्ते अगली अपॉइंटमेंट बुक करें?”' },
+          { title: 'दुकान के नाम से ख़त्म करें', text: '“आपका इंतज़ार रहेगा। — स्टाइल स्टूडियो”' },
+        ],
+      },
+      {
+        h2: 'कदम 2: ऐसा ऑफ़र चुनें जो ग्राहक को लौटाए',
+        table: {
+          head: ['ऑफ़र', 'उदाहरण', 'किसके लिए अच्छा'],
+          rows: [
+            ['मुफ़्त ऐड-ऑन', 'हेयरकट के साथ हेयर वॉश मुफ़्त', 'सैलून, पार्लर, लॉन्ड्री'],
+            ['10% छूट', 'अगली विज़िट पर 10% छूट, 30 तारीख़ तक', 'एक बार का धक्का'],
+            ['मुफ़्त तोहफ़ा', 'अगले ऑर्डर पर एक छोटा तोहफ़ा', 'दुकानें, बेकरी, बुटीक'],
+            ['मुफ़्त डिलीवरी', 'अगले ऑर्डर पर होम डिलीवरी मुफ़्त', 'किराना, मेडिकल, टिफ़िन'],
+            ['पास आया इनाम', 'बस एक विज़िट और, तोहफ़ा तैयार', 'लॉयल्टी कार्ड वाली हर दुकान'],
+          ],
+        },
+        p: ['एक मैसेज में एक ही ऑफ़र रखें। दो-तीन ऑफ़र एक साथ विज्ञापन जैसे लगते हैं।'],
+      },
+      {
+        h2: 'कदम 3: पूरा मैसेज — उदाहरण',
+        list: [
+          'सैलून: “नमस्ते प्रिया जी, स्टाइल स्टूडियो में आपकी पिछली विज़िट को लगभग एक महीना हो गया। इस हफ़्ते हेयरकट बुक करें, हेयर वॉश मुफ़्त मिलेगा। आपका इंतज़ार रहेगा!”',
+          'लॉन्ड्री: “नमस्ते राहुल जी, शर्मा लॉन्ड्री से। आपके पिछले ऑर्डर को दो हफ़्ते हो गए — इस हफ़्ते कपड़े दें और 10% छूट पाएँ। कल सुबह हम ले जा सकते हैं।”',
+          'किराना: “नमस्ते अंजलि जी, गुप्ता स्टोर से ख़रीदारी के लिए धन्यवाद। अगले ऑर्डर पर छोटा तोहफ़ा और होम डिलीवरी मुफ़्त। बस अपनी लिस्ट इसी मैसेज पर भेज दें।”',
+          'इनाम पास: “नमस्ते अमित जी, स्वीट कॉर्नर पर आपके 5 में से 4 स्टैम्प हो गए। बस एक विज़िट और, आपका तोहफ़ा तैयार है!”',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'असली मुश्किल मैसेज लिखना नहीं, यह जानना है कि कौन ग्राहक नहीं लौटा। Regularhood हर ग्राहक की विज़िट उसके फ़ोन नंबर पर गिनता है, न लौटे ग्राहकों की लिस्ट दिखाता है, और हर एक के लिए तैयार “हम आपको मिस कर रहे हैं” मैसेज देता है — आपके अपने WhatsApp से। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'ग्राहक को दोबारा सर्विस के लिए विनम्र मैसेज कैसे लिखें?', a: 'नाम लेकर नमस्ते करें, बताएँ कि वे कब आए थे, एक छोटा ऑफ़र दें जैसे मुफ़्त ऐड-ऑन या 10% छूट, और एक आसान सवाल पूछें। आख़िर में दुकान का नाम लिखें।' },
+      { q: 'कौन-से ऑफ़र ग्राहकों को दोबारा लाते हैं?', a: 'मुफ़्त ऐड-ऑन, छोटा तोहफ़ा, मुफ़्त डिलीवरी, अगली विज़िट पर 10% छूट, या यह याद दिलाना कि उनका इनाम पास है।' },
+      { q: 'फ़ॉलो-अप मैसेज कब भेजें?', a: 'जब वे आम तौर पर लौटते: हेयरकट के एक महीने बाद, लॉन्ड्री के दो हफ़्ते बाद, या जब इनाम बस एक विज़िट दूर हो।' },
+    ],
+  },
+  {
+    slug: 'restaurant-loyalty-program',
+    name: 'रेस्टोरेंट लॉयल्टी प्रोग्राम',
+    title: 'रेस्टोरेंट लॉयल्टी प्रोग्राम: बिना ऐप, आसान तरीका',
+    description: 'रेस्टोरेंट, ढाबा या कैफ़े के लिए लॉयल्टी प्रोग्राम: ग्राहक के फ़ोन नंबर पर विज़िट कार्ड, मुनाफ़ा बचाने वाले इनाम और WhatsApp। शुरू करना मुफ़्त।',
+    eyebrow: 'रेस्टोरेंट लॉयल्टी',
+    h1: 'आपके रेस्टोरेंट का लॉयल्टी प्रोग्राम, जो मेहमान सच में इस्तेमाल करें',
+    intro:
+      'बड़ी चेन पॉइंट्स, टियर और वॉलेट वाले ऐप चलाती हैं। मोहल्ले के रेस्टोरेंट को यह सब नहीं चाहिए। जो परिवार महीने में दो बार आपके यहाँ खाता है, उसे बस नई जगह की जगह आपको चुनने की एक छोटी वजह चाहिए।',
+    updated: ADDED_NOV10,
+    blocks: [
+      {
+        h2: 'आसान तरीका: पॉइंट्स नहीं, विज़िट',
+        steps: [
+          { title: 'फ़ोन नंबर पर विज़िट गिनें', text: 'बिलिंग पर मेहमान का नंबर लिखें और विज़िट जोड़ें। मेहमान को कुछ इंस्टॉल नहीं करना।' },
+          { title: 'एक नियम रखें', text: 'हर 5 विज़िट पर एक मुफ़्त डेज़र्ट या स्टार्टर।' },
+          { title: 'मेहमान को बताएँ', text: '“आपका पहला स्टैम्प लग गया — चार और, फिर डेज़र्ट हमारी तरफ़ से।”' },
+          { title: 'न लौटने वालों को बुलाएँ', text: 'जो परिवार हर रविवार आता था और एक महीने से नहीं आया, उसे WhatsApp पर एक छोटा मैसेज।' },
+        ],
+      },
+      {
+        h2: 'मुनाफ़ा बचाने वाले इनाम',
+        table: {
+          head: ['इनाम', 'क्यों काम करता है'],
+          rows: [
+            ['मुफ़्त डेज़र्ट', 'दिखने में बड़ा, लागत कम'],
+            ['मुफ़्त स्टार्टर', 'मेहमान साथ में ज़्यादा ऑर्डर करते हैं'],
+            ['मुफ़्त लस्सी या कोल्ड ड्रिंक', 'आपके लिए सस्ता, मेहमान को अच्छा लगे'],
+            ['अगले ऑर्डर पर मुफ़्त डिलीवरी', 'मेहमान सीधे आपसे ऑर्डर करें, ऐप से नहीं'],
+          ],
+        },
+        p: ['“पूरा खाना मुफ़्त” या पूरे बिल पर छूट से बचें — इसकी लागत फ़ायदे से कहीं ज़्यादा है।'],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood मेहमान के फ़ोन नंबर पर विज़िट कार्ड है। नियम आप तय करते हैं — हर N विज़िट (3 से 10) पर एक इनाम — और बिलिंग पर नंबर लिखकर Add visit दबाते हैं। इनाम कब देना है, ऐप बताता है।',
+          'एक टैप में मेहमान को WhatsApp पर उनका कार्ड, काउंटर पोस्टर, और न लौटे मेहमानों की लिस्ट तैयार मैसेज के साथ। किसी भी फ़ोन, टैबलेट या कंप्यूटर पर। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'छोटे रेस्टोरेंट के लिए सबसे अच्छा लॉयल्टी प्रोग्राम कौन-सा है?', a: 'फ़ोन नंबर पर विज़िट कार्ड: हर कुछ विज़िट पर एक मुफ़्त डिश। मेहमान के लिए कोई ऐप नहीं, स्टाफ़ के लिए बस कुछ सेकंड।' },
+      { q: 'क्या ढाबे और कैफ़े में भी चलेगा?', a: 'हाँ। जहाँ भी वही लोग बार-बार आते हैं — बैठकर खाएँ या डिलीवरी — वहाँ विज़िट गिनकर इनाम दिया जा सकता है।' },
+      { q: 'इसका ख़र्च कितना है?', a: 'Regularhood शुरू करना मुफ़्त है। असली ख़र्च इनाम का है, इसलिए डेज़र्ट या ड्रिंक जैसी कम लागत वाली चीज़ चुनें।' },
     ],
   },
 ];
