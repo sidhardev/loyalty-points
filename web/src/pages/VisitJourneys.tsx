@@ -11,6 +11,7 @@ import {
   MousePointerClick,
   Rocket,
   Smartphone,
+  Store,
   Tablet,
   Timer,
   Users,
@@ -18,7 +19,7 @@ import {
 import { LANDING_SECTIONS } from '../analytics';
 import { num } from '../api';
 import { Sheet } from '../ui';
-import type { PageEvent, PageView } from './Visits';
+import type { PageEvent, PageView, VisitShop } from './Visits';
 
 // Superadmin → Visits → Visitor journeys: each visit (one browser tab) as a story — the pages they opened, what they
 // clicked, how far they read, which homepage part held them longest, the form fields they started on, and where they
@@ -106,10 +107,25 @@ export type Journey = {
   live: boolean;
   outcome: Outcome;
   first: PageView;
+  /** The shop whose owner this was; guess: only matched by what a shop did in the app during the visit. */
+  shop?: { id: number; guess: boolean };
 };
 
+/**
+ * Whose visit: a view sent from a browser logged in to a shop, or one from the same browser that day (the visitor id
+ * renews daily); else, for older /app visits, the one shop that used the app at the time.
+ */
+function shopOf(list: PageView[], byVid: Map<string, number>): Journey['shop'] {
+  const tagged = list.find((v) => v.shopId)?.shopId ?? (list[0].vid ? byVid.get(list[0].vid) : undefined);
+  if (tagged) return { id: tagged, guess: false };
+  const guesses = new Set(list.map((v) => v.shopGuess).filter((id): id is number => !!id));
+  return guesses.size === 1 ? { id: [...guesses][0], guess: true } : undefined;
+}
+
 /** Groups page views into visits (one browser tab) with their events, newest first. */
-export function buildJourneys(views: PageView[], events: PageEvent[]): Journey[] {
+export function buildJourneys(views: PageView[], events: PageEvent[], everyView: PageView[] = views): Journey[] {
+  const byVid = new Map<string, number>();
+  for (const v of everyView) if (v.vid && v.shopId) byVid.set(v.vid, v.shopId);
   const byView = new Map<string, PageEvent[]>();
   for (const e of events) byView.set(e.view, [...(byView.get(e.view) ?? []), e]);
   const sessions = new Map<string, PageView[]>();
@@ -155,6 +171,7 @@ export function buildJourneys(views: PageView[], events: PageEvent[]): Journey[]
         live: end >= fiveMin && exit.dur === undefined,
         outcome,
         first: sorted[0],
+        shop: shopOf(sorted, byVid),
       };
     })
     .sort((a, b) => b.start - a.start);
@@ -169,17 +186,35 @@ const cameFrom = (v: PageView) => {
   return v.utmCampaign ? `${s} · ${v.utmCampaign}` : s;
 };
 
-type Filter = 'all' | 'interested' | 'signup' | 'engaged' | 'bounce';
+type Filter = 'all' | 'interested' | 'signup' | 'engaged' | 'bounce' | 'shops';
 const FILTERS: { id: Filter; label: string; test: (j: Journey) => boolean }[] = [
   { id: 'all', label: 'All', test: () => true },
   { id: 'interested', label: 'Interested', test: (j) => ['signup', 'form', 'clicked'].includes(j.outcome) },
   { id: 'signup', label: 'Signed up', test: (j) => j.outcome === 'signup' },
   { id: 'engaged', label: 'Stayed 30s+', test: (j) => j.time >= 30_000 },
   { id: 'bounce', label: 'Left quickly', test: (j) => j.outcome === 'bounce' },
+  { id: 'shops', label: 'Shop owners', test: (j) => !!j.shop },
 ];
 
+const PLAN: Record<string, string> = { free: 'Free', grandfathered: 'Early shop', lifetime: 'Founding · lifetime', yearly: 'Founding · yearly' };
+/** A date from the database (SQLite "YYYY-MM-DD HH:MM:SS", UTC). */
+const dbDay = (t: string) =>
+  new Date(t.includes('T') ? t : `${t.replace(' ', 'T')}Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** The shop on a visit row: its name, and "?" when it is only a guess. */
+function ShopTag({ j, shops }: { j: Journey; shops: Map<number, VisitShop> }) {
+  const s = j.shop && shops.get(j.shop.id);
+  if (!j.shop || !s) return null;
+  return (
+    <span className={`j-shop${j.shop.guess ? ' j-shop-guess' : ''}`} title={j.shop.guess ? 'Likely this shop: it used the app during this visit' : 'Logged in as this shop'}>
+      <Store size={12} /> {s.name}
+      {j.shop.guess && ' ?'}
+    </span>
+  );
+}
+
 /** The list of visits; a click opens the whole journey. */
-export function Journeys({ views, allViews, events, onOpen }: { views: PageView[]; allViews: PageView[]; events: PageEvent[]; onOpen: (key: string) => void }) {
+export function Journeys({ views, allViews, events, shops, onOpen }: { views: PageView[]; allViews: PageView[]; events: PageEvent[]; shops: Map<number, VisitShop>; onOpen: (key: string) => void }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [limit, setLimit] = useState(25);
   const journeys = useMemo(() => {
@@ -188,6 +223,7 @@ export function Journeys({ views, allViews, events, onOpen }: { views: PageView[
     return buildJourneys(
       allViews.filter((v) => keys.has(v.sid || v.id)),
       events,
+      allViews,
     );
   }, [views, allViews, events]);
   const test = FILTERS.find((f) => f.id === filter)!.test;
@@ -230,6 +266,7 @@ export function Journeys({ views, allViews, events, onOpen }: { views: PageView[
                   <DeviceIcon device={j.first.device} size={13} /> {j.first.browser} · {j.first.os}
                   {j.views.some((v) => v.ret) && ' · returning'}
                 </span>
+                <ShopTag j={j} shops={shops} />
               </span>
               <span className="j-path">
                 <span className="muted small">from {cameFrom(j.first)}</span>
@@ -295,7 +332,7 @@ function describe(e: PageEvent): { icon: ReactNode; text: ReactNode; sub?: strin
 }
 
 /** Every step of one visit, page by page, with the time each part of the homepage held them. */
-export function JourneySheet({ journeyKey, allViews, events, onOpen, onClose }: { journeyKey: string; allViews: PageView[]; events: PageEvent[]; onOpen: (key: string) => void; onClose: () => void }) {
+export function JourneySheet({ journeyKey, allViews, events, shops, onOpen, onClose }: { journeyKey: string; allViews: PageView[]; events: PageEvent[]; shops: Map<number, VisitShop>; onOpen: (key: string) => void; onClose: () => void }) {
   const journeys = useMemo(() => buildJourneys(allViews, events), [allViews, events]);
   const j = journeys.find((x) => x.key === journeyKey);
   if (!j) return null;
@@ -308,6 +345,7 @@ export function JourneySheet({ journeyKey, allViews, events, onOpen, onClose }: 
   const maxDwell = Math.max(1, ...dwellRows.map((r) => r.ms));
   const homeExit = [...j.views].reverse().find((v) => v.path === '/')?.exit ?? '';
   const f = j.first;
+  const shop = j.shop && shops.get(j.shop.id);
 
   const facts: [string, ReactNode][] = [
     ['Where', `${flag(f.country)} ${countryName(f.country)}${f.tz ? ` · ${f.tz}` : ''}`],
@@ -350,6 +388,47 @@ export function JourneySheet({ journeyKey, allViews, events, onOpen, onClose }: 
           <ArrowDownToLine size={14} /> read {j.maxScroll}% at most
         </span>
       </div>
+
+      {shop && j.shop && (
+        <div className="j-shop-card">
+          <div>
+            <span className="muted small">{j.shop.guess ? 'Likely the owner of' : 'Shop owner, logged in as'}</span>
+            <strong>
+              <Store size={16} />{' '}
+              <a href={`#/shops/${shop.id}`} onClick={onClose}>
+                {shop.name}
+              </a>
+            </strong>
+          </div>
+          <dl>
+            <div>
+              <dt>Plan</dt>
+              <dd>{PLAN[shop.plan] ?? shop.plan}</dd>
+            </div>
+            <div>
+              <dt>Customers</dt>
+              <dd>{num(shop.customers)}</dd>
+            </div>
+            <div>
+              <dt>Joined</dt>
+              <dd>{dbDay(shop.createdAt)}</dd>
+            </div>
+            {shop.phone && (
+              <div>
+                <dt>Phone</dt>
+                <dd>{shop.phone}</dd>
+              </div>
+            )}
+            {shop.email && (
+              <div>
+                <dt>Email</dt>
+                <dd className="j-break">{shop.email}</dd>
+              </div>
+            )}
+          </dl>
+          {j.shop.guess && <p className="muted small">From before visits were tagged with the shop: this was the only shop using the app at the time.</p>}
+        </div>
+      )}
 
       <dl className="j-facts">
         {facts.map(([k, v]) => (

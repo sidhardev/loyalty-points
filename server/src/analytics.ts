@@ -1,4 +1,5 @@
 import { Body, Controller, Headers, HttpCode, Injectable, OnModuleDestroy, Post } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Db } from './db';
 
 // Website visits: the public endpoint the site's own tracker (web/src/analytics.ts) sends page views to.
@@ -35,6 +36,22 @@ export type PageView = {
   scroll?: number;
   /** The homepage section on screen when they left. */
   exit?: string;
+  /** The shop whose owner was logged in on this browser (sent by the site's own tracker). */
+  shopId?: number;
+  /** Older /app visits with no shop: the one shop that did something in the app during the visit, if only one did. */
+  shopGuess?: number;
+};
+
+/** A shop named on a visit, for Admin → Visits. */
+export type VisitShop = {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  plan: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+  customers: number;
 };
 
 /**
@@ -155,6 +172,7 @@ type Row = {
   dur: number | null;
   scroll: number | null;
   exit_section: string | null;
+  merchant_id: number | null;
 };
 
 @Injectable()
@@ -177,11 +195,31 @@ export class AnalyticsStore implements OnModuleDestroy {
     this.db.sql
       .prepare(
         `INSERT OR IGNORE INTO page_views (id, ts, day, path, title, ref, ref_url, utm_source, utm_medium, utm_campaign,
-           country, tz, lang, device, browser, os, vid, sid, ret)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           country, tz, lang, device, browser, os, vid, sid, ret, merchant_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(v.id, v.ts, v.ts.slice(0, 10), v.path, v.title, v.ref, v.refUrl, v.utmSource, v.utmMedium, v.utmCampaign,
-        v.country, v.tz, v.lang, v.device, v.browser, v.os, v.vid, v.sid, v.ret ? 1 : 0);
+        v.country, v.tz, v.lang, v.device, v.browser, v.os, v.vid, v.sid, v.ret ? 1 : 0, v.shopId ?? null);
+  }
+
+  /** A shop owner logged in partway through a page view (on /app, say): the view is theirs. */
+  setShop(id: string, merchantId: number) {
+    this.db.sql
+      .prepare('UPDATE page_views SET merchant_id = ? WHERE id = ? AND ts >= ?')
+      .run(merchantId, id, new Date(Date.now() - 86_400_000).toISOString());
+  }
+
+  /** The shops named on these visits, for Admin → Visits. */
+  shops(ids: number[]): VisitShop[] {
+    if (!ids.length) return [];
+    const rows = this.db.sql
+      .prepare(
+        `SELECT m.id, m.name, m.email, m.phone, m.plan, m.created_at AS createdAt, m.last_seen_at AS lastSeenAt,
+           (SELECT COUNT(*) FROM customers c WHERE c.merchant_id = m.id) AS customers
+         FROM merchants m WHERE m.id IN (${ids.map(() => '?').join(',')})`,
+      )
+      .all(...ids) as VisitShop[];
+    return rows.map((r) => ({ ...r, customers: Number(r.customers) }));
   }
 
   /** "Leave" can be sent more than once per view; only a longer visible time replaces the stored one. */
@@ -248,7 +286,24 @@ export class AnalyticsStore implements OnModuleDestroy {
       ret: r.ret === 1,
       ...(r.dur !== null ? { dur: r.dur, scroll: r.scroll ?? 0 } : {}),
       ...(r.exit_section ? { exit: r.exit_section } : {}),
+      ...(r.merchant_id ? { shopId: r.merchant_id } : {}),
+      ...(!r.merchant_id && r.path.startsWith('/app') ? this.guessShop(r) : {}),
     }));
+  }
+
+  /**
+   * Visits from before shops were tagged: if exactly one shop did something in the app (a stamp, a reward, a setting)
+   * while this /app page was open, it was most likely that shop's owner. Only a hint; Admin → Visits says so.
+   */
+  private guessShop(r: Row): { shopGuess?: number } {
+    const start = Date.parse(r.ts);
+    const sqlTime = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+    const from = sqlTime(start - 30_000);
+    const to = sqlTime(start + (r.dur ?? 10 * 60_000) + 60_000);
+    const shops = this.db.sql
+      .prepare("SELECT DISTINCT merchant_id AS id FROM activity WHERE actor = 'shop' AND created_at BETWEEN ? AND ? LIMIT 2")
+      .all(from, to) as { id: number }[];
+    return shops.length === 1 ? { shopGuess: shops[0].id } : {};
   }
 
   onModuleDestroy() {
@@ -258,17 +313,37 @@ export class AnalyticsStore implements OnModuleDestroy {
 
 @Controller('api')
 export class AnalyticsController {
-  constructor(private readonly store: AnalyticsStore) {}
+  constructor(
+    private readonly store: AnalyticsStore,
+    private readonly jwt: JwtService,
+  ) {}
+
+  /** The shop behind a shop login token, if it is a valid one (admin tokens carry a role and don't count). */
+  private async shopOf(token: unknown) {
+    if (typeof token !== 'string' || !token || token.length > 2000) return undefined;
+    try {
+      const payload = await this.jwt.verifyAsync<{ sub: number; role?: string }>(token);
+      return !payload.role && Number.isInteger(payload.sub) ? payload.sub : undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   @Post('collect')
   @HttpCode(204)
-  collect(
+  async collect(
     @Body() body: Record<string, unknown>,
     @Headers('user-agent') ua = '',
     @Headers('x-vercel-ip-country') vercelCountry?: string,
     @Headers('cloudfront-viewer-country') cfCountry?: string,
   ) {
     if (!body || BOT.test(ua) || !ID.test(String(body.id ?? ''))) return;
+
+    if (body.t === 'shop') {
+      const shop = await this.shopOf(body.auth);
+      if (shop) this.store.setShop(String(body.id), shop);
+      return;
+    }
 
     if (body.t === 'leave') {
       const dur = Math.round(Number(body.dur));
@@ -318,6 +393,7 @@ export class AnalyticsController {
       vid: ID.test(String(body.vid ?? '')) ? String(body.vid) : '',
       sid: ID.test(String(body.sid ?? '')) ? String(body.sid) : '',
       ret: body.ret === true,
+      shopId: await this.shopOf(body.auth),
     });
   }
 }

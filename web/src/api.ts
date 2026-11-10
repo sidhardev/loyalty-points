@@ -1,4 +1,5 @@
 // Talks to the NestJS API. The login token is kept in localStorage and sent with every request.
+import { identifyShop } from './analytics';
 
 export type Merchant = {
   id: number;
@@ -56,8 +57,11 @@ export type Billing = {
 const TOKEN = 'lp_token';
 
 export const getToken = () => localStorage.getItem(TOKEN);
-export const setToken = (token: string | null) =>
-  token ? localStorage.setItem(TOKEN, token) : localStorage.removeItem(TOKEN);
+export const setToken = (token: string | null) => {
+  if (!token) return localStorage.removeItem(TOKEN);
+  localStorage.setItem(TOKEN, token);
+  identifyShop();
+};
 
 /** Fired when the token is missing or expired, so the app can show the login screen. */
 export const LOGGED_OUT = 'lp-logged-out';

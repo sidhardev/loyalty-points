@@ -670,6 +670,11 @@ const MIGRATIONS: string[] = [
   ALTER TABLE page_events ADD COLUMN value INTEGER;
   ALTER TABLE page_views ADD COLUMN exit_section TEXT;
   `,
+
+  // 34: Admin → Visits names the shop when a visit comes from a browser logged in to a shop account.
+  `
+  ALTER TABLE page_views ADD COLUMN merchant_id INTEGER;
+  `,
 ];
 
 const INDEXES = `

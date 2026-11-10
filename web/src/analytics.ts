@@ -6,6 +6,7 @@
 // its text), homepage sections (data-section) they scroll to and how long each stayed on screen, the section they left
 // from, how far down other pages they scrolled, which form fields they started on (the field's name, never what was
 // typed), and sign-ups. The superadmin sees the numbers and each visit's journey under Admin → Visits.
+// When a shop owner is logged in on this browser, their login token goes along so Admin → Visits can name the shop.
 
 const IGNORE_KEY = 'lp_sa_ignore';
 
@@ -55,6 +56,15 @@ export const LANDING_SECTIONS: [string, string][] = [
 
 /** The page view being recorded in this tab, if any (none when this browser is excluded). */
 let viewId: string | null = null;
+
+/** The shop owner's login token on this browser (see api.ts), if any. */
+const shopToken = () => safe(() => localStorage)?.getItem('lp_token') || undefined;
+
+/** A shop owner just logged in or signed up: this page view, and the ones after it, are that shop's. */
+export function identifyShop() {
+  const auth = shopToken();
+  if (viewId && auth) send({ t: 'shop', id: viewId, auth });
+}
 
 type EventKind = 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell';
 
@@ -169,6 +179,7 @@ export function trackPageView() {
     vid: visitor[1],
     sid,
     ret: returning,
+    auth: shopToken(),
   });
 
   // Clicks on anything marked data-track (buttons, links), and on public pages any other link or button;

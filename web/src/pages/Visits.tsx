@@ -32,7 +32,14 @@ export type PageView = {
   scroll?: number;
   /** The homepage section on screen when they left. */
   exit?: string;
+  /** The shop logged in on this browser at the time. */
+  shopId?: number;
+  /** Older /app visits: the one shop that used the app during the visit. */
+  shopGuess?: number;
 };
+
+/** A shop named on a visit. */
+export type VisitShop = { id: number; name: string; email: string | null; phone: string | null; plan: string; createdAt: string; lastSeenAt: string | null; customers: number };
 
 /** Something a visitor did during a page view (see src/analytics.ts); a 'dwell' carries ms in value. */
 export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell'; name: string; ts: string; value?: number };
@@ -412,12 +419,13 @@ function HomepageInsights({ views, allViews, events }: { views: PageView[]; allV
   );
 }
 
-export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[]; events: PageEvent[] }> }) {
+export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[]; events: PageEvent[]; shops?: VisitShop[] }> }) {
   const [range, setRange] = useStored<Range>('lp_admin_visits_range', '7d');
   const [custom, setCustom] = useStored('lp_admin_visits_custom', { from: addDays(localToday(), -29), to: localToday() });
   const [filters, setFilters] = useState<Partial<Record<Dim, string>>>({});
   const [views, setViews] = useState<PageView[] | null>(null);
   const [events, setEvents] = useState<PageEvent[]>([]);
+  const [shops, setShops] = useState<Map<number, VisitShop>>(new Map());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tech, setTech] = useState<'device' | 'browser' | 'os'>('device');
@@ -441,6 +449,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
       .then((d) => {
         setViews(d.views);
         setEvents(d.events);
+        setShops(new Map((d.shops ?? []).map((s) => [s.id, s])));
         setError('');
       })
       .catch((err) => setError((err as Error).message))
@@ -652,7 +661,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
         {views && <HomepageInsights views={filtered} allViews={views} events={events} />}
       </Sub>
 
-      <Sub id="journeys">{views && <Journeys views={filtered} allViews={views} events={events} onOpen={setJourney} />}</Sub>
+      <Sub id="journeys">{views && <Journeys views={filtered} allViews={views} events={events} shops={shops} onOpen={setJourney} />}</Sub>
 
       <Sub id="recent">
         <section className="card">
@@ -713,7 +722,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
         </section>
       </Sub>
 
-      {journey && views && <JourneySheet journeyKey={journey} allViews={views} events={events} onOpen={setJourney} onClose={closeJourney} />}
+      {journey && views && <JourneySheet journeyKey={journey} allViews={views} events={events} shops={shops} onOpen={setJourney} onClose={closeJourney} />}
 
       <p className="muted small">
         Visitors are counted per day with a random id that resets daily; a visit is one browser tab session. Time on page counts only while the
