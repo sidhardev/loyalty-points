@@ -11,7 +11,7 @@
 <meta property="og:title" content="Pushro Digital Hub – Mobile Accessories" />
 <meta property="og:description" content="Phone covers, tempered glass, chargers, earphones and more. Jharkhand." />
 <meta property="og:url" content="https://pushro.regularhood.in/" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='700' font-size='34' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23047857'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='700' font-size='34' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -19,7 +19,8 @@
 {"@context":"https://schema.org","@type":"ElectronicsStore","name":"Pushro Digital Hub","url":"https://pushro.regularhood.in/","telephone":"+919636263623","address":{"@type":"PostalAddress","addressRegion":"Jharkhand","addressCountry":"IN"}}
 </script>
 <style>
-  :root { --bg: #ffffff; --soft: #f5f6f8; --line: #e5e7eb; --text: #111827; --muted: #6b7280; --accent: #2563eb; --accent-dark: #1d4ed8; --wa: #16a34a; }
+  /* Regularhood colours (web/src/styles.css) */
+  :root { --bg: #ffffff; --soft: #ecf3f0; --brand-soft: #e3f4ec; --line: #e0e9e5; --text: #0d1f19; --muted: #5b6b65; --accent: #047857; --accent-dark: #065f46; --wa: #128c4a; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, sans-serif; }
   a { color: inherit; text-decoration: none; }
@@ -31,11 +32,11 @@
   .btn svg { width: 18px; height: 18px; }
   .btn-blue { background: var(--accent); color: #fff; }
   .btn-blue:hover { background: var(--accent-dark); }
-  .btn-green { background: var(--wa); color: #fff; }
-  .btn-line { border-color: var(--line); }
+  .btn-green { background: #fff; color: var(--wa); border-color: var(--wa); }
+  .btn-line { border-color: var(--line); background: #fff; }
   .btn-sm { padding: 8px 14px; font-size: 14px; }
 
-  .hero { padding: 64px 0 56px; }
+  .hero { padding: 64px 0 56px; background: var(--brand-soft); }
   .hero h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.02em; max-width: 640px; }
   .hero p { color: var(--muted); font-size: 18px; margin: 0 0 28px; max-width: 560px; }
   .actions { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -48,12 +49,12 @@
   .items li { background: var(--soft); border-radius: 12px; padding: 18px 16px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
   .items svg { width: 24px; height: 24px; color: var(--accent); flex: none; }
 
-  .offer { background: var(--soft); border-radius: 16px; padding: 28px; display: flex; gap: 28px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .offer { background: var(--accent); color: #fff; border-radius: 16px; padding: 28px; display: flex; gap: 28px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .offer h3 { font-size: 22px; margin: 0 0 6px; }
-  .offer p { margin: 0; color: var(--muted); max-width: 440px; }
+  .offer p { margin: 0; color: rgba(255,255,255,.85); max-width: 440px; }
   .stamps { display: flex; gap: 8px; }
-  .stamps span { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--accent); }
-  .stamps span.last { background: var(--accent); color: #fff; }
+  .stamps span { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: #fff; }
+  .stamps span.last { background: #f0a202; border-color: #f0a202; color: #0d1f19; }
 
   .contact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   @media (max-width: 720px) { .contact { grid-template-columns: 1fr; } }
