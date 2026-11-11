@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pushro Digital Hub – Mobile Accessories, Jharkhand</title>
 <meta name="description" content="Pushro Digital Hub, Jharkhand: phone covers, tempered glass, chargers, cables, earphones, power banks, smartwatches and speakers. Call +91 96362 63623." />
 <link rel="canonical" href="https://pushro.regularhood.in/" />
-<meta name="theme-color" content="#ffffff" />
+<meta name="theme-color" content="#047857" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Pushro Digital Hub – Mobile Accessories" />
 <meta property="og:description" content="Phone covers, tempered glass, chargers, earphones and more. Jharkhand." />
@@ -14,116 +14,422 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23047857'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='700' font-size='34' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"ElectronicsStore","name":"Pushro Digital Hub","url":"https://pushro.regularhood.in/","telephone":"+919636263623","address":{"@type":"PostalAddress","addressRegion":"Jharkhand","addressCountry":"IN"}}
 </script>
 <style>
   /* Regularhood colours (web/src/styles.css) */
-  :root { --bg: #ffffff; --soft: #ecf3f0; --brand-soft: #e3f4ec; --line: #e0e9e5; --text: #0d1f19; --muted: #5b6b65; --accent: #047857; --accent-dark: #065f46; --wa: #128c4a; }
+  :root {
+    --bg: #f8fbf9; --soft: #ecf3f0; --brand-soft: #e3f4ec; --card: #ffffff; --line: #e0e9e5; --line2: #cddbd4;
+    --text: #0d1f19; --muted: #5b6b65; --green: #047857; --green-dark: #065f46; --mint: #10b981; --amber: #f0a202; --wa: #128c4a;
+    --grad: linear-gradient(110deg, #047857 0%, #10b981 35%, #d99100 70%, #047857 100%);
+    --ease: cubic-bezier(.22,1,.36,1);
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, sans-serif; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
   a { color: inherit; text-decoration: none; }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
-  header { border-bottom: 1px solid var(--line); }
-  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  .name { font-weight: 700; font-size: 18px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; border: 1px solid transparent; }
-  .btn svg { width: 18px; height: 18px; }
-  .btn-blue { background: var(--accent); color: #fff; }
-  .btn-blue:hover { background: var(--accent-dark); }
-  .btn-green { background: #fff; color: var(--wa); border-color: var(--wa); }
-  .btn-line { border-color: var(--line); background: #fff; }
-  .btn-sm { padding: 8px 14px; font-size: 14px; }
+  h1, h2, h3 { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing: -0.03em; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  ::selection { background: var(--green); color: #fff; }
 
-  .hero { padding: 64px 0 56px; background: var(--brand-soft); }
-  .hero h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.02em; max-width: 640px; }
-  .hero p { color: var(--muted); font-size: 18px; margin: 0 0 28px; max-width: 560px; }
+  /* grain + cursor glow */
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100; opacity: .035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .glow { position: fixed; width: 520px; height: 520px; border-radius: 50%; pointer-events: none; z-index: 0; left: 0; top: 0;
+    background: radial-gradient(circle, rgba(16,185,129,.12), transparent 60%); transform: translate(-50%,-50%); transition: opacity .4s; opacity: 0; }
+  @media (hover: hover) { .glow { opacity: 1; } }
+
+  /* progress + header */
+  .progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; transform-origin: 0 50%; transform: scaleX(0); background: var(--grad); z-index: 60; }
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; transition: background .4s, border-color .4s, backdrop-filter .4s; border-bottom: 1px solid transparent; }
+  header.scrolled { background: rgba(255,255,255,.8); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); border-color: var(--line); }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-family: "Space Grotesk"; font-size: 18px; }
+  .logo i { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-style: normal; color: #fff; background: var(--green); box-shadow: 0 6px 18px -4px rgba(4,120,87,.6); }
+  nav { display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
+  nav a { position: relative; transition: color .2s; }
+  nav a:hover { color: var(--text); }
+  nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; border-radius: 2px; background: var(--grad); transform: scaleX(0); transform-origin: right; transition: transform .35s var(--ease); }
+  nav a:hover::after { transform: scaleX(1); transform-origin: left; }
+  @media (max-width: 760px) { nav { display: none; } }
+
+  /* buttons */
+  .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 24px; border-radius: 999px; font-weight: 600; font-size: 15px; border: 1px solid transparent; transition: transform .25s var(--ease), box-shadow .3s, background .3s; will-change: transform; overflow: hidden; isolation: isolate; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .btn-main { background: linear-gradient(135deg, #047857, #059669); color: #fff; box-shadow: 0 12px 34px -10px rgba(4,120,87,.75), inset 0 1px 0 rgba(255,255,255,.25); }
+  .btn-main::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transform: translateX(-120%); animation: shine 3.6s var(--ease) infinite; }
+  @keyframes shine { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+  .btn-wa { background: #fff; color: var(--wa); border-color: var(--wa); }
+  .btn-wa:hover { background: #f0faf4; box-shadow: 0 10px 30px -10px rgba(18,140,74,.5); }
+  .btn-ghost { border-color: var(--line2); background: #fff; }
+  .btn-ghost:hover { border-color: var(--green); color: var(--green); }
+  .btn-sm { padding: 9px 16px; font-size: 14px; }
+
+  /* hero */
+  .hero { position: relative; min-height: 100svh; display: flex; align-items: center; padding: 110px 0 70px; overflow: hidden; background: var(--brand-soft); }
+  .aurora { position: absolute; inset: -20%; z-index: 0; filter: blur(90px); opacity: .55; }
+  .aurora span { position: absolute; border-radius: 50%; animation: drift 18s ease-in-out infinite alternate; }
+  .aurora span:nth-child(1) { width: 46vw; height: 46vw; left: 8%; top: 4%; background: #6ee7b7; }
+  .aurora span:nth-child(2) { width: 34vw; height: 34vw; right: 8%; top: 16%; background: #fcd34d; animation-duration: 22s; animation-delay: -6s; opacity: .8; }
+  .aurora span:nth-child(3) { width: 30vw; height: 30vw; left: 40%; bottom: 0; background: #5eead4; animation-duration: 26s; animation-delay: -12s; opacity: .8; }
+  @keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(6vw,-4vh) scale(1.12); } 100% { transform: translate(-4vw,5vh) scale(.92); } }
+  .floor { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 60%; z-index: 0; transform: perspective(500px) rotateX(62deg); transform-origin: 50% 100%;
+    background-image: linear-gradient(rgba(4,120,87,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(4,120,87,.16) 1px, transparent 1px); background-size: 60px 60px;
+    -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 80%); mask-image: linear-gradient(to top, #000 10%, transparent 80%); animation: floor 6s linear infinite; }
+  @keyframes floor { to { background-position: 0 60px; } }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 160px; background: linear-gradient(transparent, var(--bg)); z-index: 1; }
+  .hero .wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; width: 100%; }
+  @media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; text-align: center; } .hero .actions, .hero .chips { justify-content: center; } .hero p.lead { margin-left: auto; margin-right: auto; } }
+
+  .pill { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid var(--line2); background: rgba(255,255,255,.75); font-size: 13px; color: var(--muted); backdrop-filter: blur(6px); margin-bottom: 26px; }
+  .pill b { background: var(--amber); color: var(--text); padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 rgba(16,185,129,.7); animation: ping 2s infinite; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 10px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+
+  h1.title { font-size: clamp(42px, 7.4vw, 88px); line-height: .98; margin: 0 0 24px; font-weight: 700; }
+  h1.title .line { display: block; overflow: hidden; padding-bottom: .08em; }
+  h1.title .ch { display: inline-block; transform: translateY(110%) rotate(8deg); opacity: 0; animation: rise .9s var(--ease) forwards; }
+  @keyframes rise { to { transform: none; opacity: 1; } }
+  .gradtext { background: var(--grad); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: flow 6s linear infinite; }
+  @keyframes flow { to { background-position: 200% center; } }
+  .rotator { display: inline-grid; vertical-align: bottom; height: 1.05em; overflow: hidden; }
+  .rotator span { grid-area: 1/1; transform: translateY(100%); opacity: 0; transition: transform .7s var(--ease), opacity .7s; white-space: nowrap; }
+  .rotator span.on { transform: none; opacity: 1; }
+  .rotator span.out { transform: translateY(-100%); opacity: 0; }
+
+  p.lead { color: var(--muted); font-size: clamp(16px, 2vw, 19px); max-width: 520px; margin: 0 0 34px; }
   .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 34px; font-size: 13px; color: var(--muted); }
+  .chips span { display: inline-flex; align-items: center; gap: 6px; }
+  .chips svg { width: 16px; height: 16px; color: var(--green); }
+  .fade-up { opacity: 0; transform: translateY(24px); animation: fadeup 1s var(--ease) forwards; }
+  @keyframes fadeup { to { opacity: 1; transform: none; } }
 
-  section { padding: 48px 0; border-top: 1px solid var(--line); }
-  h2 { font-size: 26px; margin: 0 0 24px; letter-spacing: -0.01em; }
+  /* phone */
+  .stage { position: relative; height: 560px; perspective: 1200px; display: grid; place-items: center; }
+  @media (max-width: 900px) { .stage { height: 520px; margin-top: 10px; } }
+  .phone { position: relative; width: 250px; height: 510px; border-radius: 44px; transform-style: preserve-3d; transition: transform .6s var(--ease);
+    background: linear-gradient(145deg, #2c3a35, #0d1f19 40%, #1d2b26); padding: 10px;
+    box-shadow: 0 0 0 1.5px rgba(13,31,25,.15), 0 40px 80px -20px rgba(13,31,25,.55), 0 0 100px -20px rgba(4,120,87,.5); animation: float 6s ease-in-out infinite; }
+  @keyframes float { 50% { translate: 0 -14px; } }
+  .screen { position: relative; height: 100%; border-radius: 35px; overflow: hidden; background: #f8fbf9; }
+  .notch { position: absolute; top: 10px; left: 50%; width: 86px; height: 24px; border-radius: 20px; background: #0d1f19; transform: translateX(-50%); z-index: 3; }
+  .glare { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.3) 45%, transparent 55%); background-size: 250% 100%; background-position: var(--gx, 100%) 0; }
+  .app { position: absolute; inset: 0; padding: 50px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .app-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); }
+  .app-top b { color: var(--text); font-family: "Space Grotesk"; font-size: 17px; }
+  .slide { position: relative; flex: 1; border-radius: 22px; overflow: hidden; color: #fff; }
+  .slide > div { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 18px; opacity: 0; transform: scale(1.08); transition: opacity .8s, transform 1.2s var(--ease); }
+  .slide > div.on { opacity: 1; transform: none; }
+  .slide svg { position: absolute; top: 22px; left: 50%; width: 120px; height: 120px; transform: translateX(-50%); color: rgba(255,255,255,.95); filter: drop-shadow(0 10px 20px rgba(0,0,0,.25)); }
+  .slide h4 { margin: 0; font: 600 20px "Space Grotesk"; }
+  .slide p { margin: 2px 0 0; font-size: 12px; color: rgba(255,255,255,.8); }
+  .s1 { background: linear-gradient(160deg, #10b981, #065f46); } .s2 { background: linear-gradient(160deg, #14b8a6, #0f3d33); }
+  .s3 { background: linear-gradient(160deg, #f0a202, #9a5b00); } .s4 { background: linear-gradient(160deg, #047857, #0d1f19); }
+  .dots { display: flex; gap: 6px; justify-content: center; }
+  .dots i { width: 6px; height: 6px; border-radius: 9px; background: #cddbd4; transition: width .4s var(--ease), background .4s; }
+  .dots i.on { width: 20px; background: var(--green); }
+  .app-card { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); font-size: 12px; }
+  .mini-stamps { display: flex; gap: 4px; } .mini-stamps i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--green); }
+  .mini-stamps i.f { background: var(--green); }
 
-  .items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; list-style: none; padding: 0; margin: 0; }
-  @media (max-width: 720px) { .items { grid-template-columns: repeat(2, 1fr); } }
-  .items li { background: var(--soft); border-radius: 12px; padding: 18px 16px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
-  .items svg { width: 24px; height: 24px; color: var(--accent); flex: none; }
+  .float-card { position: absolute; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,.88); border: 1px solid var(--line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 20px 40px -14px rgba(13,31,25,.3); animation: bob 5s ease-in-out infinite; white-space: nowrap; }
+  .float-card i { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-style: normal; }
+  .float-card i svg { width: 17px; height: 17px; }
+  .float-card small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+  .fc1 { top: 12%; left: -2%; } .fc1 i { background: var(--brand-soft); color: var(--green); }
+  .fc2 { top: 46%; right: -4%; animation-delay: -1.6s; } .fc2 i { background: #fff4dc; color: #b77900; }
+  .fc3 { bottom: 10%; left: 2%; animation-delay: -3.2s; } .fc3 i { background: var(--green); color: #fff; }
+  @keyframes bob { 50% { transform: translateY(-12px); } }
+  @media (max-width: 520px) { .fc1 { left: 0; top: 6%; } .fc2 { right: 0; } .fc3 { left: 0; } }
+  .ring { position: absolute; width: 440px; height: 440px; border-radius: 50%; border: 1px dashed rgba(4,120,87,.25); animation: spin 40s linear infinite; }
+  .ring::before { content: ""; position: absolute; top: -5px; left: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 16px var(--mint); }
+  .ring.r2 { width: 540px; height: 540px; animation-duration: 60s; animation-direction: reverse; }
+  .ring.r2::before { background: var(--amber); box-shadow: 0 0 16px var(--amber); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 520px) { .ring { width: 340px; height: 340px; } .ring.r2 { width: 420px; height: 420px; } }
 
-  .offer { background: var(--accent); color: #fff; border-radius: 16px; padding: 28px; display: flex; gap: 28px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-  .offer h3 { font-size: 22px; margin: 0 0 6px; }
-  .offer p { margin: 0; color: rgba(255,255,255,.85); max-width: 440px; }
-  .stamps { display: flex; gap: 8px; }
-  .stamps span { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: #fff; }
-  .stamps span.last { background: #f0a202; border-color: #f0a202; color: #0d1f19; }
+  /* marquee */
+  .marquee { position: relative; padding: 22px 0; overflow: hidden; background: var(--green); color: #fff; transform: rotate(-1.5deg) scale(1.03); box-shadow: 0 20px 40px -20px rgba(4,120,87,.6); }
+  .track { display: flex; gap: 48px; width: max-content; animation: marq 32s linear infinite; }
+  .marquee:hover .track { animation-play-state: paused; }
+  .track span { display: inline-flex; align-items: center; gap: 48px; font: 600 clamp(22px, 3.4vw, 34px) "Space Grotesk"; white-space: nowrap; }
+  .track span::after { content: "✦"; font-size: .6em; color: var(--amber); }
+  .track span:nth-child(even) { -webkit-text-stroke: 1px rgba(255,255,255,.75); color: transparent; }
+  @keyframes marq { to { transform: translateX(-50%); } }
 
-  .contact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  @media (max-width: 720px) { .contact { grid-template-columns: 1fr; } }
-  .contact div { border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .contact small { display: block; color: var(--muted); font-size: 13px; margin-bottom: 2px; }
-  .contact b { font-weight: 600; }
+  /* sections */
+  section { position: relative; padding: 120px 0; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em; color: var(--green); margin-bottom: 16px; }
+  .eyebrow::before { content: ""; width: 24px; height: 2px; background: currentColor; }
+  h2 { font-size: clamp(34px, 5vw, 58px); line-height: 1.04; margin: 0 0 18px; }
+  .sub { color: var(--muted); font-size: 18px; max-width: 560px; margin: 0; }
+  .head { margin-bottom: 56px; }
+  [data-reveal] { opacity: 0; transform: translateY(40px); transition: opacity 1s var(--ease), transform 1s var(--ease); transition-delay: var(--d, 0s); }
+  [data-reveal].in { opacity: 1; transform: none; }
 
-  footer { border-top: 1px solid var(--line); padding: 24px 0 96px; color: var(--muted); font-size: 14px; }
+  /* hooks */
+  .hooks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .hooks { grid-template-columns: 1fr; } }
+  .hook { position: relative; padding: 30px 26px; border-radius: 24px; background: var(--card); border: 1px solid var(--line); overflow: hidden; box-shadow: 0 1px 2px rgba(13,31,25,.04); }
+  .hook .q { font: 600 24px/1.2 "Space Grotesk"; margin: 0 0 10px; }
+  .hook .q s { text-decoration-color: #e11d48; text-decoration-thickness: 3px; color: var(--muted); }
+  .hook p { margin: 0; color: var(--muted); }
+  .hook .fix { margin-top: 22px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--green); background: var(--brand-soft); padding: 6px 12px; border-radius: 999px; }
+  .hook .num { position: absolute; right: 18px; top: 6px; font: 700 96px "Space Grotesk"; color: rgba(4,120,87,.07); line-height: 1; }
+
+  /* products */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 420px) { .grid { gap: 10px; } }
+  .card { --mx: 50%; --my: 50%; position: relative; padding: 26px 22px 24px; border-radius: 22px; background: var(--card); border: 1px solid var(--line); transform-style: preserve-3d;
+    transition: opacity 1s var(--ease) var(--d, 0s), transform .6s var(--ease), border-color .3s, box-shadow .4s; overflow: hidden; min-height: 200px; display: flex; flex-direction: column; justify-content: space-between; }
+  .card:hover { box-shadow: 0 24px 50px -20px rgba(4,120,87,.35); }
+  .card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .4s; background: radial-gradient(420px circle at var(--mx) var(--my), rgba(16,185,129,.12), transparent 45%); }
+  .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; opacity: 0; transition: opacity .4s;
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(4,120,87,.9), transparent 50%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .card:hover::before, .card:hover::after { opacity: 1; }
+  .card .ico { position: relative; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--brand-soft); transform: translateZ(40px); transition: transform .5s var(--ease), background .4s; }
+  .card:hover .ico { transform: translateZ(60px) rotate(-8deg) scale(1.08); background: var(--green); }
+  .card .ico svg { width: 28px; height: 28px; color: var(--green); transition: color .4s; }
+  .card:hover .ico svg { color: #fff; }
+  .card h3 { position: relative; margin: 26px 0 4px; font-size: 20px; transform: translateZ(30px); }
+  .card p { position: relative; margin: 0; font-size: 14px; color: var(--muted); transform: translateZ(20px); }
+  @media (max-width: 420px) { .card { padding: 20px 16px; min-height: 170px; } .card h3 { font-size: 17px; margin-top: 18px; } .card p { font-size: 13px; } }
+
+  /* numbers */
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 28px; overflow: hidden; background: var(--text); color: #fff; }
+  @media (max-width: 760px) { .numbers { grid-template-columns: repeat(2, 1fr); } }
+  .numbers div { padding: 40px 24px; text-align: center; border-right: 1px solid rgba(255,255,255,.1); }
+  .numbers div:last-child { border-right: 0; }
+  @media (max-width: 760px) { .numbers div:nth-child(2) { border-right: 0; } .numbers div:nth-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,.1); } }
+  .numbers b { display: block; font: 700 clamp(40px, 6vw, 64px)/1 "Space Grotesk"; color: #6ee7b7; }
+  .numbers b.amber { color: var(--amber); }
+  .numbers > div > span { color: rgba(255,255,255,.7); font-size: 14px; }
+
+  /* offer */
+  .offer { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; padding: 60px; border-radius: 36px; overflow: hidden; color: #fff;
+    background: radial-gradient(circle at 0% 0%, rgba(110,231,183,.35), transparent 50%), radial-gradient(circle at 100% 100%, rgba(240,162,2,.3), transparent 50%), var(--green); box-shadow: 0 40px 80px -30px rgba(4,120,87,.6); }
+  @media (max-width: 860px) { .offer { grid-template-columns: 1fr; padding: 40px 24px; text-align: center; } .offer .sub { margin: 0 auto; } }
+  .offer .eyebrow { color: #a7f3d0; }
+  .offer .sub { color: rgba(255,255,255,.85); }
+  .offer h2 .hi { color: #fcd34d; }
+  .loyal { position: relative; aspect-ratio: 1.6; max-width: 440px; width: 100%; justify-self: center; border-radius: 24px; padding: 26px; display: flex; flex-direction: column; justify-content: space-between;
+    background: linear-gradient(135deg, #065f46, #0d1f19 70%); box-shadow: 0 30px 70px -20px rgba(13,31,25,.8), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .6s var(--ease); overflow: hidden; text-align: left; }
+  .loyal::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 2px, transparent 2px 12px); }
+  .loyal::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%); background-size: 250% 100%; animation: sheen 5s ease-in-out infinite; }
+  @keyframes sheen { 0%, 40% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+  .loyal .top { position: relative; display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,.7); }
+  .loyal .top b { font: 700 18px "Space Grotesk"; color: #fff; }
+  .loyal .st { position: relative; display: flex; gap: clamp(6px, 2vw, 12px); }
+  .loyal .st span { flex: 1; aspect-ratio: 1; max-width: 58px; border-radius: 50%; border: 2px dashed rgba(255,255,255,.4); display: grid; place-items: center; font: 700 16px "Space Grotesk"; color: rgba(255,255,255,.55); transition: all .5s var(--ease); }
+  .loyal .st span.f { border: 2px solid #10b981; background: #10b981; color: #fff; transform: scale(1.08) rotate(-10deg); box-shadow: 0 0 22px rgba(16,185,129,.6); }
+  .loyal .st span.gift.f { background: var(--amber); border-color: var(--amber); color: var(--text); box-shadow: 0 0 36px rgba(240,162,2,.8); }
+  .loyal .st span svg { width: 22px; height: 22px; }
+  .loyal .bot { position: relative; font-size: 13px; color: rgba(255,255,255,.8); }
+  .unlocked { display: inline-block; margin-top: 4px; font-weight: 700; color: var(--amber); opacity: 0; transform: translateY(8px); transition: all .6s var(--ease); }
+  .unlocked.show { opacity: 1; transform: none; }
+  #confetti { position: absolute; inset: 0; pointer-events: none; z-index: 3; width: 100%; height: 100%; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; position: relative; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+  .step { padding: 28px; border-radius: 24px; border: 1px solid var(--line); background: var(--card); counter-increment: s; }
+  .step::before { content: "0" counter(s); display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; margin-bottom: 20px; font: 700 15px "Space Grotesk"; background: var(--green); color: #fff; }
+  .step:nth-child(3)::before { background: var(--amber); color: var(--text); }
+  .step h3 { margin: 0 0 6px; font-size: 21px; }
+  .step p { margin: 0; color: var(--muted); }
+
+  /* cta */
+  .cta { text-align: center; padding: 140px 0; overflow: hidden; }
+  .cta h2 { font-size: clamp(44px, 9vw, 120px); line-height: .95; margin-bottom: 28px; }
+  .cta .actions { justify-content: center; }
+  .cta .orb { position: absolute; left: 50%; top: 50%; width: 700px; height: 700px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.22), rgba(240,162,2,.08) 40%, transparent 65%); filter: blur(30px); z-index: -1; animation: pulse 6s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: translate(-50%,-50%) scale(1.15); opacity: .7; } }
+  .contact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 70px; text-align: left; }
+  @media (max-width: 760px) { .contact { grid-template-columns: 1fr; } }
+  .contact a, .contact div { display: block; padding: 22px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); transition: opacity 1s var(--ease) var(--d, 0s), border-color .3s, transform .6s var(--ease), box-shadow .4s; }
+  .contact a:hover { border-color: var(--green); transform: translateY(-4px); box-shadow: 0 20px 40px -20px rgba(4,120,87,.4); }
+  .contact small { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+  .contact b { font: 600 18px "Space Grotesk"; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 32px; color: var(--muted); font-size: 14px; background: #fff; }
   footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-  footer a { color: var(--text); }
+  footer a { color: var(--green); font-weight: 600; }
 
-  .bar { position: fixed; left: 0; right: 0; bottom: 0; display: none; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); }
-  .bar .btn { flex: 1; }
-  @media (max-width: 720px) { .bar { display: flex; } footer { padding-bottom: 96px; } }
+  .bar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: none; gap: 8px; padding: 8px; border-radius: 999px; z-index: 70;
+    background: rgba(255,255,255,.88); border: 1px solid var(--line); box-shadow: 0 14px 40px -12px rgba(13,31,25,.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transform: translateY(150%); transition: transform .5s var(--ease); }
+  .bar.show { transform: none; }
+  .bar .btn { flex: 1; padding: 12px; }
+  @media (max-width: 760px) { .bar { display: flex; } footer { padding-bottom: 100px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    h1.title .ch, .fade-up, [data-reveal] { opacity: 1 !important; transform: none !important; }
+  }
 </style>
 </head>
 <body>
+<div class="progress" id="progress"></div>
+<div class="glow" id="glow" aria-hidden="true"></div>
 
-<header><div class="wrap">
-  <span class="name">Pushro Digital Hub</span>
-  <a class="btn btn-line btn-sm" href="tel:+919636263623">Call</a>
+<header id="hdr"><div class="wrap">
+  <a class="logo" href="#top"><i>P</i>Pushro</a>
+  <nav><a href="#products">Products</a><a href="#offer">Free glass</a><a href="#how">How it works</a><a href="#contact">Contact</a></nav>
+  <a class="btn btn-ghost btn-sm magnetic" href="tel:+919636263623">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Call
+  </a>
 </div></header>
 
-<main>
-  <div class="hero"><div class="wrap">
-    <h1>Mobile accessories for every phone.</h1>
-    <p>Covers, tempered glass, chargers, earphones and more at Pushro Digital Hub, Jharkhand.</p>
-    <div class="actions">
-      <a class="btn btn-blue" href="tel:+919636263623">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
-        Call 96362 63623
-      </a>
-      <a class="btn btn-green" href="https://wa.me/919636263623" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>
-        WhatsApp us
-      </a>
+<main id="top">
+  <div class="hero">
+    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="floor" aria-hidden="true"></div>
+    <div class="wrap">
+      <div>
+        <div class="pill fade-up" style="animation-delay:.1s"><b>NEW</b><span class="dot"></span>Pushro Digital Hub · Jharkhand</div>
+        <h1 class="title" aria-label="Your phone deserves better gear.">
+          <span class="line" data-split>Your phone</span>
+          <span class="line" data-split>deserves</span>
+          <span class="line"><span class="rotator" id="rot"><span class="gradtext on">better gear.</span><span class="gradtext">a fresh cover.</span><span class="gradtext">new glass.</span><span class="gradtext">fast charging.</span></span></span>
+        </h1>
+        <p class="lead fade-up" style="animation-delay:.9s">Covers, tempered glass, chargers, earbuds, power banks and more. Walk in, pick it, fit it, done. One shop for everything your phone needs.</p>
+        <div class="actions fade-up" style="animation-delay:1.05s">
+          <a class="btn btn-main magnetic" href="tel:+919636263623">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            Call 96362 63623
+          </a>
+          <a class="btn btn-wa magnetic" href="https://wa.me/919636263623" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+            WhatsApp us
+          </a>
+        </div>
+        <div class="chips fade-up" style="animation-delay:1.2s">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Glass fitted in shop</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Every phone model</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>5th visit glass free</span>
+        </div>
+      </div>
+
+      <div class="stage fade-up" style="animation-delay:.5s" id="stage" aria-hidden="true">
+        <div class="ring"></div><div class="ring r2"></div>
+        <div class="phone" id="phone">
+          <div class="screen">
+            <div class="notch"></div><div class="glare" id="glare"></div>
+            <div class="app">
+              <div class="app-top"><b>Pushro</b><span>Hub</span></div>
+              <div class="slide" id="slides">
+                <div class="s1 on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><rect x="8.5" y="5" width="4" height="4" rx="1"/></svg><h4>Covers</h4><p>Every model, every style</p></div>
+                <div class="s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M9 8l4-3M9 13l6-5"/></svg><h4>Tempered glass</h4><p>Fitted right at the counter</p></div>
+                <div class="s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></svg><h4>Earbuds</h4><p>Wired and wireless</p></div>
+                <div class="s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12.8 7 10 12h4l-2.8 5"/></svg><h4>Power banks</h4><p>Never run out again</p></div>
+              </div>
+              <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+              <div class="app-card"><span>Your visits</span><span class="mini-stamps"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="float-card fc1"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></i><div>Screen protected<small>Glass fitted in shop</small></div></div>
+        <div class="float-card fc2"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></i><div>Fast chargers<small>For every phone</small></div></div>
+        <div class="float-card fc3"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/></svg></i><div>Free glass<small>On your 5th visit</small></div></div>
+      </div>
     </div>
+  </div>
+
+  <div class="marquee" aria-hidden="true"><div class="track" id="track">
+    <span>Phone covers</span><span>Tempered glass</span><span>Fast chargers</span><span>Cables</span><span>Earbuds</span><span>Power banks</span><span>Smartwatches</span><span>Speakers</span>
   </div></div>
 
-  <section id="products"><div class="wrap">
-    <h2>What we sell</h2>
-    <ul class="items">
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><rect x="8.5" y="5" width="4" height="4" rx="1"/></svg>Phone covers</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M9 8l4-3M9 13l6-5"/></svg>Tempered glass</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="11" rx="2.5"/><path d="M9.5 3v4M14.5 3v4M12 18v3"/></svg>Chargers</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v5a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v7"/></svg>Cables</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></svg>Earphones &amp; earbuds</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12.8 7 10 12h4l-2.8 5"/></svg>Power banks</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3.5"/><path d="M9 6V2.5h6V6M9 18v3.5h6V18"/></svg>Smartwatches</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="8.5" cy="12" r="2"/><circle cx="15.5" cy="12" r="2"/></svg>Bluetooth speakers</li>
-    </ul>
-  </div></section>
-
-  <section id="offer"><div class="wrap">
-    <div class="offer">
-      <div>
-        <h3>Visit 5 times, get a tempered glass free.</h3>
-        <p>Every visit gets a stamp. On your 5th visit, the tempered glass is on us.</p>
-      </div>
-      <div class="stamps" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span class="last">5</span></div>
+  <section id="hooks"><div class="wrap">
+    <div class="head">
+      <div class="eyebrow" data-reveal>Sound familiar?</div>
+      <h2 data-reveal style="--d:.08s">Small phone problems.<br><span class="gradtext">Fixed in one stop.</span></h2>
+    </div>
+    <div class="hooks">
+      <div class="hook" data-reveal style="--d:.05s"><span class="num">01</span><p class="q">Screen <s>cracked</s> again?</p><p>One drop is all it takes. Get a fresh tempered glass fitted at the counter before it gets worse.</p><span class="fix">→ Tempered glass</span></div>
+      <div class="hook" data-reveal style="--d:.15s"><span class="num">02</span><p class="q">Charger <s>stopped</s> working?</p><p>Loose cable, slow charging, wrong adapter. Pick the right charger and cable for your phone.</p><span class="fix">→ Chargers &amp; cables</span></div>
+      <div class="hook" data-reveal style="--d:.25s"><span class="num">03</span><p class="q">Battery <s>dead</s> by evening?</p><p>Carry a power bank and stop hunting for a plug. Earbuds and speakers too, for the ride home.</p><span class="fix">→ Power banks</span></div>
     </div>
   </div></section>
 
-  <section id="contact"><div class="wrap">
-    <h2>Contact</h2>
+  <section id="products" style="padding-top:40px"><div class="wrap">
+    <div class="head">
+      <div class="eyebrow" data-reveal>What we sell</div>
+      <h2 data-reveal style="--d:.08s">Everything your phone needs.</h2>
+      <p class="sub" data-reveal style="--d:.16s">Eight categories under one roof. Not sure what fits your model? Send a WhatsApp, we'll tell you.</p>
+    </div>
+    <div class="grid">
+      <div class="card tilt" data-reveal style="--d:0s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><rect x="8.5" y="5" width="4" height="4" rx="1"/></svg></div><div><h3>Phone covers</h3><p>Back covers, flip covers, clear cases</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.06s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M9 8l4-3M9 13l6-5"/></svg></div><div><h3>Tempered glass</h3><p>Fitted in shop, bubble free</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.12s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="11" rx="2.5"/><path d="M9.5 3v4M14.5 3v4M12 18v3"/></svg></div><div><h3>Chargers</h3><p>Fast chargers and adapters</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.18s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v5a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v7"/></svg></div><div><h3>Cables</h3><p>Type-C, Lightning, micro USB</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.04s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></svg></div><div><h3>Earphones</h3><p>Earbuds, neckbands, wired</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.1s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12.8 7 10 12h4l-2.8 5"/></svg></div><div><h3>Power banks</h3><p>Pocket size to all-day</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.16s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3.5"/><path d="M9 6V2.5h6V6M9 18v3.5h6V18"/></svg></div><div><h3>Smartwatches</h3><p>Fitness bands and watches</p></div></div>
+      <div class="card tilt" data-reveal style="--d:.22s"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="8.5" cy="12" r="2"/><circle cx="15.5" cy="12" r="2"/></svg></div><div><h3>Speakers</h3><p>Bluetooth, small and loud</p></div></div>
+    </div>
+
+    <div class="numbers" data-reveal style="margin-top:56px">
+      <div><b><span data-count="8">0</span></b><span>product categories</span></div>
+      <div><b><span data-count="5">0</span></b><span>visits to a free glass</span></div>
+      <div><b><span data-count="1">0</span></b><span>stop for your phone</span></div>
+      <div><b class="amber">₹0</b><span>to join the stamp card</span></div>
+    </div>
+  </div></section>
+
+  <section id="offer" style="padding-top:20px"><div class="wrap">
+    <div class="offer" data-reveal>
+      <canvas id="confetti"></canvas>
+      <div>
+        <div class="eyebrow">Loyalty reward</div>
+        <h2>Visit 5 times.<br><span class="hi">Glass is on us.</span></h2>
+        <p class="sub">Every visit gets a stamp. On your 5th visit, your tempered glass is free. No app to download, no fee.</p>
+      </div>
+      <div class="loyal tilt-soft" id="loyal">
+        <div class="top"><b>Pushro Card</b><span>Stamp card</span></div>
+        <div class="st" id="stamps">
+          <span>1</span><span>2</span><span>3</span><span>4</span>
+          <span class="gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/></svg></span>
+        </div>
+        <div class="bot">5th visit: tempered glass free<br><span class="unlocked" id="unlocked">★ Reward unlocked</span></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section id="how" style="padding-top:20px"><div class="wrap">
+    <div class="head">
+      <div class="eyebrow" data-reveal>How it works</div>
+      <h2 data-reveal style="--d:.08s">Three steps. That's it.</h2>
+    </div>
+    <div class="steps">
+      <div class="step" data-reveal><h3>Call or WhatsApp</h3><p>Tell us your phone model and what you need. We'll check if it's in stock.</p></div>
+      <div class="step" data-reveal style="--d:.1s"><h3>Walk in and pick</h3><p>See it, try it, choose the one you like. Glass gets fitted on the spot.</p></div>
+      <div class="step" data-reveal style="--d:.2s"><h3>Collect your stamp</h3><p>Every visit counts. Five stamps and your next tempered glass is free.</p></div>
+    </div>
+  </div></section>
+
+  <section id="contact" class="cta"><div class="orb" aria-hidden="true"></div><div class="wrap">
+    <div class="eyebrow" data-reveal>Let's talk</div>
+    <h2 data-reveal style="--d:.08s">Need something<br><span class="gradtext">for your phone?</span></h2>
+    <p class="sub" data-reveal style="--d:.16s; margin: 0 auto 36px">Call or send a WhatsApp. Tell us your model, we'll sort the rest.</p>
+    <div class="actions" data-reveal style="--d:.24s">
+      <a class="btn btn-main magnetic" href="tel:+919636263623">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+        Call now
+      </a>
+      <a class="btn btn-wa magnetic" href="https://wa.me/919636263623" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+        WhatsApp
+      </a>
+    </div>
     <div class="contact">
-      <div><small>Phone</small><a href="tel:+919636263623"><b>+91 96362 63623</b></a></div>
-      <div><small>WhatsApp</small><a href="https://wa.me/919636263623" target="_blank" rel="noopener"><b>+91 96362 63623</b></a></div>
-      <div><small>Location</small><b>Jharkhand</b></div>
+      <a href="tel:+919636263623" data-reveal><small>Phone</small><b>+91 96362 63623</b></a>
+      <a href="https://wa.me/919636263623" target="_blank" rel="noopener" data-reveal style="--d:.08s"><small>WhatsApp</small><b>+91 96362 63623</b></a>
+      <div data-reveal style="--d:.16s"><small>Location</small><b>Jharkhand</b></div>
     </div>
   </div></section>
 </main>
@@ -133,10 +439,143 @@
   <span>Website by <a href="https://www.regularhood.in/?utm_source=pushro&amp;utm_medium=footer" target="_blank" rel="noopener">Regularhood</a></span>
 </div></footer>
 
-<div class="bar">
-  <a class="btn btn-blue" href="tel:+919636263623">Call</a>
-  <a class="btn btn-green" href="https://wa.me/919636263623" target="_blank" rel="noopener">WhatsApp</a>
+<div class="bar" id="bar">
+  <a class="btn btn-main" href="tel:+919636263623">Call</a>
+  <a class="btn btn-wa" href="https://wa.me/919636263623" target="_blank" rel="noopener">WhatsApp</a>
 </div>
 
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  // split headline into letters
+  let delay = 0.2;
+  $$('[data-split]').forEach(el => {
+    const text = el.textContent; el.textContent = '';
+    for (const c of text) {
+      const s = document.createElement('span'); s.className = 'ch'; s.setAttribute('aria-hidden', 'true');
+      s.textContent = c === ' ' ? ' ' : c; s.style.animationDelay = (delay += 0.03) + 's'; el.appendChild(s);
+    }
+  });
+  const rot = $('#rot'); rot.style.opacity = 0; rot.style.transition = 'opacity .8s';
+  setTimeout(() => rot.style.opacity = 1, reduce ? 0 : (delay + .2) * 1000);
+
+  // word rotator
+  const words = $$('span', rot); let wi = 0;
+  if (!reduce) setInterval(() => {
+    const cur = words[wi]; cur.classList.remove('on'); cur.classList.add('out');
+    setTimeout(() => cur.classList.remove('out'), 700);
+    wi = (wi + 1) % words.length; words[wi].classList.add('on');
+  }, 2600);
+
+  // phone slideshow
+  const slides = $$('#slides > div'), dots = $$('#dots i'); let si = 0;
+  setInterval(() => {
+    slides[si].classList.remove('on'); dots[si].classList.remove('on');
+    si = (si + 1) % slides.length; slides[si].classList.add('on'); dots[si].classList.add('on');
+  }, 2400);
+
+  // marquee: duplicate content for seamless loop
+  const track = $('#track'); track.innerHTML += track.innerHTML;
+
+  // scroll: progress, header, bottom bar
+  const prog = $('#progress'), hdr = $('#hdr'), bar = $('#bar');
+  const onScroll = () => {
+    const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+    prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+    hdr.classList.toggle('scrolled', y > 20);
+    bar.classList.toggle('show', y > innerHeight * .6);
+  };
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { threshold: .15, rootMargin: '0px 0px -40px 0px' });
+  $$('[data-reveal]').forEach(el => io.observe(el));
+
+  // counters
+  const cio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; cio.unobserve(e.target);
+    const el = e.target, end = +el.dataset.count, t0 = performance.now(), dur = reduce ? 0 : 1400;
+    const tick = t => { const p = dur ? Math.min(1, (t - t0) / dur) : 1; el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }), { threshold: .6 });
+  $$('[data-count]').forEach(el => cio.observe(el));
+
+  // stamp card fill + confetti
+  const stamps = $$('#stamps span'), offer = $('.offer'), unlocked = $('#unlocked');
+  const sio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; sio.disconnect();
+    stamps.forEach((s, i) => setTimeout(() => {
+      s.classList.add('f');
+      if (i === stamps.length - 1) { unlocked.classList.add('show'); if (!reduce) confetti(); }
+    }, reduce ? 0 : 500 + i * 420));
+  }), { threshold: .5 });
+  sio.observe($('#loyal'));
+
+  function confetti() {
+    const cv = $('#confetti'), ctx = cv.getContext('2d'), dpr = Math.min(devicePixelRatio || 1, 2);
+    const r = offer.getBoundingClientRect(), lr = $('#loyal').getBoundingClientRect();
+    cv.width = r.width * dpr; cv.height = r.height * dpr; ctx.scale(dpr, dpr);
+    const ox = lr.right - r.left - 50, oy = lr.top - r.top + lr.height / 2;
+    const cols = ['#f0a202', '#fcd34d', '#6ee7b7', '#10b981', '#ffffff', '#a7f3d0'];
+    const ps = Array.from({ length: 140 }, () => {
+      const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 9;
+      return { x: ox, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 5, s: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0], life: 1 };
+    });
+    const step = () => {
+      ctx.clearRect(0, 0, r.width, r.height); let alive = false;
+      for (const p of ps) {
+        p.vy += .22; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= .008;
+        if (p.life <= 0) continue; alive = true;
+        ctx.save(); ctx.globalAlpha = Math.max(0, p.life); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+        ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore();
+      }
+      if (alive) requestAnimationFrame(step); else ctx.clearRect(0, 0, r.width, r.height);
+    };
+    requestAnimationFrame(step);
+  }
+
+  if (reduce || !fine) return;
+
+  // cursor glow
+  const glow = $('#glow'); let gx = innerWidth / 2, gy = innerHeight / 2, cx = gx, cy = gy;
+  addEventListener('pointermove', e => { gx = e.clientX; gy = e.clientY; }, { passive: true });
+  (function loop() { cx += (gx - cx) * .12; cy += (gy - cy) * .12; glow.style.translate = `${cx}px ${cy}px`; requestAnimationFrame(loop); })();
+
+  // phone tilt follows mouse in hero
+  const phone = $('#phone'), glare = $('#glare'), stage = $('#stage');
+  $('.hero').addEventListener('pointermove', e => {
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    phone.style.transform = `rotateY(${x * 28}deg) rotateX(${-y * 22}deg)`;
+    glare.style.setProperty('--gx', `${50 + x * 100}%`);
+  });
+  $('.hero').addEventListener('pointerleave', () => { phone.style.transform = ''; });
+
+  // card tilt + spotlight
+  $$('.tilt, .tilt-soft').forEach(el => {
+    const k = el.classList.contains('tilt-soft') ? 10 : 14;
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      el.style.setProperty('--mx', x + 'px'); el.style.setProperty('--my', y + 'px');
+      el.style.transform = `perspective(800px) rotateY(${(x / r.width - .5) * k}deg) rotateX(${-(y / r.height - .5) * k}deg) translateY(-4px)`;
+    });
+    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+  });
+
+  // magnetic buttons
+  $$('.magnetic').forEach(el => {
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect();
+      el.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .25}px, ${(e.clientY - r.top - r.height / 2) * .35}px)`;
+    });
+    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+  });
+})();
+</script>
 </body>
 </html>
