@@ -1,38 +1,38 @@
 <!doctype html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="robots" content="noindex" />
-<meta name="theme-color" content="#07070d" />
+<meta name="theme-color" content="#ffffff" />
 <title>Pushro Studio</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307070d'/%3E%3Cpath d='M22 14h14a12 12 0 0 1 0 24h-6v12h-8z' fill='%2322d3ee'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #07070d; --panel: #10111a; --panel2: #171826; --line: #262838; --text: #f4f5fb; --muted: #9aa0b8;
-    --accent: #22d3ee; --accent2: #818cf8; --good: #34d399; --bad: #f87171;
+    --bg: #f5f6f8; --panel: #ffffff; --panel2: #f5f6f8; --line: #e5e7eb; --text: #111827; --muted: #6b7280;
+    --accent: #2563eb; --accent2: #2563eb; --good: #16a34a; --bad: #dc2626;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Poppins, system-ui, sans-serif; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
   body { min-height: 100vh; padding-bottom: 90px; }
   button, input, select, textarea { font: inherit; color: inherit; }
   a { color: var(--accent); }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
-  header.top { position: sticky; top: 0; z-index: 10; background: rgba(7,7,13,.85); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+  header.top { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--line); }
   header.top .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; }
-  .logo i { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: grid; place-items: center; font-style: normal; color: #07070d; font-weight: 900; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .logo i { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; font-style: normal; color: #fff; font-weight: 700; }
   .logo small { font-weight: 500; color: var(--muted); font-size: 12px; }
   .grow { flex: 1; }
   .usage { font-size: 12px; color: var(--muted); }
   nav.tabs { display: flex; gap: 6px; padding: 14px 0 6px; overflow-x: auto; }
   nav.tabs button { border: 1px solid var(--line); background: var(--panel); padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-weight: 600; font-size: 14px; color: var(--muted); }
-  nav.tabs button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px; }
-  h2 { font-size: 22px; margin: 18px 0 4px; letter-spacing: -.02em; }
+  nav.tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  h2 { font-size: 20px; margin: 18px 0 4px; }
   p.lead { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
   label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; font-weight: 500; }
   input[type=text], input[type=tel], input[type=url], input[type=password], select, textarea {
@@ -43,13 +43,13 @@
   .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
   .row3 { display: grid; gap: 12px; grid-template-columns: 1fr 1fr 1fr; }
   @media (max-width: 640px) { .row, .row3 { grid-template-columns: 1fr; } }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 700; cursor: pointer; background: var(--panel2); border: 1px solid var(--line); font-size: 14px; text-decoration: none; color: var(--text); }
-  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #06060c; border: 0; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 11px 16px; font-weight: 600; cursor: pointer; background: #fff; border: 1px solid var(--line); font-size: 14px; text-decoration: none; color: var(--text); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn.big { padding: 15px 22px; font-size: 16px; width: 100%; }
   .btn:disabled { opacity: .55; cursor: wait; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; }
-  .chip.on { border-color: var(--accent); color: var(--accent); background: rgba(34,211,238,.08); }
+  .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 13px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .chip.on { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
   .err { color: var(--bad); font-size: 14px; margin-top: 10px; min-height: 1em; }
   .ok { color: var(--good); font-size: 14px; }
   .hidden { display: none !important; }
@@ -58,7 +58,7 @@
   .studio { display: grid; grid-template-columns: 360px 1fr; gap: 18px; align-items: start; }
   @media (max-width: 900px) { .studio { grid-template-columns: 1fr; } }
   .designs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-  .design { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+  .design { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
   .design canvas { width: 100%; aspect-ratio: 9/16; display: block; background: #000; }
   .design .body { padding: 12px; display: grid; gap: 8px; }
   .design .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -68,26 +68,20 @@
   .empty { border: 1px dashed var(--line); border-radius: 20px; padding: 48px 20px; text-align: center; color: var(--muted); }
   .photo { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
   .photo img { width: 54px; height: 54px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
-  .spin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(0,0,0,.25); border-top-color: #06060c; animation: s .8s linear infinite; }
+  .spin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; animation: s .8s linear infinite; }
   @keyframes s { to { transform: rotate(360deg); } }
 
   /* Copy tools */
   .outs { display: grid; gap: 14px; margin-top: 16px; }
   .out { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
   .out h4 { margin: 0 0 8px; font-size: 15px; }
-  .out pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: #dfe2f0; }
+  .out pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--text); }
   .out .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* Site editor */
-  .offer-row { display: grid; grid-template-columns: 1.3fr .8fr 1.5fr auto; gap: 8px; margin-bottom: 8px; }
-  @media (max-width: 640px) { .offer-row { grid-template-columns: 1fr 1fr; } }
-  .x { background: transparent; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); cursor: pointer; padding: 0 12px; }
-  .savebar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: rgba(7,7,13,.92); backdrop-filter: blur(14px); border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: center; align-items: center; z-index: 20; }
-
   /* Login */
-  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: radial-gradient(600px 400px at 50% 20%, rgba(34,211,238,.18), transparent), radial-gradient(500px 400px at 80% 90%, rgba(129,140,248,.18), transparent); }
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
   .login .card { width: 100%; max-width: 380px; padding: 28px; }
-  .login h1 { font-size: 26px; margin: 18px 0 4px; letter-spacing: -.03em; }
+  .login h1 { font-size: 22px; margin: 18px 0 4px; }
   @media (max-width: 640px) { .logo small, .logo br, .usage { display: none; } header.top .btn { padding: 9px 12px; } }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; z-index: 50; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: 1; }
@@ -98,130 +92,88 @@
 <section id="login" class="login hidden">
   <form class="card" id="loginForm">
     <div class="logo"><i>P</i><span>Pushro Studio</span></div>
-    <h1>Namaste 👋</h1>
-    <p class="lead">Apna studio code daaliye. Ye code sirf shop owner ke paas hai.</p>
+    <h1>Log in</h1>
+    <p class="lead">Enter your studio code.</p>
     <label for="code">Studio code</label>
     <input id="code" type="password" autocomplete="current-password" required />
     <div class="err" id="loginErr"></div>
-    <button class="btn primary big" style="margin-top:8px">Login</button>
+    <button class="btn primary big" style="margin-top:8px">Log in</button>
   </form>
 </section>
 
 <div id="app" class="hidden">
   <header class="top"><div class="wrap">
-    <div class="logo"><i>P</i><div>Pushro Studio<br /><small>AI marketing for your shop</small></div></div>
+    <div class="logo"><i>P</i><div>Pushro Studio</div></div>
     <div class="grow"></div>
     <span class="usage" id="usage"></span>
-    <a class="btn" href="/" target="_blank" rel="noopener">Website ↗</a>
+    <a class="btn" href="/" target="_blank" rel="noopener">Website</a>
   </div></header>
 
   <div class="wrap">
     <nav class="tabs">
-      <button data-tab="status" class="on">📱 Status Maker</button>
-      <button data-tab="copy">✍️ Marketing Tools</button>
-      <button data-tab="site">🌐 Meri Website</button>
+      <button data-tab="status" class="on">Status maker</button>
+      <button data-tab="copy">Marketing text</button>
     </nav>
 
     <!-- STATUS -->
     <section data-pane="status">
-      <h2>WhatsApp Status Maker</h2>
-      <p class="lead">Batao kya promote karna hai: AI design banayega, aap edit karke download ya share kar do.</p>
+      <h2>WhatsApp status maker</h2>
+      <p class="lead">Say what you want to promote. You get ready-made status images to edit, download or share.</p>
       <div class="studio">
         <form class="card" id="statusForm">
-          <label for="sReq">Kya chahiye?</label>
-          <textarea id="sReq" placeholder="Jaise: Naye wireless earbuds aaye hain, students ke liye. Ya: Shaadi season, gift ke liye smartwatch."></textarea>
+          <label for="sReq">What do you want to promote?</label>
+          <textarea id="sReq" placeholder="e.g. New wireless earbuds in stock"></textarea>
           <div class="chips" id="sQuick" style="margin-top:8px"></div>
-          <label for="sOffer">Offer / price (optional)</label>
-          <input id="sOffer" type="text" placeholder="Jaise: ₹499 only · Flat 20% OFF · Cover + glass ₹299" />
+          <label for="sOffer">Price or offer (optional)</label>
+          <input id="sOffer" type="text" placeholder="e.g. ₹499 or 20% off" />
           <div class="row">
             <div><label for="sProduct">Product</label>
               <select id="sProduct">
-                <option value="any">AI choose kare</option><option value="earbuds">Earbuds</option><option value="headphones">Headphones</option>
+                <option value="any">Any</option><option value="earbuds">Earbuds</option><option value="headphones">Headphones</option>
                 <option value="phone">Phone</option><option value="cover">Cover / case</option><option value="glass">Tempered glass</option>
                 <option value="charger">Charger</option><option value="cable">Cable</option><option value="powerbank">Power bank</option>
                 <option value="watch">Smartwatch</option><option value="speaker">Speaker</option><option value="holder">Mobile holder</option><option value="memory">Memory card</option>
               </select></div>
-            <div><label for="sLang">Bhasha</label>
-              <select id="sLang"><option value="hinglish">Hinglish</option><option value="hindi">हिंदी</option><option value="english">English</option></select></div>
+            <div><label for="sLang">Language</label>
+              <select id="sLang"><option value="english">English</option><option value="hindi">Hindi</option><option value="hinglish">Hinglish</option></select></div>
           </div>
           <div class="row">
-            <div><label for="sCount">Kitne designs</label>
+            <div><label for="sCount">How many</label>
               <select id="sCount"><option>2</option><option>3</option><option selected>4</option><option>6</option></select></div>
-            <div><label>Apni photo (optional)</label>
+            <div><label>Product photo (optional)</label>
               <input id="sPhoto" type="file" accept="image/*" class="hidden" />
-              <button type="button" class="btn" id="sPhotoBtn" style="width:100%">📷 Photo lagao</button></div>
+              <button type="button" class="btn" id="sPhotoBtn" style="width:100%">Add photo</button></div>
           </div>
-          <div class="photo hidden" id="sPhotoPrev"><img alt="" /><span style="font-size:13px;color:var(--muted)">Ye photo har design mein lagegi.</span><button type="button" class="x" id="sPhotoX" style="height:34px">Hatao</button></div>
+          <div class="photo hidden" id="sPhotoPrev"><img alt="" /><span style="font-size:13px;color:var(--muted)">Used in every design.</span><button type="button" class="x" id="sPhotoX" style="height:34px">Remove</button></div>
           <div class="err" id="sErr"></div>
-          <button class="btn primary big" id="sGo">✨ Status banao</button>
+          <button class="btn primary big" id="sGo">Make statuses</button>
         </form>
         <div>
           <div class="designs" id="designs"></div>
-          <div class="empty" id="designsEmpty">Yahan aapke status designs aayenge. Left mein batao kya chahiye aur <b>Status banao</b> dabao.</div>
+          <div class="empty" id="designsEmpty">Your status images will show here.</div>
         </div>
       </div>
     </section>
 
     <!-- COPY -->
     <section data-pane="copy" class="hidden">
-      <h2>Marketing Tools</h2>
-      <p class="lead">Broadcast message, Instagram caption, reel idea, Google post, review reply aur offer ideas: ek click mein.</p>
+      <h2>Marketing text</h2>
+      <p class="lead">WhatsApp messages, Instagram captions, reel ideas, Google posts, review replies and offer ideas.</p>
       <form class="card" id="copyForm">
-        <label>Tool</label>
+        <label>What do you need?</label>
         <div class="chips" id="cTools"></div>
-        <label for="cDetails" id="cDetailsLabel">Details</label>
-        <textarea id="cDetails" placeholder="Offer, product, occasion, ya jo bhi batana ho"></textarea>
+        <label for="cDetails" id="cDetailsLabel">Details (optional)</label>
+        <textarea id="cDetails" placeholder=""></textarea>
         <div class="row">
-          <div><label for="cLang">Bhasha</label>
-            <select id="cLang"><option value="hinglish">Hinglish</option><option value="hindi">हिंदी</option><option value="english">English</option></select></div>
-          <div style="display:flex;align-items:end"><button class="btn primary big" id="cGo">✨ Likho</button></div>
+          <div><label for="cLang">Language</label>
+            <select id="cLang"><option value="english">English</option><option value="hindi">Hindi</option><option value="hinglish">Hinglish</option></select></div>
+          <div style="display:flex;align-items:end"><button class="btn primary big" id="cGo">Write</button></div>
         </div>
         <div class="err" id="cErr"></div>
       </form>
       <div class="outs" id="outs"></div>
     </section>
 
-    <!-- SITE -->
-    <section data-pane="site" class="hidden">
-      <h2>Meri Website</h2>
-      <p class="lead">Jo yahan likhoge, wahi aapki website pe dikhega. Khaali field website pe nahi dikhti.</p>
-      <form class="card" id="siteForm">
-        <div class="row">
-          <div><label for="fName">Shop ka naam</label><input id="fName" type="text" maxlength="60" /></div>
-          <div><label for="fTagline">Tagline</label><input id="fTagline" type="text" maxlength="120" /></div>
-        </div>
-        <label for="fAbout">Shop ke baare mein</label><textarea id="fAbout" maxlength="600"></textarea>
-        <label for="fAnnounce">Top strip (is hafte ka offer)</label><input id="fAnnounce" type="text" maxlength="140" placeholder="Jaise: Diwali offer: cover + glass sirf ₹299" />
-        <div class="row">
-          <div><label for="fPhone">Phone</label><input id="fPhone" type="tel" placeholder="98XXXXXXXX" /></div>
-          <div><label for="fWhatsapp">WhatsApp number</label><input id="fWhatsapp" type="tel" placeholder="91 98XXXXXXXX" /></div>
-        </div>
-        <label for="fAddress">Address</label><input id="fAddress" type="text" maxlength="250" />
-        <div class="row3">
-          <div><label for="fCity">City / area</label><input id="fCity" type="text" maxlength="60" /></div>
-          <div><label for="fHours">Timing</label><input id="fHours" type="text" maxlength="100" placeholder="10 AM – 9 PM, roz" /></div>
-          <div><label for="fInstagram">Instagram username</label><input id="fInstagram" type="text" placeholder="pushro.digital" /></div>
-        </div>
-        <div class="row3">
-          <div><label for="fMaps">Google Maps link</label><input id="fMaps" type="url" placeholder="https://maps.app.goo.gl/…" /></div>
-          <div><label for="fReview">Google review link</label><input id="fReview" type="url" placeholder="https://g.page/r/…" /></div>
-          <div><label for="fLoyalty">Regularhood card link</label><input id="fLoyalty" type="url" placeholder="https://www.regularhood.in/…" /></div>
-        </div>
-        <div class="row">
-          <div><label for="fReward">Loyalty gift</label><input id="fReward" type="text" maxlength="80" placeholder="Ek tempered glass FREE" /></div>
-          <div><label for="fRewardVisits">Kitne visit pe</label><input id="fRewardVisits" type="text" inputmode="numeric" maxlength="2" placeholder="5" /></div>
-        </div>
-        <label>Kya kya milta hai</label>
-        <div class="chips" id="fCats"></div>
-        <label>Offers (website pe cards ban ke dikhenge)</label>
-        <div id="fOffers"></div>
-        <button type="button" class="btn" id="fAddOffer">+ Offer jodo</button>
-        <label>Shop ki khaas baatein (max 6)</label>
-        <div id="fHighlights"></div>
-        <button type="button" class="btn" id="fAddHl">+ Khaas baat jodo</button>
-      </form>
-      <div class="savebar hidden" id="saveBar"><span id="saveMsg" class="usage"></span><button class="btn primary" id="saveBtn">Website save karo</button><a class="btn" href="/" target="_blank" rel="noopener">Dekho ↗</a></div>
-    </section>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -247,8 +199,8 @@ async function api(path, opts = {}) {
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401) { logout(); throw new Error('Dobara login karein'); }
-  if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Kuch gadbad hui, dobara try karein');
+  if (res.status === 401) { logout(); throw new Error('Please log in again'); }
+  if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Something went wrong. Try again.');
   return data;
 }
 
@@ -269,17 +221,15 @@ async function boot() {
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden');
   showUsage();
-  fillSite(me.site);
   buildTools();
   restoreDesigns();
 }
-function showUsage() { $('#usage').textContent = `Aaj ${me.usedToday}/${me.dailyLimit} AI use`; }
+function showUsage() { $('#usage').textContent = `${me.usedToday}/${me.dailyLimit} used today`; }
 
 // Tabs
 $$('nav.tabs button').forEach((b) => b.addEventListener('click', () => {
   $$('nav.tabs button').forEach((x) => x.classList.toggle('on', x === b));
   $$('[data-pane]').forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== b.dataset.tab));
-  $('#saveBar').classList.toggle('hidden', b.dataset.tab !== 'site');
 }));
 
 /* =====================================================================
@@ -521,7 +471,7 @@ function glowRing(ctx, pal, cx, cy, r) {
   ctx.save(); ctx.setLineDash([4, 18]); ctx.beginPath(); ctx.arc(cx, cy, r * 1.15, 0, 7); ctx.lineWidth = 3; ctx.strokeStyle = alpha(pal.a, .4); ctx.stroke(); ctx.restore();
 }
 function brandTop(ctx, pal, align = 'center') {
-  const name = (me && me.site.name) || 'Pushro Digital Hub';
+  const name = (me && me.shop.name) || 'Pushro Digital Hub';
   const x = align === 'left' ? 80 : W / 2;
   ctx.font = '800 38px Poppins';
   const w = ctx.measureText(name).width;
@@ -530,14 +480,14 @@ function brandTop(ctx, pal, align = 'center') {
   ctx.fillStyle = pal.text; ctx.textAlign = 'left'; ctx.fillText(name, left + 58, 142);
 }
 function footer(ctx, pal) {
-  const s = (me && me.site) || {};
-  const bits = [s.phone || s.whatsapp ? `Call / WhatsApp: ${s.phone || s.whatsapp}` : '', s.address || s.city || ''].filter(Boolean);
+  const s = (me && me.shop) || {};
+  const bits = [s.phone ? `Call / WhatsApp: ${s.phone}` : '', s.area || ''].filter(Boolean);
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, H - 200, W, 200);
   ctx.fillStyle = lin(ctx, 0, 0, W, 0, [alpha(pal.a, 0), pal.a, alpha(pal.a, 0)]); ctx.fillRect(0, H - 200, W, 3);
   ctx.textAlign = 'center'; ctx.fillStyle = pal.text; ctx.font = '700 40px Poppins';
   ctx.fillText(s.name || 'Pushro Digital Hub', W / 2, H - 125);
   ctx.font = '500 30px Poppins'; ctx.fillStyle = pal.sub;
-  const line = bits.join('  •  ') || 'Mobile accessories ka smart store';
+  const line = bits.join('  •  ') || 'Mobile accessories';
   const { lines } = fit(ctx, line, 500, 30, 22, W - 120, 2);
   lines.slice(0, 2).forEach((l, i) => ctx.fillText(l, W / 2, H - 75 + i * 36));
 }
@@ -653,7 +603,7 @@ function render(canvas, d) {
 
 /* ---------- Status UI ---------- */
 let designs = [];
-const QUICK = ['Naya stock aa gaya', 'Combo offer: cover + glass', 'Fast charger ki zaroorat?', 'Shaadi season gift ideas', 'Student special earbuds', 'Weekend sale'];
+const QUICK = ['New stock', 'Free tempered glass on 5th visit', 'Cover + glass combo', 'Fast chargers', 'Wedding season gifts'];
 QUICK.forEach((q) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = q; b.onclick = () => { $('#sReq').value = q; }; $('#sQuick').append(b); });
 
 $('#sPhotoBtn').onclick = () => $('#sPhoto').click();
@@ -667,13 +617,13 @@ $('#sPhotoX').onclick = () => { photo = null; $('#sPhoto').value = ''; $('#sPhot
 
 $('#statusForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = $('#sGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Design ban rahe hain…'; $('#sErr').textContent = '';
+  const btn = $('#sGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Making…'; $('#sErr').textContent = '';
   try {
     const out = await api('/status', { method: 'POST', body: { request: $('#sReq').value, offer: $('#sOffer').value, product: $('#sProduct').value, lang: $('#sLang').value, count: Number($('#sCount').value) } });
     designs = out.concat(designs).slice(0, 24);
     saveDesigns(); showDesigns(); me.usedToday++; showUsage();
   } catch (err) { $('#sErr').textContent = err.message; }
-  btn.disabled = false; btn.textContent = '✨ Status banao';
+  btn.disabled = false; btn.textContent = 'Make statuses';
 });
 
 function saveDesigns() { store.set('pushro_designs', JSON.stringify(designs)); }
@@ -690,13 +640,13 @@ async function showDesigns() {
   designs.forEach((d, i) => {
     const el = document.createElement('div'); el.className = 'design';
     el.innerHTML = `<canvas></canvas><div class="body">
-      <div class="actions"><button class="btn primary" data-a="dl">⬇ Download</button><button class="btn" data-a="share">📤 Share</button></div>
+      <div class="actions"><button class="btn primary" data-a="dl">Download</button><button class="btn" data-a="share">Share</button></div>
       <div class="caption">${esc(d.caption)}</div>
-      <div class="actions"><button class="btn" data-a="cap">Caption copy</button><button class="btn" data-a="del">Hatao</button></div>
-      <details><summary>✏️ Edit text & style</summary>
+      <div class="actions"><button class="btn" data-a="cap">Copy caption</button><button class="btn" data-a="del">Delete</button></div>
+      <details><summary>Edit text and style</summary>
         <input data-k="headline" value="${esc(d.headline)}" placeholder="Headline" />
         <input data-k="subline" value="${esc(d.subline)}" placeholder="Subline" />
-        <input data-k="offer" value="${esc(d.offer)}" placeholder="Offer (khaali = nahi dikhega)" />
+        <input data-k="offer" value="${esc(d.offer)}" placeholder="Offer (leave empty to hide)" />
         <input data-k="badge" value="${esc(d.badge)}" placeholder="Badge" />
         <input data-k="cta" value="${esc(d.cta)}" placeholder="Button text" />
         <select data-k="template">${opt(['spotlight', 'sale', 'minimal', 'split', 'festive'], d.template)}</select>
@@ -712,9 +662,9 @@ async function showDesigns() {
     $('[data-a=share]', el).onclick = async () => {
       const file = new File([await blob()], fname(), { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: d.caption }); } catch {} }
-      else { toast('Is browser mein share nahi hota, Download karein'); }
+      else { toast('Sharing isn’t supported here. Use Download.'); }
     };
-    $('[data-a=cap]', el).onclick = () => { navigator.clipboard.writeText(d.caption).then(() => toast('Caption copy ho gaya')); };
+    $('[data-a=cap]', el).onclick = () => { navigator.clipboard.writeText(d.caption).then(() => toast('Caption copied')); };
     $('[data-a=del]', el).onclick = () => { designs.splice(i, 1); saveDesigns(); showDesigns(); };
   });
 }
@@ -722,12 +672,12 @@ async function showDesigns() {
 /* ---------- Copy tools ---------- */
 let tool = 'broadcast';
 const HINTS = {
-  broadcast: 'Offer kya hai? Jaise: Cover + tempered glass sirf ₹299, sirf is Sunday tak',
-  instagram: 'Post kis baare mein hai? Jaise: naye magnetic covers aaye',
-  reel: 'Reel kis product ya offer pe? Jaise: 65W fast charger demo',
-  google: 'Kya batana hai? Jaise: sabhi brands ke covers aur glass available',
-  review: 'Customer ka review yahan paste karein (naam bhi ho to likh dein)',
-  ideas: 'Kuch khaas? Jaise: shaadi season, college khul rahe, naya iPhone launch',
+  broadcast: 'e.g. Cover + tempered glass for ₹299 this Sunday',
+  instagram: 'e.g. New magnetic covers in stock',
+  reel: 'e.g. Fast charger demo',
+  google: 'e.g. Covers and glass for all phone models',
+  review: 'Paste the customer’s review here',
+  ideas: 'e.g. Wedding season',
 };
 function buildTools() {
   const box = $('#cTools'); box.innerHTML = '';
@@ -740,61 +690,20 @@ function buildTools() {
 }
 $('#copyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = $('#cGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Likh raha hai…'; $('#cErr').textContent = '';
+  const btn = $('#cGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Writing…'; $('#cErr').textContent = '';
   try {
     const items = await api('/copy', { method: 'POST', body: { tool, details: $('#cDetails').value, lang: $('#cLang').value } });
     me.usedToday++; showUsage();
     const outs = $('#outs'); outs.innerHTML = '';
     items.forEach((it) => {
       const el = document.createElement('div'); el.className = 'out';
-      el.innerHTML = `<h4>${esc(it.title)}</h4><pre>${esc(it.text)}</pre><div class="actions"><button class="btn" data-a="copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(it.text)}">WhatsApp pe bhejo</a></div>`;
-      $('[data-a=copy]', el).onclick = () => navigator.clipboard.writeText(it.text).then(() => toast('Copy ho gaya'));
+      el.innerHTML = `<h4>${esc(it.title)}</h4><pre>${esc(it.text)}</pre><div class="actions"><button class="btn" data-a="copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(it.text)}">Send on WhatsApp</a></div>`;
+      $('[data-a=copy]', el).onclick = () => navigator.clipboard.writeText(it.text).then(() => toast('Copied'));
       outs.append(el);
     });
   } catch (err) { $('#cErr').textContent = err.message; }
-  btn.disabled = false; btn.textContent = '✨ Likho';
+  btn.disabled = false; btn.textContent = 'Write';
 });
-
-/* ---------- Site editor ---------- */
-const F = { name: 'fName', tagline: 'fTagline', about: 'fAbout', announce: 'fAnnounce', phone: 'fPhone', whatsapp: 'fWhatsapp', address: 'fAddress', city: 'fCity', hours: 'fHours', instagram: 'fInstagram', mapsLink: 'fMaps', googleReview: 'fReview', loyaltyLink: 'fLoyalty', reward: 'fReward', rewardVisits: 'fRewardVisits' };
-let cats = [];
-function offerRow(o = {}) {
-  const el = document.createElement('div'); el.className = 'offer-row';
-  el.innerHTML = `<input type="text" placeholder="Offer, jaise Cover + Glass combo" maxlength="60" data-o="title" value="${esc(o.title)}" /><input type="text" placeholder="₹299" maxlength="30" data-o="price" value="${esc(o.price)}" /><input type="text" placeholder="Chhota note" maxlength="120" data-o="note" value="${esc(o.note)}" /><button type="button" class="x">✕</button>`;
-  $('.x', el).onclick = () => el.remove();
-  $('#fOffers').append(el);
-}
-function hlRow(h = '') {
-  const el = document.createElement('div'); el.className = 'offer-row'; el.style.gridTemplateColumns = '1fr auto';
-  el.innerHTML = `<input type="text" maxlength="80" placeholder="Jaise: Glass fitting free" value="${esc(h)}" /><button type="button" class="x">✕</button>`;
-  $('.x', el).onclick = () => el.remove();
-  $('#fHighlights').append(el);
-}
-function fillSite(s) {
-  Object.entries(F).forEach(([k, id]) => { $('#' + id).value = s[k] || ''; });
-  cats = [...s.categories];
-  const box = $('#fCats'); box.innerHTML = '';
-  Object.entries(me.categories).forEach(([k, label]) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (cats.includes(k) ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { cats = cats.includes(k) ? cats.filter((c) => c !== k) : [...cats, k]; b.classList.toggle('on'); };
-    box.append(b);
-  });
-  $('#fOffers').innerHTML = ''; s.offers.forEach(offerRow);
-  $('#fHighlights').innerHTML = ''; s.highlights.forEach(hlRow);
-}
-$('#fAddOffer').onclick = () => { if ($$('#fOffers .offer-row').length < 6) offerRow(); };
-$('#fAddHl').onclick = () => { if ($$('#fHighlights .offer-row').length < 6) hlRow(); };
-$('#siteForm').addEventListener('submit', (e) => e.preventDefault());
-$('#saveBtn').onclick = async () => {
-  const body = Object.fromEntries(Object.entries(F).map(([k, id]) => [k, $('#' + id).value]));
-  body.categories = cats;
-  body.offers = $$('#fOffers .offer-row').map((r) => ({ title: $('[data-o=title]', r).value, price: $('[data-o=price]', r).value, note: $('[data-o=note]', r).value }));
-  body.highlights = $$('#fHighlights input').map((i) => i.value);
-  const btn = $('#saveBtn'); btn.disabled = true; $('#saveMsg').textContent = '';
-  try { me.site = await api('/site', { method: 'PUT', body }); fillSite(me.site); toast('Website update ho gayi ✓'); renderAll(); }
-  catch (err) { $('#saveMsg').textContent = err.message; }
-  btn.disabled = false;
-};
 
 boot();
 </script>

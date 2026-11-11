@@ -1,4 +1,4 @@
-import { BadRequestException, Body, CanActivate, Controller, ExecutionContext, Get, HttpCode, Injectable, Post, Put, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, CanActivate, Controller, ExecutionContext, Get, HttpCode, Injectable, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import Anthropic from '@anthropic-ai/sdk';
 import { timingSafeEqual } from 'node:crypto';
@@ -6,8 +6,8 @@ import type { Request } from 'express';
 import { Db } from './db';
 import { unseal } from './secret';
 
-// Pushro Digital Hub (a mobile accessories shop) gets its own website at pushro.regularhood.in (pushro-site.ts) and a
-// private studio at /studio (web/public/pushro/studio.html). The studio uses Claude Haiku 5.5 to design WhatsApp status
+// Pushro Digital Hub (a mobile accessories shop) gets its own website at pushro.regularhood.in (a static page,
+// web/public/pushro/index.html) and a private studio at /studio (web/public/pushro/studio.html). The studio uses Claude Haiku 5.5 to design WhatsApp status
 // images and to write marketing copy. Claude writes the design (words, layout, colours, which product to draw); the
 // studio draws the 1080×1920 picture on a canvas in the browser, so the owner can download or share it straight away.
 //
@@ -20,62 +20,13 @@ const PRICE_IN_USD = 0.1; // per 1M input tokens
 const PRICE_OUT_USD = 0.5; // per 1M output tokens (thinking included)
 const DAILY_LIMIT = 150;
 
-export const CATEGORIES = {
-  covers: 'Covers & cases',
-  glass: 'Tempered glass',
-  chargers: 'Chargers & adapters',
-  cables: 'Cables',
-  earbuds: 'Earbuds & neckbands',
-  headphones: 'Headphones',
-  powerbanks: 'Power banks',
-  watches: 'Smartwatches',
-  speakers: 'Bluetooth speakers',
-  holders: 'Car & bike holders',
-  memory: 'Memory cards & pendrives',
-  gadgets: 'Gadgets & more',
-} as const;
-export type CategoryKey = keyof typeof CATEGORIES;
-
-export type PushroSite = {
-  name: string;
-  tagline: string;
-  about: string;
-  announce: string; // strip at the top of the site, e.g. this week's offer
-  phone: string;
-  whatsapp: string;
-  address: string;
-  city: string;
-  mapsLink: string;
-  hours: string;
-  instagram: string;
-  googleReview: string;
-  loyaltyLink: string; // the shop's Regularhood stamp card page
-  reward: string; // the loyalty reward, e.g. "tempered glass FREE"
-  rewardVisits: number; // ...on this visit
-  categories: CategoryKey[];
-  offers: { title: string; price: string; note: string }[];
-  highlights: string[];
-};
-
-export const DEFAULT_SITE: PushroSite = {
+/** Fixed shop details: the AI uses them, and the studio prints name and phone on each status. */
+export const SHOP = {
   name: 'Pushro Digital Hub',
-  tagline: 'Har phone ke liye, sab kuch ek jagah.',
-  about: 'Covers, tempered glass, chargers, earbuds, power banks aur smart gadgets: apne phone ke liye sahi accessory, sahi daam pe.',
-  announce: '5 visit poore karo, ek tempered glass FREE pao!',
-  phone: '+919636263623',
-  whatsapp: '+919636263623',
-  address: '',
-  city: 'Jharkhand',
-  mapsLink: '',
-  hours: '',
-  instagram: '',
-  googleReview: '',
-  loyaltyLink: '',
-  reward: 'ek tempered glass FREE',
-  rewardVisits: 5,
-  categories: ['covers', 'glass', 'chargers', 'cables', 'earbuds', 'headphones', 'powerbanks', 'watches', 'speakers'],
-  offers: [{ title: '5 visit pe tempered glass FREE', price: 'FREE', note: 'Har visit pe ek stamp. 5 visit poore hote hi ek tempered glass bilkul free.' }],
-  highlights: [],
+  phone: '+91 96362 63623',
+  area: 'Jharkhand',
+  sells: 'phone covers, tempered glass, chargers, cables, earphones and earbuds, power banks, smartwatches, Bluetooth speakers',
+  reward: 'a free tempered glass on the 5th visit (loyalty stamp card)',
 };
 
 // ---------- Claude: status designs ----------
@@ -136,16 +87,12 @@ const LANG = {
 } as const;
 export type Lang = keyof typeof LANG;
 
-function shopContext(site: PushroSite) {
+function shopContext() {
   return [
-    `Shop: ${site.name}, a mobile accessories shop${site.city ? ` in ${site.city}` : ''} in India.`,
-    `Sells: ${site.categories.map((c) => CATEGORIES[c]).join(', ')}.`,
-    site.offers.length ? `Current offers on the website: ${site.offers.map((o) => `${o.title}${o.price ? ` (${o.price})` : ''}`).join('; ')}.` : '',
-    site.reward ? `Loyalty reward: on the ${site.rewardVisits}th visit the customer gets: ${site.reward}.` : '',
-    site.highlights.length ? `What the shop says about itself: ${site.highlights.join('; ')}.` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+    `Shop: ${SHOP.name}, a mobile accessories shop in ${SHOP.area}, India.`,
+    `Sells: ${SHOP.sells}.`,
+    `Running offer: ${SHOP.reward}.`,
+  ].join(' ');
 }
 
 const STATUS_SYSTEM = `You design WhatsApp status images for a neighbourhood mobile accessories shop in India. The owner posts them
@@ -218,23 +165,6 @@ price is needed but not given. Never mention chai or tea.`;
 export class PushroService {
   constructor(private readonly db: Db) {}
 
-  site(): PushroSite {
-    const row = this.db.sql.prepare("SELECT value FROM app_settings WHERE key = 'pushro_site'").get() as { value: string } | undefined;
-    if (!row) return DEFAULT_SITE;
-    try {
-      return { ...DEFAULT_SITE, ...(JSON.parse(row.value) as Partial<PushroSite>) };
-    } catch {
-      return DEFAULT_SITE;
-    }
-  }
-
-  saveSite(site: PushroSite) {
-    this.db.sql
-      .prepare("INSERT INTO app_settings (key, value) VALUES ('pushro_site', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-      .run(JSON.stringify(site));
-    return site;
-  }
-
   usedToday() {
     return (this.db.sql.prepare("SELECT COUNT(*) AS n FROM ai_usage WHERE purpose LIKE 'pushro_%' AND ts >= date('now')").get() as { n: number }).n;
   }
@@ -248,7 +178,7 @@ export class PushroService {
   private async ask<T>(purpose: string, system: string, schema: Record<string, unknown>, prompt: string): Promise<T> {
     const key = this.key();
     if (!key) throw new BadRequestException('AI is not set up yet: the Anthropic API key is missing on the server');
-    if (this.usedToday() >= DAILY_LIMIT) throw new BadRequestException(`Aaj ki limit (${DAILY_LIMIT}) poori ho gayi. Kal phir try karein.`);
+    if (this.usedToday() >= DAILY_LIMIT) throw new BadRequestException(`Today’s limit of ${DAILY_LIMIT} is used up. Try again tomorrow.`);
 
     let inputTokens = 0;
     let outputTokens = 0;
@@ -267,8 +197,8 @@ export class PushroService {
       });
       inputTokens = response.usage.input_tokens;
       outputTokens = response.usage.output_tokens;
-      if (response.stop_reason === 'refusal') throw new Error('AI ne ye request mana kar di; thoda alag likh ke try karein');
-      if (response.stop_reason === 'max_tokens') throw new Error('Jawab adhoora aaya; dobara try karein');
+      if (response.stop_reason === 'refusal') throw new Error('The AI declined this one. Try different wording.');
+      if (response.stop_reason === 'max_tokens') throw new Error('The answer came back cut off. Try again.');
       const out = JSON.parse(response.content.map((b) => (b.type === 'text' ? b.text : '')).join('')) as T;
       record(true);
       return out;
@@ -277,7 +207,7 @@ export class PushroService {
         error instanceof Anthropic.AuthenticationError
           ? 'Anthropic did not accept the API key'
           : error instanceof Anthropic.RateLimitError
-            ? 'AI abhi busy hai; ek minute baad try karein'
+            ? 'The AI is busy. Try again in a minute.'
             : error instanceof Anthropic.APIError
               ? `Anthropic ${error.status ?? ''}: ${error.message}`
               : (error as Error).message;
@@ -287,9 +217,8 @@ export class PushroService {
   }
 
   async statuses(input: { request: string; offer: string; product: string; lang: Lang; count: number }) {
-    const site = this.site();
     const prompt = [
-      shopContext(site),
+      shopContext(),
       `Today's date: ${new Date().toISOString().slice(0, 10)}.`,
       `Language for all text: ${LANG[input.lang]}.`,
       `Write ${input.count} different status designs.`,
@@ -310,12 +239,10 @@ export class PushroService {
   }
 
   async copy(input: { tool: Tool; details: string; lang: Lang }) {
-    const site = this.site();
     const prompt = [
-      shopContext(site),
+      shopContext(),
       `Today's date: ${new Date().toISOString().slice(0, 10)}.`,
-      site.phone ? `Shop phone: ${site.phone}` : '',
-      site.address ? `Shop address: ${site.address}` : '',
+      `Shop phone: ${SHOP.phone}`,
       `Language: ${LANG[input.lang]}.`,
       `Task: ${TOOLS[input.tool].brief}`,
       `Details from the owner: ${input.details || '(none: keep it general for this week)'}`,
@@ -350,11 +277,6 @@ export class PushroGuard implements CanActivate {
 }
 
 const field = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
-const url = (v: unknown) => {
-  const s = field(v, 500);
-  return /^https:\/\/[^\s<>"']+$/.test(s) ? s : '';
-};
-const digits = (v: unknown) => field(v, 20).replace(/[^\d+]/g, '');
 
 @Controller('api/pushro')
 export class PushroController {
@@ -368,63 +290,29 @@ export class PushroController {
   login(@Req() req: Request, @Body() body: { code?: string }) {
     const ip = req.ip ?? '';
     const a = attempts.get(ip);
-    if (a && a.n >= 8 && a.until > Date.now()) throw new BadRequestException('Bahut baar galat code. 15 minute baad try karein.');
+    if (a && a.n >= 8 && a.until > Date.now()) throw new BadRequestException('Too many wrong codes. Try again in 15 minutes.');
     const expected = process.env.PUSHRO_CODE?.trim() ?? '';
     const given = field(body?.code, 100);
     const ok = expected.length >= 6 && given.length === expected.length && timingSafeEqual(Buffer.from(given), Buffer.from(expected));
     if (!ok) {
       attempts.set(ip, { n: (a && a.until > Date.now() ? a.n : 0) + 1, until: Date.now() + 15 * 60_000 });
-      throw new BadRequestException(expected ? 'Code galat hai' : 'Studio is not set up yet (PUSHRO_CODE missing on the server)');
+      throw new BadRequestException(expected ? 'Wrong code' : 'Studio is not set up yet (PUSHRO_CODE missing on the server)');
     }
     attempts.delete(ip);
     return { token: this.jwt.sign({ sub: 0, role: 'pushro' }, { expiresIn: '60d' }) };
   }
 
-  @Get('site')
-  site() {
-    return this.pushro.site();
-  }
-
   @Get('me')
   @UseGuards(PushroGuard)
   me() {
-    return { site: this.pushro.site(), categories: CATEGORIES, tools: Object.fromEntries(Object.entries(TOOLS).map(([k, t]) => [k, t.label])), usedToday: this.pushro.usedToday(), dailyLimit: DAILY_LIMIT };
-  }
-
-  @Put('site')
-  @UseGuards(PushroGuard)
-  saveSite(@Body() b: Partial<Record<keyof PushroSite, unknown>>) {
-    const site: PushroSite = {
-      name: field(b.name, 60) || DEFAULT_SITE.name,
-      tagline: field(b.tagline, 120),
-      about: field(b.about, 600),
-      announce: field(b.announce, 140),
-      phone: digits(b.phone),
-      whatsapp: digits(b.whatsapp),
-      address: field(b.address, 250),
-      city: field(b.city, 60),
-      mapsLink: url(b.mapsLink),
-      hours: field(b.hours, 100),
-      instagram: field(b.instagram, 60).replace(/^@/, '').replace(/[^\w.]/g, ''),
-      googleReview: url(b.googleReview),
-      loyaltyLink: url(b.loyaltyLink),
-      reward: field(b.reward, 80),
-      rewardVisits: Math.min(20, Math.max(2, Math.round(Number(b.rewardVisits)) || 5)),
-      categories: (Array.isArray(b.categories) ? b.categories : []).filter((c): c is CategoryKey => typeof c === 'string' && c in CATEGORIES),
-      offers: (Array.isArray(b.offers) ? b.offers : [])
-        .slice(0, 6)
-        .map((o: Record<string, unknown>) => ({ title: field(o?.title, 60), price: field(o?.price, 30), note: field(o?.note, 120) }))
-        .filter((o) => o.title),
-      highlights: (Array.isArray(b.highlights) ? b.highlights : []).slice(0, 6).map((h) => field(h, 80)).filter(Boolean),
-    };
-    return this.pushro.saveSite(site);
+    return { shop: SHOP, tools: Object.fromEntries(Object.entries(TOOLS).map(([k, t]) => [k, t.label])), usedToday: this.pushro.usedToday(), dailyLimit: DAILY_LIMIT };
   }
 
   @Post('status')
   @HttpCode(200)
   @UseGuards(PushroGuard)
   status(@Body() b: { request?: string; offer?: string; product?: string; lang?: string; count?: number }) {
-    const lang = (b?.lang && b.lang in LANG ? b.lang : 'hinglish') as Lang;
+    const lang = (b?.lang && b.lang in LANG ? b.lang : 'english') as Lang;
     const product = field(b?.product, 20);
     return this.pushro.statuses({
       request: field(b?.request, 500),
@@ -441,7 +329,7 @@ export class PushroController {
   copy(@Body() b: { tool?: string; details?: string; lang?: string }) {
     const tool = String(b?.tool ?? '');
     if (!(tool in TOOLS)) throw new BadRequestException('Pick a tool');
-    const lang = (b?.lang && b.lang in LANG ? b.lang : 'hinglish') as Lang;
+    const lang = (b?.lang && b.lang in LANG ? b.lang : 'english') as Lang;
     return this.pushro.copy({ tool: tool as Tool, details: field(b?.details, 1500), lang });
   }
 }
