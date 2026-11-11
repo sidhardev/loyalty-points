@@ -4,3 +4,6 @@ dist-ssr/
 data/
 *.log
 .env
+
+# Pushro studio code, local copy only
+deploy/.pushro-code.txt

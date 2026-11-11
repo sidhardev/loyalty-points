@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#07070d" />
+<title>Pushro Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307070d'/%3E%3Cpath d='M22 14h14a12 12 0 0 1 0 24h-6v12h-8z' fill='%2322d3ee'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07070d; --panel: #10111a; --panel2: #171826; --line: #262838; --text: #f4f5fb; --muted: #9aa0b8;
+    --accent: #22d3ee; --accent2: #818cf8; --good: #34d399; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Poppins, system-ui, sans-serif; }
+  body { min-height: 100vh; padding-bottom: 90px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+  header.top { position: sticky; top: 0; z-index: 10; background: rgba(7,7,13,.85); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; }
+  .logo i { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: grid; place-items: center; font-style: normal; color: #07070d; font-weight: 900; }
+  .logo small { font-weight: 500; color: var(--muted); font-size: 12px; }
+  .grow { flex: 1; }
+  .usage { font-size: 12px; color: var(--muted); }
+  nav.tabs { display: flex; gap: 6px; padding: 14px 0 6px; overflow-x: auto; }
+  nav.tabs button { border: 1px solid var(--line); background: var(--panel); padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-weight: 600; font-size: 14px; color: var(--muted); }
+  nav.tabs button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px; }
+  h2 { font-size: 22px; margin: 18px 0 4px; letter-spacing: -.02em; }
+  p.lead { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; font-weight: 500; }
+  input[type=text], input[type=tel], input[type=url], input[type=password], select, textarea {
+    width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; outline: none; font-size: 15px;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  .row3 { display: grid; gap: 12px; grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 640px) { .row, .row3 { grid-template-columns: 1fr; } }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 700; cursor: pointer; background: var(--panel2); border: 1px solid var(--line); font-size: 14px; text-decoration: none; color: var(--text); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #06060c; border: 0; }
+  .btn.big { padding: 15px 22px; font-size: 16px; width: 100%; }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .chip.on { border-color: var(--accent); color: var(--accent); background: rgba(34,211,238,.08); }
+  .err { color: var(--bad); font-size: 14px; margin-top: 10px; min-height: 1em; }
+  .ok { color: var(--good); font-size: 14px; }
+  .hidden { display: none !important; }
+
+  /* Status studio */
+  .studio { display: grid; grid-template-columns: 360px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .studio { grid-template-columns: 1fr; } }
+  .designs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  .design { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+  .design canvas { width: 100%; aspect-ratio: 9/16; display: block; background: #000; }
+  .design .body { padding: 12px; display: grid; gap: 8px; }
+  .design .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .design details summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }
+  .design details input, .design details select { padding: 8px 10px; font-size: 13px; border-radius: 10px; margin-top: 6px; }
+  .caption { font-size: 13px; color: var(--muted); background: var(--panel2); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+  .empty { border: 1px dashed var(--line); border-radius: 20px; padding: 48px 20px; text-align: center; color: var(--muted); }
+  .photo { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .photo img { width: 54px; height: 54px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
+  .spin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(0,0,0,.25); border-top-color: #06060c; animation: s .8s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+
+  /* Copy tools */
+  .outs { display: grid; gap: 14px; margin-top: 16px; }
+  .out { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .out h4 { margin: 0 0 8px; font-size: 15px; }
+  .out pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: #dfe2f0; }
+  .out .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Site editor */
+  .offer-row { display: grid; grid-template-columns: 1.3fr .8fr 1.5fr auto; gap: 8px; margin-bottom: 8px; }
+  @media (max-width: 640px) { .offer-row { grid-template-columns: 1fr 1fr; } }
+  .x { background: transparent; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); cursor: pointer; padding: 0 12px; }
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: rgba(7,7,13,.92); backdrop-filter: blur(14px); border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: center; align-items: center; z-index: 20; }
+
+  /* Login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: radial-gradient(600px 400px at 50% 20%, rgba(34,211,238,.18), transparent), radial-gradient(500px 400px at 80% 90%, rgba(129,140,248,.18), transparent); }
+  .login .card { width: 100%; max-width: 380px; padding: 28px; }
+  .login h1 { font-size: 26px; margin: 18px 0 4px; letter-spacing: -.03em; }
+  @media (max-width: 640px) { .logo small, .logo br, .usage { display: none; } header.top .btn { padding: 9px 12px; } }
+  .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; z-index: 50; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<section id="login" class="login hidden">
+  <form class="card" id="loginForm">
+    <div class="logo"><i>P</i><span>Pushro Studio</span></div>
+    <h1>Namaste 👋</h1>
+    <p class="lead">Apna studio code daaliye. Ye code sirf shop owner ke paas hai.</p>
+    <label for="code">Studio code</label>
+    <input id="code" type="password" autocomplete="current-password" required />
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary big" style="margin-top:8px">Login</button>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header class="top"><div class="wrap">
+    <div class="logo"><i>P</i><div>Pushro Studio<br /><small>AI marketing for your shop</small></div></div>
+    <div class="grow"></div>
+    <span class="usage" id="usage"></span>
+    <a class="btn" href="/" target="_blank" rel="noopener">Website ↗</a>
+  </div></header>
+
+  <div class="wrap">
+    <nav class="tabs">
+      <button data-tab="status" class="on">📱 Status Maker</button>
+      <button data-tab="copy">✍️ Marketing Tools</button>
+      <button data-tab="site">🌐 Meri Website</button>
+    </nav>
+
+    <!-- STATUS -->
+    <section data-pane="status">
+      <h2>WhatsApp Status Maker</h2>
+      <p class="lead">Batao kya promote karna hai: AI design banayega, aap edit karke download ya share kar do.</p>
+      <div class="studio">
+        <form class="card" id="statusForm">
+          <label for="sReq">Kya chahiye?</label>
+          <textarea id="sReq" placeholder="Jaise: Naye wireless earbuds aaye hain, students ke liye. Ya: Shaadi season, gift ke liye smartwatch."></textarea>
+          <div class="chips" id="sQuick" style="margin-top:8px"></div>
+          <label for="sOffer">Offer / price (optional)</label>
+          <input id="sOffer" type="text" placeholder="Jaise: ₹499 only · Flat 20% OFF · Cover + glass ₹299" />
+          <div class="row">
+            <div><label for="sProduct">Product</label>
+              <select id="sProduct">
+                <option value="any">AI choose kare</option><option value="earbuds">Earbuds</option><option value="headphones">Headphones</option>
+                <option value="phone">Phone</option><option value="cover">Cover / case</option><option value="glass">Tempered glass</option>
+                <option value="charger">Charger</option><option value="cable">Cable</option><option value="powerbank">Power bank</option>
+                <option value="watch">Smartwatch</option><option value="speaker">Speaker</option><option value="holder">Mobile holder</option><option value="memory">Memory card</option>
+              </select></div>
+            <div><label for="sLang">Bhasha</label>
+              <select id="sLang"><option value="hinglish">Hinglish</option><option value="hindi">हिंदी</option><option value="english">English</option></select></div>
+          </div>
+          <div class="row">
+            <div><label for="sCount">Kitne designs</label>
+              <select id="sCount"><option>2</option><option>3</option><option selected>4</option><option>6</option></select></div>
+            <div><label>Apni photo (optional)</label>
+              <input id="sPhoto" type="file" accept="image/*" class="hidden" />
+              <button type="button" class="btn" id="sPhotoBtn" style="width:100%">📷 Photo lagao</button></div>
+          </div>
+          <div class="photo hidden" id="sPhotoPrev"><img alt="" /><span style="font-size:13px;color:var(--muted)">Ye photo har design mein lagegi.</span><button type="button" class="x" id="sPhotoX" style="height:34px">Hatao</button></div>
+          <div class="err" id="sErr"></div>
+          <button class="btn primary big" id="sGo">✨ Status banao</button>
+        </form>
+        <div>
+          <div class="designs" id="designs"></div>
+          <div class="empty" id="designsEmpty">Yahan aapke status designs aayenge. Left mein batao kya chahiye aur <b>Status banao</b> dabao.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COPY -->
+    <section data-pane="copy" class="hidden">
+      <h2>Marketing Tools</h2>
+      <p class="lead">Broadcast message, Instagram caption, reel idea, Google post, review reply aur offer ideas: ek click mein.</p>
+      <form class="card" id="copyForm">
+        <label>Tool</label>
+        <div class="chips" id="cTools"></div>
+        <label for="cDetails" id="cDetailsLabel">Details</label>
+        <textarea id="cDetails" placeholder="Offer, product, occasion, ya jo bhi batana ho"></textarea>
+        <div class="row">
+          <div><label for="cLang">Bhasha</label>
+            <select id="cLang"><option value="hinglish">Hinglish</option><option value="hindi">हिंदी</option><option value="english">English</option></select></div>
+          <div style="display:flex;align-items:end"><button class="btn primary big" id="cGo">✨ Likho</button></div>
+        </div>
+        <div class="err" id="cErr"></div>
+      </form>
+      <div class="outs" id="outs"></div>
+    </section>
+
+    <!-- SITE -->
+    <section data-pane="site" class="hidden">
+      <h2>Meri Website</h2>
+      <p class="lead">Jo yahan likhoge, wahi aapki website pe dikhega. Khaali field website pe nahi dikhti.</p>
+      <form class="card" id="siteForm">
+        <div class="row">
+          <div><label for="fName">Shop ka naam</label><input id="fName" type="text" maxlength="60" /></div>
+          <div><label for="fTagline">Tagline</label><input id="fTagline" type="text" maxlength="120" /></div>
+        </div>
+        <label for="fAbout">Shop ke baare mein</label><textarea id="fAbout" maxlength="600"></textarea>
+        <label for="fAnnounce">Top strip (is hafte ka offer)</label><input id="fAnnounce" type="text" maxlength="140" placeholder="Jaise: Diwali offer: cover + glass sirf ₹299" />
+        <div class="row">
+          <div><label for="fPhone">Phone</label><input id="fPhone" type="tel" placeholder="98XXXXXXXX" /></div>
+          <div><label for="fWhatsapp">WhatsApp number</label><input id="fWhatsapp" type="tel" placeholder="91 98XXXXXXXX" /></div>
+        </div>
+        <label for="fAddress">Address</label><input id="fAddress" type="text" maxlength="250" />
+        <div class="row3">
+          <div><label for="fCity">City / area</label><input id="fCity" type="text" maxlength="60" /></div>
+          <div><label for="fHours">Timing</label><input id="fHours" type="text" maxlength="100" placeholder="10 AM – 9 PM, roz" /></div>
+          <div><label for="fInstagram">Instagram username</label><input id="fInstagram" type="text" placeholder="pushro.digital" /></div>
+        </div>
+        <div class="row3">
+          <div><label for="fMaps">Google Maps link</label><input id="fMaps" type="url" placeholder="https://maps.app.goo.gl/…" /></div>
+          <div><label for="fReview">Google review link</label><input id="fReview" type="url" placeholder="https://g.page/r/…" /></div>
+          <div><label for="fLoyalty">Regularhood card link</label><input id="fLoyalty" type="url" placeholder="https://www.regularhood.in/…" /></div>
+        </div>
+        <div class="row">
+          <div><label for="fReward">Loyalty gift</label><input id="fReward" type="text" maxlength="80" placeholder="Ek tempered glass FREE" /></div>
+          <div><label for="fRewardVisits">Kitne visit pe</label><input id="fRewardVisits" type="text" inputmode="numeric" maxlength="2" placeholder="5" /></div>
+        </div>
+        <label>Kya kya milta hai</label>
+        <div class="chips" id="fCats"></div>
+        <label>Offers (website pe cards ban ke dikhenge)</label>
+        <div id="fOffers"></div>
+        <button type="button" class="btn" id="fAddOffer">+ Offer jodo</button>
+        <label>Shop ki khaas baatein (max 6)</label>
+        <div id="fHighlights"></div>
+        <button type="button" class="btn" id="fAddHl">+ Khaas baat jodo</button>
+      </form>
+      <div class="savebar hidden" id="saveBar"><span id="saveMsg" class="usage"></span><button class="btn primary" id="saveBtn">Website save karo</button><a class="btn" href="/" target="_blank" rel="noopener">Dekho ↗</a></div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+};
+let token = store.get('pushro_token');
+let me = null;
+let photo = null; // HTMLImageElement the owner picked
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api/pushro' + path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { logout(); throw new Error('Dobara login karein'); }
+  if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Kuch gadbad hui, dobara try karein');
+  return data;
+}
+
+function logout() { token = null; store.set('pushro_token', null); $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); }
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#loginErr').textContent = '';
+  try {
+    const { token: t } = await api('/login', { method: 'POST', body: { code: $('#code').value } });
+    token = t; store.set('pushro_token', t); boot();
+  } catch (err) { $('#loginErr').textContent = err.message; }
+});
+
+async function boot() {
+  if (!token) return logout();
+  try { me = await api('/me'); } catch { return; }
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  showUsage();
+  fillSite(me.site);
+  buildTools();
+  restoreDesigns();
+}
+function showUsage() { $('#usage').textContent = `Aaj ${me.usedToday}/${me.dailyLimit} AI use`; }
+
+// Tabs
+$$('nav.tabs button').forEach((b) => b.addEventListener('click', () => {
+  $$('nav.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  $$('[data-pane]').forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== b.dataset.tab));
+  $('#saveBar').classList.toggle('hidden', b.dataset.tab !== 'site');
+}));
+
+/* =====================================================================
+   STATUS RENDERER: draws a 1080×1920 status on a canvas
+   ===================================================================== */
+const W = 1080, H = 1920;
+const PAL = {
+  electric: { bg: ['#03040c', '#0a1440', '#062a4a'], glow: '#22d3ee', a: '#22d3ee', b: '#6366f1', text: '#ffffff', sub: '#b9c3ff', ink: '#03040c' },
+  sunset:   { bg: ['#1a0612', '#5b1235', '#ff6a3d'], glow: '#ff8a5b', a: '#ffd166', b: '#ff4d8d', text: '#ffffff', sub: '#ffe2d1', ink: '#2a0712' },
+  mint:     { bg: ['#021511', '#04382b', '#0d6b52'], glow: '#34d399', a: '#6ee7b7', b: '#22d3ee', text: '#ffffff', sub: '#c9fbe6', ink: '#021511' },
+  royal:    { bg: ['#0b0420', '#2e1065', '#6d28d9'], glow: '#c084fc', a: '#f0abfc', b: '#818cf8', text: '#ffffff', sub: '#e9d5ff', ink: '#14062e' },
+  mono:     { bg: ['#050505', '#141414', '#2a2a2a'], glow: '#ffffff', a: '#ffffff', b: '#9ca3af', text: '#ffffff', sub: '#c7c7c7', ink: '#050505' },
+  fire:     { bg: ['#1f0202', '#7f1d1d', '#dc2626'], glow: '#fb923c', a: '#facc15', b: '#fb923c', text: '#ffffff', sub: '#fde2c4', ink: '#1f0202' },
+  gold:     { bg: ['#070604', '#1a1308', '#3a2a0c'], glow: '#f5c451', a: '#f5c451', b: '#fde68a', text: '#fff8e7', sub: '#f3dfae', ink: '#120d03' },
+};
+
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function lin(ctx, x0, y0, x1, y1, stops) { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c)); return g; }
+function rad(ctx, x, y, r, stops) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c)); return g; }
+function alpha(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+// --- product drawings, in a box from -50..50, scaled by size/100 ---
+const DRAW = {
+  phone(c, p) {
+    rr(c, -27, -50, 54, 100, 10); c.fillStyle = lin(c, -27, -50, 27, 50, ['#2b2f3d', '#0d0f16']); c.fill();
+    c.lineWidth = 1.4; c.strokeStyle = alpha(p.a, .8); c.stroke();
+    rr(c, -24, -47, 48, 94, 8); c.fillStyle = lin(c, -24, -47, 24, 47, [p.b, p.a]); c.fill();
+    c.save(); rr(c, -24, -47, 48, 94, 8); c.clip();
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.moveTo(-24, -47); c.lineTo(10, -47); c.lineTo(-24, 10); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.arc(10, 30, 30, 0, 7); c.fill();
+    c.restore();
+    rr(c, -8, -44, 16, 4.5, 3); c.fillStyle = '#05060a'; c.fill();
+  },
+  cover(c, p) {
+    rr(c, -28, -51, 56, 102, 11); c.fillStyle = lin(c, -28, -51, 28, 51, [p.a, p.b]); c.fill();
+    c.save(); rr(c, -28, -51, 56, 102, 11); c.clip();
+    c.strokeStyle = 'rgba(255,255,255,.10)'; c.lineWidth = 1;
+    for (let i = -80; i < 80; i += 6) { c.beginPath(); c.moveTo(i, -60); c.lineTo(i + 60, 60); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.moveTo(-28, -51); c.lineTo(0, -51); c.lineTo(-28, -10); c.closePath(); c.fill();
+    c.restore();
+    rr(c, -22, -45, 26, 28, 8); c.fillStyle = 'rgba(10,10,16,.85)'; c.fill(); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1; c.stroke();
+    [[-15, -38], [-3, -38], [-15, -25]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 4.6, 0, 7); c.fillStyle = '#05060a'; c.fill(); c.strokeStyle = '#3c4152'; c.lineWidth = 1.6; c.stroke(); c.beginPath(); c.arc(x - 1.2, y - 1.2, 1.3, 0, 7); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill(); });
+    c.beginPath(); c.arc(-3, -25, 1.8, 0, 7); c.fillStyle = '#fff6c8'; c.fill();
+  },
+  glass(c, p) {
+    c.save(); c.rotate(-0.12);
+    rr(c, -20, -46, 52, 96, 10); c.fillStyle = 'rgba(255,255,255,.06)'; c.fill(); c.strokeStyle = alpha(p.a, .5); c.lineWidth = 1.2; c.stroke();
+    rr(c, -30, -50, 52, 96, 10); c.fillStyle = lin(c, -30, -50, 22, 46, ['rgba(255,255,255,.35)', 'rgba(255,255,255,.08)', 'rgba(255,255,255,.22)']); c.fill(); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 1.4; c.stroke();
+    c.save(); rr(c, -30, -50, 52, 96, 10); c.clip();
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.moveTo(-30, -20); c.lineTo(10, -60); c.lineTo(22, -60); c.lineTo(-30, -5); c.fill();
+    c.beginPath(); c.moveTo(-30, 30); c.lineTo(30, -30); c.lineTo(30, -24); c.lineTo(-30, 36); c.fill();
+    c.restore();
+    c.fillStyle = '#fff'; c.font = '800 13px Poppins'; c.textAlign = 'center'; c.fillText('9H', -4, 34);
+    c.restore();
+  },
+  earbuds(c, p) {
+    rr(c, -34, -2, 68, 44, 20); c.fillStyle = lin(c, 0, -2, 0, 42, ['#ffffff', '#cfd4e0']); c.fill();
+    rr(c, -34, -2, 68, 14, { tl: 20, tr: 20, bl: 0, br: 0 }); c.fillStyle = 'rgba(0,0,0,.06)';
+    c.fillRect(-34, 10, 68, 1.6);
+    c.beginPath(); c.arc(0, 30, 2.4, 0, 7); c.fillStyle = p.a; c.fill();
+    const bud = (x, flip) => {
+      c.save(); c.translate(x, -22); c.scale(flip, 1); c.rotate(-0.25);
+      rr(c, -4.5, -2, 9, 34, 4.5); c.fillStyle = lin(c, -5, 0, 5, 0, ['#ffffff', '#d7dbe6']); c.fill();
+      c.beginPath(); c.ellipse(-2, -6, 12, 11, 0, 0, 7); c.fillStyle = lin(c, -12, -16, 10, 6, ['#ffffff', '#cdd2de']); c.fill();
+      c.beginPath(); c.ellipse(-8, -8, 5, 6, 0, 0, 7); c.fillStyle = '#2a2f3d'; c.fill();
+      c.beginPath(); c.arc(0, 29, 2, 0, 7); c.fillStyle = '#9aa1b2'; c.fill();
+      c.restore();
+    };
+    bud(-16, 1); bud(16, -1);
+  },
+  headphones(c, p) {
+    c.lineCap = 'round';
+    c.beginPath(); c.arc(0, 4, 38, Math.PI * 1.05, Math.PI * 1.95); c.lineWidth = 9; c.strokeStyle = '#1a1d27'; c.stroke();
+    c.beginPath(); c.arc(0, 4, 38, Math.PI * 1.12, Math.PI * 1.88); c.lineWidth = 4; c.strokeStyle = p.a; c.stroke();
+    [-1, 1].forEach((s) => {
+      rr(c, s * 38 - 13, -2, 26, 44, 12); c.fillStyle = lin(c, s * 38 - 13, 0, s * 38 + 13, 40, ['#2c3140', '#0d0f15']); c.fill();
+      rr(c, s * 38 - (s > 0 ? 13 : -5) , 2, 8, 36, 5); c.fillStyle = p.a; c.fill();
+      c.beginPath(); c.arc(s * 38 + s * 4, 20, 6, 0, 7); c.fillStyle = 'rgba(255,255,255,.12)'; c.fill();
+    });
+  },
+  charger(c, p) {
+    c.fillStyle = '#c8ccd6'; rr(c, -11, -50, 6, 14, 2); c.fill(); rr(c, 5, -50, 6, 14, 2); c.fill();
+    rr(c, -24, -38, 48, 54, 9); c.fillStyle = lin(c, -24, -38, 24, 16, ['#ffffff', '#d5d9e3']); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.05)'; rr(c, -24, 8, 48, 8, { tl: 0, tr: 0, bl: 9, br: 9 }); c.fill();
+    c.beginPath(); c.moveTo(3, -26); c.lineTo(-8, -8); c.lineTo(0, -8); c.lineTo(-4, 6); c.lineTo(9, -14); c.lineTo(1, -14); c.closePath(); c.fillStyle = p.b; c.fill();
+    c.beginPath(); c.moveTo(0, 16); c.bezierCurveTo(0, 40, 30, 30, 30, 50); c.lineWidth = 5; c.strokeStyle = '#e8ebf2'; c.lineCap = 'round'; c.stroke();
+  },
+  cable(c, p) {
+    c.lineCap = 'round'; c.lineWidth = 5.5; c.strokeStyle = '#eef0f6';
+    c.beginPath(); c.moveTo(-30, -40);
+    c.bezierCurveTo(-60, 0, 20, 10, -10, 30); c.bezierCurveTo(-40, 50, 40, 60, 30, 20); c.bezierCurveTo(22, -10, 50, -20, 34, -42); c.stroke();
+    c.lineWidth = 2; c.strokeStyle = alpha(p.a, .6); c.stroke();
+    const plug = (x, y, r) => { c.save(); c.translate(x, y); c.rotate(r); rr(c, -6, -18, 12, 20, 4); c.fillStyle = '#ffffff'; c.fill(); rr(c, -4, -27, 8, 10, 2.5); c.fillStyle = '#b8bdc9'; c.fill(); c.restore(); };
+    plug(-30, -40, -0.4); plug(34, -42, 0.5);
+  },
+  powerbank(c, p) {
+    rr(c, -25, -48, 50, 96, 12); c.fillStyle = lin(c, -25, -48, 25, 48, ['#2d3242', '#0c0e15']); c.fill();
+    c.strokeStyle = alpha(p.a, .7); c.lineWidth = 1.3; c.stroke();
+    rr(c, -8, -46, 16, 3, 1.5); c.fillStyle = '#05060a'; c.fill();
+    c.beginPath(); c.moveTo(4, -22); c.lineTo(-10, 2); c.lineTo(0, 2); c.lineTo(-5, 22); c.lineTo(11, -4); c.lineTo(1, -4); c.closePath(); c.fillStyle = p.a; c.fill();
+    for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(-9 + i * 6, 36, 2.2, 0, 7); c.fillStyle = i < 3 ? p.a : 'rgba(255,255,255,.2)'; c.fill(); }
+  },
+  watch(c, p) {
+    rr(c, -15, -52, 30, 30, 6); c.fillStyle = lin(c, 0, -52, 0, -22, ['#1c1f2a', '#2c3140']); c.fill();
+    rr(c, -15, 22, 30, 30, 6); c.fillStyle = lin(c, 0, 22, 0, 52, ['#2c3140', '#1c1f2a']); c.fill();
+    rr(c, -25, -30, 50, 60, 14); c.fillStyle = lin(c, -25, -30, 25, 30, ['#4a5063', '#161922']); c.fill();
+    rr(c, -21, -26, 42, 52, 11); c.fillStyle = '#04050a'; c.fill();
+    c.beginPath(); c.arc(0, 0, 16, -Math.PI / 2, Math.PI * 0.9); c.lineWidth = 3.5; c.strokeStyle = p.a; c.lineCap = 'round'; c.stroke();
+    c.beginPath(); c.arc(0, 0, 11, -Math.PI / 2, Math.PI * 0.4); c.lineWidth = 3; c.strokeStyle = p.b; c.stroke();
+    c.fillStyle = '#fff'; c.font = '700 9px Poppins'; c.textAlign = 'center'; c.fillText('10:09', 0, 3.5);
+    rr(c, 25, -8, 4, 12, 2); c.fillStyle = '#6b7186'; c.fill();
+  },
+  speaker(c, p) {
+    rr(c, -44, -26, 88, 52, 24); c.fillStyle = lin(c, 0, -26, 0, 26, ['#2e3344', '#0c0e15']); c.fill();
+    c.strokeStyle = alpha(p.a, .6); c.lineWidth = 1.2; c.stroke();
+    c.save(); rr(c, -40, -22, 80, 44, 20); c.clip();
+    c.fillStyle = 'rgba(255,255,255,.10)';
+    for (let x = -40; x < 42; x += 5) for (let y = -22; y < 24; y += 5) { c.beginPath(); c.arc(x, y, 1.1, 0, 7); c.fill(); }
+    c.restore();
+    [-20, 20].forEach((x) => { c.beginPath(); c.arc(x, 0, 13, 0, 7); c.fillStyle = 'rgba(0,0,0,.45)'; c.fill(); c.beginPath(); c.arc(x, 0, 6, 0, 7); c.fillStyle = alpha(p.a, .9); c.fill(); });
+    rr(c, -14, -34, 28, 6, 3); c.fillStyle = p.a; c.fill();
+  },
+  holder(c, p) {
+    c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, 50); c.lineTo(0, 20); c.lineWidth = 7; c.strokeStyle = '#2a2f3d'; c.stroke();
+    c.beginPath(); c.ellipse(0, 50, 18, 5, 0, 0, 7); c.fillStyle = '#1b1e28'; c.fill();
+    c.beginPath(); c.arc(0, 20, 6, 0, 7); c.fillStyle = p.a; c.fill();
+    c.save(); c.translate(0, -12); c.rotate(-0.05);
+    rr(c, -22, -40, 44, 70, 8); c.fillStyle = lin(c, -22, -40, 22, 30, [p.b, p.a]); c.fill();
+    c.strokeStyle = '#0d0f15'; c.lineWidth = 3; c.stroke();
+    rr(c, -30, -8, 8, 22, 3); c.fillStyle = '#2a2f3d'; c.fill(); rr(c, 22, -8, 8, 22, 3); c.fill();
+    c.restore();
+  },
+  memory(c, p) {
+    c.beginPath(); c.moveTo(-24, -40); c.lineTo(14, -40); c.lineTo(26, -28); c.lineTo(26, 40); c.lineTo(-24, 40); c.closePath();
+    c.fillStyle = lin(c, -24, -40, 26, 40, [p.a, p.b]); c.fill();
+    for (let i = 0; i < 5; i++) { rr(c, -18 + i * 7, -36, 4.5, 12, 1.5); c.fillStyle = '#f5c451'; c.fill(); }
+    rr(c, -18, -12, 38, 40, 6); c.fillStyle = 'rgba(0,0,0,.35)'; c.fill();
+    c.fillStyle = '#fff'; c.font = '800 15px Poppins'; c.textAlign = 'center'; c.fillText('SD', 1, 14);
+  },
+};
+
+function drawProduct(ctx, d, pal, cx, cy, size) {
+  // soft floor shadow
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.filter = 'blur(28px)';
+  ctx.beginPath(); ctx.ellipse(cx, cy + size * 0.52, size * 0.32, size * 0.05, 0, 0, 7); ctx.fill(); ctx.restore();
+  if (photo && d.usePhoto !== false) {
+    const iw = photo.naturalWidth, ih = photo.naturalHeight;
+    const s = Math.min(size * 0.95 / iw, size * 0.95 / ih);
+    const w = iw * s, h = ih * s;
+    ctx.save();
+    ctx.shadowColor = alpha(pal.glow, .55); ctx.shadowBlur = 80;
+    rr(ctx, cx - w / 2, cy - h / 2, w, h, 44); ctx.fillStyle = '#000'; ctx.fill();
+    ctx.shadowBlur = 0; ctx.clip(); ctx.drawImage(photo, cx - w / 2, cy - h / 2, w, h);
+    ctx.restore();
+    rr(ctx, cx - w / 2, cy - h / 2, w, h, 44); ctx.lineWidth = 4; ctx.strokeStyle = alpha('#ffffff', .35); ctx.stroke();
+    return;
+  }
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(size / 100, size / 100);
+  ctx.shadowColor = alpha(pal.glow, .5); ctx.shadowBlur = 30;
+  (DRAW[d.product] || DRAW.phone)(ctx, pal);
+  ctx.restore();
+}
+
+function wrap(ctx, text, maxW) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = []; let line = '';
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+/** Picks the largest font size (down to min) at which text fits in maxLines lines. */
+function fit(ctx, text, weight, start, min, maxW, maxLines) {
+  let size = start, lines;
+  for (; size >= min; size -= 4) {
+    ctx.font = `${weight} ${size}px Poppins`;
+    lines = wrap(ctx, text, maxW);
+    if (lines.length <= maxLines && lines.every((l) => ctx.measureText(l).width <= maxW)) break;
+  }
+  return { size: Math.max(size, min), lines };
+}
+function textBlock(ctx, text, o) {
+  const { size, lines } = fit(ctx, text, o.weight || 800, o.size, o.min || 40, o.maxW, o.maxLines || 3);
+  ctx.font = `${o.weight || 800} ${size}px Poppins`; ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'alphabetic';
+  const lh = size * (o.lh || 1.1);
+  lines.forEach((l, i) => {
+    const y = o.y + size + i * lh;
+    if (o.gradient) ctx.fillStyle = lin(ctx, o.x - o.maxW / 2, y - size, o.x + o.maxW / 2, y, o.gradient); else ctx.fillStyle = o.color;
+    if (o.shadow) { ctx.shadowColor = o.shadow; ctx.shadowBlur = 30; }
+    ctx.fillText(l, o.x, y); ctx.shadowBlur = 0;
+  });
+  return o.y + size + (lines.length - 1) * lh + size * 0.3;
+}
+function pill(ctx, label, x, y, o) {
+  if (!label) return y;
+  ctx.font = `${o.weight || 700} ${o.size || 34}px Poppins`;
+  const w = ctx.measureText(label).width + (o.padX || 36) * 2, h = (o.size || 34) * 1.9;
+  const left = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+  rr(ctx, left, y, w, h, h / 2);
+  if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
+  if (o.stroke) { ctx.lineWidth = 3; ctx.strokeStyle = o.stroke; ctx.stroke(); }
+  ctx.fillStyle = o.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, left + w / 2, y + h / 2 + 2); ctx.textBaseline = 'alphabetic';
+  return y + h;
+}
+function burst(ctx, label, cx, cy, r, pal, rot = -0.2) {
+  if (!label) return;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+  ctx.beginPath();
+  const n = 18;
+  for (let i = 0; i <= n * 2; i++) { const a = (i / (n * 2)) * Math.PI * 2; const rr2 = i % 2 ? r * 0.88 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+  ctx.closePath(); ctx.shadowColor = alpha(pal.a, .6); ctx.shadowBlur = 40; ctx.fillStyle = lin(ctx, -r, -r, r, r, [pal.a, pal.b]); ctx.fill(); ctx.shadowBlur = 0;
+  textBlock(ctx, label, { x: 0, y: -r * 0.62, size: r * 0.42, min: 26, maxW: r * 1.45, maxLines: 3, color: pal.ink, weight: 900, lh: 1.02 });
+  ctx.restore();
+}
+function background(ctx, pal, d) {
+  ctx.fillStyle = lin(ctx, 0, 0, 0, H, pal.bg); ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = rad(ctx, W * 0.85, H * 0.15, 700, [alpha(pal.b, .35), alpha(pal.b, 0)]); ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = rad(ctx, W * 0.1, H * 0.85, 700, [alpha(pal.glow, .22), alpha(pal.glow, 0)]); ctx.fillRect(0, 0, W, H);
+  // fine grid
+  ctx.save(); ctx.globalAlpha = 0.06; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y <= H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.restore();
+  // grain
+  const seed = (d.headline || '').length;
+  ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.035)';
+  for (let i = 0; i < 900; i++) { const x = (Math.sin(i * 12.9898 + seed) * 43758.5453 % 1 + 1) % 1 * W; const y = (Math.sin(i * 78.233 + seed) * 12543.123 % 1 + 1) % 1 * H; ctx.fillRect(x, y, 2, 2); }
+  ctx.restore();
+}
+function glowRing(ctx, pal, cx, cy, r) {
+  ctx.fillStyle = rad(ctx, cx, cy, r * 1.25, [alpha(pal.glow, .55), alpha(pal.glow, .12), alpha(pal.glow, 0)]);
+  ctx.fillRect(cx - r * 1.4, cy - r * 1.4, r * 2.8, r * 2.8);
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.lineWidth = 4; ctx.strokeStyle = alpha(pal.a, .55); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.78, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = alpha('#ffffff', .15); ctx.stroke();
+  ctx.save(); ctx.setLineDash([4, 18]); ctx.beginPath(); ctx.arc(cx, cy, r * 1.15, 0, 7); ctx.lineWidth = 3; ctx.strokeStyle = alpha(pal.a, .4); ctx.stroke(); ctx.restore();
+}
+function brandTop(ctx, pal, align = 'center') {
+  const name = (me && me.site.name) || 'Pushro Digital Hub';
+  const x = align === 'left' ? 80 : W / 2;
+  ctx.font = '800 38px Poppins';
+  const w = ctx.measureText(name).width;
+  const left = align === 'left' ? x : x - (w + 70) / 2;
+  ctx.beginPath(); ctx.arc(left + 22, 128, 18, 0, 7); ctx.fillStyle = lin(ctx, left, 110, left + 44, 146, [pal.a, pal.b]); ctx.fill();
+  ctx.fillStyle = pal.text; ctx.textAlign = 'left'; ctx.fillText(name, left + 58, 142);
+}
+function footer(ctx, pal) {
+  const s = (me && me.site) || {};
+  const bits = [s.phone || s.whatsapp ? `Call / WhatsApp: ${s.phone || s.whatsapp}` : '', s.address || s.city || ''].filter(Boolean);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, H - 200, W, 200);
+  ctx.fillStyle = lin(ctx, 0, 0, W, 0, [alpha(pal.a, 0), pal.a, alpha(pal.a, 0)]); ctx.fillRect(0, H - 200, W, 3);
+  ctx.textAlign = 'center'; ctx.fillStyle = pal.text; ctx.font = '700 40px Poppins';
+  ctx.fillText(s.name || 'Pushro Digital Hub', W / 2, H - 125);
+  ctx.font = '500 30px Poppins'; ctx.fillStyle = pal.sub;
+  const line = bits.join('  •  ') || 'Mobile accessories ka smart store';
+  const { lines } = fit(ctx, line, 500, 30, 22, W - 120, 2);
+  lines.slice(0, 2).forEach((l, i) => ctx.fillText(l, W / 2, H - 75 + i * 36));
+}
+
+/** Subline + button stacked just above the footer. Returns the y where this block starts. */
+function bottom(ctx, d, pal, o) {
+  const pillSize = o.pillSize || 40, pillY = H - 236 - pillSize * 1.9;
+  const maxW = o.maxW || W - 160;
+  let top = pillY;
+  if (d.subline) {
+    const { size, lines } = fit(ctx, d.subline, o.subWeight || 500, o.subSize || 44, 28, maxW, 2);
+    const h = size + (lines.length - 1) * size * 1.3 + size * 0.3;
+    top = pillY - 28 - h;
+    textBlock(ctx, d.subline, { x: o.x, y: top, size, min: size, maxW, maxLines: 2, color: pal.sub, weight: o.subWeight || 500, lh: 1.3, align: o.align });
+  }
+  pill(ctx, d.cta, o.x, pillY, { ...o.pill, size: pillSize, align: o.align });
+  return top - 30;
+}
+
+const TEMPLATE = {
+  spotlight(ctx, d, pal) {
+    background(ctx, pal, d); brandTop(ctx, pal);
+    let y = 230;
+    y = pill(ctx, d.badge && d.badge.toUpperCase(), W / 2, y, { fill: alpha(pal.a, .14), stroke: alpha(pal.a, .7), color: pal.a, size: 30 }) + 28;
+    y = textBlock(ctx, d.headline, { x: W / 2, y, size: 132, min: 64, maxW: W - 140, maxLines: 3, gradient: [pal.text, pal.sub], weight: 900, lh: 1.04 });
+    const top = bottom(ctx, d, pal, { x: W / 2, subSize: 46, pill: { fill: lin(ctx, 0, 0, W, 0, [pal.a, pal.b]), color: pal.ink, weight: 800, padX: 56 } });
+    const room = top - y, cy = y + room / 2, r = Math.min(300, room * 0.42);
+    glowRing(ctx, pal, W / 2, cy, r);
+    drawProduct(ctx, d, pal, W / 2, cy, r * 1.73);
+    burst(ctx, d.offer, W - 210, cy - r * 0.8, 150, pal);
+    footer(ctx, pal);
+  },
+  sale(ctx, d, pal) {
+    background(ctx, pal, d);
+    ctx.save(); ctx.globalAlpha = .12; ctx.fillStyle = pal.a;
+    for (let i = -H; i < W + H; i += 140) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + 60, 0); ctx.lineTo(i + 60 - H * .5, H); ctx.lineTo(i - H * .5, H); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    brandTop(ctx, pal, 'left');
+    let y = 220;
+    y = pill(ctx, (d.badge || 'OFFER').toUpperCase(), 80, y, { fill: pal.a, color: pal.ink, size: 34, weight: 900, align: 'left' }) + 30;
+    if (d.offer) y = textBlock(ctx, d.offer, { x: W / 2, y, size: 210, min: 90, maxW: W - 120, maxLines: 2, gradient: [pal.a, pal.b], weight: 900, lh: 0.98, shadow: alpha(pal.a, .5) });
+    y = textBlock(ctx, d.headline, { x: W / 2, y: y + 10, size: d.offer ? 96 : 150, min: 56, maxW: W - 140, maxLines: 3, color: pal.text, weight: 900, lh: 1.05 });
+    const top = bottom(ctx, d, pal, { x: W / 2, subWeight: 600, pillSize: 42, pill: { fill: pal.text, color: pal.ink, weight: 800, padX: 60 } });
+    const room = top - y, cy = y + room / 2, r = Math.min(260, room * 0.42);
+    ctx.save(); ctx.translate(W / 2, cy); ctx.rotate(-0.06); ctx.translate(-W / 2, -cy);
+    glowRing(ctx, pal, W / 2, cy, r); drawProduct(ctx, d, pal, W / 2, cy, r * 1.8); ctx.restore();
+    footer(ctx, pal);
+  },
+  minimal(ctx, d, pal) {
+    ctx.fillStyle = lin(ctx, 0, 0, 0, H, [pal.bg[0], pal.bg[1]]); ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = rad(ctx, W / 2, 760, 620, [alpha(pal.glow, .25), alpha(pal.glow, 0)]); ctx.fillRect(0, 0, W, H);
+    brandTop(ctx, pal, 'left');
+    ctx.strokeStyle = alpha(pal.text, .15); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(80, 190); ctx.lineTo(W - 80, 190); ctx.stroke();
+    drawProduct(ctx, d, pal, W / 2, 780, 560);
+    let y = 1150;
+    if (d.badge) { ctx.font = '600 30px Poppins'; ctx.fillStyle = pal.a; ctx.textAlign = 'left'; ctx.fillText(d.badge.toUpperCase().split('').join(' '), 80, y + 30); y += 60; }
+    y = textBlock(ctx, d.headline, { x: 80, y, size: 104, min: 52, maxW: W - 160, maxLines: 2, color: pal.text, weight: 700, lh: 1.08, align: 'left' });
+    y = textBlock(ctx, d.subline, { x: 80, y: y + 4, size: 40, min: 28, maxW: W - 200, maxLines: 2, color: pal.sub, weight: 400, lh: 1.35, align: 'left' });
+    const by = Math.min(y + 30, H - 330);
+    if (d.offer) { ctx.font = '800 54px Poppins'; ctx.textAlign = 'left'; ctx.fillStyle = pal.a; ctx.fillText(d.offer, 80, by + 52); }
+    pill(ctx, d.cta + '  →', d.offer ? W - 80 - 0 : 80, by - 4, { stroke: alpha(pal.text, .5), color: pal.text, size: 32, weight: 600, align: d.offer ? 'right' : 'left' }) ;
+    footer(ctx, pal);
+  },
+  split(ctx, d, pal) {
+    ctx.fillStyle = pal.bg[0]; ctx.fillRect(0, 0, W, H);
+    ctx.save(); rr(ctx, 0, -80, W, 1180, 90); ctx.clip();
+    ctx.fillStyle = lin(ctx, 0, 0, W, 1100, [pal.b, pal.bg[2], pal.a]); ctx.fillRect(0, 0, W, 1100);
+    ctx.globalAlpha = .12; ctx.fillStyle = '#fff';
+    for (let r = 120; r < 1400; r += 120) { ctx.beginPath(); ctx.arc(W * .8, 200, r, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); }
+    ctx.restore();
+    brandTop(ctx, { ...pal, text: '#ffffff' }, 'left');
+    drawProduct(ctx, d, { ...pal, glow: '#ffffff' }, W / 2, 640, 600);
+    burst(ctx, d.offer, W - 200, 960, 140, { ...pal, a: '#ffffff', b: '#ffffff', ink: pal.ink }, 0.15);
+    let y = 1150;
+    if (d.badge) y = pill(ctx, d.badge.toUpperCase(), 80, y, { fill: alpha(pal.a, .15), color: pal.a, size: 28, align: 'left' }) + 20;
+    y = textBlock(ctx, d.headline, { x: 80, y, size: 100, min: 52, maxW: W - 160, maxLines: 2, color: pal.text, weight: 900, lh: 1.04, align: 'left' });
+    y = textBlock(ctx, d.subline, { x: 80, y: y + 6, size: 40, min: 28, maxW: W - 180, maxLines: 2, color: pal.sub, weight: 500, lh: 1.3, align: 'left' });
+    pill(ctx, d.cta, 80, Math.min(y + 24, H - 330), { fill: lin(ctx, 0, 0, W, 0, [pal.a, pal.b]), color: pal.ink, size: 38, weight: 800, padX: 50, align: 'left' });
+    footer(ctx, pal);
+  },
+  festive(ctx, d, pal) {
+    background(ctx, pal, d);
+    // string of lights
+    for (let k = 0; k < 2; k++) {
+      ctx.beginPath(); ctx.moveTo(-20, 60 + k * 70);
+      ctx.quadraticCurveTo(W / 2, 260 + k * 90, W + 20, 60 + k * 70); ctx.lineWidth = 2; ctx.strokeStyle = alpha(pal.b, .4); ctx.stroke();
+      for (let i = 0; i <= 14; i++) {
+        const t = i / 14, x = (1 - t) * (1 - t) * -20 + 2 * (1 - t) * t * (W / 2) + t * t * (W + 20);
+        const y = (1 - t) * (1 - t) * (60 + k * 70) + 2 * (1 - t) * t * (260 + k * 90) + t * t * (60 + k * 70);
+        ctx.fillStyle = rad(ctx, x, y + 12, 34, [alpha(i % 2 ? pal.a : pal.b, .9), alpha(pal.a, 0)]); ctx.fillRect(x - 34, y - 22, 68, 68);
+        ctx.beginPath(); ctx.arc(x, y + 12, 7, 0, 7); ctx.fillStyle = '#fff8e0'; ctx.fill();
+      }
+    }
+    // sparkles
+    for (let i = 0; i < 40; i++) { const x = (i * 271) % W, y = 380 + ((i * 523) % 1300); const s = 3 + (i % 4) * 2; ctx.fillStyle = alpha(pal.a, .5 + (i % 3) * .15); ctx.beginPath(); ctx.moveTo(x, y - s * 2); ctx.lineTo(x + s * .5, y); ctx.lineTo(x, y + s * 2); ctx.lineTo(x - s * .5, y); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - s * 2, y); ctx.lineTo(x, y + s * .5); ctx.lineTo(x + s * 2, y); ctx.lineTo(x, y - s * .5); ctx.fill(); }
+    let y = 360;
+    y = pill(ctx, d.badge, W / 2, y, { stroke: pal.a, color: pal.a, size: 32 }) + 24;
+    y = textBlock(ctx, d.headline, { x: W / 2, y, size: 124, min: 60, maxW: W - 140, maxLines: 3, gradient: [pal.b, pal.a, pal.b], weight: 900, lh: 1.06, shadow: alpha(pal.a, .45) });
+    const top = bottom(ctx, d, pal, { x: W / 2, pill: { fill: lin(ctx, 0, 0, W, 0, [pal.a, pal.b]), color: pal.ink, weight: 800, padX: 56 } });
+    const room = top - y, cy = y + room / 2, r = Math.min(260, room * 0.42);
+    glowRing(ctx, pal, W / 2, cy, r); drawProduct(ctx, d, pal, W / 2, cy, r * 1.75);
+    burst(ctx, d.offer, 200, cy - r * 0.8, 135, pal, 0.2);
+    footer(ctx, pal);
+  },
+};
+
+function render(canvas, d) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  (TEMPLATE[d.template] || TEMPLATE.spotlight)(ctx, d, PAL[d.palette] || PAL.electric);
+}
+
+/* ---------- Status UI ---------- */
+let designs = [];
+const QUICK = ['Naya stock aa gaya', 'Combo offer: cover + glass', 'Fast charger ki zaroorat?', 'Shaadi season gift ideas', 'Student special earbuds', 'Weekend sale'];
+QUICK.forEach((q) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = q; b.onclick = () => { $('#sReq').value = q; }; $('#sQuick').append(b); });
+
+$('#sPhotoBtn').onclick = () => $('#sPhoto').click();
+$('#sPhoto').onchange = () => {
+  const f = $('#sPhoto').files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { photo = img; $('#sPhotoPrev img').src = img.src; $('#sPhotoPrev').classList.remove('hidden'); renderAll(); };
+  img.src = URL.createObjectURL(f);
+};
+$('#sPhotoX').onclick = () => { photo = null; $('#sPhoto').value = ''; $('#sPhotoPrev').classList.add('hidden'); renderAll(); };
+
+$('#statusForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#sGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Design ban rahe hain…'; $('#sErr').textContent = '';
+  try {
+    const out = await api('/status', { method: 'POST', body: { request: $('#sReq').value, offer: $('#sOffer').value, product: $('#sProduct').value, lang: $('#sLang').value, count: Number($('#sCount').value) } });
+    designs = out.concat(designs).slice(0, 24);
+    saveDesigns(); showDesigns(); me.usedToday++; showUsage();
+  } catch (err) { $('#sErr').textContent = err.message; }
+  btn.disabled = false; btn.textContent = '✨ Status banao';
+});
+
+function saveDesigns() { store.set('pushro_designs', JSON.stringify(designs)); }
+function restoreDesigns() { try { designs = JSON.parse(store.get('pushro_designs') || '[]'); } catch { designs = []; } showDesigns(); }
+function renderAll() { $$('.design').forEach((el, i) => designs[i] && render($('canvas', el), designs[i])); }
+
+function opt(values, current) { return values.map((v) => `<option ${v === current ? 'selected' : ''}>${v}</option>`).join(''); }
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+
+async function showDesigns() {
+  await Promise.all([400, 500, 600, 700, 800, 900].map((w) => document.fonts.load(`${w} 40px Poppins`, 'Aaअ').catch(() => {})));
+  const box = $('#designs'); box.innerHTML = '';
+  $('#designsEmpty').classList.toggle('hidden', designs.length > 0);
+  designs.forEach((d, i) => {
+    const el = document.createElement('div'); el.className = 'design';
+    el.innerHTML = `<canvas></canvas><div class="body">
+      <div class="actions"><button class="btn primary" data-a="dl">⬇ Download</button><button class="btn" data-a="share">📤 Share</button></div>
+      <div class="caption">${esc(d.caption)}</div>
+      <div class="actions"><button class="btn" data-a="cap">Caption copy</button><button class="btn" data-a="del">Hatao</button></div>
+      <details><summary>✏️ Edit text & style</summary>
+        <input data-k="headline" value="${esc(d.headline)}" placeholder="Headline" />
+        <input data-k="subline" value="${esc(d.subline)}" placeholder="Subline" />
+        <input data-k="offer" value="${esc(d.offer)}" placeholder="Offer (khaali = nahi dikhega)" />
+        <input data-k="badge" value="${esc(d.badge)}" placeholder="Badge" />
+        <input data-k="cta" value="${esc(d.cta)}" placeholder="Button text" />
+        <select data-k="template">${opt(['spotlight', 'sale', 'minimal', 'split', 'festive'], d.template)}</select>
+        <select data-k="palette">${opt(Object.keys(PAL), d.palette)}</select>
+        <select data-k="product">${opt(Object.keys(DRAW), d.product)}</select>
+      </details></div>`;
+    box.append(el);
+    const canvas = $('canvas', el); render(canvas, d);
+    $$('[data-k]', el).forEach((inp) => inp.addEventListener('input', () => { d[inp.dataset.k] = inp.value; render(canvas, d); saveDesigns(); }));
+    const blob = () => new Promise((r) => canvas.toBlob(r, 'image/png'));
+    const fname = () => `pushro-status-${Date.now()}.png`;
+    $('[data-a=dl]', el).onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = fname(); a.click(); };
+    $('[data-a=share]', el).onclick = async () => {
+      const file = new File([await blob()], fname(), { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: d.caption }); } catch {} }
+      else { toast('Is browser mein share nahi hota, Download karein'); }
+    };
+    $('[data-a=cap]', el).onclick = () => { navigator.clipboard.writeText(d.caption).then(() => toast('Caption copy ho gaya')); };
+    $('[data-a=del]', el).onclick = () => { designs.splice(i, 1); saveDesigns(); showDesigns(); };
+  });
+}
+
+/* ---------- Copy tools ---------- */
+let tool = 'broadcast';
+const HINTS = {
+  broadcast: 'Offer kya hai? Jaise: Cover + tempered glass sirf ₹299, sirf is Sunday tak',
+  instagram: 'Post kis baare mein hai? Jaise: naye magnetic covers aaye',
+  reel: 'Reel kis product ya offer pe? Jaise: 65W fast charger demo',
+  google: 'Kya batana hai? Jaise: sabhi brands ke covers aur glass available',
+  review: 'Customer ka review yahan paste karein (naam bhi ho to likh dein)',
+  ideas: 'Kuch khaas? Jaise: shaadi season, college khul rahe, naya iPhone launch',
+};
+function buildTools() {
+  const box = $('#cTools'); box.innerHTML = '';
+  Object.entries(me.tools).forEach(([k, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (k === tool ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { tool = k; $$('.chip', box).forEach((x) => x.classList.toggle('on', x === b)); $('#cDetails').placeholder = HINTS[k] || ''; };
+    box.append(b);
+  });
+  $('#cDetails').placeholder = HINTS[tool];
+}
+$('#copyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#cGo'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Likh raha hai…'; $('#cErr').textContent = '';
+  try {
+    const items = await api('/copy', { method: 'POST', body: { tool, details: $('#cDetails').value, lang: $('#cLang').value } });
+    me.usedToday++; showUsage();
+    const outs = $('#outs'); outs.innerHTML = '';
+    items.forEach((it) => {
+      const el = document.createElement('div'); el.className = 'out';
+      el.innerHTML = `<h4>${esc(it.title)}</h4><pre>${esc(it.text)}</pre><div class="actions"><button class="btn" data-a="copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(it.text)}">WhatsApp pe bhejo</a></div>`;
+      $('[data-a=copy]', el).onclick = () => navigator.clipboard.writeText(it.text).then(() => toast('Copy ho gaya'));
+      outs.append(el);
+    });
+  } catch (err) { $('#cErr').textContent = err.message; }
+  btn.disabled = false; btn.textContent = '✨ Likho';
+});
+
+/* ---------- Site editor ---------- */
+const F = { name: 'fName', tagline: 'fTagline', about: 'fAbout', announce: 'fAnnounce', phone: 'fPhone', whatsapp: 'fWhatsapp', address: 'fAddress', city: 'fCity', hours: 'fHours', instagram: 'fInstagram', mapsLink: 'fMaps', googleReview: 'fReview', loyaltyLink: 'fLoyalty', reward: 'fReward', rewardVisits: 'fRewardVisits' };
+let cats = [];
+function offerRow(o = {}) {
+  const el = document.createElement('div'); el.className = 'offer-row';
+  el.innerHTML = `<input type="text" placeholder="Offer, jaise Cover + Glass combo" maxlength="60" data-o="title" value="${esc(o.title)}" /><input type="text" placeholder="₹299" maxlength="30" data-o="price" value="${esc(o.price)}" /><input type="text" placeholder="Chhota note" maxlength="120" data-o="note" value="${esc(o.note)}" /><button type="button" class="x">✕</button>`;
+  $('.x', el).onclick = () => el.remove();
+  $('#fOffers').append(el);
+}
+function hlRow(h = '') {
+  const el = document.createElement('div'); el.className = 'offer-row'; el.style.gridTemplateColumns = '1fr auto';
+  el.innerHTML = `<input type="text" maxlength="80" placeholder="Jaise: Glass fitting free" value="${esc(h)}" /><button type="button" class="x">✕</button>`;
+  $('.x', el).onclick = () => el.remove();
+  $('#fHighlights').append(el);
+}
+function fillSite(s) {
+  Object.entries(F).forEach(([k, id]) => { $('#' + id).value = s[k] || ''; });
+  cats = [...s.categories];
+  const box = $('#fCats'); box.innerHTML = '';
+  Object.entries(me.categories).forEach(([k, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (cats.includes(k) ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { cats = cats.includes(k) ? cats.filter((c) => c !== k) : [...cats, k]; b.classList.toggle('on'); };
+    box.append(b);
+  });
+  $('#fOffers').innerHTML = ''; s.offers.forEach(offerRow);
+  $('#fHighlights').innerHTML = ''; s.highlights.forEach(hlRow);
+}
+$('#fAddOffer').onclick = () => { if ($$('#fOffers .offer-row').length < 6) offerRow(); };
+$('#fAddHl').onclick = () => { if ($$('#fHighlights .offer-row').length < 6) hlRow(); };
+$('#siteForm').addEventListener('submit', (e) => e.preventDefault());
+$('#saveBtn').onclick = async () => {
+  const body = Object.fromEntries(Object.entries(F).map(([k, id]) => [k, $('#' + id).value]));
+  body.categories = cats;
+  body.offers = $$('#fOffers .offer-row').map((r) => ({ title: $('[data-o=title]', r).value, price: $('[data-o=price]', r).value, note: $('[data-o=note]', r).value }));
+  body.highlights = $$('#fHighlights input').map((i) => i.value);
+  const btn = $('#saveBtn'); btn.disabled = true; $('#saveMsg').textContent = '';
+  try { me.site = await api('/site', { method: 'PUT', body }); fillSite(me.site); toast('Website update ho gayi ✓'); renderAll(); }
+  catch (err) { $('#saveMsg').textContent = err.message; }
+  btn.disabled = false;
+};
+
+boot();
+</script>
+</body>
+</html>

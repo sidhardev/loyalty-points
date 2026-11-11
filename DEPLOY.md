@@ -154,3 +154,17 @@ project's secret key (Project Settings → API Keys; the legacy `service_role` k
 doesn't). The private `whatsapp-media` bucket is made on the first file (`SUPABASE_BUCKET` changes the name). Files up to
 50 MB are kept (the free plan's limit); without Supabase they still arrive, show as "not saved yet", and are copied when
 the chat is next opened, as long as Meta still has them.
+
+
+## Pushro Digital Hub (pushro.regularhood.in)
+
+Pushro's own website and AI studio run in the same app (server/src/pushro.ts, pushro-site.ts, web/public/pushro/studio.html).
+
+1. DNS: add an `A` record `pushro` → this server's IP (the same server as the API, not Vercel). Caddy gets the HTTPS certificate by itself (deploy/Caddyfile).
+2. Studio login: add a code of at least 6 characters to `deploy/.env` and restart:
+   ```bash
+   echo "PUSHRO_CODE=choose-a-long-code" >> deploy/.env
+   ```
+3. AI: the studio uses Claude Haiku 5.5 with the Anthropic key from Admin → Playbooks (or `ANTHROPIC_API_KEY`). It stops at 150 generations a day; usage is in `ai_usage` with purpose `pushro_*`.
+
+The owner opens https://pushro.regularhood.in/studio, logs in with the code, and fills in Meri Website: the site shows only what is filled in there.

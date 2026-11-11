@@ -23,6 +23,8 @@ import { StatusAdminController } from './status';
 import { Storage } from './storage';
 import { LeadsAdminController, LeadsService } from './leads';
 import { PlaybookAdminController, PlaybookService } from './playbook';
+import { PushroController, PushroGuard, PushroService } from './pushro';
+import { PUSHRO_ORIGIN, renderPushroSite } from './pushro-site';
 import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
@@ -32,8 +34,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, Storage, WhatsApp, WaBot],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PushroController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PushroService, PushroGuard, Storage, WhatsApp, WaBot],
 })
 class AppModule {}
 
@@ -54,6 +56,30 @@ async function bootstrap() {
 
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');
+
+  // Pushro Digital Hub's own website (pushro-site.ts) and studio (web/public/pushro/studio.html), on pushro.regularhood.in.
+  // The same pages are at /pushro and /pushro/studio on any host, for previews.
+  const pushro = app.get(PushroService);
+  const studio = [join(web, 'pushro', 'studio.html'), join(__dirname, '..', '..', 'web', 'public', 'pushro', 'studio.html')].find((f) => existsSync(f));
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    const onPushro = /^pushro\./.test(req.hostname);
+    if ((onPushro && req.path === '/') || req.path === '/pushro') {
+      return res.type('html').set('Cache-Control', 'no-cache').send(renderPushroSite(pushro.site(), onPushro ? `${req.protocol}://${req.hostname}` : PUSHRO_ORIGIN));
+    }
+    if ((onPushro && req.path === '/studio') || req.path === '/pushro/studio') {
+      return studio ? res.type('html').set('Cache-Control', 'no-cache').send(readFileSync(studio, 'utf8')) : next();
+    }
+    if (!onPushro) return next();
+    if (req.path === '/robots.txt') return res.type('text').send(`User-agent: *
+Disallow: /studio
+Sitemap: ${PUSHRO_ORIGIN}/sitemap.xml
+`);
+    if (req.path === '/sitemap.xml') return res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${PUSHRO_ORIGIN}/</loc></url></urlset>`);
+    // Any other page on the shop's domain goes to its homepage (files like favicons still load).
+    if (!req.path.includes('.')) return res.redirect(302, '/');
+    next();
+  });
   if (existsSync(web)) {
     app.useStaticAssets(web, { index: false });
     // The homepage is prerendered (index.html); every other page starts from the empty app page (shell.html).

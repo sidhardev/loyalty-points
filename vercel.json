@@ -15,6 +15,8 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://api-habiturn.sidhar.me/api/:path*" },
     { "source": "/sitemap.xml", "destination": "https://api-habiturn.sidhar.me/sitemap.xml" },
+    { "source": "/pushro", "destination": "https://api-habiturn.sidhar.me/pushro" },
+    { "source": "/pushro/studio", "destination": "https://api-habiturn.sidhar.me/pushro/studio" },
     { "source": "/for", "destination": "https://api-habiturn.sidhar.me/for" },
     { "source": "/for/:path*", "destination": "https://api-habiturn.sidhar.me/for/:path*" },
     { "source": "/hi/for", "destination": "https://api-habiturn.sidhar.me/hi/for" },
