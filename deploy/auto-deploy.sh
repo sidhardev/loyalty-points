@@ -38,7 +38,8 @@ short="${new:0:7}"
 changed=$(git diff --name-only "$old" "$new")
 git reset --hard --quiet "$new"
 
-if ! grep -qE '^(server/|Dockerfile|\.dockerignore|deploy/|package(-lock)?\.json)' <<<"$changed"; then
+# web/public/pushro/ is served by this server (pushro.regularhood.in), not by Vercel, so it needs a rebuild too.
+if ! grep -qE '^(server/|web/public/pushro/|Dockerfile|\.dockerignore|deploy/|package(-lock)?\.json)' <<<"$changed"; then
   log "$short: no backend changes, checkout updated"
   exit 0
 fi
