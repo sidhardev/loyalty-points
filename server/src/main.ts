@@ -23,7 +23,7 @@ import { StatusAdminController } from './status';
 import { Storage } from './storage';
 import { LeadsAdminController, LeadsService } from './leads';
 import { PlaybookAdminController, PlaybookService } from './playbook';
-import { PushroController, PushroGuard, PushroService } from './pushro';
+import { PushroAdminController, PushroController, PushroGuard, PushroService } from './pushro';
 import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
@@ -33,7 +33,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PushroController, WhatsAppAdminController, WhatsAppWebhookController],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PushroController, PushroAdminController, WhatsAppAdminController, WhatsAppWebhookController],
   providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PushroService, PushroGuard, Storage, WhatsApp, WaBot],
 })
 class AppModule {}

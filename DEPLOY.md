@@ -161,10 +161,10 @@ the chat is next opened, as long as Meta still has them.
 Pushro's website is a static page (web/public/pushro/index.html; edit the file to change it). The AI studio is server/src/pushro.ts with web/public/pushro/studio.html.
 
 1. DNS: add an `A` record `pushro` → this server's IP (the same server as the API, not Vercel). Caddy gets the HTTPS certificate by itself (deploy/Caddyfile).
-2. Studio login: add a code of at least 6 characters to `deploy/.env` and restart:
+2. Studio login: set the code in Admin → Pushro (or, as a fallback, put PUSHRO_CODE in `deploy/.env`):
    ```bash
    echo "PUSHRO_CODE=choose-a-long-code" >> deploy/.env
    ```
-3. AI: the studio uses Claude Haiku 5.5 with the Anthropic key from Admin → Playbooks (or `ANTHROPIC_API_KEY`). It stops at 150 generations a day; usage is in `ai_usage` with purpose `pushro_*`.
+3. AI: the studio uses Claude Haiku 5.5 with the Anthropic key from Admin → Playbooks (or `ANTHROPIC_API_KEY`). Admin → Pushro turns it on or off, sets the daily limit (default 10 calls) and shows usage and cost (`ai_usage`, purpose `pushro_*`).
 
 The owner opens https://pushro.regularhood.in/studio and logs in with the code to make statuses and marketing text.

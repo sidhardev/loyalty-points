@@ -48,6 +48,7 @@ import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
 import { PartnersPage } from './AdminPartners';
 import { PlaybooksPage } from './AdminPlaybooks';
+import { PushroPage } from './AdminPushro';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageEvent, type PageView, type VisitShop } from './Visits';
 import { Sub, SubtabContext } from './AdminSub';
@@ -1461,6 +1462,15 @@ const NAV: { group: string; items: NavItem[] }[] = [
           ['key', 'API key'],
         ],
       },
+      {
+        path: '/pushro',
+        label: 'Pushro',
+        icon: Store,
+        subs: [
+          ['settings', 'Limit & login'],
+          ['usage', 'AI calls'],
+        ],
+      },
     ],
   },
 ];
@@ -1627,6 +1637,8 @@ export function AdminApp() {
     <PartnersPage api={adminApi} />
   ) : hash.startsWith('/playbooks') ? (
     <PlaybooksPage api={adminApi} />
+  ) : hash.startsWith('/pushro') ? (
+    <PushroPage api={adminApi} />
   ) : hash.startsWith('/status') ? (
     <StatusPage api={adminApi} />
   ) : hash.startsWith('/visits') ? (
