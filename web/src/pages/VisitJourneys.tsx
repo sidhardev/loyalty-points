@@ -101,6 +101,8 @@ export type Journey = {
   time: number;
   clicks: number;
   fields: string[];
+  /** What they typed, field by field (the latest text), in the order they typed it. */
+  typed: { field: string; text: string; ts: string; view: string }[];
   maxScroll: number;
   exit: PageView;
   exitSection: string;
@@ -142,7 +144,8 @@ export function buildJourneys(views: PageView[], events: PageEvent[], everyView:
       const end = Math.max(...sorted.map((v) => Date.parse(v.ts) + (v.dur ?? 0)), ...evs.map((e) => Date.parse(e.ts)));
       const exit = sorted[sorted.length - 1];
       const clicks = evs.filter((e) => e.kind === 'click');
-      const fields = [...new Set(evs.filter((e) => e.kind === 'form').map((e) => e.name))];
+      const typedEvs = evs.filter((e) => e.kind === 'typed' && e.text).sort((a, b) => a.ts.localeCompare(b.ts));
+      const fields = [...new Set(evs.filter((e) => e.kind === 'form' || e.kind === 'typed').map((e) => e.name))];
       const time = sorted.reduce((a, v) => a + (v.dur ?? 0), 0);
       const outcome: Outcome = evs.some((e) => e.kind === 'signup')
         ? 'signup'
@@ -165,6 +168,7 @@ export function buildJourneys(views: PageView[], events: PageEvent[], everyView:
         time,
         clicks: clicks.length,
         fields,
+        typed: typedEvs.map((e) => ({ field: e.name, text: e.text!, ts: e.ts, view: e.view })),
         maxScroll: Math.max(0, ...sorted.map((v) => v.scroll ?? 0)),
         exit,
         exitSection: exit.exit ?? '',
@@ -293,6 +297,12 @@ export function Journeys({ views, allViews, events, shops, onOpen }: { views: Pa
               </span>
               <span className="j-end">
                 <span className={`badge ${OUTCOME[j.outcome].className}`}>{OUTCOME[j.outcome].label}</span>
+                {j.typed.length > 0 && (
+                  <span className="j-typed-peek small" title={j.typed.map((t) => `${t.field}: ${t.text}`).join('\n')}>
+                    <Keyboard size={12} /> {j.typed.slice(0, 2).map((t) => t.text).join(' · ')}
+                    {j.typed.length > 2 && ` +${j.typed.length - 2}`}
+                  </span>
+                )}
                 {j.exitSection && <span className="muted small">left at {sectionLabel(j.exitSection)}</span>}
               </span>
             </button>
@@ -315,6 +325,7 @@ function describe(e: PageEvent): { icon: ReactNode; text: ReactNode; sub?: strin
   if (e.kind === 'section') return { icon: <Eye size={15} />, text: <>Scrolled to <strong>{sectionLabel(e.name)}</strong></> };
   if (e.kind === 'scroll') return { icon: <ArrowDownToLine size={15} />, text: <>Scrolled {e.name} down the page</>, tone: 'quiet' };
   if (e.kind === 'form') return { icon: <Keyboard size={15} />, text: <>Started filling <strong>{e.name}</strong></>, tone: 'warm' };
+  if (e.kind === 'typed') return { icon: <Keyboard size={15} />, text: <>Typed in <strong>{e.name}</strong>: <span className="j-typed-text">“{e.text}”</span></>, tone: 'warm' };
   if (e.kind !== 'click') return null;
   if (e.name.startsWith('link: ') || e.name.startsWith('button: ')) {
     const [kind, rest] = [e.name.slice(0, e.name.indexOf(':')), e.name.slice(e.name.indexOf(': ') + 2)];
@@ -533,9 +544,26 @@ export function JourneySheet({ journeyKey, allViews, events, shops, onOpen, onCl
         </ol>
       </div>
 
+      {j.typed.length > 0 && (
+        <div className="j-block">
+          <h3>
+            <Keyboard size={16} /> What they typed
+          </h3>
+          <p className="muted small">The latest text in each field, saved a second after they stopped typing{j.outcome !== 'signup' && ' — they didn’t finish signing up'}.</p>
+          <dl className="j-facts j-typed">
+            {j.typed.map((t) => (
+              <div key={`${t.view}|${t.field}`}>
+                <dt>{t.field}</dt>
+                <dd className="j-break">{t.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
       {j.fields.length > 0 && (
         <p className="muted small">
-          <Keyboard size={13} /> Form fields they touched: {j.fields.join(', ')}. What they typed is never recorded.
+          <Keyboard size={13} /> Form fields they touched: {j.fields.join(', ')}. Passwords and codes are never recorded.
         </p>
       )}
 

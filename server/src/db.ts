@@ -683,6 +683,19 @@ const MIGRATIONS: string[] = [
   UPDATE app_settings SET key = 'phusro_code' WHERE key = 'pushro_code';
   `,
 
+  // 36: what a visitor typed into a form field (sign-up, partner form), saved as they type, so Admin → Visits shows
+  // half-filled forms. One row per (page view, field), the latest text. Never passwords or one-time codes.
+  `
+  CREATE TABLE page_drafts (
+    view_id TEXT NOT NULL,
+    field TEXT NOT NULL,
+    value TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    day TEXT NOT NULL,
+    PRIMARY KEY (view_id, field)
+  );
+  CREATE INDEX idx_page_drafts_day ON page_drafts (day);
+  `,
 ];
 
 const INDEXES = `

@@ -41,8 +41,13 @@ export type PageView = {
 /** A shop named on a visit. */
 export type VisitShop = { id: number; name: string; email: string | null; phone: string | null; plan: string; createdAt: string; lastSeenAt: string | null; customers: number };
 
-/** Something a visitor did during a page view (see src/analytics.ts); a 'dwell' carries ms in value. */
-export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell'; name: string; ts: string; value?: number };
+/**
+ * Something a visitor did during a page view (see src/analytics.ts); a 'dwell' carries ms in value. 'typed' is what they
+ * typed into the form field `name` (text, the latest), from the server's drafts.
+ */
+export type PageEvent = { view: string; kind: 'click' | 'section' | 'signup' | 'scroll' | 'form' | 'dwell' | 'typed'; name: string; ts: string; value?: number; text?: string };
+/** Form text a visitor typed, as the server sends it. */
+export type PageDraft = { view: string; field: string; value: string; ts: string };
 
 type Range = 'today' | '7d' | '30d' | '90d' | 'custom';
 type Dim = 'path' | 'source' | 'country' | 'device' | 'browser' | 'os';
@@ -419,7 +424,7 @@ function HomepageInsights({ views, allViews, events }: { views: PageView[]; allV
   );
 }
 
-export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[]; events: PageEvent[]; shops?: VisitShop[] }> }) {
+export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: string) => Promise<{ views: PageView[]; events: PageEvent[]; drafts?: PageDraft[]; shops?: VisitShop[] }> }) {
   const [range, setRange] = useStored<Range>('lp_admin_visits_range', '7d');
   const [custom, setCustom] = useStored('lp_admin_visits_custom', { from: addDays(localToday(), -29), to: localToday() });
   const [filters, setFilters] = useState<Partial<Record<Dim, string>>>({});
@@ -448,7 +453,7 @@ export function VisitsPage({ fetchViews }: { fetchViews: (from: string, to: stri
     fetchViews(addDays(from, -1), addDays(to, 1))
       .then((d) => {
         setViews(d.views);
-        setEvents(d.events);
+        setEvents([...d.events, ...(d.drafts ?? []).map((t): PageEvent => ({ view: t.view, kind: 'typed', name: t.field, ts: t.ts, text: t.value }))]);
         setShops(new Map((d.shops ?? []).map((s) => [s.id, s])));
         setError('');
       })

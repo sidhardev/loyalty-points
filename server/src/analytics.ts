@@ -5,7 +5,8 @@ import { Db } from './db';
 // Website visits: the public endpoint the site's own tracker (web/src/analytics.ts) sends page views to.
 // No cookies and no IP addresses are stored; visitor and session ids are random values the browser keeps
 // for a day / a tab, so this counts visits without following anyone around. The superadmin reads them
-// at GET /api/admin/analytics.
+// at GET /api/admin/analytics. Form text a visitor types before signing up (web/src/analytics.ts) is kept too, so
+// half-filled sign-ups show up there; never passwords, one-time codes, or anything typed while logged in to a shop.
 
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|whatsapp|telegram|lighthouse|headless|phantom|puppeteer|playwright|curl|wget|python|axios|node-fetch|go-http/i;
 const ID = /^[a-z0-9-]{8,40}$/i;
@@ -59,6 +60,10 @@ export type VisitShop = {
  * further, started on a form field, signed up; or 'dwell': how long (value, ms) a homepage section was on screen.
  */
 export type PageEvent = { view: string; kind: (typeof EVENT_KINDS)[number]; name: string; ts: string; value?: number };
+
+/** What a visitor typed into a form field (the latest text), for Admin → Visits. */
+export type PageDraft = { view: string; field: string; value: string; ts: string };
+const DRAFT_FIELDS_PER_VIEW = 30;
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : '');
 
@@ -189,6 +194,38 @@ export class AnalyticsStore implements OnModuleDestroy {
   private prune() {
     this.db.sql.prepare(`DELETE FROM page_views WHERE day < date('now', '-${KEEP_DAYS} days')`).run();
     this.db.sql.prepare(`DELETE FROM page_events WHERE day < date('now', '-${KEEP_DAYS} days')`).run();
+    this.db.sql.prepare(`DELETE FROM page_drafts WHERE day < date('now', '-${KEEP_DAYS} days')`).run();
+  }
+
+  /**
+   * The latest text in a form field, for a page view from the last day; an empty field removes it. At most
+   * DRAFT_FIELDS_PER_VIEW fields per view.
+   */
+  saveDraft(view: string, field: string, value: string) {
+    if (!value) {
+      this.db.sql.prepare('DELETE FROM page_drafts WHERE view_id = ? AND field = ?').run(view, field);
+      return;
+    }
+    const now = new Date().toISOString();
+    const since = new Date(Date.now() - 86_400_000).toISOString();
+    const updated = this.db.sql
+      .prepare('UPDATE page_drafts SET value = ?, ts = ? WHERE view_id = ? AND field = ?')
+      .run(value, now, view, field);
+    if (Number(updated.changes)) return;
+    this.db.sql
+      .prepare(
+        `INSERT OR IGNORE INTO page_drafts (view_id, field, value, ts, day)
+         SELECT id, :field, :value, :now, :day FROM page_views
+         WHERE id = :view AND ts >= :since AND (SELECT COUNT(*) FROM page_drafts WHERE view_id = :view) < :max`,
+      )
+      .run({ view, field, value, now, day: now.slice(0, 10), since, max: DRAFT_FIELDS_PER_VIEW });
+  }
+
+  /** Form text typed on the UTC days from..to. */
+  drafts(from: string, to: string): PageDraft[] {
+    return this.db.sql
+      .prepare('SELECT view_id AS view, field, value, ts FROM page_drafts WHERE day BETWEEN ? AND ? ORDER BY ts')
+      .all(from, to) as PageDraft[];
   }
 
   addView(v: PageView) {
@@ -350,6 +387,12 @@ export class AnalyticsController {
       const scroll = Math.round(Number(body.scroll));
       if (!(dur >= 0 && dur < 6 * 3600_000)) return;
       this.store.finishView(String(body.id), dur, Math.min(100, Math.max(0, scroll || 0)), clip(body.at, 40));
+      return;
+    }
+
+    if (body.t === 'draft') {
+      const field = clip(body.field, 60).trim();
+      if (field && typeof body.value === 'string') this.store.saveDraft(String(body.id), field, body.value.slice(0, 500));
       return;
     }
 

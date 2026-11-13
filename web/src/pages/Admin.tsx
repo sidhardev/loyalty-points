@@ -50,7 +50,7 @@ import { PartnersPage } from './AdminPartners';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { PhusroPage } from './AdminPhusro';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
-import { VisitsPage, type PageEvent, type PageView, type VisitShop } from './Visits';
+import { VisitsPage, type PageDraft, type PageEvent, type PageView, type VisitShop } from './Visits';
 import { Sub, SubtabContext } from './AdminSub';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
@@ -1339,7 +1339,7 @@ function LogPage() {
 
 // ---------------------------------------------------------------- visits
 
-const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; events: PageEvent[]; shops: VisitShop[] }>(`analytics?from=${from}&to=${to}`);
+const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; events: PageEvent[]; drafts: PageDraft[]; shops: VisitShop[] }>(`analytics?from=${from}&to=${to}`);
 
 // ---------------------------------------------------------------- shell
 

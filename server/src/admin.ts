@@ -477,7 +477,7 @@ export class AdminController {
     if (Date.parse(to) - Date.parse(from) > 400 * 86_400_000) throw new BadRequestException('Pick at most 400 days');
     const views = this.analytics.views(from, to);
     const ids = [...new Set(views.flatMap((v) => [v.shopId, v.shopGuess]).filter((id): id is number => !!id))];
-    return { views, events: this.analytics.events(from, to), shops: this.analytics.shops(ids) };
+    return { views, events: this.analytics.events(from, to), drafts: this.analytics.drafts(from, to), shops: this.analytics.shops(ids) };
   }
 
   private audit(adminId: number, merchantId: number | null, action: string, detail: string) {

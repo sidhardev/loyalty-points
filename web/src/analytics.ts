@@ -4,8 +4,8 @@
 // only as long as the browser tab. Visits from a browser that has opened /admin are not counted.
 // Also records what visitors do: clicks (elements marked data-track="<name>", and on public pages any link or button by
 // its text), homepage sections (data-section) they scroll to and how long each stayed on screen, the section they left
-// from, how far down other pages they scrolled, which form fields they started on (the field's name, never what was
-// typed), and sign-ups. The superadmin sees the numbers and each visit's journey under Admin → Visits.
+// from, how far down other pages they scrolled, which form fields they started on, what they typed into them before
+// signing up (saved a second after they stop typing; never passwords or codes, nothing while logged in), and sign-ups. The superadmin sees the numbers and each visit's journey under Admin → Visits.
 // When a shop owner is logged in on this browser, their login token goes along so Admin → Visits can name the shop.
 
 const IGNORE_KEY = 'lp_sa_ignore';
@@ -210,6 +210,42 @@ export function trackPageView() {
     });
   }
 
+  // What they type into a form before signing up, saved a second after they stop typing, so half-filled sign-ups show in
+  // Admin → Visits. Never passwords, one-time codes or card numbers, and nothing once a shop is logged in (the shop's
+  // own customers' details are typed in the app).
+  const pending = new Map<string, string>();
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  const flushDraft = (field: string) => {
+    clearTimeout(timers.get(field));
+    timers.delete(field);
+    const value = pending.get(field);
+    if (value === undefined) return;
+    pending.delete(field);
+    send({ t: 'draft', id, field, value });
+  };
+  const flushDrafts = () => [...pending.keys()].forEach(flushDraft);
+  if (!/^\/(w|c|reset|partner)\//.test(location.pathname)) {
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement)) return;
+      if (el instanceof HTMLInputElement && ['hidden', 'password', 'checkbox', 'radio', 'submit', 'button', 'file'].includes(el.type)) return;
+      if (/one-time-code|cc-|new-password|current-password/.test(el.getAttribute('autocomplete') ?? '') || shopToken()) return;
+      const field = fieldName(el);
+      if (!field) return;
+      pending.set(field, el.value.slice(0, 500));
+      clearTimeout(timers.get(field));
+      timers.set(field, setTimeout(() => flushDraft(field), 1000));
+    });
+    // Moving to the next field saves the one just left at once.
+    document.addEventListener('focusout', (e) => {
+      const el = e.target;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+        const field = fieldName(el);
+        if (field) flushDraft(field);
+      }
+    });
+  }
+
   // Count only time the page is in front of the reader.
   let visibleSince = document.visibilityState === 'visible' ? performance.now() : 0;
   let visible = 0;
@@ -238,6 +274,7 @@ export function trackPageView() {
       visible += performance.now() - visibleSince;
       visibleSince = 0;
     }
+    flushDrafts();
     send({ t: 'leave', id, dur: Math.round(visible), scroll: maxScroll, at: currentSection });
     for (const [section, ms] of dwell) trackEvent('dwell', section, ms);
   };

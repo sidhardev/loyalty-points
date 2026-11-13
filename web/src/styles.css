@@ -6276,3 +6276,20 @@ circle.trend-views {
   background: var(--brand-soft);
 }
 
+
+/* Admin → Visits: what a visitor typed into a form. */
+.j-typed-peek {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--gold);
+}
+
+.j-typed-text {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
