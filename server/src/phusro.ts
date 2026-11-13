@@ -163,6 +163,8 @@ price is needed but not given. Never mention chai or tea.`;
 // ---------- Service ----------
 
 export type PhusroSettings = { enabled: boolean; dailyLimit: number; session: number };
+/** PHUSRO_CODE from the environment (PUSHRO_CODE, the first spelling, still works). */
+const envCode = () => (process.env.PHUSRO_CODE || process.env.PUSHRO_CODE || '').trim();
 const DEFAULT_SETTINGS: PhusroSettings = { enabled: true, dailyLimit: DEFAULT_DAILY_LIMIT, session: 1 };
 
 @Injectable()
@@ -197,12 +199,12 @@ export class PhusroService {
   /** The login code: the one set in the admin panel, else PHUSRO_CODE. */
   code() {
     const panel = this.setting('phusro_code');
-    return (panel && unseal(panel)) || process.env.PHUSRO_CODE?.trim() || '';
+    return (panel && unseal(panel)) || envCode() || '';
   }
 
   codeSource() {
     const panel = this.setting('phusro_code');
-    return panel && unseal(panel) ? ('panel' as const) : process.env.PHUSRO_CODE?.trim() ? ('env' as const) : null;
+    return panel && unseal(panel) ? ('panel' as const) : envCode() ? ('env' as const) : null;
   }
 
   setCode(code: string) {
