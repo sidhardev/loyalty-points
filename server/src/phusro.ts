@@ -7,23 +7,23 @@ import { Db } from './db';
 import { AdminGuard, AdminId } from './admin';
 import { seal, unseal } from './secret';
 
-// Pushro Digital Hub (a mobile accessories shop) gets its own website at pushro.regularhood.in (a static page,
-// web/public/pushro/index.html) and a private studio at /studio (web/public/pushro/studio.html). The studio uses Claude Haiku 5.5 to design WhatsApp status
+// Phusro Digital Hub (a mobile accessories shop) gets its own website at phusro.regularhood.in (a static page,
+// web/public/phusro/index.html) and a private studio at /studio (web/public/phusro/studio.html). The studio uses Claude Haiku 5.5 to design WhatsApp status
 // images and to write marketing copy. Claude writes the design (words, layout, colours, which product to draw); the
 // studio draws the 1080×1920 picture on a canvas in the browser, so the owner can download or share it straight away.
 //
-// Admin → Pushro controls the studio: on/off, how many AI calls a day (default 10), the login code (else PUSHRO_CODE from
+// Admin → Phusro controls the studio: on/off, how many AI calls a day (default 10), the login code (else PHUSRO_CODE from
 // the server's environment) and signing out every device. The Anthropic key is the same one Admin → Playbooks uses.
-// Every call is written to ai_usage with purpose 'pushro_*'; only calls that worked count toward the daily limit.
+// Every call is written to ai_usage with purpose 'phusro_*'; only calls that worked count toward the daily limit.
 
 const MODEL = 'claude-haiku-5-5';
 const PRICE_IN_USD = 0.1; // per 1M input tokens
 const PRICE_OUT_USD = 0.5; // per 1M output tokens (thinking included)
-const DEFAULT_DAILY_LIMIT = 10; // AI calls a day; the admin changes it in Admin → Pushro
+const DEFAULT_DAILY_LIMIT = 10; // AI calls a day; the admin changes it in Admin → Phusro
 
 /** Fixed shop details: the AI uses them, and the studio prints name and phone on each status. */
 export const SHOP = {
-  name: 'Pushro Digital Hub',
+  name: 'Phusro Digital Hub',
   phone: '+91 96362 63623',
   area: 'Jharkhand',
   sells: 'phone covers, tempered glass, chargers, cables, earphones and earbuds, power banks, smartwatches, Bluetooth speakers',
@@ -162,11 +162,11 @@ price is needed but not given. Never mention chai or tea.`;
 
 // ---------- Service ----------
 
-export type PushroSettings = { enabled: boolean; dailyLimit: number; session: number };
-const DEFAULT_SETTINGS: PushroSettings = { enabled: true, dailyLimit: DEFAULT_DAILY_LIMIT, session: 1 };
+export type PhusroSettings = { enabled: boolean; dailyLimit: number; session: number };
+const DEFAULT_SETTINGS: PhusroSettings = { enabled: true, dailyLimit: DEFAULT_DAILY_LIMIT, session: 1 };
 
 @Injectable()
-export class PushroService {
+export class PhusroService {
   constructor(private readonly db: Db) {}
 
   /** Calls running right now: reserved against the limit so two at once can't go over it. */
@@ -180,42 +180,42 @@ export class PushroService {
     this.db.sql.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value);
   }
 
-  settings(): PushroSettings {
+  settings(): PhusroSettings {
     try {
-      return { ...DEFAULT_SETTINGS, ...(JSON.parse(this.setting('pushro_settings') ?? '{}') as Partial<PushroSettings>) };
+      return { ...DEFAULT_SETTINGS, ...(JSON.parse(this.setting('phusro_settings') ?? '{}') as Partial<PhusroSettings>) };
     } catch {
       return DEFAULT_SETTINGS;
     }
   }
 
-  saveSettings(patch: Partial<PushroSettings>) {
+  saveSettings(patch: Partial<PhusroSettings>) {
     const next = { ...this.settings(), ...patch };
-    this.put('pushro_settings', JSON.stringify(next));
+    this.put('phusro_settings', JSON.stringify(next));
     return next;
   }
 
-  /** The login code: the one set in the admin panel, else PUSHRO_CODE. */
+  /** The login code: the one set in the admin panel, else PHUSRO_CODE. */
   code() {
-    const panel = this.setting('pushro_code');
-    return (panel && unseal(panel)) || process.env.PUSHRO_CODE?.trim() || '';
+    const panel = this.setting('phusro_code');
+    return (panel && unseal(panel)) || process.env.PHUSRO_CODE?.trim() || '';
   }
 
   codeSource() {
-    const panel = this.setting('pushro_code');
-    return panel && unseal(panel) ? ('panel' as const) : process.env.PUSHRO_CODE?.trim() ? ('env' as const) : null;
+    const panel = this.setting('phusro_code');
+    return panel && unseal(panel) ? ('panel' as const) : process.env.PHUSRO_CODE?.trim() ? ('env' as const) : null;
   }
 
   setCode(code: string) {
-    this.put('pushro_code', seal(code));
+    this.put('phusro_code', seal(code));
   }
 
   usedToday() {
-    return (this.db.sql.prepare("SELECT COUNT(*) AS n FROM ai_usage WHERE purpose LIKE 'pushro_%' AND ok = 1 AND ts >= date('now')").get() as { n: number }).n;
+    return (this.db.sql.prepare("SELECT COUNT(*) AS n FROM ai_usage WHERE purpose LIKE 'phusro_%' AND ok = 1 AND ts >= date('now')").get() as { n: number }).n;
   }
 
   usage() {
     const sum = (where: string) =>
-      this.db.sql.prepare(`SELECT COUNT(*) AS calls, COALESCE(SUM(cost_usd), 0) AS usd FROM ai_usage WHERE purpose LIKE 'pushro_%' AND ok = 1 ${where}`).get() as {
+      this.db.sql.prepare(`SELECT COUNT(*) AS calls, COALESCE(SUM(cost_usd), 0) AS usd FROM ai_usage WHERE purpose LIKE 'phusro_%' AND ok = 1 ${where}`).get() as {
         calls: number;
         usd: number;
       };
@@ -224,7 +224,7 @@ export class PushroService {
       month: sum("AND ts >= date('now', 'start of month')"),
       all: sum(''),
       recent: this.db.sql
-        .prepare("SELECT id, ts, purpose, ok, error, cost_usd FROM ai_usage WHERE purpose LIKE 'pushro_%' ORDER BY id DESC LIMIT 30")
+        .prepare("SELECT id, ts, purpose, ok, error, cost_usd FROM ai_usage WHERE purpose LIKE 'phusro_%' ORDER BY id DESC LIMIT 30")
         .all() as { id: number; ts: string; purpose: string; ok: number; error: string | null; cost_usd: number }[],
     };
   }
@@ -293,7 +293,7 @@ export class PushroService {
     ]
       .filter(Boolean)
       .join('\n');
-    const out = await this.ask<{ designs: StatusDesign[] }>('pushro_status', STATUS_SYSTEM, STATUS_SCHEMA, prompt);
+    const out = await this.ask<{ designs: StatusDesign[] }>('phusro_status', STATUS_SYSTEM, STATUS_SCHEMA, prompt);
     // Keep only values the studio knows how to draw.
     return out.designs.slice(0, input.count).map((d) => ({
       ...d,
@@ -314,7 +314,7 @@ export class PushroService {
     ]
       .filter(Boolean)
       .join('\n');
-    const out = await this.ask<{ items: { title: string; text: string }[] }>(`pushro_${input.tool}`, COPY_SYSTEM, COPY_SCHEMA, prompt);
+    const out = await this.ask<{ items: { title: string; text: string }[] }>(`phusro_${input.tool}`, COPY_SYSTEM, COPY_SCHEMA, prompt);
     return out.items;
   }
 }
@@ -324,21 +324,21 @@ export class PushroService {
 const attempts = new Map<string, { n: number; until: number }>();
 
 @Injectable()
-export class PushroGuard implements CanActivate {
+export class PhusroGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
-    private readonly pushro: PushroService,
+    private readonly phusro: PhusroService,
   ) {}
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<Request>();
     const token = req.headers.authorization?.replace(/^Bearer /, '');
     if (!token) throw new UnauthorizedException('Please log in');
-    const settings = this.pushro.settings();
+    const settings = this.phusro.settings();
     try {
       const payload = await this.jwt.verifyAsync<{ role?: string; v?: number }>(token);
       // A token from before "Sign out all devices" (or a code change) no longer works.
-      if (payload.role !== 'pushro' || (payload.v ?? 1) !== settings.session) throw new Error();
+      if (payload.role !== 'phusro' || (payload.v ?? 1) !== settings.session) throw new Error();
     } catch {
       throw new UnauthorizedException('Session expired, please log in again');
     }
@@ -349,10 +349,10 @@ export class PushroGuard implements CanActivate {
 
 const field = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 
-@Controller('api/pushro')
-export class PushroController {
+@Controller('api/phusro')
+export class PhusroController {
   constructor(
-    private readonly pushro: PushroService,
+    private readonly phusro: PhusroService,
     private readonly jwt: JwtService,
   ) {}
 
@@ -362,9 +362,9 @@ export class PushroController {
     const ip = req.ip ?? '';
     const a = attempts.get(ip);
     if (a && a.n >= 8 && a.until > Date.now()) throw new BadRequestException('Too many wrong codes. Try again in 15 minutes.');
-    const settings = this.pushro.settings();
+    const settings = this.phusro.settings();
     if (!settings.enabled) throw new ForbiddenException('The studio is turned off.');
-    const expected = this.pushro.code();
+    const expected = this.phusro.code();
     const given = field(body?.code, 100);
     const ok = expected.length >= 6 && given.length === expected.length && timingSafeEqual(Buffer.from(given), Buffer.from(expected));
     if (!ok) {
@@ -372,27 +372,27 @@ export class PushroController {
       throw new BadRequestException(expected ? 'Wrong code' : 'The studio has no login code yet');
     }
     attempts.delete(ip);
-    return { token: this.jwt.sign({ sub: 0, role: 'pushro', v: settings.session }, { expiresIn: '60d' }) };
+    return { token: this.jwt.sign({ sub: 0, role: 'phusro', v: settings.session }, { expiresIn: '60d' }) };
   }
 
   @Get('me')
-  @UseGuards(PushroGuard)
+  @UseGuards(PhusroGuard)
   me() {
     return {
       shop: SHOP,
       tools: Object.fromEntries(Object.entries(TOOLS).map(([k, t]) => [k, t.label])),
-      usedToday: this.pushro.usedToday(),
-      dailyLimit: this.pushro.settings().dailyLimit,
+      usedToday: this.phusro.usedToday(),
+      dailyLimit: this.phusro.settings().dailyLimit,
     };
   }
 
   @Post('status')
   @HttpCode(200)
-  @UseGuards(PushroGuard)
+  @UseGuards(PhusroGuard)
   status(@Body() b: { request?: string; offer?: string; product?: string; lang?: string; count?: number }) {
     const lang = (b?.lang && b.lang in LANG ? b.lang : 'english') as Lang;
     const product = field(b?.product, 20);
-    return this.pushro.statuses({
+    return this.phusro.statuses({
       request: field(b?.request, 500),
       offer: field(b?.offer, 120),
       product: (PRODUCTS as readonly string[]).includes(product) ? product : 'any',
@@ -403,48 +403,48 @@ export class PushroController {
 
   @Post('copy')
   @HttpCode(200)
-  @UseGuards(PushroGuard)
+  @UseGuards(PhusroGuard)
   copy(@Body() b: { tool?: string; details?: string; lang?: string }) {
     const tool = String(b?.tool ?? '');
     if (!(tool in TOOLS)) throw new BadRequestException('Pick a tool');
     const lang = (b?.lang && b.lang in LANG ? b.lang : 'english') as Lang;
-    return this.pushro.copy({ tool: tool as Tool, details: field(b?.details, 1500), lang });
+    return this.phusro.copy({ tool: tool as Tool, details: field(b?.details, 1500), lang });
   }
 }
 
-// ---------- Admin → Pushro ----------
+// ---------- Admin → Phusro ----------
 
-@Controller('api/admin/pushro')
+@Controller('api/admin/phusro')
 @UseGuards(AdminGuard)
-export class PushroAdminController {
+export class PhusroAdminController {
   constructor(
-    private readonly pushro: PushroService,
+    private readonly phusro: PhusroService,
     private readonly db: Db,
   ) {}
 
   private audit(adminId: number, detail: string) {
-    this.db.sql.prepare('INSERT INTO admin_log (admin_id, merchant_id, action, detail) VALUES (?, NULL, ?, ?)').run(adminId, 'pushro', detail);
+    this.db.sql.prepare('INSERT INTO admin_log (admin_id, merchant_id, action, detail) VALUES (?, NULL, ?, ?)').run(adminId, 'phusro', detail);
   }
 
   @Get()
   overview() {
-    const { enabled, dailyLimit } = this.pushro.settings();
-    return { enabled, dailyLimit, model: MODEL, codeSource: this.pushro.codeSource(), usage: this.pushro.usage() };
+    const { enabled, dailyLimit } = this.phusro.settings();
+    return { enabled, dailyLimit, model: MODEL, codeSource: this.phusro.codeSource(), usage: this.phusro.usage() };
   }
 
   @Put('settings')
   saveSettings(@AdminId() adminId: number, @Body() b: { enabled?: unknown; dailyLimit?: unknown }) {
-    const patch: Partial<PushroSettings> = {};
+    const patch: Partial<PhusroSettings> = {};
     if (typeof b?.enabled === 'boolean') patch.enabled = b.enabled;
     if (b?.dailyLimit !== undefined) {
       const n = Number(b.dailyLimit);
       if (!Number.isInteger(n) || n < 0 || n > 500) throw new BadRequestException('The daily limit must be a whole number from 0 to 500');
       patch.dailyLimit = n;
     }
-    const before = this.pushro.settings();
-    const next = this.pushro.saveSettings(patch);
-    if (patch.enabled !== undefined && patch.enabled !== before.enabled) this.audit(adminId, `Turned the Pushro studio ${next.enabled ? 'on' : 'off'}`);
-    if (patch.dailyLimit !== undefined && patch.dailyLimit !== before.dailyLimit) this.audit(adminId, `Set Pushro's daily AI limit to ${next.dailyLimit}`);
+    const before = this.phusro.settings();
+    const next = this.phusro.saveSettings(patch);
+    if (patch.enabled !== undefined && patch.enabled !== before.enabled) this.audit(adminId, `Turned the Phusro studio ${next.enabled ? 'on' : 'off'}`);
+    if (patch.dailyLimit !== undefined && patch.dailyLimit !== before.dailyLimit) this.audit(adminId, `Set Phusro's daily AI limit to ${next.dailyLimit}`);
     return this.overview();
   }
 
@@ -452,18 +452,18 @@ export class PushroAdminController {
   setCode(@AdminId() adminId: number, @Body() b: { code?: unknown }) {
     const code = String(b?.code ?? '').trim();
     if (!/^[\w-]{6,40}$/.test(code)) throw new BadRequestException('Use 6 to 40 letters, numbers, - or _');
-    this.pushro.setCode(code);
+    this.phusro.setCode(code);
     // A new code signs out everyone who logged in with the old one.
-    this.pushro.saveSettings({ session: this.pushro.settings().session + 1 });
-    this.audit(adminId, 'Set a new Pushro studio code');
+    this.phusro.saveSettings({ session: this.phusro.settings().session + 1 });
+    this.audit(adminId, 'Set a new Phusro studio code');
     return this.overview();
   }
 
   @Post('sign-out')
   @HttpCode(200)
   signOut(@AdminId() adminId: number) {
-    this.pushro.saveSettings({ session: this.pushro.settings().session + 1 });
-    this.audit(adminId, 'Signed out every device from the Pushro studio');
+    this.phusro.saveSettings({ session: this.phusro.settings().session + 1 });
+    this.audit(adminId, 'Signed out every device from the Phusro studio');
     return this.overview();
   }
 }

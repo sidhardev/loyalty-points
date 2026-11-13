@@ -2,9 +2,10 @@ import type { SeoContent, SeoLang } from './seo-render';
 
 // Hand-written city pages, published when the server starts (SeoService.publishHandwritten) — but only into a queued
 // page that has no text yet, so a page the writer or the admin already made is never replaced, and a deleted one stays
-// deleted. Same shape as the AI-written pages (seo-render.ts).
+// deleted. Same shape as the AI-written pages (seo-render.ts). A page with `replaceBefore` (YYYY-MM-DD) also replaces
+// its live text if that text was written before that day — for rewriting a hand-written page that is already live.
 
-export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] = [
+export const CITY_PAGES: { slug: string; lang: SeoLang; replaceBefore?: string; content: SeoContent }[] = [
   {
     slug: 'jaipur',
     lang: 'en',
@@ -106,13 +107,14 @@ export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] 
   {
     slug: 'indore',
     lang: 'en',
+    replaceBefore: '2026-11-12',
     content: {
-      title: 'Loyalty Rewards for Shops in Indore · Regularhood',
-      description: 'A free stamp card for Indore shops on the customer’s phone number: one tap per visit, a reward every few visits, and the card on WhatsApp.',
-      eyebrow: 'Loyalty for shops in Indore',
-      h1: 'Give Indore’s shoppers a reason to come back to you',
+      title: 'Rewards App for Local Shops in Indore — Free, No Customer App',
+      description: 'A free rewards and loyalty app for Indore’s local shops: a stamp card on the customer’s phone number, a reward every few visits, the card on WhatsApp.',
+      eyebrow: 'Rewards for local shops in Indore',
+      h1: 'A rewards card for Indore’s local shops — better than a discount',
       intro:
-        'Indore loves to shop and loves to eat, from Rajwada and MG Road to Vijay Nagar and Palasia. With so much choice, even happy customers drift to the next counter. Regularhood is a simple stamp card on the customer’s phone number that rewards them for coming back to your shop.',
+        'Indore loves to shop and loves to eat, from Rajwada, Sarafa and 56 Dukan to Vijay Nagar, Palasia, Bhawarkua and Annapurna. With so much choice, even happy customers drift to the next counter. Instead of a discount app that trains people to wait for offers, Regularhood gives your shop a simple stamp card on the customer’s phone number that rewards them for coming back to you.',
       problems: [
         { title: 'A new favourite every week', text: 'Indore’s food lovers try the newest namkeen shop or snack counter as soon as it opens. If nothing ties them to you, last month’s regular becomes this month’s stranger.' },
         { title: 'Busy markets, many choices', text: 'Around Rajwada or Sapna Sangeeta, customers pass a dozen shops selling what you sell. The one they remember is the one that gave them a reason to return.' },
@@ -141,6 +143,7 @@ export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] 
         'Before Navratri and Diwali, send regulars their card on WhatsApp so they remember how close they are to a reward when they shop for the festival.',
         'Keep the rule easy to say out loud, like every 5 visits a free gift, so your staff can explain it in one line during the evening rush.',
         'After Rang Panchami and the wedding season, open the list of customers who haven’t come back and send them the ready “we miss you” message.',
+        'Near colleges and coaching hubs like Bhawarkua and Vijay Nagar, students come daily: a reward every 8 to 10 visits still arrives within two weeks and keeps the whole hostel coming.',
       ],
       faqs: [
         { q: 'Is Regularhood good for namkeen and snack shops in Indore?', a: 'Yes. Shops where people come often and spend a little each time are where a stamp card works best. Every visit is one tap at the counter.' },
@@ -148,19 +151,21 @@ export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] 
         { q: 'Can I use it in Hindi?', a: 'Yes. The shop app and the customer’s WhatsApp card both work in Hindi and English.' },
         { q: 'Can a customer get two stamps in one day?', a: 'No. A phone number counts once a day, and any visit or reward added by mistake can be undone.' },
         { q: 'What does it cost a shop in Indore?', a: 'Regularhood is free to start. Setting up takes about a minute on any phone, tablet or computer with internet.' },
+        { q: 'Is this a discount app for local stores in Indore?', a: 'Not exactly. Discount apps bring people once and teach them to wait for the next offer. Regularhood rewards customers for coming back to your shop, with a reward you choose, so you keep the regulars without cutting your prices.' },
       ],
     },
   },
   {
     slug: 'indore',
     lang: 'hi',
+    replaceBefore: '2026-11-12',
     content: {
-      title: 'इंदौर की दुकानों के लिए लॉयल्टी इनाम · Regularhood',
-      description: 'इंदौर की दुकानों के लिए ग्राहक के फ़ोन नंबर पर मुफ़्त स्टैम्प कार्ड: हर विज़िट पर एक टैप, कुछ विज़िट पर इनाम, और कार्ड WhatsApp पर।',
-      eyebrow: 'इंदौर की दुकानों के लिए लॉयल्टी',
-      h1: 'इंदौर के ग्राहकों को आपके पास लौटने की वजह दीजिए',
+      title: 'इंदौर की लोकल दुकानों के लिए रिवॉर्ड ऐप — मुफ़्त, ग्राहक को ऐप नहीं',
+      description: 'इंदौर की लोकल दुकानों के लिए मुफ़्त रिवॉर्ड और लॉयल्टी ऐप: ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड, कुछ विज़िट पर इनाम, कार्ड WhatsApp पर।',
+      eyebrow: 'इंदौर की लोकल दुकानों के लिए रिवॉर्ड',
+      h1: 'इंदौर की दुकानों के लिए रिवॉर्ड कार्ड — छूट से बेहतर',
       intro:
-        'इंदौर को खरीदारी भी पसंद है और खाना भी, राजवाड़ा और एमजी रोड से लेकर विजय नगर और पलासिया तक। इतने विकल्पों में खुश ग्राहक भी अगले काउंटर पर चले जाते हैं। Regularhood ग्राहक के फ़ोन नंबर पर एक आसान स्टैम्प कार्ड है, जो आपकी दुकान पर लौटने पर इनाम देता है।',
+        'इंदौर को खरीदारी भी पसंद है और खाना भी — राजवाड़ा, सराफ़ा और 56 दुकान से लेकर विजय नगर, पलासिया, भंवरकुआँ और अन्नपूर्णा तक। इतने विकल्पों में खुश ग्राहक भी अगले काउंटर पर चले जाते हैं। ऐसे डिस्काउंट ऐप की जगह जो ग्राहकों को अगले ऑफ़र का इंतज़ार सिखाए, Regularhood ग्राहक के फ़ोन नंबर पर एक आसान स्टैम्प कार्ड है, जो आपकी दुकान पर लौटने पर इनाम देता है।',
       problems: [
         { title: 'हर हफ़्ते नई पसंद', text: 'इंदौर के खाने के शौकीन हर नई नमकीन की दुकान या नाश्ते का काउंटर खुलते ही आज़माते हैं। अगर उन्हें आपसे कुछ न जोड़े, तो पिछले महीने का पक्का ग्राहक इस महीने अनजान हो जाता है।' },
         { title: 'भीड़ भरे बाज़ार, ढेरों विकल्प', text: 'राजवाड़ा या सपना संगीता के आसपास ग्राहक आपके जैसा सामान बेचने वाली दर्जनों दुकानों के सामने से गुज़रते हैं। याद वही रहती है जिसने लौटने की वजह दी।' },
@@ -189,6 +194,7 @@ export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] 
         'नवरात्रि और दिवाली से पहले पक्के ग्राहकों को WhatsApp पर उनका कार्ड भेजें, ताकि त्योहार की खरीदारी में उन्हें याद रहे कि इनाम कितना पास है।',
         'नियम ऐसा रखें जो एक लाइन में बोला जा सके, जैसे हर 5 विज़िट पर एक मुफ़्त तोहफ़ा, ताकि शाम की भीड़ में स्टाफ़ आसानी से समझा सके।',
         'रंगपंचमी और शादियों के सीज़न के बाद उन ग्राहकों की सूची खोलें जो लौटकर नहीं आए, और तैयार “आपकी याद आई” मैसेज भेज दें।',
+        'भंवरकुआँ और विजय नगर जैसे कॉलेज-कोचिंग इलाकों में छात्र रोज़ आते हैं: हर 8 से 10 विज़िट पर इनाम भी दो हफ़्ते में मिल जाता है और पूरा हॉस्टल आपके पास आता रहता है।',
       ],
       faqs: [
         { q: 'क्या Regularhood इंदौर की नमकीन और नाश्ते की दुकानों के लिए अच्छा है?', a: 'हाँ। जहाँ लोग बार-बार आते हैं और हर बार थोड़ा खर्च करते हैं, वहाँ स्टैम्प कार्ड सबसे अच्छा काम करता है। हर विज़िट काउंटर पर बस एक टैप है।' },
@@ -196,6 +202,7 @@ export const CITY_PAGES: { slug: string; lang: SeoLang; content: SeoContent }[] 
         { q: 'क्या मैं इसे हिंदी में चला सकता हूँ?', a: 'हाँ। दुकान का ऐप और ग्राहक का WhatsApp कार्ड, दोनों हिंदी और अंग्रेज़ी में चलते हैं।' },
         { q: 'क्या एक ग्राहक को एक दिन में दो स्टैम्प मिल सकते हैं?', a: 'नहीं। एक फ़ोन नंबर दिन में एक बार गिना जाता है, और गलती से जुड़ी विज़िट या इनाम वापस लिया जा सकता है।' },
         { q: 'इंदौर की दुकान के लिए इसका खर्च कितना है?', a: 'Regularhood शुरू करना मुफ़्त है। इंटरनेट वाले किसी भी फ़ोन, टैबलेट या कंप्यूटर पर सेटअप करीब एक मिनट में हो जाता है।' },
+        { q: 'क्या यह इंदौर की लोकल दुकानों के लिए डिस्काउंट ऐप है?', a: 'पूरी तरह नहीं। डिस्काउंट ऐप ग्राहक को एक बार लाते हैं और अगले ऑफ़र का इंतज़ार सिखाते हैं। Regularhood आपकी दुकान पर लौटने पर आपका चुना इनाम देता है, ताकि दाम घटाए बिना पक्के ग्राहक बने रहें।' },
       ],
     },
   },

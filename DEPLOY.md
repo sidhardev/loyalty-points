@@ -156,15 +156,15 @@ doesn't). The private `whatsapp-media` bucket is made on the first file (`SUPABA
 the chat is next opened, as long as Meta still has them.
 
 
-## Pushro Digital Hub (pushro.regularhood.in)
+## Phusro Digital Hub (phusro.regularhood.in)
 
-Pushro's website is a static page (web/public/pushro/index.html; edit the file to change it). The AI studio is server/src/pushro.ts with web/public/pushro/studio.html.
+Phusro's website is a static page (web/public/phusro/index.html; edit the file to change it). The AI studio is server/src/phusro.ts with web/public/phusro/studio.html.
 
-1. DNS: add an `A` record `pushro` → this server's IP (the same server as the API, not Vercel). Caddy gets the HTTPS certificate by itself (deploy/Caddyfile).
-2. Studio login: set the code in Admin → Pushro (or, as a fallback, put PUSHRO_CODE in `deploy/.env`):
+1. DNS: add an `A` record `phusro` → this server's IP (the same server as the API, not Vercel). Caddy gets the HTTPS certificate by itself (deploy/Caddyfile).
+2. Studio login: set the code in Admin → Phusro (or, as a fallback, put PHUSRO_CODE in `deploy/.env`):
    ```bash
-   echo "PUSHRO_CODE=choose-a-long-code" >> deploy/.env
+   echo "PHUSRO_CODE=choose-a-long-code" >> deploy/.env
    ```
-3. AI: the studio uses Claude Haiku 5.5 with the Anthropic key from Admin → Playbooks (or `ANTHROPIC_API_KEY`). Admin → Pushro turns it on or off, sets the daily limit (default 10 calls) and shows usage and cost (`ai_usage`, purpose `pushro_*`).
+3. AI: the studio uses Claude Haiku 5.5 with the Anthropic key from Admin → Playbooks (or `ANTHROPIC_API_KEY`). Admin → Phusro turns it on or off, sets the daily limit (default 10 calls) and shows usage and cost (`ai_usage`, purpose `phusro_*`).
 
-The owner opens https://pushro.regularhood.in/studio and logs in with the code to make statuses and marketing text.
+The owner opens https://phusro.regularhood.in/studio and logs in with the code to make statuses and marketing text.

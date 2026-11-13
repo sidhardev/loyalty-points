@@ -84,8 +84,8 @@ Rules used: lead with the searcher's exact question, add a question mark and a n
 
 | # | Page | Why |
 |---|---|---|
-| 1 | /hi/guide/dukan-ki-sale-kaise-badhaye in Hinglish (Roman script) | Hinglish queries don't match Devanagari titles well. Test one Roman-Hindi page. |
-| 2 | /city/indore → strengthen (pos 28.7, 35 impr) + "discount app for local stores indore" / "rewards network indore" | Indore queries already appear; city page is too thin. |
+| ✅ | /hi/guide/dukan-ki-sale-kaise-badhaye (Roman-script Hinglish), shipped 12 Nov | Test: do Roman-Hindi pages win Hinglish queries? Compare on 26 Nov. |
+| ✅ | /city/indore + /hi/city/indore rewritten 12 Nov ("rewards app for local shops", discount-app FAQ, more areas) | Replaces the live text once via `replaceBefore` in city-pages.ts. |
 | 3 | /guide/loyalty-program-app-without-qr ("how do merchants identify returning customers without an app", "stamps with qr code") | Our no-app/no-QR angle is unique. |
 | 4 | Salon cluster: hair-salon / beauty-parlour loyalty, with real pricing for India | Pos 58–93 now; needs depth + backlinks. |
 | 5 | /guide/pharmacy-loyalty-program, /guide/laundry-loyalty-program | Single-impression queries already showing up. |

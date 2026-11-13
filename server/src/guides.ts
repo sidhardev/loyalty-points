@@ -31,6 +31,7 @@ const UPDATED = '2026-10-19';
 const ADDED = '2026-10-22';
 const ADDED_OCT26 = '2026-10-26';
 const ADDED_NOV10 = '2026-11-10';
+const ADDED_NOV12 = '2026-11-12';
 
 const en: Guide[] = [
   {
@@ -1661,6 +1662,64 @@ const hi: Guide[] = [
       { q: 'कौन-सा ऑफ़र ग्राहकों को दोबारा लाता है?', a: 'मुफ़्त ऐड-ऑन या बार-बार आने पर इनाम अक्सर छूट से बेहतर काम करता है। यह तोहफ़े जैसा लगता है और ग्राहकों को अगली सेल का इंतज़ार करना नहीं सिखाता।' },
       { q: 'ग्राहकों को कितनी बार मैसेज करें?', a: 'कम। जब उनके काम का हो — सर्विस ड्यू हो, इनाम पास हो, लंबे समय से न आए हों — तब एक मैसेज अच्छा लगता है। रोज़ के मैसेज स्पैम लगते हैं।' },
       { q: 'WhatsApp पर भेजें या SMS पर?', a: 'WhatsApp पर, अगर उनके पास है। ग्राहक जानी-पहचानी दुकानों से वहीं बात करते हैं, और निजी मैसेज बल्क SMS से बिल्कुल अलग लगता है।' },
+    ],
+  },
+  {
+    // Roman-script Hindi (Hinglish): most shop owners type these searches in Roman letters.
+    slug: 'dukan-ki-sale-kaise-badhaye',
+    name: 'Dukan ki sale kaise badhaye',
+    title: 'Dukan ki Sale Kaise Badhaye? 10 Aasan Tarike (Bina Ad ke)',
+    description: 'Dukan ki sale kaise badhaye aur shop pe customer kaise banaye? Purane customer ko baar-baar bulane, reward, WhatsApp status aur counter ke 10 aasan tarike. Free.',
+    eyebrow: 'Dukan ki sale',
+    h1: 'Dukan ki sale kaise badhaye: 10 aasan tarike jo sach mein kaam karte hain',
+    intro:
+      'Zyada tar dukaandaar sale badhane ke liye naye customer dhoondhte hain — pamphlet, ad, bhaari discount. Par sabse jaldi sale un logon se badhti hai jo aapko pehle se jaante hain. Agar aapke 100 pakke customer mahine mein bas ek baar zyada aayein, toh woh 100 nayi visit hain — bina kisi kharche ke.',
+    updated: ADDED_NOV12,
+    blocks: [
+      {
+        h2: 'Sale teen cheezon se banti hai',
+        p: [
+          'Kitne customer hain × woh kitni baar aate hain × har baar kitna khareedte hain. Zyada tar log sirf pehli cheez pe kaam karte hain, jo sabse mehngi hai.',
+          'Customer kitni baar aata hai — yeh badalna sabse aasan hai. Iske liye na ad chahiye, na discount.',
+        ],
+      },
+      {
+        h2: 'Shop pe customer kaise banaye: 10 tarike',
+        steps: [
+          { title: 'Har visit pe reward do', text: 'Ek aasan niyam: har 5 visit pe ek chhota free gift. Customer ke paas bagal wali dukan chhod kar aapke paas aane ki wajah hoti hai.' },
+          { title: 'Batao reward kitna paas hai', text: '“Bas ek visit aur, aapka gift ready hai” — yeh sunke customer jaldi lautta hai.' },
+          { title: 'Counter pe poster lagao', text: 'Jahan paise diye jaate hain, wahan ek chhota poster: “Har 5 visit pe gift free”. Log khud poochte hain.' },
+          { title: 'Roz WhatsApp status lagao', text: 'Naya maal, aaj ka special, aapka reward ka niyam — aapka number save karne wale sab customer free mein dekhte hain.' },
+          { title: 'Customer ko naam se bulao', text: '“Aaiye Sharma ji” — customer ko lagta hai yeh uski apni dukan hai.' },
+          { title: 'Ek aur cheez suggest karo', text: 'Bill banate time ek imaandaar suggestion — jo cheez saath mein kaam aaye — bill badhata hai bina zabardasti ke.' },
+          { title: 'Best-seller kabhi khatam na ho', text: 'Customer apni roz ki cheez lene aaya aur nahi mili, toh woh doosri dukan try karega — aur wahin reh sakta hai.' },
+          { title: 'Google pe dukan daalo', text: 'Google Business Profile free hai. Photo, timing, phone number daalo aur khush customers se review maango.' },
+          { title: 'Dekho kaun aana band kar gaya', text: 'Purana customer chupchaap chala jaata hai. Time pe pata chale toh wapas bulana aasan hai.' },
+          { title: 'Ek pyaara sa message bhejo', text: '“Namaste Suresh ji, kaafi din se aap nahi aaye — sab theek hai? Aapka intezaar rahega.” Bas itna kaafi hai.' },
+        ],
+      },
+      {
+        h2: 'Kya aksar kaam nahi karta',
+        list: [
+          'Bhaari discount — customer ek baar aata hai aur agli sale ka intezaar karta hai.',
+          'Pamphlet aur akhbaar ke ad — pata hi nahi chalta koi aaya ya nahi.',
+          'Anjaan numbers pe bulk SMS — spam lagta hai.',
+          'Customer se koi app download karwana — zyada tar nahi karte.',
+        ],
+      },
+      {
+        h2: 'Regularhood ke saath',
+        p: [
+          'Regularhood yeh sab ek tap mein karta hai. Aap ek niyam rakhte ho — har N visit (3 se 10) pe ek reward — phir counter pe customer ka phone number likh ke Add visit dabate ho. Reward kab dena hai, app batata hai.',
+          'Customer ko ek tap mein WhatsApp pe uska card jaata hai. Counter poster aur WhatsApp status ki photo ready milti hai, aur jo customer nahi laute unki list ready “hum aapko miss kar rahe hain” message ke saath. Shuru karna free hai.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Dukan ki sale kaise badhaye bina paise kharch kiye?', a: 'Purane customer ko baar-baar bulao: visit pe chhota reward, counter poster, WhatsApp status aur jo aana band kar gaye unhe ek personal message. Yeh sab free hai.' },
+      { q: 'Shop pe customer kaise banaye?', a: 'Har customer ka number lo, use reward ka niyam batao aur Google pe dukan daalo. Jo do-teen baar laute, unhe naam se yaad rakho — wahi pakke customer bante hain.' },
+      { q: 'Kya discount dene se sale badhti hai?', a: 'Thodi der ke liye. Discount ek baar laata hai, par baar-baar aane pe chhota reward aadat banata hai — aur aapka margin bhi bachta hai.' },
+      { q: 'Customer bulane ka mantra kya hai?', a: 'Jo customer ek baar aaya, use baar-baar aane ki wajah do: naam se pehchaano, reward do, aur jo aana band kare use pyaar se yaad dilao.' },
     ],
   },
   {

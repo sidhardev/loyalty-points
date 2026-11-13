@@ -23,7 +23,7 @@ import { StatusAdminController } from './status';
 import { Storage } from './storage';
 import { LeadsAdminController, LeadsService } from './leads';
 import { PlaybookAdminController, PlaybookService } from './playbook';
-import { PushroAdminController, PushroController, PushroGuard, PushroService } from './pushro';
+import { PhusroAdminController, PhusroController, PhusroGuard, PhusroService } from './phusro';
 import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 
@@ -33,8 +33,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PushroController, PushroAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PushroService, PushroGuard, Storage, WhatsApp, WaBot],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, Storage, WhatsApp, WaBot],
 })
 class AppModule {}
 
@@ -56,27 +56,29 @@ async function bootstrap() {
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');
 
-  // Pushro Digital Hub's own website and studio (web/public/pushro/), on pushro.regularhood.in.
-  // The same pages are at /pushro and /pushro/studio on any host, for previews.
-  const PUSHRO_ORIGIN = 'https://pushro.regularhood.in';
-  const pushroFile = (name: string) => [join(web, 'pushro', name), join(__dirname, '..', '..', 'web', 'public', 'pushro', name)].find((f) => existsSync(f));
-  const landing = pushroFile('index.html');
-  const studio = pushroFile('studio.html');
+  // Phusro Digital Hub's own website and studio (web/public/phusro/), on phusro.regularhood.in.
+  // The same pages are at /phusro and /phusro/studio on any host, for previews.
+  const PHUSRO_ORIGIN = 'https://phusro.regularhood.in';
+  const phusroFile = (name: string) => [join(web, 'phusro', name), join(__dirname, '..', '..', 'web', 'public', 'phusro', name)].find((f) => existsSync(f));
+  const landing = phusroFile('index.html');
+  const studio = phusroFile('studio.html');
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
-    const onPushro = /^pushro\./.test(req.hostname);
-    if ((onPushro && req.path === '/') || req.path === '/pushro') {
+    // The first, misspelled address (pushro.regularhood.in) moves to the right one.
+    if (/^pushro\./.test(req.hostname)) return res.redirect(301, `https://phusro.regularhood.in${req.originalUrl}`);
+    const onPhusro = /^phusro\./.test(req.hostname);
+    if ((onPhusro && req.path === '/') || req.path === '/phusro') {
       return landing ? res.type('html').set('Cache-Control', 'no-cache').send(readFileSync(landing, 'utf8')) : next();
     }
-    if ((onPushro && req.path === '/studio') || req.path === '/pushro/studio') {
+    if ((onPhusro && req.path === '/studio') || req.path === '/phusro/studio') {
       return studio ? res.type('html').set('Cache-Control', 'no-cache').send(readFileSync(studio, 'utf8')) : next();
     }
-    if (!onPushro) return next();
+    if (!onPhusro) return next();
     if (req.path === '/robots.txt') return res.type('text').send(`User-agent: *
 Disallow: /studio
-Sitemap: ${PUSHRO_ORIGIN}/sitemap.xml
+Sitemap: ${PHUSRO_ORIGIN}/sitemap.xml
 `);
-    if (req.path === '/sitemap.xml') return res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${PUSHRO_ORIGIN}/</loc></url></urlset>`);
+    if (req.path === '/sitemap.xml') return res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${PHUSRO_ORIGIN}/</loc></url></urlset>`);
     // Any other page on the shop's domain goes to its homepage (files like favicons still load).
     if (!req.path.includes('.')) return res.redirect(302, '/');
     next();

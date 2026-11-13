@@ -11,9 +11,9 @@
 	reverse_proxy app:4000
 }
 
-# Pushro Digital Hub's own website and studio (server/src/pushro-site.ts). Point pushro.regularhood.in's DNS (A record)
-# at this server; Caddy gets its certificate by itself.
-pushro.regularhood.in {
+# Phusro Digital Hub's own website and studio (web/public/phusro/). Point phusro.regularhood.in's DNS (A record) at this
+# server; Caddy gets its certificate by itself. pushro.regularhood.in was the first, misspelled name: the app redirects it.
+phusro.regularhood.in, pushro.regularhood.in {
 	encode gzip
 	reverse_proxy app:4000
 }

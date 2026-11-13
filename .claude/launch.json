@@ -36,6 +36,18 @@
         "server"
       ],
       "port": 4001
+    },
+    {
+      "name": "demo-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4020",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 4020
     }
   ]
 }

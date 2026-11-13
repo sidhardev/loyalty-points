@@ -213,11 +213,12 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     const fill = this.db.sql.prepare(
       `UPDATE seo_pages SET status = 'published', content = ?, title = ?, description = ?, error = NULL, stale = 0,
          generated_at = datetime('now'), published_at = COALESCE(published_at, datetime('now'))
-       WHERE kind = 'city' AND slug = ? AND lang = ? AND content IS NULL`,
+       WHERE kind = 'city' AND slug = ? AND lang = ? AND (content IS NULL OR generated_at < ?)`,
     );
     for (const p of CITY_PAGES) {
       const content = clean(p.content, p.lang);
-      fill.run(JSON.stringify(content), content.title, content.description, p.slug, p.lang);
+      // replaceBefore: a rewritten hand-written page replaces text written before that day, once; later edits stay.
+      fill.run(JSON.stringify(content), content.title, content.description, p.slug, p.lang, p.replaceBefore ?? '');
     }
   }
 

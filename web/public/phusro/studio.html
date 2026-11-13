@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="robots" content="noindex" />
 <meta name="theme-color" content="#ffffff" />
-<title>Pushro Studio</title>
+<title>Phusro Studio</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307070d'/%3E%3Cpath d='M22 14h14a12 12 0 0 1 0 24h-6v12h-8z' fill='%2322d3ee'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -91,7 +91,7 @@
 
 <section id="login" class="login hidden">
   <form class="card" id="loginForm">
-    <div class="logo"><i>P</i><span>Pushro Studio</span></div>
+    <div class="logo"><i>P</i><span>Phusro Studio</span></div>
     <h1>Log in</h1>
     <p class="lead">Enter your studio code.</p>
     <label for="code">Studio code</label>
@@ -103,7 +103,7 @@
 
 <div id="app" class="hidden">
   <header class="top"><div class="wrap">
-    <div class="logo"><i>P</i><div>Pushro Studio</div></div>
+    <div class="logo"><i>P</i><div>Phusro Studio</div></div>
     <div class="grow"></div>
     <span class="usage" id="usage"></span>
     <a class="btn" href="/" target="_blank" rel="noopener">Website</a>
@@ -186,14 +186,14 @@ const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
 };
-let token = store.get('pushro_token');
+let token = store.get('phusro_token');
 let me = null;
 let photo = null; // HTMLImageElement the owner picked
 
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
 
 async function api(path, opts = {}) {
-  const res = await fetch('/api/pushro' + path, {
+  const res = await fetch('/api/phusro' + path, {
     method: opts.method || 'GET',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
@@ -204,14 +204,14 @@ async function api(path, opts = {}) {
   return data;
 }
 
-function logout() { token = null; store.set('pushro_token', null); $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); }
+function logout() { token = null; store.set('phusro_token', null); $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); }
 
 $('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('#loginErr').textContent = '';
   try {
     const { token: t } = await api('/login', { method: 'POST', body: { code: $('#code').value } });
-    token = t; store.set('pushro_token', t); boot();
+    token = t; store.set('phusro_token', t); boot();
   } catch (err) { $('#loginErr').textContent = err.message; }
 });
 
@@ -471,7 +471,7 @@ function glowRing(ctx, pal, cx, cy, r) {
   ctx.save(); ctx.setLineDash([4, 18]); ctx.beginPath(); ctx.arc(cx, cy, r * 1.15, 0, 7); ctx.lineWidth = 3; ctx.strokeStyle = alpha(pal.a, .4); ctx.stroke(); ctx.restore();
 }
 function brandTop(ctx, pal, align = 'center') {
-  const name = (me && me.shop.name) || 'Pushro Digital Hub';
+  const name = (me && me.shop.name) || 'Phusro Digital Hub';
   const x = align === 'left' ? 80 : W / 2;
   ctx.font = '800 38px Poppins';
   const w = ctx.measureText(name).width;
@@ -485,7 +485,7 @@ function footer(ctx, pal) {
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, H - 200, W, 200);
   ctx.fillStyle = lin(ctx, 0, 0, W, 0, [alpha(pal.a, 0), pal.a, alpha(pal.a, 0)]); ctx.fillRect(0, H - 200, W, 3);
   ctx.textAlign = 'center'; ctx.fillStyle = pal.text; ctx.font = '700 40px Poppins';
-  ctx.fillText(s.name || 'Pushro Digital Hub', W / 2, H - 125);
+  ctx.fillText(s.name || 'Phusro Digital Hub', W / 2, H - 125);
   ctx.font = '500 30px Poppins'; ctx.fillStyle = pal.sub;
   const line = bits.join('  •  ') || 'Mobile accessories';
   const { lines } = fit(ctx, line, 500, 30, 22, W - 120, 2);
@@ -626,8 +626,8 @@ $('#statusForm').addEventListener('submit', async (e) => {
   btn.disabled = false; btn.textContent = 'Make statuses';
 });
 
-function saveDesigns() { store.set('pushro_designs', JSON.stringify(designs)); }
-function restoreDesigns() { try { designs = JSON.parse(store.get('pushro_designs') || '[]'); } catch { designs = []; } showDesigns(); }
+function saveDesigns() { store.set('phusro_designs', JSON.stringify(designs)); }
+function restoreDesigns() { try { designs = JSON.parse(store.get('phusro_designs') || '[]'); } catch { designs = []; } showDesigns(); }
 function renderAll() { $$('.design').forEach((el, i) => designs[i] && render($('canvas', el), designs[i])); }
 
 function opt(values, current) { return values.map((v) => `<option ${v === current ? 'selected' : ''}>${v}</option>`).join(''); }
@@ -657,7 +657,7 @@ async function showDesigns() {
     const canvas = $('canvas', el); render(canvas, d);
     $$('[data-k]', el).forEach((inp) => inp.addEventListener('input', () => { d[inp.dataset.k] = inp.value; render(canvas, d); saveDesigns(); }));
     const blob = () => new Promise((r) => canvas.toBlob(r, 'image/png'));
-    const fname = () => `pushro-status-${Date.now()}.png`;
+    const fname = () => `phusro-status-${Date.now()}.png`;
     $('[data-a=dl]', el).onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = fname(); a.click(); };
     $('[data-a=share]', el).onclick = async () => {
       const file = new File([await blob()], fname(), { type: 'image/png' });

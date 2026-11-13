@@ -5,7 +5,7 @@ import { EmptyState, ErrorText, SkeletonRows, confirmDialog, toast, useAction } 
 import type { AdminApi } from './AdminSeo';
 import { Sub } from './AdminSub';
 
-// Admin → Pushro: controls Pushro Digital Hub's AI studio (pushro.regularhood.in/studio, server/src/pushro.ts).
+// Admin → Phusro: controls Phusro Digital Hub's AI studio (phusro.regularhood.in/studio, server/src/phusro.ts).
 // Turn it on or off, set how many AI calls it may make a day, set its login code, sign out every device, and see
 // what it has used and cost. Only calls that worked count toward the daily limit.
 
@@ -24,21 +24,21 @@ type Data = {
 };
 
 const PURPOSE: Record<string, string> = {
-  pushro_status: 'Status images',
-  pushro_broadcast: 'WhatsApp broadcast',
-  pushro_instagram: 'Instagram post',
-  pushro_reel: 'Reel idea',
-  pushro_google: 'Google post',
-  pushro_review: 'Review reply',
-  pushro_ideas: 'Offer ideas',
+  phusro_status: 'Status images',
+  phusro_broadcast: 'WhatsApp broadcast',
+  phusro_instagram: 'Instagram post',
+  phusro_reel: 'Reel idea',
+  phusro_google: 'Google post',
+  phusro_review: 'Review reply',
+  phusro_ideas: 'Offer ideas',
 };
 
 const usd = (n: number) => `$${n.toFixed(4)}`;
 
-export function PushroPage({ api }: { api: AdminApi }) {
+export function PhusroPage({ api }: { api: AdminApi }) {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState('');
-  const load = useCallback(() => void api<Data>('pushro').then(setData, (e) => setError((e as Error).message)), [api]);
+  const load = useCallback(() => void api<Data>('phusro').then(setData, (e) => setError((e as Error).message)), [api]);
   useEffect(load, [load]);
 
   if (error) return <ErrorText text={error} />;
@@ -49,14 +49,14 @@ export function PushroPage({ api }: { api: AdminApi }) {
     <>
       <header className="page-head">
         <div>
-          <h1>Pushro</h1>
+          <h1>Phusro</h1>
           <p>
-            Pushro Digital Hub’s AI studio, on Claude Haiku 5.5.{' '}
-            <a href="https://pushro.regularhood.in/studio" target="_blank" rel="noopener noreferrer">
+            Phusro Digital Hub’s AI studio, on Claude Haiku 5.5.{' '}
+            <a href="https://phusro.regularhood.in/studio" target="_blank" rel="noopener noreferrer">
               Open studio <ExternalLink size={13} />
             </a>{' '}
             ·{' '}
-            <a href="https://pushro.regularhood.in/" target="_blank" rel="noopener noreferrer">
+            <a href="https://phusro.regularhood.in/" target="_blank" rel="noopener noreferrer">
               Website <ExternalLink size={13} />
             </a>
           </p>
@@ -123,7 +123,7 @@ export function PushroPage({ api }: { api: AdminApi }) {
               </table>
             </div>
           ) : (
-            <EmptyState icon={Sparkles} title="No AI calls yet" text="Calls from the Pushro studio will show here." />
+            <EmptyState icon={Sparkles} title="No AI calls yet" text="Calls from the Phusro studio will show here." />
           )}
         </section>
       </Sub>
@@ -137,7 +137,7 @@ function SettingsCard({ api, data, onChange }: { api: AdminApi; data: Data; onCh
   const save = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      onChange(await api<Data>('pushro/settings', 'PUT', form));
+      onChange(await api<Data>('phusro/settings', 'PUT', form));
       toast('Saved');
     });
   };
@@ -173,7 +173,7 @@ function CodeCard({ api, data, onChange }: { api: AdminApi; data: Data; onChange
   const save = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      onChange(await api<Data>('pushro/code', 'PUT', { code }));
+      onChange(await api<Data>('phusro/code', 'PUT', { code }));
       void navigator.clipboard?.writeText(code).catch(() => {});
       setCode('');
       toast('New code saved and copied. Everyone using the old code is signed out.');
@@ -181,13 +181,13 @@ function CodeCard({ api, data, onChange }: { api: AdminApi; data: Data; onChange
   };
   const signOut = () =>
     void run(async () => {
-      if (!(await confirmDialog({ title: 'Sign out every device from the Pushro studio?', confirm: 'Sign out' }))) return;
-      onChange(await api<Data>('pushro/sign-out', 'POST'));
+      if (!(await confirmDialog({ title: 'Sign out every device from the Phusro studio?', confirm: 'Sign out' }))) return;
+      onChange(await api<Data>('phusro/sign-out', 'POST'));
       toast('Everyone is signed out');
     });
   const generate = () => {
     const bytes = crypto.getRandomValues(new Uint8Array(5));
-    setCode(`pushro-${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`);
+    setCode(`phusro-${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`);
   };
   return (
     <form className="card" onSubmit={save}>
@@ -200,7 +200,7 @@ function CodeCard({ api, data, onChange }: { api: AdminApi; data: Data; onChange
         {data.codeSource === 'panel'
           ? 'Using the code set here.'
           : data.codeSource === 'env'
-            ? 'Using PUSHRO_CODE from the server. A code set here takes its place.'
+            ? 'Using PHUSRO_CODE from the server. A code set here takes its place.'
             : 'No code yet: nobody can log in.'}{' '}
         It’s kept encrypted and never shown again, so copy it before you leave.
       </p>

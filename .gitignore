@@ -5,5 +5,5 @@ data/
 *.log
 .env
 
-# Pushro studio code, local copy only
-deploy/.pushro-code.txt
+# Phusro studio code, local copy only
+deploy/.phusro-code.txt

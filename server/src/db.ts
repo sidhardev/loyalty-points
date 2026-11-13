@@ -675,6 +675,14 @@ const MIGRATIONS: string[] = [
   `
   ALTER TABLE page_views ADD COLUMN merchant_id INTEGER;
   `,
+
+  // 35: the shop is Phusro Digital Hub (it was first spelled Pushro): its AI usage and studio settings move to the new name.
+  `
+  UPDATE ai_usage SET purpose = 'phusro_' || substr(purpose, 8) WHERE substr(purpose, 1, 7) = 'pushro_';
+  UPDATE app_settings SET key = 'phusro_settings' WHERE key = 'pushro_settings';
+  UPDATE app_settings SET key = 'phusro_code' WHERE key = 'pushro_code';
+  `,
+
 ];
 
 const INDEXES = `
