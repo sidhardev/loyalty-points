@@ -201,3 +201,159 @@ export const STAMP_MAKER: Record<SeoLang, StampMakerCopy> = {
     ],
   },
 };
+
+// Second tool: the Google review QR maker — paste the shop's review link, print counter cards with its QR code. Pro's
+// Google reviews do the same job better (they ask right after the reward, the customer's happiest moment), so the page
+// says so beside the card and after printing, and sign-up carries the shop's name and link along.
+
+export type ReviewQrCopy = {
+  title: string;
+  description: string;
+  name: string;
+  eyebrow: string;
+  h1: string;
+  intro: string;
+  form: {
+    shop: string;
+    link: string;
+    linkHint: string;
+    how: string;
+    howSteps: string[];
+    headline: string;
+    colour: string;
+    print: string;
+    bad: string;
+    empty: string;
+    tip: string;
+  };
+  defaults: { shop: string; headline: string };
+  card: { scan: string };
+  nudge: { h: string; p: string; cta: string; note: string };
+  after: { text: string; cta: string };
+  where: { h2: string; steps: { title: string; text: string }[] };
+  dont: { h2: string; list: string[] };
+  faqs: { q: string; a: string }[];
+};
+
+export const REVIEW_QR_SLUG = 'google-review-qr-code';
+
+export const REVIEW_QR: Record<SeoLang, ReviewQrCopy> = {
+  en: {
+    title: 'Free Google Review QR Code Maker — Print a Review Card for Your Shop',
+    description: 'Make a Google review QR code for your shop: paste your review link and print counter cards with the QR. Customers scan and leave a review. Free, no sign-up.',
+    name: 'Google review QR code maker',
+    eyebrow: 'Free tool',
+    h1: 'Free Google review QR code for your shop',
+    intro: 'Paste your Google review link and print counter cards with its QR code. Customers scan it with their phone camera and land straight on your review box. Free, no sign-up.',
+    form: {
+      shop: 'Shop name',
+      link: 'Your Google review link',
+      linkHint: 'Starts with https://g.page/r/… or https://search.google.com/local/writereview…',
+      how: 'How do I get my review link?',
+      howSteps: [
+        'On your phone, open Google Maps (or search your shop’s name on Google) while signed in with the account that manages the shop.',
+        'Open your Business Profile and tap “Ask for reviews” (it can also say “Get more reviews”).',
+        'Copy the link it gives you and paste it here.',
+      ],
+      headline: 'Card heading',
+      colour: 'Colour',
+      print: 'Print 4 cards (A4)',
+      bad: 'This doesn’t look like a Google review link. It should start with https://g.page/ or https://search.google.com/.',
+      empty: 'Your QR code appears here once you paste your review link.',
+      tip: 'Each card is A6 (about 10 × 14 cm), four to an A4 sheet. Put one at the counter and one where people wait.',
+    },
+    defaults: { shop: 'Gupta Kirana Store', headline: 'Liked it? Review us on Google' },
+    card: { scan: 'Scan with your phone camera' },
+    nudge: {
+      h: 'A QR on the counter waits. Regularhood asks.',
+      p: 'Most happy customers never think of scanning. Regularhood asks at the best moment: right after they get their reward, with a review button on their card and a ready message you send from your own WhatsApp in one tap.',
+      cta: 'Ask for reviews at the right moment',
+      note: 'Google reviews are part of Pro. Your shop name and review link come along when you sign up.',
+    },
+    after: {
+      text: 'Printed? People review most right after a good moment, like getting their reward. Regularhood asks them then.',
+      cta: 'See how',
+    },
+    where: {
+      h2: 'Where to put your review card',
+      steps: [
+        { title: 'At the counter, where people pay', text: 'The last thing they see before they leave, while the visit is still fresh.' },
+        { title: 'Where people wait', text: 'A salon chair, a table, the queue at the sweet counter: people with a minute and a phone in hand.' },
+        { title: 'Say it once, out loud', text: '“If you liked it, a Google review helps us a lot.” A card helps, but a request from you works best.' },
+      ],
+    },
+    dont: {
+      h2: 'What not to do',
+      list: [
+        'Don’t give a discount or gift in return for a review. Google’s rules don’t allow reviews that are paid for or rewarded.',
+        'Don’t ask only the customers you think are happy. Google asks businesses not to pick and choose who they ask.',
+        'Don’t write reviews for your own shop, or ask staff and family to.',
+      ],
+    },
+    faqs: [
+      { q: 'How do I make a QR code for Google reviews?', a: 'Copy your review link from your Google Business Profile (“Ask for reviews”), paste it above, and print the card. The QR code opens that link.' },
+      { q: 'Is this review QR code free?', a: 'Yes. No sign-up, no watermark, and the QR code is yours to print as many times as you like.' },
+      { q: 'Does the QR code stop working?', a: 'It opens your Google review link, so it keeps working as long as your Business Profile is there.' },
+      { q: 'Can I give a discount for a review?', a: 'No. Google’s rules don’t allow paid or rewarded reviews. Ask every customer, and make it easy to say yes.' },
+    ],
+  },
+  hi: {
+    title: 'फ़्री Google रिव्यू QR कोड मेकर — दुकान के लिए रिव्यू कार्ड प्रिंट करें',
+    description: 'अपनी दुकान का Google रिव्यू QR कोड बनाएँ: रिव्यू लिंक डालें और QR वाला काउंटर कार्ड प्रिंट करें। ग्राहक स्कैन करके रिव्यू दें। मुफ़्त, बिना साइन-अप।',
+    name: 'Google रिव्यू QR कोड मेकर',
+    eyebrow: 'फ़्री टूल',
+    h1: 'दुकान के लिए फ़्री Google रिव्यू QR कोड',
+    intro: 'अपना Google रिव्यू लिंक डालें और QR कोड वाला काउंटर कार्ड प्रिंट करें। ग्राहक फ़ोन के कैमरे से स्कैन करें और सीधे आपके रिव्यू बॉक्स पर पहुँचें। मुफ़्त, बिना साइन-अप।',
+    form: {
+      shop: 'दुकान का नाम',
+      link: 'आपका Google रिव्यू लिंक',
+      linkHint: 'https://g.page/r/… या https://search.google.com/local/writereview… से शुरू होता है',
+      how: 'रिव्यू लिंक कहाँ मिलेगा?',
+      howSteps: [
+        'फ़ोन पर Google Maps खोलें (या Google पर अपनी दुकान का नाम सर्च करें), उसी अकाउंट से जिससे दुकान की प्रोफ़ाइल चलती है।',
+        'अपनी Business Profile खोलें और “Ask for reviews” (या “Get more reviews”) दबाएँ।',
+        'जो लिंक मिले, उसे कॉपी करके यहाँ डालें।',
+      ],
+      headline: 'कार्ड की हेडिंग',
+      colour: 'रंग',
+      print: '4 कार्ड प्रिंट करें (A4)',
+      bad: 'यह Google रिव्यू लिंक नहीं लगता। यह https://g.page/ या https://search.google.com/ से शुरू होना चाहिए।',
+      empty: 'रिव्यू लिंक डालते ही आपका QR कोड यहाँ दिखेगा।',
+      tip: 'हर कार्ड A6 (लगभग 10 × 14 cm) का है, एक A4 शीट पर चार। एक काउंटर पर रखें और एक वहाँ जहाँ लोग इंतज़ार करते हैं।',
+    },
+    defaults: { shop: 'गुप्ता किराना स्टोर', headline: 'पसंद आया? Google पर रिव्यू दीजिए' },
+    card: { scan: 'फ़ोन के कैमरे से स्कैन करें' },
+    nudge: {
+      h: 'काउंटर का QR इंतज़ार करता है। Regularhood पूछता है।',
+      p: 'ज़्यादातर खुश ग्राहक स्कैन करने का सोचते ही नहीं। Regularhood सबसे अच्छे पल में पूछता है: इनाम मिलने के ठीक बाद, कार्ड पर रिव्यू बटन के साथ और एक तैयार मैसेज जो आप अपने WhatsApp से एक टैप में भेजते हैं।',
+      cta: 'सही पल पर रिव्यू माँगें',
+      note: 'Google रिव्यू Pro का हिस्सा है। साइन-अप करते ही आपकी दुकान का नाम और रिव्यू लिंक साथ आ जाते हैं।',
+    },
+    after: {
+      text: 'प्रिंट हो गया? लोग सबसे ज़्यादा रिव्यू किसी अच्छे पल के ठीक बाद देते हैं, जैसे इनाम मिलने पर। Regularhood उसी वक़्त पूछता है।',
+      cta: 'देखें कैसे',
+    },
+    where: {
+      h2: 'रिव्यू कार्ड कहाँ रखें',
+      steps: [
+        { title: 'काउंटर पर, जहाँ पैसे दिए जाते हैं', text: 'जाने से पहले आख़िरी चीज़ जो वो देखते हैं, जब विज़िट अभी ताज़ा है।' },
+        { title: 'जहाँ लोग इंतज़ार करते हैं', text: 'सैलून की कुर्सी, टेबल, मिठाई के काउंटर की लाइन: जिनके पास एक मिनट और हाथ में फ़ोन है।' },
+        { title: 'एक बार बोलकर कहें', text: '“पसंद आया हो तो एक Google रिव्यू हमारी बहुत मदद करेगा।” कार्ड मदद करता है, पर आपकी बात सबसे ज़्यादा असर करती है।' },
+      ],
+    },
+    dont: {
+      h2: 'क्या न करें',
+      list: [
+        'रिव्यू के बदले छूट या गिफ़्ट न दें। Google के नियम पैसे या इनाम के बदले रिव्यू की इजाज़त नहीं देते।',
+        'सिर्फ़ उन्हीं ग्राहकों से न पूछें जो आपको खुश लगते हैं। Google कहता है कि पूछने के लिए ग्राहक छाँटें नहीं।',
+        'अपनी दुकान के लिए खुद रिव्यू न लिखें, न स्टाफ़ या परिवार से लिखवाएँ।',
+      ],
+    },
+    faqs: [
+      { q: 'Google रिव्यू का QR कोड कैसे बनाएँ?', a: 'अपनी Google Business Profile से रिव्यू लिंक (“Ask for reviews”) कॉपी करें, ऊपर डालें और कार्ड प्रिंट करें। QR कोड वही लिंक खोलता है।' },
+      { q: 'क्या यह रिव्यू QR कोड फ़्री है?', a: 'हाँ। न साइन-अप, न वॉटरमार्क। QR कोड आपका है, जितनी बार चाहें प्रिंट करें।' },
+      { q: 'क्या QR कोड कभी बंद हो जाता है?', a: 'यह आपका Google रिव्यू लिंक खोलता है, इसलिए जब तक आपकी Business Profile है, यह चलता रहेगा।' },
+      { q: 'क्या रिव्यू के बदले छूट दे सकते हैं?', a: 'नहीं। Google के नियम पैसे या इनाम के बदले रिव्यू की इजाज़त नहीं देते। हर ग्राहक से पूछें और हाँ कहना आसान बनाएँ।' },
+    ],
+  },
+};

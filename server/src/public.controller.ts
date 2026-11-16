@@ -1,9 +1,11 @@
-import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, NotFoundException, Param, Query, Res } from '@nestjs/common';
+import QRCode from 'qrcode';
 import type { Response } from 'express';
 import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
 import { isPro, offer } from './plans';
+import { readReviewUrl } from './review-url';
 import { SITE } from './seo';
 
 // Pages customers open without an account:
@@ -32,6 +34,18 @@ export class PublicController {
   review(@Param('code') code: string, @Res() res: Response) {
     const m = this.db.sql.prepare('SELECT review_url FROM merchants WHERE join_code = ? AND suspended_at IS NULL').get(code) as { review_url: string } | undefined;
     res.redirect(302, m?.review_url || SITE);
+  }
+
+  /**
+   * The QR code for a Google review link, for the free review QR maker (/tools/google-review-qr-code). Only Google
+   * review links are drawn, so this can't be used to make QR codes for anything else.
+   */
+  @Get('review-qr')
+  async reviewQr(@Query('u') u: string, @Res() res: Response) {
+    const url = readReviewUrl(u);
+    if (!url) throw new BadRequestException('Paste the review link from your Google Business Profile');
+    const svg = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0f2e24', light: '#ffffff' } });
+    res.type('image/svg+xml').set('cache-control', 'public, max-age=86400').send(svg);
   }
 
   /** A Pro shop's logo for its customers' cards; long-cached, since its link changes with the logo. */

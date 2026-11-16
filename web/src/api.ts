@@ -10,6 +10,7 @@ export type Merchant = {
   phone: string; // owner's WhatsApp number, '' = not given
   visitsNeeded: number; // every this many visits…
   rewardName: string; // …the customer gets this ('' until the shop sets it up)
+  welcomeStamps: number; // extra stamps on a new customer's first visit (0 = off)
   pro: boolean; // on Pro (plans.ts on the server lists what it adds; PRO_PERKS in billing.tsx shows it)
   review: boolean; // the shop saved its Google review link
   reviewUrl: string;
@@ -29,7 +30,7 @@ export type Customer = {
 };
 
 /** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
-export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer };
+export type VisitResult = { already: boolean; isNew: boolean; welcome?: number; visitId: number | null; customer: Customer };
 
 export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
 

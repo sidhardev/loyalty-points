@@ -23,8 +23,8 @@ import { AiBudgetError, Gemini, type AiSettings } from './gemini';
 import { CITY_PAGES } from './city-pages';
 import { GUIDES, guide } from './guides';
 import { LEGAL } from './legal';
-import { STAMP_MAKER, STAMP_MAKER_SLUG } from './tools';
-import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderSitemap, renderStampMaker, type SeoContent, type SeoKind, type SeoLang } from './seo-render';
+import { REVIEW_QR, REVIEW_QR_SLUG, STAMP_MAKER, STAMP_MAKER_SLUG } from './tools';
+import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderReviewQr, renderSitemap, renderStampMaker, type SeoContent, type SeoKind, type SeoLang } from './seo-render';
 
 // AI-written landing pages for each kind of shop (/for/<slug>, /hi/for/<slug>) and for each city (/city/<slug>,
 // /hi/city/<slug>), in English and Hindi. The superadmin queues shop types and cities (Admin → SEO pages); a timer
@@ -661,6 +661,16 @@ export class SeoPublicController {
   @Get('hi/tools/stamp-card-maker')
   stampMakerHi(@Res() res: Response) {
     this.send(res, renderStampMaker(SITE, 'hi', STAMP_MAKER.hi, { slug: STAMP_MAKER_SLUG, guides: GUIDES.hi.slice(0, 6) }));
+  }
+
+  @Get('tools/google-review-qr-code')
+  reviewQrEn(@Res() res: Response) {
+    this.send(res, renderReviewQr(SITE, 'en', REVIEW_QR.en, { slug: REVIEW_QR_SLUG, guides: GUIDES.en.slice(0, 6) }));
+  }
+
+  @Get('hi/tools/google-review-qr-code')
+  reviewQrHi(@Res() res: Response) {
+    this.send(res, renderReviewQr(SITE, 'hi', REVIEW_QR.hi, { slug: REVIEW_QR_SLUG, guides: GUIDES.hi.slice(0, 6) }));
   }
 
   @Get('privacy')

@@ -4,6 +4,7 @@ import { AuthGuard, MerchantId, publicMerchant } from './auth';
 import { Db } from './db';
 import { LoyaltyService } from './loyalty.service';
 import { requirePro } from './plans';
+import { readReviewUrl } from './review-url';
 
 // Settings that only Pro shops have (plans.ts lists what Pro adds):
 //  - the Google review link: a "Review us on Google" button on every customer card, and "Ask for a Google review" on
@@ -15,21 +16,7 @@ import { requirePro } from './plans';
 const MAX_LOGO_BYTES = 300 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
-/** Google review links shops paste: g.page, maps.app.goo.gl, search.google.com/local/writereview, google.com/maps… */
-export function readReviewUrl(input: unknown) {
-  const text = String(input ?? '').trim();
-  if (!text) return '';
-  let url: URL;
-  try {
-    url = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`);
-  } catch {
-    throw new BadRequestException('Paste the review link from your Google Business Profile');
-  }
-  const host = url.hostname.toLowerCase();
-  const google = host === 'g.page' || host === 'maps.app.goo.gl' || host === 'goo.gl' || host === 'g.co' || /(^|\.)google\.[a-z.]+$/.test(host);
-  if (url.protocol !== 'https:' || !google) throw new BadRequestException('Use your Google review link (it starts with https://g.page/ or https://search.google.com/)');
-  return url.toString().slice(0, 500);
-}
+export { readReviewUrl };
 
 @Controller('api/pro')
 @UseGuards(AuthGuard)

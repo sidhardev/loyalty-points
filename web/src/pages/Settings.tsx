@@ -151,6 +151,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
     phone: merchant.phone,
     visitsNeeded: merchant.visitsNeeded,
     rewardName: merchant.rewardName,
+    welcomeStamps: merchant.welcomeStamps ?? 0,
     inactiveDays: String(merchant.inactiveDays),
   });
   const [lang, setLang] = useState(messageLang);
@@ -203,6 +204,26 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
             <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('Free chai')} maxLength={60} required aria-label="Reward" />
             <Stamps stamps={form.visitsNeeded - 1} needed={form.visitsNeeded} />
             <span className="hint">{t("Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.")}</span>
+            <div className="welcome-stamps">
+              <span className="welcome-label">{t('Welcome stamp on the first visit')}</span>
+              <div className="seg" role="group" aria-label="Welcome stamps">
+                {[0, 1, 2].map((n) => (
+                  <button
+                    type="button"
+                    key={n}
+                    className={form.welcomeStamps === n ? 'active' : ''}
+                    disabled={n > 0 && n > form.visitsNeeded - 2}
+                    onClick={() => setForm({ ...form, welcomeStamps: n })}
+                  >
+                    {n === 0 ? t('Off') : `+${n}`}
+                  </button>
+                ))}
+              </div>
+              <span className="hint">
+                {t('New customers start with a card that is already begun, so more of them finish it.')}{' '}
+                {form.welcomeStamps > 0 && t('Tip: add {n} to the visits so the reward costs you the same.', { n: form.welcomeStamps })}
+              </span>
+            </div>
           </div>
 
           <div className="settings-section">

@@ -7265,3 +7265,16 @@ a.kpi:hover {
     flex: 1 1 100%;
   }
 }
+
+/* Settings → Your card: welcome stamps on a new customer's first visit. */
+.welcome-stamps {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.welcome-label {
+  font-weight: 600;
+}

@@ -24,6 +24,7 @@ export type MerchantRow = {
   large_bill: number;
   visits_needed: number;
   reward_name: string;
+  welcome_stamps: number; // extra stamps on a new customer's first visit
   created_at: string;
   last_seen_at: string | null;
   suspended_at: string | null;
@@ -162,11 +163,15 @@ export class LoyaltyService {
              AND date(created_at, ?) = date('now', ?) LIMIT 1`,
         )
         .get(c.id, shift, shift);
-      if (today) return { already: true, isNew, visitId: null, customer: this.view(m, c) };
+      if (today) return { already: true, isNew, welcome: 0, visitId: null, customer: this.view(m, c) };
 
       const visitId = this.add(merchantId, c.id, 'earn', 1);
+      // A new customer's card starts with the shop's welcome stamps, kept as a 'bonus' so it never counts as a visit.
+      // Always at least one real visit short of the reward (settings keep it so; this is a second guard).
+      const welcome = isNew ? Math.max(0, Math.min(m.welcome_stamps, m.visits_needed - 2)) : 0;
+      if (welcome) this.add(merchantId, c.id, 'bonus', welcome, 'Welcome stamp');
       this.db.sql.prepare("UPDATE customers SET last_visit = datetime('now') WHERE id = ?").run(c.id);
-      return { already: false, isNew, visitId, customer: this.view(m, this.customer(merchantId, c.id)) };
+      return { already: false, isNew, welcome, visitId, customer: this.view(m, this.customer(merchantId, c.id)) };
     });
   }
 
@@ -249,7 +254,7 @@ export class LoyaltyService {
   }
 
   /** Writes one entry and moves the customer's stamps. Returns the entry's id. */
-  private add(merchantId: number, customerId: number, type: 'earn' | 'redeem' | 'adjust', points: number, note: string | null = null, reversalOf?: number) {
+  private add(merchantId: number, customerId: number, type: 'earn' | 'redeem' | 'bonus' | 'adjust', points: number, note: string | null = null, reversalOf?: number) {
     const { lastInsertRowid } = this.db.sql
       .prepare('INSERT INTO transactions (merchant_id, customer_id, type, points, note, reversal_of) VALUES (?, ?, ?, ?, ?, ?)')
       .run(merchantId, customerId, type, points, note, reversalOf ?? null);

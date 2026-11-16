@@ -726,6 +726,11 @@ const MIGRATIONS: string[] = [
   );
   ALTER TABLE merchants ADD COLUMN logo_at TEXT;
   `,
+  // 40: welcome stamps — extra stamps on a new customer's first visit (0 = off). A card that has already started gets
+  // finished more often than an empty one asking for the same visits.
+  `
+  ALTER TABLE merchants ADD COLUMN welcome_stamps INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 const INDEXES = `

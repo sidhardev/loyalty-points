@@ -15,7 +15,7 @@ const FEATURES = [
 
 /** A card made in the free stamp card maker (/tools/stamp-card-maker), sent along in the sign-up link. Kept for the tab,
  *  so it survives the Google step and a reload. */
-type ToolCard = { shop: string; reward: string; visits: number };
+type ToolCard = { shop: string; reward: string; visits: number; review: string };
 const TOOL_CARD = 'rh_tool_card';
 
 function readToolCard(): ToolCard | null {
@@ -23,13 +23,15 @@ function readToolCard(): ToolCard | null {
     const q = new URLSearchParams(location.search);
     const reward = (q.get('reward') ?? '').trim().slice(0, 60);
     const visits = Number(q.get('visits'));
-    if (reward && Number.isInteger(visits) && visits >= 2 && visits <= 50) {
-      const card = { shop: (q.get('shop') ?? '').trim().slice(0, 80), reward, visits };
+    const rule = reward && Number.isInteger(visits) && visits >= 2 && visits <= 50;
+    const shop = (q.get('shop') ?? '').trim().slice(0, 80);
+    const review = (q.get('review') ?? '').trim().slice(0, 500);
+    if (rule || shop || review) {
+      const card = { shop, reward: rule ? reward : '', visits: rule ? visits : 0, review };
       sessionStorage.setItem(TOOL_CARD, JSON.stringify(card));
       return card;
     }
-    const saved = JSON.parse(sessionStorage.getItem(TOOL_CARD) ?? 'null') as ToolCard | null;
-    return saved && saved.reward && saved.visits ? saved : null;
+    return JSON.parse(sessionStorage.getItem(TOOL_CARD) ?? 'null') as ToolCard | null;
   } catch {
     return null;
   }
@@ -37,7 +39,8 @@ function readToolCard(): ToolCard | null {
 
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const [card] = useState(readToolCard);
-  const rule = card ? { visitsNeeded: card.visits, rewardName: card.reward } : undefined;
+  const rule = card?.reward ? { visitsNeeded: card.visits, rewardName: card.reward } : undefined;
+  const reviewUrl = card?.review || undefined;
   const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' || card ? 'signup' : 'login');
   const [form, setForm] = useState({ name: card?.shop ?? '', email: '', password: '', phone: '', login: '' });
   const { busy, error, setError, run } = useAction();
@@ -51,6 +54,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         ...details,
         attribution: arrival(),
         rule,
+        reviewUrl,
       });
       if ('needs' in r) {
         // A new Google account; Admin → Visits shows who got this far but didn't finish.
@@ -59,7 +63,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         return;
       }
       setToken(r.token);
-      if (details) trackEvent('signup', card ? 'shop-google: from stamp card maker' : 'shop-google');
+      if (details) trackEvent('signup', card ? `shop-google: from ${card.reward ? 'stamp card maker' : 'review QR maker'}` : 'shop-google');
       onAuthed(r.merchant);
     });
 
@@ -70,10 +74,10 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
       const { token, merchant } = await api<{ token: string; merchant: Merchant }>(
         `auth/${mode}`,
         'POST',
-        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival(), rule } : { login: form.login, password: form.password },
+        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival(), rule, reviewUrl } : { login: form.login, password: form.password },
       );
       setToken(token);
-      if (mode === 'signup') trackEvent('signup', card ? 'shop: from stamp card maker' : 'shop');
+      if (mode === 'signup') trackEvent('signup', card ? `shop: from ${card.reward ? 'stamp card maker' : 'review QR maker'}` : 'shop');
       onAuthed(merchant);
     });
   };
@@ -144,7 +148,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
                 <h2 style={{ fontSize: 22 }}>{mode === 'login' ? 'Welcome back' : 'Create your shop account'}</h2>
                 <p className="muted small">{mode === 'login' ? 'Log in to your shop.' : 'Free, and ready in under a minute.'}</p>
               </div>
-              {mode === 'signup' && card && (
+              {mode === 'signup' && card?.reward && (
                 <div className="tool-card-note">
                   <span className="tool-card-kicker">Your card</span>
                   <strong>

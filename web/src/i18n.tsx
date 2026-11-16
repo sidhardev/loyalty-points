@@ -120,6 +120,11 @@ const HI: Record<string, string> = {
   // settings
   'Settings saved': 'सेटिंग्स सेव हो गईं',
   'Your card': 'आपका कार्ड',
+  'Welcome stamp on the first visit': 'पहली विज़िट पर वेलकम स्टैम्प',
+  Off: 'बंद',
+  'New customers start with a card that is already begun, so more of them finish it.': 'नए ग्राहक को पहले से शुरू हुआ कार्ड मिलता है, इसलिए ज़्यादा ग्राहक उसे पूरा करते हैं।',
+  'Tip: add {n} to the visits so the reward costs you the same.': 'सुझाव: विज़िट की संख्या में {n} जोड़ दें, ताकि इनाम की लागत उतनी ही रहे।',
+  '+{n} welcome stamp.': '+{n} वेलकम स्टैम्प।',
   "Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.":
     'संख्या बदलने पर सबकी विज़िट बनी रहती हैं। जिनकी विज़िट पूरी हो चुकी हैं, उन्हें अगली बार इनाम मिलेगा।',
   Shop: 'दुकान',
@@ -533,6 +538,11 @@ const ML: Record<string, string> = {
   // settings
   'Settings saved': 'സെറ്റിങ്സ് സേവ് ചെയ്തു',
   'Your card': 'നിങ്ങളുടെ കാർഡ്',
+  'Welcome stamp on the first visit': 'ആദ്യ സന്ദർശനത്തിൽ വെൽക്കം സ്റ്റാമ്പ്',
+  Off: 'ഓഫ്',
+  'New customers start with a card that is already begun, so more of them finish it.': 'പുതിയ കസ്റ്റമർക്ക് തുടങ്ങിയ കാർഡ് കിട്ടും, അതുകൊണ്ട് കൂടുതൽ പേർ അത് പൂർത്തിയാക്കും.',
+  'Tip: add {n} to the visits so the reward costs you the same.': 'ടിപ്പ്: സമ്മാനത്തിന്റെ ചെലവ് അതേപടി നിൽക്കാൻ സന്ദർശനങ്ങളിൽ {n} കൂട്ടൂ.',
+  '+{n} welcome stamp.': '+{n} വെൽക്കം സ്റ്റാമ്പ്.',
   "Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.":
     'എണ്ണം മാറ്റിയാലും എല്ലാവരുടെയും സന്ദർശനങ്ങൾ നിലനിൽക്കും. ആവശ്യത്തിന് സന്ദർശനം ഉള്ളവർക്ക് അടുത്ത തവണ സമ്മാനം കിട്ടും.',
   Shop: 'കട',

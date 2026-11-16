@@ -266,6 +266,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
               <h1>{t('Visit {x} of {n}', { x: num(c.stamps), n: num(n) })}</h1>
               <p>
                 {result.isNew ? `${t('New customer!')} ` : ''}
+                {result.welcome ? `${t('+{n} welcome stamp.', { n: result.welcome })} ` : ''}
                 {t('{n} more for {reward}.', { n: n - c.stamps, reward: merchant.rewardName })}
               </p>
             </>

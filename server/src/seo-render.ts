@@ -5,7 +5,7 @@
 
 import type { Guide, GuideBlock } from './guides';
 import { LEGAL, type LegalDoc } from './legal';
-import type { StampMakerCopy } from './tools';
+import type { ReviewQrCopy, StampMakerCopy } from './tools';
 
 export type SeoLang = 'en' | 'hi';
 export type SeoKind = 'shop' | 'city';
@@ -83,6 +83,7 @@ const T = {
     footShipping: 'Delivery',
     footContact: 'Contact',
     tool: 'Free stamp card maker',
+    reviewTool: 'Google review QR code',
   },
   hi: {
     home: 'होम',
@@ -130,6 +131,7 @@ const T = {
     footShipping: 'डिलीवरी',
     footContact: 'संपर्क',
     tool: 'फ़्री स्टैम्प कार्ड मेकर',
+    reviewTool: 'Google रिव्यू QR कोड',
   },
 };
 
@@ -226,6 +228,7 @@ details p{margin:10px 0 0;color:var(--ink2)}
 .steps .card{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:start}.steps .num{margin:0;grid-row:span 2}
 footer{border-top:1px solid var(--line);padding:30px 0 40px;color:var(--soft);font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+@media (max-width:420px){header .wrap{gap:10px}header nav{gap:10px}.logo{font-size:18px}.logo img{width:28px;height:28px}.btn.sm{padding:0 12px;font-size:14px}}
 @media (max-width:820px){.hero{grid-template-columns:1fr;padding-top:40px}.grid3{grid-template-columns:1fr}header nav .hide{display:none}.final{padding:30px}}
 `;
 
@@ -273,6 +276,7 @@ ${o.body}
   [path(o.lang, '', 'city'), t.footCities],
   [guidePath(o.lang), t.guides],
   [toolPath(o.lang, 'stamp-card-maker'), t.tool],
+  [toolPath(o.lang, 'google-review-qr-code'), t.reviewTool],
   ['/privacy', t.footPrivacy],
   ['/terms', t.footTerms],
   ['/refunds', t.footRefunds],
@@ -469,8 +473,9 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
     }
   }
   // Free tools, each in both languages.
-  for (const lang of ['en', 'hi'] as SeoLang[])
-    urls.push(gUrl(toolPath(lang, 'stamp-card-maker'), '2026-11-16', (['en', 'hi'] as SeoLang[]).map((l) => ({ lang: l, path: toolPath(l, 'stamp-card-maker') }))));
+  for (const [slug, updated] of [['stamp-card-maker', '2026-11-16'], ['google-review-qr-code', '2026-11-16']])
+    for (const lang of ['en', 'hi'] as SeoLang[])
+      urls.push(gUrl(toolPath(lang, slug), updated, (['en', 'hi'] as SeoLang[]).map((l) => ({ lang: l, path: toolPath(l, slug) }))));
   urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated), url('/shipping', LEGAL.shipping.updated), url('/contact', LEGAL.contact.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
@@ -544,7 +549,7 @@ ${g.blocks.map(block).join('\n')}
 </div></section>
 <section style="padding-top:0"><div class="wrap">
   <h2 style="font-size:24px">${t.moreGuides}</h2>
-  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${toolPath(lang, 'stamp-card-maker')}">${t.tool} →</a><a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
+  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${toolPath(lang, 'stamp-card-maker')}">${t.tool} →</a><a href="${toolPath(lang, 'google-review-qr-code')}">${t.reviewTool} →</a><a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
 </div></section>
 </main>`;
   return shell({ lang, site, path: here, title: g.title, description: g.description, alternates, jsonLd, body });
@@ -807,6 +812,147 @@ ${block({ h2: c.wrong.h2, list: c.wrong.list })}
   <p class="both">${esc(sh.both)}</p>
 </div></dialog>
 <div class="tafter" id="tafter" hidden role="status"><p>${esc(c.after.text)} <a data-camp="tool-after-print" href="${signup(here)}">${esc(c.after.cta)} →</a></p><button type="button" id="ta-x" aria-label="${esc(sh.close)}">×</button></div>
+<div class="sheet" id="sheet" aria-hidden="true"></div>
+${script}`;
+  return shell({ lang, site, path: here, title: c.title, description: c.description, alternates, jsonLd, body });
+}
+
+const REVIEW_CSS = `
+.rqcard{--c:#0b7a52;--on:#fff;width:300px;max-width:100%;aspect-ratio:105/148;border-radius:16px;background:var(--c);color:var(--on);padding:22px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;box-shadow:0 24px 48px -24px rgba(15,46,36,.55);font-family:Inter,'Noto Sans Devanagari',system-ui,sans-serif;overflow:hidden}
+.rqcard .s{font:700 13px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.85;overflow-wrap:anywhere}
+.rqcard .h{font:800 22px/1.2 Archivo,'Noto Sans Devanagari',Inter,sans-serif;overflow-wrap:anywhere}
+.rqcard .stars{color:#f0a202;font-size:22px;letter-spacing:4px;line-height:1}
+.rqcard .qr{margin-top:auto;width:72%;aspect-ratio:1;background:#fff;border-radius:12px;padding:8px;display:grid;place-items:center}
+.rqcard .qr img{width:100%;height:100%;display:block}
+.rqcard .qr span{color:#5b7066;font-size:12px;line-height:1.35;padding:6px}
+.rqcard .sc{font-size:12px;opacity:.85}
+.howto{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}
+.howto summary{font-weight:600}
+.howto ol{margin:8px 0 0;padding-left:20px;display:grid;gap:6px;color:var(--ink2)}
+.terr{color:#b42318;font-size:14px;font-weight:600;margin:0}
+.terr[hidden]{display:none}
+.rnudge{width:300px;max-width:100%;display:grid;gap:8px;background:var(--sheet);border:1px solid var(--line);border-left:4px solid var(--marigold);border-radius:14px;padding:14px 16px}
+.rnudge b{font-size:16px;line-height:1.3}
+.rnudge p{margin:0;color:var(--ink2);font-size:14px}
+.rnudge small{color:var(--soft);font-size:12px}
+.rnudge a{font-weight:700}
+@media print{
+  @page{size:A4;margin:8mm}
+  body>*:not(.sheet){display:none!important}
+  .sheet{display:grid!important;grid-template-columns:repeat(2,96mm);grid-auto-rows:136mm;gap:4mm;justify-content:center;align-content:center}
+  .sheet .rqcard{width:96mm;max-width:none;height:136mm;aspect-ratio:auto;border-radius:0;box-shadow:none;outline:1px dashed #999;padding:8mm 7mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+`;
+
+/**
+ * The Google review QR maker (/tools/google-review-qr-code, /hi/tools/google-review-qr-code). The QR comes from
+ * /api/public/review-qr, which only draws Google review links. Beside the card and after printing, the page says what
+ * Pro does better (asking right after the reward), and sign-up carries the shop's name and link.
+ */
+export function renderReviewQr(site: string, lang: SeoLang, c: ReviewQrCopy, o: { slug: string; guides: Guide[] }) {
+  const t = T[lang];
+  const here = toolPath(lang, o.slug);
+  const other: SeoLang = lang === 'en' ? 'hi' : 'en';
+  const alternates = [
+    { lang: 'en' as SeoLang, path: toolPath('en', o.slug) },
+    { lang: 'hi' as SeoLang, path: toolPath('hi', o.slug) },
+  ];
+  const colours = [
+    ['#0b7a52', '#fff', 'Green'],
+    ['#0f2e24', '#fff', 'Dark green'],
+    ['#8b1e3f', '#fff', 'Maroon'],
+    ['#1d4e89', '#fff', 'Blue'],
+    ['#f0a202', '#0f2e24', 'Marigold'],
+  ];
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        name: c.name,
+        description: c.description,
+        url: `${site}${here}`,
+        inLanguage: lang === 'hi' ? 'hi-IN' : 'en-IN',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Any',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+        publisher: { '@type': 'Organization', name: 'Regularhood', url: `${site}/` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${site}/` },
+          { '@type': 'ListItem', position: 2, name: c.name, item: `${site}${here}` },
+        ],
+      },
+      { '@type': 'FAQPage', mainEntity: c.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+    ],
+  };
+  // Text the visitor typed is only ever set with textContent; the link only ever reaches the QR as a query parameter.
+  const script = `<script>(function(){
+var f=document.getElementById('rf');if(!f)return;
+var C=${js({ shop: c.defaults.shop, headline: c.defaults.headline, empty: c.form.empty })};
+var card=document.getElementById('rq'),sheet=document.getElementById('sheet'),after=document.getElementById('tafter'),err=document.getElementById('rerr'),box=card.querySelector('.qr'),timer=0,printed=false,good='';
+function q(n){return f.elements[n]}
+function ev(name){try{var id=window.__rhv;if(!id)return;var b=JSON.stringify({t:'event',id:id,kind:'click',name:name});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}}
+function google(v){v=v.trim();if(!v)return '';try{var u=new URL(/^https?:\\/\\//i.test(v)?v:'https://'+v);var h=u.hostname.toLowerCase();if(u.protocol!=='https:')return null;if(h==='g.page'||h==='maps.app.goo.gl'||h==='goo.gl'||h==='g.co'||/(^|\\.)google\\.[a-z.]+$/.test(h))return u.toString();return null}catch(e){return null}}
+function link(camp){var s=q('shop').value.trim();return '/app?utm_source=seo&utm_medium=organic&utm_campaign='+camp+(s?'&shop='+encodeURIComponent(s):'')+(good?'&review='+encodeURIComponent(good):'')+'#signup'}
+function qr(){var u=google(q('link').value);err.hidden=u!==null;box.textContent='';
+if(!u){good='';var e=document.createElement('span');e.textContent=C.empty;box.appendChild(e);return}
+if(u!==good)ev('tool: review QR made');good=u;var i=document.createElement('img');i.alt='QR';i.src='/api/public/review-qr?u='+encodeURIComponent(u);box.appendChild(i)}
+function draw(){card.querySelector('.s').textContent=q('shop').value.trim()||C.shop;card.querySelector('.h').textContent=q('headline').value.trim()||C.headline;
+clearTimeout(timer);timer=setTimeout(function(){qr();document.querySelectorAll('[data-camp]').forEach(function(a){a.href=link(a.getAttribute('data-camp'))})},250)}
+f.addEventListener('input',draw);
+document.querySelectorAll('.swatches button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.swatches button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});card.style.setProperty('--c',b.dataset.c);card.style.setProperty('--on',b.dataset.on)})});
+document.getElementById('rp').addEventListener('click',function(){if(!good){err.hidden=false;q('link').focus();return}sheet.textContent='';for(var i=0;i<4;i++)sheet.appendChild(card.cloneNode(true)).removeAttribute('id');printed=true;ev('tool: review print');window.print()});
+document.querySelectorAll('[data-camp]').forEach(function(a){a.addEventListener('click',function(){ev('tool: review → Pro ('+a.getAttribute('data-camp')+')')})});
+window.addEventListener('afterprint',function(){if(!printed)return;printed=false;var shown=false;try{shown=sessionStorage.getItem('rh_review_after')==='1';sessionStorage.setItem('rh_review_after','1')}catch(e){}if(!shown){after.hidden=false;ev('tool: review after-print shown')}});
+document.getElementById('ta-x').addEventListener('click',function(){after.hidden=true});
+draw()})();</script>`;
+  const body = `<style>${TOOL_CSS}${REVIEW_CSS}</style>
+<main>
+<div class="wrap" style="padding-top:40px">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Regularhood</a> › ${esc(c.name)}</nav>
+  <p class="eyebrow">${esc(c.eyebrow)}</p>
+  <h1>${esc(c.h1)}</h1>
+  <p class="intro">${esc(c.intro)} <a href="${toolPath(other, o.slug)}" hreflang="${other}">${t.twin}</a></p>
+  <div class="tool">
+    <form class="tform" id="rf" onsubmit="return false">
+      <label>${esc(c.form.shop)}<input name="shop" maxlength="40" value="${esc(c.defaults.shop)}" autocomplete="organization"></label>
+      <label>${esc(c.form.link)}<input name="link" type="url" inputmode="url" maxlength="500" placeholder="https://g.page/r/…/review" autocomplete="off"><span style="font-weight:400;font-size:13px;color:var(--soft)">${esc(c.form.linkHint)}</span></label>
+      <p class="terr" id="rerr" hidden>${esc(c.form.bad)}</p>
+      <details class="howto"><summary>${esc(c.form.how)}</summary><ol>${c.form.howSteps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol></details>
+      <label>${esc(c.form.headline)}<input name="headline" maxlength="50" value="${esc(c.defaults.headline)}"></label>
+      <div><p style="margin:0 0 8px;font-weight:600;font-size:15px;color:var(--ink2)">${esc(c.form.colour)}</p><div class="swatches">${colours
+        .map(([bg, on, name], i) => `<button type="button" style="--c:${bg}" data-c="${bg}" data-on="${on}" aria-pressed="${i === 0}" aria-label="${name}"></button>`)
+        .join('')}</div></div>
+      <button type="button" class="btn" id="rp">${esc(c.form.print)} →</button>
+    </form>
+    <div class="tprev">
+      <div class="rqcard" id="rq">
+        <span class="s">${esc(c.defaults.shop)}</span>
+        <span class="h">${esc(c.defaults.headline)}</span>
+        <span class="stars" aria-hidden="true">★★★★★</span>
+        <div class="qr"><span>${esc(c.form.empty)}</span></div>
+        <span class="sc">${esc(c.card.scan)}</span>
+      </div>
+      <p class="tip">${esc(c.form.tip)}</p>
+      <div class="rnudge"><b>${esc(c.nudge.h)}</b><p>${esc(c.nudge.p)}</p><a data-camp="review-tool" href="${signup(here)}">${esc(c.nudge.cta)} →</a><small>${esc(c.nudge.note)}</small></div>
+    </div>
+  </div>
+</div>
+${block({ h2: c.where.h2, steps: c.where.steps })}
+${block({ h2: c.dont.h2, list: c.dont.list })}
+<section><div class="wrap"><div class="article">
+  <h2>${t.faq}</h2>
+  ${c.faqs.map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
+</div></div></section>
+<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${t.moreGuides}</h2>
+  <div class="links"><a href="${toolPath(lang, 'stamp-card-maker')}">${t.tool} →</a>${o.guides.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a></div>
+</div></section>
+</main>
+<div class="tafter" id="tafter" hidden role="status"><p>${esc(c.after.text)} <a data-camp="review-after-print" href="${signup(here)}">${esc(c.after.cta)} →</a></p><button type="button" id="ta-x" aria-label="×">×</button></div>
 <div class="sheet" id="sheet" aria-hidden="true"></div>
 ${script}`;
   return shell({ lang, site, path: here, title: c.title, description: c.description, alternates, jsonLd, body });

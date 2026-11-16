@@ -25,6 +25,7 @@ import { isPro } from './plans';
 import { Db, randomToken } from './db';
 import { CARD_SOURCE, cleanCode, PARTNER_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
+import { readReviewUrl } from './review-url';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
 // every request. They log in with either one, or with "Continue with Google" (google.ts).
@@ -51,6 +52,7 @@ export const publicMerchant = (m: MerchantRow) => ({
   phone: m.phone ?? '',
   visitsNeeded: m.visits_needed,
   rewardName: m.reward_name,
+  welcomeStamps: m.welcome_stamps,
   pro: isPro(m), // see plans.ts for what Pro adds
   review: Boolean(m.review_url), // has a Google review link
   reviewUrl: m.review_url,
@@ -62,6 +64,7 @@ type Settings = {
   phone?: string;
   visitsNeeded?: number;
   rewardName?: string;
+  welcomeStamps?: number;
   inactiveDays?: number;
 };
 
@@ -139,7 +142,7 @@ export class AuthController {
   ) {}
 
   @Post('auth/signup')
-  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown; rule?: unknown }) {
+  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
     const name = body?.name?.trim();
     const email = body?.email?.trim().toLowerCase() ?? '';
     const password = body?.password ?? '';
@@ -154,7 +157,7 @@ export class AuthController {
     }
     if (phone && this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in instead.');
 
-    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution, rule: body?.rule }));
+    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution, rule: body?.rule, reviewUrl: body?.reviewUrl }));
   }
 
   /** The website shows "Continue with Google" only when the server has a Google client id. */
@@ -169,7 +172,7 @@ export class AuthController {
    * and sends the same token again.
    */
   @Post('auth/google')
-  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown; rule?: unknown }) {
+  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
     const g = await verifyGoogleToken(String(body?.credential ?? ''));
     if (!g) throw new UnauthorizedException('Google sign-in did not work. Please try again.');
 
@@ -190,11 +193,11 @@ export class AuthController {
     if (!name || !phone) return { needs: 'details', email: g.email, name: g.name };
     if (this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in with your number and password.');
     // Nobody knows this password; a reset link from support can set one later.
-    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub, rule: body?.rule });
+    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub, rule: body?.rule, reviewUrl: body?.reviewUrl });
     return this.session(id);
   }
 
-  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string; rule?: unknown }) {
+  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string; rule?: unknown; reviewUrl?: unknown }) {
     // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
     const from = readAttribution(s.attribution);
     const referrer =
@@ -218,6 +221,14 @@ export class AuthController {
     // The card they made in the stamp card maker becomes the shop's rule, so the app opens on their own card.
     const rule = readRule(s.rule);
     if (rule) this.db.sql.prepare('UPDATE merchants SET visits_needed = ?, reward_name = ? WHERE id = ?').run(rule.visits, rule.reward, id);
+    // The review link from the review QR maker; a bad one is dropped, like the rule.
+    let review = '';
+    try {
+      review = readReviewUrl(s.reviewUrl);
+    } catch {
+      // Not a Google review link: not kept.
+    }
+    if (review) this.db.sql.prepare('UPDATE merchants SET review_url = ? WHERE id = ?').run(review, id);
     return id;
   }
 
@@ -295,15 +306,18 @@ export class AuthController {
     const reward = (b.rewardName === undefined ? m.reward_name : String(b.rewardName)).trim().slice(0, 60);
     if (b.rewardName !== undefined && !reward) throw new BadRequestException('Write what the customer gets, e.g. Free chai');
     const inactive = wholeNumber(b.inactiveDays ?? m.inactive_days, 'Inactive days', 7, 365);
+    // Welcome stamps leave at least one real visit before the reward; fewer visits than that brings them down.
+    const welcome = Math.min(wholeNumber(b.welcomeStamps ?? m.welcome_stamps, 'Welcome stamps', 0, 2), needed - 2);
     this.db.sql
-      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, inactive_days = ?, phone = ? WHERE id = ?')
-      .run(name, needed, reward, inactive, phone || null, m.id);
+      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, welcome_stamps = ?, inactive_days = ?, phone = ? WHERE id = ?')
+      .run(name, needed, reward, welcome, inactive, phone || null, m.id);
 
     const changed = (
       [
         ['shop name', m.name, name],
         ['visits for a reward', m.visits_needed, needed],
         ['reward', m.reward_name, reward],
+        ['welcome stamps', m.welcome_stamps, welcome],
         ['inactive days', m.inactive_days, inactive],
       ] as const
     ).filter(([, before, after]) => before !== after);
