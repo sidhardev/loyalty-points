@@ -696,6 +696,13 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_page_drafts_day ON page_drafts (day);
   `,
+
+  // 37: "Sign in with Google" (auth.ts): the Google account a shop logs in with, by Google's id for it (never changes,
+  // unlike the email). A shop made this way gets a random password nobody knows; a reset link can set a real one.
+  `
+  ALTER TABLE merchants ADD COLUMN google_sub TEXT;
+  CREATE UNIQUE INDEX idx_merchants_google ON merchants (google_sub);
+  `,
 ];
 
 const INDEXES = `

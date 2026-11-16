@@ -122,6 +122,24 @@ Then open `/admin#/seo`, press **Add 30 suggested** (or type your own kinds of s
 start time and the monthly budget. Costs are tracked per call; writing stops for the month when the budget is reached.
 On Vercel, `/for/*`, `/hi/for/*` and `/sitemap.xml` are forwarded to the server (see `vercel.json`).
 
+## Sign in with Google (optional)
+
+The shop login and sign-up pages show **Continue with Google** once the server has a Google OAuth client id. A new
+Google account is then asked for a shop name and WhatsApp number; a shop whose email matches logs straight in.
+
+1. In Google Cloud → **APIs & Services → OAuth consent screen**, set the app name, support email and the domain
+   `regularhood.in`. Only the basic scopes (email, profile) are used, so Google's app review isn't needed.
+2. **Credentials → Create credentials → OAuth client ID → Web application.** Under *Authorized JavaScript origins* add
+   `https://regularhood.in`, `https://www.regularhood.in` and, for local testing, `http://localhost:4000`. No redirect
+   URIs are needed.
+3. Regularhood's client id is already in `server/src/google.ts` (it isn't a secret), so nothing is needed on the
+   server. To use another one, or `off` to hide the button, set it in `deploy/.env` and restart:
+
+```
+echo "GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com" >> deploy/.env
+cd deploy && docker compose up -d
+```
+
 ## Lead finder (optional)
 
 Admin → **Leads** finds shops on Google Maps that could use Regularhood and writes a pitch for each with Gemini. It needs

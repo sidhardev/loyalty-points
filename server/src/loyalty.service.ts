@@ -12,6 +12,7 @@ export type MerchantRow = {
   name: string;
   email: string | null; // null: signed up with a WhatsApp number only
   password_hash: string;
+  google_sub: string | null;
   points_per_100: number;
   join_code: string;
   welcome_bonus: number;

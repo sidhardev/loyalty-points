@@ -20,13 +20,14 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
+import { googleClientId, verifyGoogleToken } from './google';
 import { isFounding } from './plans';
 import { Db, randomToken } from './db';
 import { CARD_SOURCE, cleanCode, PARTNER_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
-// every request. They log in with either one.
+// every request. They log in with either one, or with "Continue with Google" (google.ts).
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -138,8 +139,49 @@ export class AuthController {
     }
     if (phone && this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in instead.');
 
+    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution }));
+  }
+
+  /** The website shows "Continue with Google" only when the server has a Google client id. */
+  @Get('auth/google')
+  googleConfig() {
+    return { clientId: googleClientId() };
+  }
+
+  /**
+   * Log in or sign up with a Google ID token. A known Google account (or a shop with its email) logs straight in; a new
+   * one first needs a shop name and WhatsApp number, so the answer is { needs: 'details' } and the website asks for them
+   * and sends the same token again.
+   */
+  @Post('auth/google')
+  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown }) {
+    const g = await verifyGoogleToken(String(body?.credential ?? ''));
+    if (!g) throw new UnauthorizedException('Google sign-in did not work. Please try again.');
+
+    const known =
+      (this.db.sql.prepare('SELECT * FROM merchants WHERE google_sub = ?').get(g.sub) as MerchantRow | undefined) ??
+      (this.db.sql.prepare('SELECT * FROM merchants WHERE email = ? ORDER BY id').get(g.email) as MerchantRow | undefined);
+    if (known) {
+      if (known.suspended_at) throw new ForbiddenException(SUSPENDED);
+      if (!known.google_sub) {
+        this.db.sql.prepare('UPDATE merchants SET google_sub = ? WHERE id = ?').run(g.sub, known.id);
+        this.loyalty.log(known.id, 'shop', 'google', `Logged in with Google (${g.email})`);
+      }
+      return this.session(known.id);
+    }
+
+    const name = body?.name?.trim().slice(0, 80);
+    const phone = readPhone(body?.phone);
+    if (!name || !phone) return { needs: 'details', email: g.email, name: g.name };
+    if (this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in with your number and password.');
+    // Nobody knows this password; a reset link from support can set one later.
+    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub });
+    return this.session(id);
+  }
+
+  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string }) {
     // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
-    const from = readAttribution(body?.attribution);
+    const from = readAttribution(s.attribution);
     const referrer =
       (from.source === CARD_SOURCE || from.source === SHOP_SOURCE) && from.campaign
         ? (this.db.sql.prepare('SELECT id FROM merchants WHERE join_code = ?').get(from.campaign) as { id: number } | undefined)
@@ -154,10 +196,10 @@ export class AuthController {
     const { lastInsertRowid } = this.db.sql
       .prepare(
         `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
-           signup_ref, signup_landing, referred_by, partner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           signup_ref, signup_landing, referred_by, partner_id, google_sub) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(name, email || null, hashPassword(password), randomToken(6), phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null);
-    return this.session(Number(lastInsertRowid));
+      .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null, s.googleSub ?? null);
+    return Number(lastInsertRowid);
   }
 
   @Post('auth/login')
