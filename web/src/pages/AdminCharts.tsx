@@ -28,7 +28,7 @@ export function TrendBars({ data, format, label }: { data: { day: string; value:
   const every = Math.ceil(data.length / 6);
   const h = hover !== null ? data[hover] : null;
   return (
-    <div className="trend" onMouseLeave={() => setHover(null)}>
+    <div className="tchart" onMouseLeave={() => setHover(null)}>
       <div className="trend-plot" role="img" aria-label={`${label} per day: ${format(data.reduce((n, d) => n + d.value, 0))} in total`}>
         {ticks.map((t) => (
           <span key={t} className="trend-grid" style={{ bottom: `${(t / max) * 100}%` }}>
@@ -59,7 +59,7 @@ export function TrendBars({ data, format, label }: { data: { day: string; value:
       </div>
       <div className="trend-x">
         {data.map((d, i) => (
-          <span key={d.day}>{i % every === 0 || (i === data.length - 1 && i % every >= every * 0.75) ? dayLabel(d.day) : ''}</span>
+          <span key={d.day}>{(data.length - 1 - i) % every === 0 ? dayLabel(d.day) : ''}</span>
         ))}
       </div>
     </div>
@@ -141,6 +141,84 @@ export function ShareBar({ parts }: { parts: { key: string; label: string; value
           return <li key={p.key}>{p.href ? <a href={p.href}>{inner}</a> : <div>{inner}</div>}</li>;
         })}
       </ul>
+    </div>
+  );
+}
+
+const MONTH = new Intl.DateTimeFormat('en-IN', { month: 'short' });
+const KIND_ORDER = [
+  { kind: 'lifetime', label: 'Lifetime', cls: 'pl-lifetime' },
+  { kind: 'yearly', label: 'Yearly', cls: 'pl-yearly' },
+  { kind: 'monthly', label: 'Monthly', cls: 'pl-monthly' },
+];
+
+/** Money in per month for the last 12 months, each column split by plan, with a legend and a tooltip. */
+export function MonthlyRevenue({ rows }: { rows: { month: string; kind: string; paise: number; n: number }[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const now = new Date(Date.now() + 330 * 60_000);
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + i, 1));
+    const key = d.toISOString().slice(0, 7);
+    const parts = KIND_ORDER.map((k) => {
+      const r = rows.find((x) => x.month === key && x.kind === k.kind);
+      return { ...k, rupees: (r?.paise ?? 0) / 100, n: r?.n ?? 0 };
+    });
+    return { key, label: MONTH.format(d), parts, total: parts.reduce((a, p) => a + p.rupees, 0) };
+  });
+  const max = niceMax(Math.max(0, ...months.map((m) => m.total)));
+  const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const h = hover !== null ? months[hover] : null;
+  return (
+    <div className="mrev">
+      <ul className="mrev-legend">
+        {KIND_ORDER.map((k) => (
+          <li key={k.kind}>
+            <i className={k.cls} /> {k.label}
+          </li>
+        ))}
+      </ul>
+      <div className="tchart" onMouseLeave={() => setHover(null)}>
+        <div className="trend-plot" style={{ height: 200 }} role="img" aria-label={`Money in per month: ${months.map((m) => `${m.label} ${inr(m.total)}`).join(', ')}`}>
+          {[max, max / 2, 0].map((t) => (
+            <span key={t} className="trend-grid" style={{ bottom: `${(t / max) * 100}%` }}>
+              <em>{t ? `₹${short(t)}` : '0'}</em>
+            </span>
+          ))}
+          <div className="trend-bars" style={{ gap: 8 }}>
+            {months.map((m, i) => (
+              <button key={m.key} type="button" className={`trend-col mrev-col${hover === i ? ' on' : ''}`} onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} onClick={() => setHover(i)} aria-label={`${m.label}: ${inr(m.total)}`}>
+                <span className="mrev-stack" style={{ height: `${(m.total / max) * 100}%` }}>
+                  {m.parts
+                    .filter((p) => p.rupees)
+                    .map((p) => (
+                      <i key={p.kind} className={p.cls} style={{ flexGrow: p.rupees }} />
+                    ))}
+                </span>
+              </button>
+            ))}
+          </div>
+          {h && (
+            <div className="trend-tip" style={{ left: `${((hover! + 0.5) / 12) * 100}%` }}>
+              <span>{h.label}</span>
+              <strong>{inr(h.total)}</strong>
+              {h.parts
+                .filter((p) => p.n)
+                .map((p) => (
+                  <span key={p.kind}>
+                    {p.label}: {p.n} · {inr(p.rupees)}
+                  </span>
+                ))}
+            </div>
+          )}
+        </div>
+        <div className="trend-x">
+          {months.map((m) => (
+            <span key={m.key} style={{ textAlign: 'center' }}>
+              {m.label}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

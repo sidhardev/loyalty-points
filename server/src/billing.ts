@@ -407,6 +407,13 @@ export class BillingAdminController {
       pro,
       payments,
       nearLimit,
+      // Money in per month (IST), the last 12 months, split by plan.
+      monthly: sql
+        .prepare(
+          `SELECT strftime('%Y-%m', paid_at, '+330 minutes') AS month, kind, SUM(amount_paise) AS paise, COUNT(*) AS n FROM payments
+           WHERE status = 'paid' AND paid_at >= datetime('now', 'start of month', '-11 months') GROUP BY month, kind ORDER BY month`,
+        )
+        .all(),
       razorpay: { keyId: keyId(), test: keyId().startsWith('rzp_test_'), webhook: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) },
       health: sql
         .prepare(

@@ -21,6 +21,7 @@ import { num, parseTime, when, whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, Skeleton, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
 import { Sub } from './AdminSub';
+import { MonthlyRevenue } from './AdminCharts';
 
 // Admin → Plans: everything about Free and Pro in one place. The offer (prices by the month, year and lifetime, whether
 // lifetime is on sale and its places, the Free plan's customer limit), the money, every Pro shop with its state, every payment with a refund
@@ -64,6 +65,7 @@ type Overview = {
   pro: FoundingShop[];
   payments: Payment[];
   nearLimit: { id: number; name: string; phone: string | null; customers: number }[];
+  monthly?: { month: string; kind: string; paise: number; n: number }[];
   razorpay: { keyId: string; test: boolean; webhook: boolean };
   health: { lastWebhook: string | null; webhooks: number; rejected: number; verifyFailed: number; mismatched: number };
   funnel: { started: number; paid: number; failed: number; closed: number; shops: number };
@@ -536,6 +538,16 @@ export function PlansPage({ api }: { api: AdminApi }) {
       </Sub>
 
       <Sub id="payments">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <TrendingUp size={18} /> Money in by month
+            </h2>
+            <span className="muted small">last 12 months, paid only</span>
+          </div>
+          <MonthlyRevenue rows={data.monthly ?? []} />
+        </section>
+
         <section className="card">
           <div className="card-head">
             <h2>

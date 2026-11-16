@@ -322,10 +322,37 @@ export class AdminController {
     const daily = sql
       .prepare(
         `SELECT date(created_at, '+330 minutes') AS day, SUM(type = 'earn') AS visits, SUM(type = 'redeem') AS rewards
-         FROM transactions WHERE merchant_id = ? AND type IN ('earn', 'redeem') AND reversed = 0 AND created_at >= datetime('now', '-30 days')
+         FROM transactions WHERE merchant_id = ? AND type IN ('earn', 'redeem') AND reversed = 0 AND created_at >= datetime('now', '-90 days')
          GROUP BY day ORDER BY day`,
       )
       .all(id);
+    const newCustomers = sql
+      .prepare(
+        `SELECT date(created_at, '+330 minutes') AS day, COUNT(*) AS n FROM customers WHERE merchant_id = ? AND created_at >= datetime('now', '-90 days') GROUP BY day`,
+      )
+      .all(id);
+    // When the shop is busy (IST), from the last 90 days of visits.
+    const hours = sql
+      .prepare(
+        `SELECT CAST(strftime('%H', created_at, '+330 minutes') AS INTEGER) AS h, COUNT(*) AS n FROM transactions
+         WHERE merchant_id = ? AND type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-90 days') GROUP BY h`,
+      )
+      .all(id);
+    const weekdays = sql
+      .prepare(
+        `SELECT CAST(strftime('%w', created_at, '+330 minutes') AS INTEGER) AS d, COUNT(*) AS n FROM transactions
+         WHERE merchant_id = ? AND type = 'earn' AND reversed = 0 AND created_at >= datetime('now', '-90 days') GROUP BY d`,
+      )
+      .all(id);
+    // How loyal the customers are: how many have 1, 2, 3–5, 6–10, 11+ visits (all time).
+    const loyalty = sql
+      .prepare(
+        `SELECT
+           SUM(n = 0) AS none, SUM(n = 1) AS one, SUM(n = 2) AS two, SUM(n BETWEEN 3 AND 5) AS few, SUM(n BETWEEN 6 AND 10) AS many, SUM(n > 10) AS regulars
+         FROM (SELECT c.id, (SELECT COUNT(*) FROM transactions t WHERE t.customer_id = c.id AND t.type = 'earn' AND t.reversed = 0) AS n
+               FROM customers c WHERE c.merchant_id = ?)`,
+      )
+      .get(id);
     const counts = sql
       .prepare(
         `SELECT
@@ -357,6 +384,10 @@ export class AdminController {
       counts,
       comeback: { current: this.loyalty.comeback(m, 0), previous: this.loyalty.comeback(m, 30) },
       daily,
+      newCustomers,
+      hours,
+      weekdays,
+      loyalty,
       notes,
       log,
       payments: sql.prepare('SELECT id, kind, amount_paise, razorpay_order_id, razorpay_payment_id, status, created_at, paid_at FROM payments WHERE merchant_id = ? ORDER BY id DESC').all(id),
@@ -527,6 +558,26 @@ export class AdminController {
       })
       .sort((a, b) => b.signups - a.signups || b.visitors - a.visitors);
 
+    // Per day (IST for sign-ups, UTC for website visitors as page_views keeps them): visitors and sign-ups.
+    const perDay = new Map<string, { visitors: number; signups: number }>();
+    for (const key of seen) {
+      const day = key.slice(0, 10);
+      const d = perDay.get(day) ?? { visitors: 0, signups: 0 };
+      d.visitors++;
+      perDay.set(day, d);
+    }
+    for (const s of shops) {
+      const day = new Date(Date.parse(`${s.created_at.replace(' ', 'T')}Z`) + 330 * 60_000).toISOString().slice(0, 10);
+      const d = perDay.get(day) ?? { visitors: 0, signups: 0 };
+      d.signups++;
+      perDay.set(day, d);
+    }
+    const now = Date.now() + 330 * 60_000;
+    const daily = Array.from({ length: days }, (_, i) => {
+      const day = new Date(now - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10);
+      return { day, ...(perDay.get(day) ?? { visitors: 0, signups: 0 }) };
+    });
+
     const sources = [...rows.values()].sort((a, b) => b.signups - a.signups || b.visitors - a.visitors);
     const total = (k: keyof Omit<FunnelRow, 'source'>) => sources.reduce((n, r) => n + r[k], 0);
     return {
@@ -534,6 +585,7 @@ export class AdminController {
       totals: { visitors: total('visitors'), signups: total('signups'), started: total('started'), active: total('active') },
       sources,
       cards,
+      daily,
       signups: shops.slice(0, 50),
     };
   }

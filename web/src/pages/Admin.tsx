@@ -8,6 +8,9 @@ import {
   BellRing,
   ArrowLeft,
   Check,
+  Moon,
+  Repeat,
+  Clock,
   ChevronDown,
   Copy,
   Download,
@@ -43,7 +46,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { daysAgo, num, rupees, when } from '../api';
+import { daysAgo, num, parseTime, rupees, when } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
@@ -900,32 +903,58 @@ type ShopDetail = {
   counts: { visitsAllTime: number; rewardsAllTime: number; rewardsWaiting: number; cameBack: number; notSeen: number };
   comeback: { current: Comeback; previous: Comeback };
   daily: { day: string; visits: number; rewards: number }[];
+  newCustomers: { day: string; n: number }[];
+  hours: { h: number; n: number }[];
+  weekdays: { d: number; n: number }[];
+  loyalty: Partial<Record<'none' | 'one' | 'two' | 'few' | 'many' | 'regulars', number | null>>;
   notes: { id: number; note: string; created_at: string; admin: string }[];
   log: { id: number; action: string; detail: string; created_at: string; admin: string }[];
   payments: Payment[];
 };
 
-/** Visits per day for the last 30 days, as simple bars. */
-function DailyBars({ daily }: { daily: ShopDetail['daily'] }) {
-  const byDay = new Map(daily.map((d) => [d.day, d]));
-  const days = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(Date.now() + 330 * 60_000 - (29 - i) * 86_400_000).toISOString().slice(0, 10);
-    return { day: d, visits: byDay.get(d)?.visits ?? 0, rewards: byDay.get(d)?.rewards ?? 0 };
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`;
+const SHOP_METRICS = [
+  { key: 'visits', label: 'Visits' },
+  { key: 'rewards', label: 'Rewards' },
+  { key: 'customers', label: 'New customers' },
+] as const;
+
+/** Fills the days the server skipped (no rows) so every series has one row per IST day, oldest first. */
+function fillDays<T extends { day: string }>(rows: T[], days: number, empty: Omit<T, 'day'>): T[] {
+  const byDay = new Map(rows.map((r) => [r.day, r]));
+  return Array.from({ length: days }, (_, i) => {
+    const day = new Date(Date.now() + 330 * 60_000 - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10);
+    return byDay.get(day) ?? ({ day, ...empty } as T);
   });
-  const max = Math.max(1, ...days.map((d) => d.visits));
-  return (
-    <div className="bars" role="img" aria-label={`Visits per day for 30 days, up to ${max} a day`}>
-      {days.map((d) => (
-        <span
-          key={d.day}
-          style={{ height: `${Math.max(3, (d.visits / max) * 100)}%` }}
-          className={d.visits ? '' : 'zero'}
-          title={`${d.day}: ${d.visits} visits${d.rewards ? `, ${d.rewards} rewards given` : ''}`}
-        />
-      ))}
-    </div>
-  );
 }
+const last = <T,>(rows: T[], n: number) => rows.slice(-n);
+const sum30 = <T,>(rows: T[], k: keyof T) => last(rows, 30).reduce((n, r) => n + Number(r[k]), 0);
+const sumPrev = <T,>(rows: T[], k: keyof T) => rows.slice(-60, -30).reduce((n, r) => n + Number(r[k]), 0);
+
+/** A rough 0–100 health score for one shop, with the reasons behind it. */
+function healthScore(d: ShopDetail) {
+  const why: string[] = [];
+  let total = 0;
+  const since = d.shop.last_visit ? daysAgo(d.shop.last_visit) : Infinity;
+  const recency = since <= 1 ? 30 : since <= 7 ? 22 : since <= 14 ? 10 : 0;
+  total += recency;
+  why.push(since === Infinity ? 'no visit yet' : `last visit ${ago(d.shop.last_visit)}`);
+  const volume = Math.min(25, Math.round(d.shop.visits30 / 2));
+  total += volume;
+  why.push(`${d.shop.visits30} visits in 30 days`);
+  const repeat = d.shop.customers ? Math.round((d.counts.cameBack / d.shop.customers) * 25) : 0;
+  total += repeat;
+  why.push(`${d.shop.customers ? Math.round((d.counts.cameBack / d.shop.customers) * 100) : 0}% of customers came back`);
+  if (d.settings.rewardName) total += 10;
+  else why.push('card not set up');
+  if (['monthly', 'yearly', 'lifetime'].includes(d.shop.activePlan)) {
+    total += 10;
+    why.push('on Pro');
+  }
+  return { total: Math.min(100, total), why };
+}
+
 
 function ShopPage({ id }: { id: number }) {
   const [data, setData] = useState<ShopDetail | null>(null);
@@ -936,6 +965,8 @@ function ShopPage({ id }: { id: number }) {
   const [pausing, setPausing] = useState(false);
   const [planForm, setPlanForm] = useState<{ plan: string; reason: string } | null>(null);
   const [drafting, setDrafting] = useState(false);
+  const [range, setRange] = useState<30 | 90>(30);
+  const [metric, setMetric] = useState<(typeof SHOP_METRICS)[number]['key']>('visits');
   const action = useAction();
 
   const load = useCallback(() => {
@@ -954,7 +985,21 @@ function ShopPage({ id }: { id: number }) {
   }
 
   const { shop, settings, counts, comeback } = data;
-  const change = comeback.previous.visits > 0 ? Math.round(((comeback.current.visits - comeback.previous.visits) / comeback.previous.visits) * 100) : null;
+  const daily = fillDays(data.daily, 90, { visits: 0, rewards: 0 });
+  const newDaily = fillDays(data.newCustomers, 90, { n: 0 });
+  const hourCounts = Array.from({ length: 24 }, (_, h) => data.hours.find((x) => x.h === h)?.n ?? 0);
+  const dayCounts = Array.from({ length: 7 }, (_, w) => data.weekdays.find((x) => x.d === w)?.n ?? 0);
+  const busiest = {
+    hours: hourCounts,
+    days: dayCounts,
+    total: hourCounts.reduce((a, b) => a + b, 0),
+    maxHour: Math.max(1, ...hourCounts),
+    maxDay: Math.max(1, ...dayCounts),
+    hour: hourCounts.indexOf(Math.max(...hourCounts)),
+    day: dayCounts.indexOf(Math.max(...dayCounts)),
+  };
+  const score = healthScore(data);
+  const scoreTone = score.total >= 60 ? 'good' : score.total >= 30 ? 'ok' : 'bad';
 
   const makeResetLink = () =>
     void action.run(async () => {
@@ -1054,15 +1099,64 @@ function ShopPage({ id }: { id: number }) {
         </p>
       )}
 
-      <section className="stats">
-        <Stat icon={Users} label="Customers" value={num(shop.customers)} sub={`${num(counts.cameBack)} came back at least once`} />
-        <Stat icon={Stamp} label="Visits, 30 days" value={num(shop.visits30)} sub={`${num(counts.visitsAllTime)} all time · last ${ago(shop.last_visit)}`} />
-        <Stat icon={Gift} label="Rewards given, 30 days" value={num(shop.rewards30)} sub={`${num(counts.rewardsAllTime)} all time · ${num(counts.rewardsWaiting)} waiting`} />
-        <Stat
-          icon={change !== null && change < 0 ? TrendingDown : TrendingUp}
+      <section className="kpis kpis-4">
+        <KpiTile
+          icon={<Users size={16} />}
+          label="Customers"
+          value={num(shop.customers)}
+          delta={<Delta now={sum30(newDaily, 'n')} before={sumPrev(newDaily, 'n')} />}
+          sub={`${num(sum30(newDaily, 'n'))} new in 30 days · ${num(counts.cameBack)} came back`}
+          spark={last(newDaily, 30).map((d) => d.n)}
+        />
+        <KpiTile
+          icon={<Stamp size={16} />}
+          label="Visits, 30 days"
+          value={num(shop.visits30)}
+          delta={<Delta now={sum30(daily, 'visits')} before={sumPrev(daily, 'visits')} />}
+          sub={`${num(counts.visitsAllTime)} all time · last ${ago(shop.last_visit)}`}
+          spark={last(daily, 30).map((d) => d.visits)}
+        />
+        <KpiTile
+          icon={<Gift size={16} />}
+          label="Rewards, 30 days"
+          value={num(shop.rewards30)}
+          delta={<Delta now={sum30(daily, 'rewards')} before={sumPrev(daily, 'rewards')} />}
+          sub={`${num(counts.rewardsAllTime)} all time · ${num(counts.rewardsWaiting)} waiting`}
+          spark={last(daily, 30).map((d) => d.rewards)}
+        />
+        <KpiTile
+          icon={<Repeat size={16} />}
           label="Came back, 30 days"
           value={num(comeback.current.customers)}
-          sub={`${num(comeback.current.visits)} repeat visits${change !== null ? ` · ${change >= 0 ? '+' : ''}${num(change)}%` : ''}`}
+          delta={<Delta now={comeback.current.visits} before={comeback.previous.visits} />}
+          sub={`${num(comeback.current.visits)} repeat visits · ${num(comeback.current.wonBack)} won back`}
+        />
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>
+            <Activity size={18} /> Trend
+          </h2>
+          <div className="seg seg-sm">
+            {([30, 90] as const).map((d) => (
+              <button key={d} className={range === d ? 'active' : ''} onClick={() => setRange(d)}>
+                {d} days
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="chip-row">
+          {SHOP_METRICS.map((x) => (
+            <button key={x.key} className={`chip${metric === x.key ? ' on' : ''}`} onClick={() => setMetric(x.key)}>
+              {x.label}
+            </button>
+          ))}
+        </div>
+        <TrendBars
+          label={SHOP_METRICS.find((x) => x.key === metric)!.label}
+          data={last(daily, range).map((d, i) => ({ day: d.day, value: metric === 'customers' ? last(newDaily, range)[i].n : d[metric] }))}
+          format={num}
         />
       </section>
 
@@ -1070,11 +1164,63 @@ function ShopPage({ id }: { id: number }) {
         <section className="card">
           <div className="card-head">
             <h2>
-              <Stamp size={18} /> Visits per day
+              <Clock size={18} /> When it's busy
             </h2>
-            <span className="muted small">last 30 days</span>
+            <span className="muted small">visits, last 90 days</span>
           </div>
-          <DailyBars daily={data.daily} />
+          {busiest.total ? (
+            <>
+              <div className="hours" role="img" aria-label={`Busiest hour ${hourLabel(busiest.hour)}`}>
+                {busiest.hours.map((n, h) => (
+                  <span key={h} title={`${hourLabel(h)}: ${num(n)} visits`}>
+                    <i style={{ height: `${n ? Math.max(4, (n / busiest.maxHour) * 100) : 0}%` }} className={h === busiest.hour ? 'top' : ''} />
+                  </span>
+                ))}
+              </div>
+              <div className="hours-x">
+                <span>12am</span>
+                <span>6am</span>
+                <span>12pm</span>
+                <span>6pm</span>
+                <span>11pm</span>
+              </div>
+              <div className="weekdays">
+                {WEEKDAYS.map((w, d) => (
+                  <div key={w} title={`${w}: ${num(busiest.days[d])} visits`}>
+                    <span className="weekdays-bar">
+                      <i style={{ height: `${busiest.days[d] ? Math.max(6, (busiest.days[d] / busiest.maxDay) * 100) : 0}%` }} className={d === busiest.day ? 'top' : ''} />
+                    </span>
+                    <em>{w}</em>
+                  </div>
+                ))}
+              </div>
+              <p className="muted small" style={{ margin: 0 }}>
+                Busiest around <strong>{hourLabel(busiest.hour)}</strong> and on <strong>{WEEKDAYS[busiest.day]}</strong>s. A good time to call is just before.
+              </p>
+            </>
+          ) : (
+            <EmptyState icon={Clock} title="No visits in 90 days" text="Busy times show once they add visits." />
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <HeartPulse size={18} /> Customer loyalty
+            </h2>
+            <span className={`score score-${scoreTone}`} title={score.why.join(' · ')}>
+              Health {score.total}/100
+            </span>
+          </div>
+          <ShareBar
+            parts={[
+              { key: 'regulars', label: 'Regulars (11+ visits)', value: data.loyalty.regulars ?? 0, cls: 'lv-5' },
+              { key: 'many', label: '6–10 visits', value: data.loyalty.many ?? 0, cls: 'lv-4' },
+              { key: 'few', label: '3–5 visits', value: data.loyalty.few ?? 0, cls: 'lv-3' },
+              { key: 'two', label: '2 visits', value: data.loyalty.two ?? 0, cls: 'lv-2' },
+              { key: 'one', label: '1 visit only', value: (data.loyalty.one ?? 0) + (data.loyalty.none ?? 0), cls: 'lv-1' },
+            ]}
+          />
           <dl className="facts">
             <div>
               <dt>Card</dt>
@@ -1095,7 +1241,9 @@ function ShopPage({ id }: { id: number }) {
           </dl>
           {!settings.rewardName && <p className="alert alert-error small">Hasn't set up their card yet — customers have nothing to aim for. Worth a call.</p>}
         </section>
+      </div>
 
+      <div className="grid-2">
         <section className="card">
           <div className="card-head">
             <h2>
@@ -1262,6 +1410,7 @@ type Growth = {
   totals: Omit<FunnelRow, 'source'>;
   sources: FunnelRow[];
   cards: { shopId: number | null; shop: string; visitors: number; signups: number }[];
+  daily: { day: string; visitors: number; signups: number }[];
   signups: Shop[];
 };
 
@@ -1340,6 +1489,7 @@ const RANGES = [7, 30, 90] as const;
 
 function GrowthPage() {
   const [days, setDays] = useState<(typeof RANGES)[number]>(30);
+  const [growthMetric, setGrowthMetric] = useState<'visitors' | 'signups'>('signups');
   const [data, setData] = useState<Growth | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -1375,6 +1525,34 @@ function GrowthPage() {
       <ErrorText text={error} />
 
       <Sub id="funnel">
+        <section className="kpis kpis-4">
+          <KpiTile icon={<Globe2 size={16} />} label="Website visitors" value={t && num(t.visitors)} sub="homepage, SEO and share pages" spark={data?.daily.map((d) => d.visitors)} />
+          <KpiTile icon={<Store size={16} />} label="Sign-ups" value={t && num(t.signups)} sub={t && `${pct(t.signups, t.visitors)} of visitors`} spark={data?.daily.map((d) => d.signups)} />
+          <KpiTile icon={<Stamp size={16} />} label="Started" value={t && num(t.started)} sub={t && `${pct(t.started, t.signups)} added a first visit`} />
+          <KpiTile icon={<TrendingUp size={16} />} label="Active now" value={t && num(t.active)} sub={t && `${pct(t.active, t.signups)} of sign-ups`} />
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Activity size={18} /> Per day
+            </h2>
+            <span className="muted small">last {days} days</span>
+          </div>
+          <div className="chip-row">
+            {(['visitors', 'signups'] as const).map((k) => (
+              <button key={k} className={`chip${growthMetric === k ? ' on' : ''}`} onClick={() => setGrowthMetric(k)}>
+                {k === 'visitors' ? 'Website visitors' : 'Sign-ups'}
+              </button>
+            ))}
+          </div>
+          {data ? (
+            <TrendBars label={growthMetric} data={data.daily.map((d) => ({ day: d.day, value: d[growthMetric] }))} format={num} />
+          ) : (
+            <Skeleton h={220} />
+          )}
+        </section>
+
         <section className="card">
           <div className="card-head">
             <h2>
@@ -1614,15 +1792,24 @@ const needsStart = (s: Shop) => s.status === 'new' || s.status === 'never';
 function FollowUpPage() {
   const [shops, setShops] = useState<Shop[] | null>(null);
   const [show, setShow] = useState<'start' | 'quiet'>('start');
+  const [q, setQ] = useState('');
+  const [hideDone, setHideDone] = useState(false);
   const load = useCallback(() => void adminApi<Shop[]>('shops').then(setShops), []);
   useEffect(load, [load]);
 
   const recent = (s: Shop) => Boolean(s.last_contact) && daysAgo(s.last_contact!) < 3;
   const inTab = (s: Shop, tab: typeof show) => (tab === 'start' ? needsStart(s) : s.status === 'sleeping');
+  const needle = q.trim().toLowerCase();
   const list = (shops ?? [])
     .filter((s) => inTab(s, show))
+    .filter((s) => !hideDone || !recent(s))
+    .filter((s) => !needle || `${s.name} ${s.email} ${s.phone ?? ''}`.toLowerCase().includes(needle))
     .sort((a, b) => Number(recent(a)) - Number(recent(b)) || (show === 'start' ? b.created_at.localeCompare(a.created_at) : b.visits30 - a.visits30));
   const count = (tab: typeof show) => (shops ?? []).filter((s) => inTab(s, tab)).length;
+  const todo = (shops ?? []).filter((s) => (needsStart(s) || s.status === 'sleeping') && !s.last_contact).length;
+  const doneWeek = (shops ?? []).filter((s) => s.last_contact && daysAgo(s.last_contact) < 7).length;
+  // Of the shops contacted while they hadn't started, how many have started since: is calling working?
+  const saved = (shops ?? []).filter((s) => s.last_contact && s.last_visit && s.last_visit > s.last_contact).length;
 
   return (
     <>
@@ -1632,13 +1819,30 @@ function FollowUpPage() {
           <p>A message in the first days keeps a shop for months. Each button opens a ready message and marks the shop as contacted.</p>
         </div>
       </header>
-      <div className="seg">
-        <button className={show === 'start' ? 'active' : ''} onClick={() => setShow('start')}>
-          Help them start{shops ? ` (${count('start')})` : ''}
-        </button>
-        <button className={show === 'quiet' ? 'active' : ''} onClick={() => setShow('quiet')}>
-          Gone quiet{shops ? ` (${count('quiet')})` : ''}
-        </button>
+
+      <section className="kpis kpis-4">
+        <KpiTile icon={<Rocket size={16} />} label="Need a start" value={shops ? num(count('start')) : undefined} sub="new or never added a visit" />
+        <KpiTile icon={<Moon size={16} />} label="Gone quiet" value={shops ? num(count('quiet')) : undefined} sub="no visit for 7+ days" />
+        <KpiTile icon={<Phone size={16} />} label="Not contacted yet" value={shops ? num(todo) : undefined} sub={shops ? `${num(doneWeek)} contacted this week` : undefined} />
+        <KpiTile icon={<Check size={16} />} label="Added visits after a call" value={shops ? num(saved) : undefined} sub="last visit came after the last contact" />
+      </section>
+
+      <div className="toolbar">
+        <div className="seg">
+          <button className={show === 'start' ? 'active' : ''} onClick={() => setShow('start')}>
+            Help them start{shops && <span className="seg-count">{num(count('start'))}</span>}
+          </button>
+          <button className={show === 'quiet' ? 'active' : ''} onClick={() => setShow('quiet')}>
+            Gone quiet{shops && <span className="seg-count">{num(count('quiet'))}</span>}
+          </button>
+        </div>
+        <div className="input-icon">
+          <Search size={18} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search shop" aria-label="Search shops to follow up" />
+        </div>
+        <label className="check-inline">
+          <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} /> Hide contacted in last 3 days
+        </label>
       </div>
       {!shops ? (
         <SkeletonRows count={4} />
@@ -1658,12 +1862,26 @@ function FollowUpPage() {
                 <span>{s.last_contact ? `Contacted ${ago(s.last_contact)}` : 'Not contacted yet'}</span>
                 {!s.phone && <span>No phone number, so email only</span>}
               </div>
+              <div className="follow-stats">
+                <span>
+                  <Users size={14} /> {num(s.customers)} customers
+                </span>
+                <span>
+                  <Stamp size={14} /> {num(s.visits30)} visits (30d)
+                </span>
+                <span>
+                  <Gift size={14} /> {s.reward_name ? cardRule(s) : 'card not set up'}
+                </span>
+                <span>
+                  <Store size={14} /> joined {ago(s.created_at)}
+                </span>
+              </div>
               <ContactButtons shop={s} onDone={load} compact />
             </article>
           ))}
         </div>
       ) : (
-        <EmptyState icon={ShieldCheck} title="Nobody to chase" text={show === 'start' ? 'Every new shop has added its first visit.' : 'No shop has gone quiet.'} />
+        <EmptyState icon={ShieldCheck} title="Nobody to chase" text={needle || hideDone ? 'Nothing matches. Clear the search or filter.' : show === 'start' ? 'Every new shop has added its first visit.' : 'No shop has gone quiet.'} />
       )}
     </>
   );
@@ -1673,38 +1891,110 @@ function FollowUpPage() {
 
 type LogItem = { id: number; action: string; detail: string; created_at: string; admin: string; merchant_id?: number | null };
 
-function AdminLogList({ items }: { items: LogItem[] }) {
+const LOG_KINDS: Record<string, { label: string; icon: typeof Store; tone: string }> = {
+  contact: { label: 'Contacts', icon: Phone, tone: 'blue' },
+  plan: { label: 'Plans', icon: BadgeIndianRupee, tone: 'ok' },
+  plans: { label: 'Plans', icon: BadgeIndianRupee, tone: 'ok' },
+  refund: { label: 'Refunds', icon: BadgeIndianRupee, tone: 'bad' },
+  suspend: { label: 'Pause / turn on', icon: Pause, tone: 'bad' },
+  unsuspend: { label: 'Pause / turn on', icon: Play, tone: 'ok' },
+  reset_link: { label: 'Reset links', icon: KeyRound, tone: 'gold' },
+  landing: { label: 'Homepage', icon: Globe2, tone: 'violet' },
+  referral_reward: { label: 'Referral rewards', icon: Gift, tone: 'gold' },
+};
+const logKind = (action: string) => LOG_KINDS[action] ?? { label: 'Other', icon: ScrollText, tone: '' };
+
+const dayHeading = (t: string) => {
+  const d = daysAgo(t);
+  return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : parseTime(t).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+};
+
+function AdminLogList({ items, grouped }: { items: LogItem[]; grouped?: boolean }) {
+  let lastDay = '';
   return (
-    <ul className="rows">
-      {items.map((l) => (
-        <li key={l.id}>
-          <div className="row-item">
-            <span className="row-main">
-              <strong>{l.merchant_id ? <a href={`#/shops/${l.merchant_id}`}>{l.detail}</a> : l.detail}</strong>
-              <span>
-                {l.admin} · {when(l.created_at)}
+    <ul className="log-list">
+      {items.map((l) => {
+        const k = logKind(l.action);
+        const heading = grouped ? dayHeading(l.created_at) : '';
+        const showHeading = grouped && heading !== lastDay;
+        lastDay = heading;
+        return (
+          <li key={l.id}>
+            {showHeading && <h3 className="log-day">{heading}</h3>}
+            <div className="log-item">
+              <i className={`log-icon tone-${k.tone}`}>
+                <k.icon size={14} />
+              </i>
+              <span className="row-main">
+                <strong>{l.merchant_id ? <a href={`#/shops/${l.merchant_id}`}>{l.detail}</a> : l.detail}</strong>
+                <span>
+                  {l.admin} · {parseTime(l.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
+                  {!grouped && ` · ${when(l.created_at)}`}
+                </span>
               </span>
-            </span>
-          </div>
-        </li>
-      ))}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
 function LogPage() {
   const [items, setItems] = useState<LogItem[] | null>(null);
+  const [kind, setKind] = useState('');
+  const [admin, setAdmin] = useState('');
+  const [q, setQ] = useState('');
   useEffect(() => void adminApi<LogItem[]>('log').then(setItems), []);
+  const kinds = [...new Set((items ?? []).map((l) => logKind(l.action).label))];
+  const admins = [...new Set((items ?? []).map((l) => l.admin))];
+  const needle = q.trim().toLowerCase();
+  const shown = (items ?? []).filter(
+    (l) => (!kind || logKind(l.action).label === kind) && (!admin || l.admin === admin) && (!needle || l.detail.toLowerCase().includes(needle)),
+  );
+  const week = (items ?? []).filter((l) => daysAgo(l.created_at) < 7);
   return (
     <>
       <header className="page-head">
         <div>
           <h1>Admin log</h1>
-          <p>Every reset link, pause and turn-on by any admin.</p>
+          <p>Every contact, plan change, reset link, pause and turn-on by any admin.</p>
         </div>
       </header>
+      <section className="kpis kpis-4">
+        <KpiTile icon={<ScrollText size={16} />} label="Actions, 7 days" value={items ? num(week.length) : undefined} sub={items ? `${num(items.length)} in the last 300` : undefined} />
+        <KpiTile icon={<Phone size={16} />} label="Contacts, 7 days" value={items ? num(week.filter((l) => l.action === 'contact').length) : undefined} sub="WhatsApp, calls, emails, visits" />
+        <KpiTile icon={<BadgeIndianRupee size={16} />} label="Plan changes, 7 days" value={items ? num(week.filter((l) => ['plan', 'plans', 'refund'].includes(l.action)).length) : undefined} sub="by hand, refunds included" />
+        <KpiTile icon={<Users size={16} />} label="Admins active" value={items ? num(new Set(week.map((l) => l.admin)).size) : undefined} sub="in the last 7 days" />
+      </section>
       <section className="card">
-        {!items ? <SkeletonRows /> : items.length ? <AdminLogList items={items} /> : <EmptyState icon={ScrollText} title="No admin actions yet" />}
+        <div className="toolbar">
+          <div className="input-icon">
+            <Search size={18} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search the log" aria-label="Search the admin log" />
+          </div>
+          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Filter by kind">
+            <option value="">All kinds</option>
+            {kinds.map((k) => (
+              <option key={k}>{k}</option>
+            ))}
+          </select>
+          {admins.length > 1 && (
+            <select value={admin} onChange={(e) => setAdmin(e.target.value)} aria-label="Filter by admin">
+              <option value="">All admins</option>
+              {admins.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        {!items ? (
+          <SkeletonRows />
+        ) : shown.length ? (
+          <AdminLogList items={shown} grouped />
+        ) : (
+          <EmptyState icon={ScrollText} title={items.length ? 'Nothing matches' : 'No admin actions yet'} />
+        )}
       </section>
     </>
   );
