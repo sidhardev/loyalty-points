@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import QRCode from 'qrcode';
 import {
+  Activity,
   BadgeIndianRupee,
+  HeartPulse,
+  Trophy,
   BellRing,
   ArrowLeft,
   Check,
+  ChevronDown,
   Copy,
   Download,
   FileText,
@@ -54,6 +58,7 @@ import { PhusroPage } from './AdminPhusro';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageDraft, type PageEvent, type PageView, type VisitShop } from './Visits';
 import { Sub, SubtabContext } from './AdminSub';
+import { Delta, KpiTile, Meter, ShareBar, TrendBars } from './AdminCharts';
 
 // /admin — the platform owner's panel: every shop's health, who needs a call, and support actions.
 // Uses its own login (admin accounts are created on the server: npm run create-admin -w server -- <email>).
@@ -305,7 +310,33 @@ type Overview = {
     notSetUp: number;
   };
   attention: Shop[];
+  series: { day: string; visits: number; rewards: number; signups: number; customers: number; activeShops: number; revenue: number; visitors: number }[];
+  money: { allTime: number; thisMonth: number; lastMonth: number; paidCount: number; refunded: number; abandoned30: number; mrr: number };
+  plans: Record<'free' | 'grandfathered' | 'monthly' | 'yearly' | 'lifetime', number>;
+  statuses: Record<Status, number>;
+  health: { customers: number; repeat: number; startedShops: number; visitsAllTime: number; rewardsAllTime: number; google: number; onLanding: number; referred: number };
+  topShops: { id: number; name: string; status: Status; visits30: number; customers: number; rewards30: number; activePlan: string }[];
+  activity: { kind: 'signup' | 'payment' | 'admin'; shopId: number | null; text: string; at: string }[];
+  seats: { total: number; left: number };
 };
+
+type Metric = 'visits' | 'signups' | 'customers' | 'activeShops' | 'revenue' | 'visitors' | 'rewards';
+const METRICS: { key: Metric; label: string; money?: boolean }[] = [
+  { key: 'visits', label: 'Visits' },
+  { key: 'signups', label: 'Shop sign-ups' },
+  { key: 'customers', label: 'New customers' },
+  { key: 'activeShops', label: 'Shops adding visits' },
+  { key: 'rewards', label: 'Rewards' },
+  { key: 'revenue', label: 'Revenue', money: true },
+  { key: 'visitors', label: 'Website visitors' },
+];
+
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+};
+
+const ACTIVITY_ICON = { signup: Store, payment: BadgeIndianRupee, admin: ScrollText } as const;
 
 function Stat({ icon: Icon, label, value, sub }: { icon: typeof Store; label: string; value?: string; sub?: string }) {
   return (
@@ -322,65 +353,285 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Store; label: st
 function OverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState('');
+  const [days, setDays] = useState<(typeof RANGES)[number]>(30);
+  const [metric, setMetric] = useState<Metric>('visits');
   useEffect(() => void adminApi<Overview>('overview').then(setData, (e) => setError((e as Error).message)), []);
   const t = data?.totals;
+
+  // This period and the one before it, from the 90 daily rows (no "before" for 90 days).
+  const now = data?.series.slice(-days) ?? [];
+  const prev = data && days * 2 <= data.series.length ? data.series.slice(-days * 2, -days) : null;
+  const sum = (rows: Overview['series'] | null, k: Metric) => (rows ? rows.reduce((n, r) => n + r[k], 0) : null);
+  const kpi = (k: Metric) => ({
+    value: data ? (k === 'revenue' ? rupees(sum(now, k)!) : num(sum(now, k)!)) : undefined,
+    delta: data ? <Delta now={sum(now, k)!} before={sum(prev, k)} /> : undefined,
+    spark: data ? now.map((r) => r[k]) : undefined,
+  });
+  const m = METRICS.find((x) => x.key === metric)!;
+  const h = data?.health;
+  const pro = data ? data.plans.monthly + data.plans.yearly + data.plans.lifetime : 0;
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Overview</h1>
-          <p>How the whole platform is doing.</p>
+          <h1>{greeting()} 👋</h1>
+          <p>
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {t && ` · ${num(t.visits24h)} visits in the last 24 hours across ${num(t.shops)} shops`}
+          </p>
+        </div>
+        <div className="seg">
+          {RANGES.map((d) => (
+            <button key={d} className={days === d ? 'active' : ''} onClick={() => setDays(d)}>
+              {d} days
+            </button>
+          ))}
         </div>
       </header>
       <ErrorText text={error} />
-      <section className="stats">
-        <Stat icon={Store} label="Shops" value={t && num(t.shops)} sub={t && `${num(t.newShops)} new this week${t.paused ? ` · ${num(t.paused)} paused` : ''}`} />
-        <Stat
-          icon={TrendingUp}
-          label="Active this week"
-          value={t && num(t.activeShops)}
-          sub={t && (t.shops ? `${Math.round((t.activeShops / t.shops) * 100)}% of shops added visits` : '')}
-        />
-        <Stat icon={Users} label="Customers" value={t && num(t.customers)} sub={t && `${num(t.newCustomers)} new this week`} />
-        <Stat icon={Stamp} label="Visits, 30 days" value={t && num(t.visits30)} sub={t && `${num(t.visits24h)} in the last 24 hours`} />
-        <Stat icon={Gift} label="Rewards given, 30 days" value={t && num(t.rewards30)} sub={t && (t.notSetUp ? `${num(t.notSetUp)} shops haven't set up their card` : 'every shop has its card set up')} />
+
+      <section className="kpis">
+        <KpiTile icon={<BadgeIndianRupee size={16} />} label="Revenue" {...kpi('revenue')} sub={data && `${rupees(data.money.allTime / 100)} all time`} href="#/plans" />
+        <KpiTile icon={<Stamp size={16} />} label="Visits added" {...kpi('visits')} sub={t && `${num(t.visits24h)} in the last 24 hours`} />
+        <KpiTile icon={<Store size={16} />} label="New shops" {...kpi('signups')} sub={t && `${num(t.shops)} shops in all`} href="#/growth" />
+        <KpiTile icon={<Users size={16} />} label="New customers" {...kpi('customers')} sub={t && `${num(t.customers)} customers in all`} />
+        <KpiTile icon={<Gift size={16} />} label="Rewards given" {...kpi('rewards')} sub={h && `${num(h.rewardsAllTime)} all time`} />
+        <KpiTile icon={<Globe2 size={16} />} label="Website visitors" {...kpi('visitors')} sub="browsers per day, added up" href="#/visits" />
       </section>
 
       <section className="card">
         <div className="card-head">
           <h2>
-            <Phone size={18} /> Needs a call
+            <Activity size={18} /> Trend
           </h2>
-          <a href="#/follow-up" className="small">
-            Follow-up list
-          </a>
+          <span className="muted small">
+            {data && (m.money ? rupees(sum(now, metric)!) : num(sum(now, metric)!))} in {days} days
+          </span>
         </div>
-        <p className="muted small" style={{ margin: 0 }}>
-          Shops that went quiet or never started. A call now is the best chance to keep them.
-        </p>
-        {!data ? (
-          <SkeletonRows count={3} />
-        ) : data.attention.length ? (
-          <ul className="rows">
-            {data.attention.map((s) => (
-              <li key={s.id}>
-                <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
-                  <span className="row-main">
-                    <strong>
-                      {s.name} <StatusBadge status={s.status} />
-                    </strong>
-                    <span>{reason(s)}</span>
-                  </span>
-                  <span className="muted small">{s.email || s.phone}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+        <div className="chip-row" role="tablist">
+          {METRICS.map((x) => (
+            <button key={x.key} role="tab" aria-selected={metric === x.key} className={`chip${metric === x.key ? ' on' : ''}`} onClick={() => setMetric(x.key)}>
+              {x.label}
+            </button>
+          ))}
+        </div>
+        {data ? (
+          <TrendBars label={m.label} data={now.map((r) => ({ day: r.day, value: r[metric] }))} format={(n) => (m.money ? rupees(n) : num(n))} />
         ) : (
-          <EmptyState icon={ShieldCheck} title="Everyone's active" text="No shop has gone quiet. 🎉" />
+          <Skeleton h={220} />
         )}
       </section>
+
+      <div className="grid-2">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Store size={18} /> Shops by status
+            </h2>
+            <span className="muted small">{t && `${t.shops ? Math.round((t.activeShops / t.shops) * 100) : 0}% active this week`}</span>
+          </div>
+          {data ? (
+            <ShareBar
+              parts={(['active', 'new', 'sleeping', 'never', 'paused'] as Status[]).map((s) => ({
+                key: s,
+                label: STATUS[s].label,
+                value: data.statuses[s] ?? 0,
+                cls: `sh-${s}`,
+                href: `#/shops/${s}`,
+              }))}
+            />
+          ) : (
+            <SkeletonRows count={3} />
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <BadgeIndianRupee size={18} /> Plans & money
+            </h2>
+            <a href="#/plans" className="small">
+              Plans
+            </a>
+          </div>
+          {data ? (
+            <>
+              <div className="money-row">
+                <div>
+                  <span>This month</span>
+                  <strong>{rupees(data.money.thisMonth / 100)}</strong>
+                  <Delta now={data.money.thisMonth} before={data.money.lastMonth} />
+                </div>
+                <div>
+                  <span title="Monthly plans + yearly plans ÷ 12, at today's prices">Monthly run-rate</span>
+                  <strong>{rupees(Math.round(data.money.mrr))}</strong>
+                </div>
+                <div>
+                  <span>Pro shops</span>
+                  <strong>{num(pro)}</strong>
+                  <em>{t?.shops ? `${Math.round((pro / t.shops) * 100)}% of shops` : ''}</em>
+                </div>
+              </div>
+              <ShareBar
+                parts={[
+                  { key: 'lifetime', label: 'Pro · lifetime', value: data.plans.lifetime, cls: 'pl-lifetime' },
+                  { key: 'yearly', label: 'Pro · yearly', value: data.plans.yearly, cls: 'pl-yearly' },
+                  { key: 'monthly', label: 'Pro · monthly', value: data.plans.monthly, cls: 'pl-monthly' },
+                  { key: 'grandfathered', label: 'Early shop', value: data.plans.grandfathered, cls: 'pl-early' },
+                  { key: 'free', label: 'Free', value: data.plans.free, cls: 'pl-free' },
+                ]}
+              />
+              <p className="muted small" style={{ margin: 0 }}>
+                Founding places: {num(data.seats.total - data.seats.left)} of {num(data.seats.total)} taken · {num(data.money.paidCount)} payments
+                {data.money.abandoned30 ? ` · ${num(data.money.abandoned30)} checkouts not finished (30 days)` : ''}
+                {data.money.refunded ? ` · ${num(data.money.refunded)} refunded` : ''}
+              </p>
+            </>
+          ) : (
+            <SkeletonRows count={3} />
+          )}
+        </section>
+      </div>
+
+      <div className="grid-2">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <HeartPulse size={18} /> Platform health
+            </h2>
+          </div>
+          {h && t ? (
+            <div className="meters">
+              <Meter label="Shops that started (added a visit)" value={h.startedShops} of={t.shops} note={`${num(h.startedShops)} of ${num(t.shops)} shops`} />
+              <Meter label="Shops active this week" value={t.activeShops} of={t.shops} note={`${num(t.activeShops)} shops added a visit in 7 days`} />
+              <Meter label="Customers who came back" value={h.repeat} of={h.customers} note={`${num(h.repeat)} of ${num(h.customers)} have 2+ visits`} />
+              <Meter label="Card set up" value={t.shops - t.notSetUp} of={t.shops} note={t.notSetUp ? `${num(t.notSetUp)} shops still have no reward` : 'Every shop has a reward'} />
+              <dl className="facts">
+                <div>
+                  <dt>Customers per started shop</dt>
+                  <dd>{h.startedShops ? num(Math.round(h.customers / h.startedShops)) : '–'}</dd>
+                </div>
+                <div>
+                  <dt>Rewards per 100 visits</dt>
+                  <dd>{h.visitsAllTime ? num(Math.round((h.rewardsAllTime / h.visitsAllTime) * 100)) : '–'}</dd>
+                </div>
+                <div>
+                  <dt>Log in with Google</dt>
+                  <dd>{num(h.google)} shops</dd>
+                </div>
+                <div>
+                  <dt>Came via another shop</dt>
+                  <dd>{num(h.referred)} shops</dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <SkeletonRows count={4} />
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Trophy size={18} /> Top shops
+            </h2>
+            <span className="muted small">visits, last 30 days</span>
+          </div>
+          {!data ? (
+            <SkeletonRows count={5} />
+          ) : data.topShops.length ? (
+            <ol className="leader">
+              {data.topShops.map((s, i) => (
+                <li key={s.id}>
+                  <a href={`#/shops/${s.id}`}>
+                    <b>{i + 1}</b>
+                    <span className="leader-name">
+                      <strong>{s.name}</strong>
+                      <em>
+                        {num(s.customers)} customers · {num(s.rewards30)} rewards
+                        {['monthly', 'yearly', 'lifetime'].includes(s.activePlan) ? ' · Pro' : ''}
+                      </em>
+                    </span>
+                    <span className="leader-bar">
+                      <i style={{ width: `${(s.visits30 / data.topShops[0].visits30) * 100}%` }} />
+                    </span>
+                    <strong className="leader-n">{num(s.visits30)}</strong>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <EmptyState icon={Trophy} title="No visits yet" text="Shops show up here once they add visits." />
+          )}
+        </section>
+      </div>
+
+      <div className="grid-2">
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <Phone size={18} /> Needs a call {data && data.attention.length > 0 && <span className="count-pill">{data.attention.length}</span>}
+            </h2>
+            <a href="#/follow-up" className="small">
+              Follow-up list
+            </a>
+          </div>
+          {!data ? (
+            <SkeletonRows count={3} />
+          ) : data.attention.length ? (
+            <ul className="rows">
+              {data.attention.slice(0, 8).map((s) => (
+                <li key={s.id}>
+                  <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
+                    <span className="row-main">
+                      <strong>
+                        {s.name} <StatusBadge status={s.status} />
+                      </strong>
+                      <span>{reason(s)}</span>
+                    </span>
+                    <span className="muted small">{s.last_contact ? `contacted ${ago(s.last_contact)}` : 'not contacted'}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState icon={ShieldCheck} title="Everyone's active" text="No shop has gone quiet. 🎉" />
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>
+              <BellRing size={18} /> Latest activity
+            </h2>
+            <a href="#/log" className="small">
+              Admin log
+            </a>
+          </div>
+          {!data ? (
+            <SkeletonRows count={5} />
+          ) : data.activity.length ? (
+            <ul className="feed">
+              {data.activity.map((a, i) => {
+                const Icon = ACTIVITY_ICON[a.kind];
+                const text = a.kind === 'signup' ? `${a.text} signed up` : a.kind === 'payment' ? `Payment: ${a.text}` : a.text;
+                return (
+                  <li key={i} className={`feed-${a.kind}`}>
+                    <i>
+                      <Icon size={14} />
+                    </i>
+                    <span>{a.shopId ? <a href={`#/shops/${a.shopId}`}>{text}</a> : text}</span>
+                    <em>{ago(a.at)}</em>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="muted small">Nothing yet.</p>
+          )}
+        </section>
+      </div>
     </>
   );
 }
@@ -406,10 +657,58 @@ const FILTERS: { key: '' | Status; label: string }[] = [
   { key: 'paused', label: 'Paused' },
 ];
 
+type SortKey = 'created_at' | 'name' | 'customers' | 'visits30' | 'rewards30' | 'last_visit';
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'created_at', label: 'Newest' },
+  { key: 'visits30', label: 'Most visits' },
+  { key: 'customers', label: 'Most customers' },
+  { key: 'rewards30', label: 'Most rewards' },
+  { key: 'last_visit', label: 'Last visit' },
+  { key: 'name', label: 'Name' },
+];
+const PLAN_FILTERS: { key: string; label: string }[] = [
+  { key: '', label: 'Any plan' },
+  { key: 'pro', label: 'Pro (paid)' },
+  { key: 'free', label: 'Free' },
+  { key: 'grandfathered', label: 'Early shop' },
+];
+const isPaid = (s: Pick<Shop, 'activePlan'>) => ['monthly', 'yearly', 'lifetime'].includes(s.activePlan);
+
+/** The visible shops as a CSV file (counts only, as the panel shows them). */
+function exportShops(list: Shop[]) {
+  const cols: [string, (s: Shop) => string | number][] = [
+    ['id', (s) => s.id],
+    ['name', (s) => s.name],
+    ['email', (s) => s.email],
+    ['phone', (s) => s.phone ?? ''],
+    ['status', (s) => s.status],
+    ['plan', (s) => s.activePlan],
+    ['customers', (s) => s.customers],
+    ['visits_30d', (s) => s.visits30],
+    ['rewards_30d', (s) => s.rewards30],
+    ['last_visit', (s) => s.last_visit ?? ''],
+    ['joined', (s) => s.created_at],
+    ['source', (s) => sourceName(s.source)],
+    ['card', (s) => cardRule(s)],
+  ];
+  const cell = (v: string | number) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  const csv = [cols.map((c) => c[0]).join(','), ...list.map((s) => cols.map((c) => cell(c[1](s))).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv' }));
+  a.download = `regularhood-shops-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function ShopsPage() {
+  const hash = useAdminHash();
+  const fromHash = hash.split('/')[2] as Status | undefined;
+  const filter: '' | Status = fromHash && fromHash in STATUS ? fromHash : '';
+  const setFilter = (f: '' | Status) => (location.hash = f ? `/shops/${f}` : '/shops');
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<'' | Status>('');
-  const [shops, setShops] = useState<Shop[] | null>(null);
+  const [plan, setPlan] = useState('');
+  const [sort, setSort] = useState<SortKey>('created_at');
+  const [all, setAll] = useState<Shop[] | null>(null);
   const [drafting, setDrafting] = useState<Shop | null>(null);
   const [billing, setBilling] = useState<{ payments: (Payment & { shopId: number; name: string })[]; seats: { total: number; left: number } } | null>(null);
   useEffect(() => void adminApi<NonNullable<typeof billing>>('payments').then(setBilling), []);
@@ -417,10 +716,25 @@ function ShopsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void adminApi<Shop[]>(`shops?q=${encodeURIComponent(q)}&filter=${filter}`).then(setShops);
+      void adminApi<Shop[]>(`shops?q=${encodeURIComponent(q)}`).then(setAll);
     }, 200);
     return () => clearTimeout(timer);
-  }, [q, filter]);
+  }, [q]);
+
+  const byPlan = (all ?? []).filter((s) => !plan || (plan === 'pro' ? isPaid(s) : s.activePlan === plan));
+  const count = (f: '' | Status) => byPlan.filter((s) => !f || s.status === f).length;
+  const shops = all
+    ? byPlan
+        .filter((s) => !filter || s.status === filter)
+        .sort((a, b) =>
+          sort === 'name'
+            ? a.name.localeCompare(b.name)
+            : sort === 'created_at' || sort === 'last_visit'
+              ? (b[sort] ?? '').localeCompare(a[sort] ?? '')
+              : b[sort] - a[sort],
+        )
+    : null;
+  const setShops = setAll;
 
   const setLanding = (s: Shop, on: boolean) => {
     setShops((list) => list && list.map((x) => (x.id === s.id ? { ...x, on_landing: on ? 1 : 0 } : x)));
@@ -432,6 +746,12 @@ function ShopsPage() {
       },
     );
   };
+  const sortHead = (key: SortKey, label: string, cls = '') => (
+    <th className={`${cls} sortable${sort === key ? ' sorted' : ''}`} onClick={() => setSort(key)} aria-sort={sort === key ? 'descending' : undefined}>
+      {label}
+      {sort === key && <ChevronDown size={13} />}
+    </th>
+  );
 
   return (
     <>
@@ -439,7 +759,9 @@ function ShopsPage() {
         <div>
           <h1>Shops</h1>
           <p>
-            {shops ? `${num(shops.length)} shown · ${num(shops.filter((s) => s.google).length)} log in with Google` : 'Loading…'}
+            {shops
+              ? `${num(shops.length)} shown · ${num(byPlan.filter(isPaid).length)} on Pro · ${num(shops.filter((s) => s.google).length)} log in with Google`
+              : 'Loading…'}
           </p>
           {billing && (
             <p className="follow-meta">
@@ -457,16 +779,36 @@ function ShopsPage() {
             </p>
           )}
         </div>
+        <button className="btn btn-soft" disabled={!shops?.length} onClick={() => shops && exportShops(shops)}>
+          <Download size={16} /> Export CSV
+        </button>
       </header>
       <section className="card">
-        <div className="input-icon">
-          <Search size={18} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search shop name or email" aria-label="Search shops" />
+        <div className="toolbar">
+          <div className="input-icon">
+            <Search size={18} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search shop name, email or phone" aria-label="Search shops" />
+          </div>
+          <select value={plan} onChange={(e) => setPlan(e.target.value)} aria-label="Filter by plan">
+            {PLAN_FILTERS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort shops">
+            {SORTS.map((x) => (
+              <option key={x.key} value={x.key}>
+                Sort: {x.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="seg seg-scroll">
           {FILTERS.map((f) => (
             <button key={f.key} className={filter === f.key ? 'active' : ''} onClick={() => setFilter(f.key)}>
               {f.label}
+              {all && <span className="seg-count">{num(count(f.key))}</span>}
             </button>
           ))}
         </div>
@@ -477,14 +819,14 @@ function ShopsPage() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Shop</th>
+                  {sortHead('name', 'Shop')}
                   <th>Status</th>
                   <th>Card</th>
-                  <th className="num">Customers</th>
-                  <th className="num">Visits (30d)</th>
-                  <th className="num">Rewards (30d)</th>
-                  <th>Last visit</th>
-                  <th>Joined</th>
+                  {sortHead('customers', 'Customers', 'num')}
+                  {sortHead('visits30', 'Visits (30d)', 'num')}
+                  {sortHead('rewards30', 'Rewards (30d)', 'num')}
+                  {sortHead('last_visit', 'Last visit')}
+                  {sortHead('created_at', 'Joined')}
                   <th>From</th>
                   <th title="Show this shop on the homepage">Homepage</th>
                 </tr>

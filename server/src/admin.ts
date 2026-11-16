@@ -25,7 +25,7 @@ import type { Request } from 'express';
 import { AnalyticsStore } from './analytics';
 import { checkPassword, tokenHash } from './auth';
 import { Db } from './db';
-import { effectivePlan, planSettings, seatsLeft } from './plans';
+import { effectivePlan, planSettings, prices, seatsLeft } from './plans';
 import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
 import { rewardsDue, UPI_AMOUNT } from './referrals';
@@ -192,7 +192,113 @@ export class AdminController {
       .filter((s) => s.status === 'sleeping' || s.status === 'never')
       .sort((a, b) => (b.visits30 || 0) - (a.visits30 || 0) || a.created_at.localeCompare(b.created_at))
       .slice(0, 20);
-    return { totals, attention };
+    return { totals, attention, ...this.dashboard(shops) };
+  }
+
+  /**
+   * The Overview's extra numbers: 90 days of daily series (IST days), this period vs the one before, money, plan and
+   * status mix, platform health, top shops and a feed of recent happenings. Counts only, never customers' details.
+   */
+  private dashboard(shops: ReturnType<typeof shopView>[]) {
+    const sql = this.db.sql;
+    const DAYS = 90;
+    const ist = `date(created_at, '+330 minutes')`;
+    const since = `datetime('now', '-${DAYS} days')`;
+    const perDay = (query: string) => Object.fromEntries((sql.prepare(query).all() as { day: string; n: number }[]).map((r) => [r.day, r.n]));
+    const visits = perDay(`SELECT ${ist} AS day, COUNT(*) AS n FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= ${since} GROUP BY day`);
+    const rewards = perDay(`SELECT ${ist} AS day, COUNT(*) AS n FROM transactions WHERE type = 'redeem' AND reversed = 0 AND created_at >= ${since} GROUP BY day`);
+    const signups = perDay(`SELECT ${ist} AS day, COUNT(*) AS n FROM merchants WHERE created_at >= ${since} GROUP BY day`);
+    const customers = perDay(`SELECT ${ist} AS day, COUNT(*) AS n FROM customers WHERE created_at >= ${since} GROUP BY day`);
+    const activeShops = perDay(
+      `SELECT ${ist} AS day, COUNT(DISTINCT merchant_id) AS n FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= ${since} GROUP BY day`,
+    );
+    const revenue = perDay(
+      `SELECT date(paid_at, '+330 minutes') AS day, SUM(amount_paise) AS n FROM payments WHERE status = 'paid' AND paid_at >= ${since} GROUP BY day`,
+    );
+    const visitors = perDay(`SELECT day, COUNT(DISTINCT vid) AS n FROM page_views WHERE day >= date('now', '-${DAYS} days') GROUP BY day`);
+    const today = new Date(Date.now() + 330 * 60_000);
+    const series = Array.from({ length: DAYS }, (_, i) => {
+      const day = new Date(today.getTime() - (DAYS - 1 - i) * 86_400_000).toISOString().slice(0, 10);
+      return {
+        day,
+        visits: visits[day] ?? 0,
+        rewards: rewards[day] ?? 0,
+        signups: signups[day] ?? 0,
+        customers: customers[day] ?? 0,
+        activeShops: activeShops[day] ?? 0,
+        revenue: (revenue[day] ?? 0) / 100,
+        visitors: visitors[day] ?? 0,
+      };
+    });
+
+    const money = sql
+      .prepare(
+        `SELECT
+           COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_paise END), 0) AS allTime,
+           COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= datetime('now', 'start of month') THEN amount_paise END), 0) AS thisMonth,
+           COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= datetime('now', 'start of month', '-1 month')
+             AND paid_at < datetime('now', 'start of month') THEN amount_paise END), 0) AS lastMonth,
+           COUNT(CASE WHEN status = 'paid' THEN 1 END) AS paidCount,
+           COUNT(CASE WHEN status = 'refunded' THEN 1 END) AS refunded,
+           COUNT(CASE WHEN status = 'created' AND created_at >= datetime('now', '-30 days') THEN 1 END) AS abandoned30
+         FROM payments`,
+      )
+      .get() as Record<string, number>;
+    const p = prices(sql);
+    const plans: Record<string, number> = { free: 0, grandfathered: 0, monthly: 0, yearly: 0, lifetime: 0 };
+    const statuses: Record<string, number> = { active: 0, sleeping: 0, new: 0, never: 0, paused: 0 };
+    for (const s of shops) {
+      plans[s.activePlan] = (plans[s.activePlan] ?? 0) + 1;
+      statuses[s.status] = (statuses[s.status] ?? 0) + 1;
+    }
+    const mrr = (plans.monthly * p.monthly + (plans.yearly * p.yearly) / 12) / 100;
+
+    const health = sql
+      .prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM customers) AS customers,
+           (SELECT COUNT(*) FROM (SELECT customer_id FROM transactions WHERE type = 'earn' AND reversed = 0
+              GROUP BY customer_id HAVING COUNT(*) >= 2)) AS repeat,
+           (SELECT COUNT(DISTINCT merchant_id) FROM transactions WHERE type = 'earn' AND reversed = 0) AS startedShops,
+           (SELECT COUNT(*) FROM transactions WHERE type = 'earn' AND reversed = 0) AS visitsAllTime,
+           (SELECT COUNT(*) FROM transactions WHERE type = 'redeem' AND reversed = 0) AS rewardsAllTime,
+           (SELECT COUNT(*) FROM merchants WHERE google_sub IS NOT NULL) AS google,
+           (SELECT COUNT(*) FROM merchants WHERE on_landing = 1) AS onLanding,
+           (SELECT COUNT(*) FROM merchants WHERE referred_by IS NOT NULL) AS referred`,
+      )
+      .get() as Record<string, number>;
+
+    const topShops = [...shops]
+      .filter((s) => s.visits30 > 0)
+      .sort((a, b) => b.visits30 - a.visits30)
+      .slice(0, 8)
+      .map((s) => ({ id: s.id, name: s.name, status: s.status, visits30: s.visits30, customers: s.customers, rewards30: s.rewards30, activePlan: s.activePlan }));
+
+    const activity = (
+      sql
+        .prepare(
+          `SELECT * FROM (
+             SELECT 'signup' AS kind, id AS shopId, name AS text, created_at AS at FROM merchants ORDER BY id DESC LIMIT 15)
+           UNION ALL SELECT * FROM (
+             SELECT 'payment', p.merchant_id, m.name || ' · ' || p.kind || ' · ₹' || (p.amount_paise / 100), p.paid_at
+             FROM payments p JOIN merchants m ON m.id = p.merchant_id WHERE p.status = 'paid' ORDER BY p.paid_at DESC LIMIT 15)
+           UNION ALL SELECT * FROM (
+             SELECT 'admin', merchant_id, detail, created_at FROM admin_log ORDER BY id DESC LIMIT 15)
+           ORDER BY at DESC LIMIT 18`,
+        )
+        .all() as { kind: string; shopId: number | null; text: string; at: string }[]
+    ).filter((a) => a.at);
+
+    return {
+      series,
+      money: { ...money, mrr, prices: p },
+      plans,
+      statuses,
+      health,
+      topShops,
+      activity,
+      seats: { total: planSettings(sql).seats, left: seatsLeft(sql) },
+    };
   }
 
   /** `filter`: active | sleeping | new | never | paused. */
