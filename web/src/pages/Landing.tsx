@@ -30,7 +30,7 @@ import '../landing.css';
 
 // regularhood.in — the homepage for shop owners. The shop app itself lives at /app.
 // One idea: a stamp card on the customer's phone number ("every 5th visit, a free cappuccino"). The page is told with
-// one example shop at a time — a café to start — and the visitor can switch to a salon, kirana, bakery, gym or sweet
+// one example shop at a time — a kirana to start — and the visitor can switch to a salon, café, bakery, gym or sweet
 // shop; every section follows the pick, which shows the same two taps work for any shop.
 // English and Hindi; prerendered in English (scripts/prerender.mjs). Everything is readable without JavaScript and at
 // rest; animations replay what the product does, and stop for reduced motion.
@@ -101,13 +101,13 @@ type Example = { key: ExKey; icon: typeof Coffee; shop: string; needed: number; 
 
 const EXAMPLES: Example[] = [
   {
-    key: 'cafe',
-    icon: Coffee,
-    shop: 'Brew & Bean Café',
-    needed: 5,
-    en: { type: 'Café', reward: 'a free cappuccino.', short: 'Free cappuccino', line: 'Regulars who come for their morning coffee' },
-    hi: { type: 'कैफ़े', reward: 'मुफ़्त कैपुचीनो।', short: 'मुफ़्त कैपुचीनो', line: 'सुबह की कॉफ़ी वाले पक्के ग्राहक' },
-    ml: { type: 'കഫേ', reward: 'ഒരു ഫ്രീ കാപ്പുച്ചിനോ.', short: 'ഫ്രീ കാപ്പുച്ചിനോ', line: 'രാവിലത്തെ കോഫിക്ക് സ്ഥിരം വരുന്നവർ' },
+    key: 'kirana',
+    icon: ShoppingBasket,
+    shop: 'Gupta Kirana Store',
+    needed: 10,
+    en: { type: 'Kirana', reward: '₹50 off the bill.', short: '₹50 off', line: 'Families who shop with you every week' },
+    hi: { type: 'किराना', reward: 'बिल पर ₹50 की छूट।', short: '₹50 की छूट', line: 'हर हफ़्ते सामान लेने वाले परिवार' },
+    ml: { type: 'പലചരക്ക് കട', reward: 'ബില്ലിൽ ₹50 കിഴിവ്.', short: '₹50 കിഴിവ്', line: 'എല്ലാ ആഴ്ചയും സാധനം വാങ്ങുന്ന കുടുംബങ്ങൾ' },
   },
   {
     key: 'salon',
@@ -119,13 +119,13 @@ const EXAMPLES: Example[] = [
     ml: { type: 'സലൂൺ', reward: 'ഒരു ഫ്രീ ഹെഡ് മസാജ്.', short: 'ഫ്രീ ഹെഡ് മസാജ്', line: 'ഏതാനും ആഴ്ച കൂടുമ്പോൾ തിരികെ വരുന്നവർ' },
   },
   {
-    key: 'kirana',
-    icon: ShoppingBasket,
-    shop: 'Gupta Kirana Store',
-    needed: 10,
-    en: { type: 'Kirana', reward: '₹50 off the bill.', short: '₹50 off', line: 'Families who shop with you every week' },
-    hi: { type: 'किराना', reward: 'बिल पर ₹50 की छूट।', short: '₹50 की छूट', line: 'हर हफ़्ते सामान लेने वाले परिवार' },
-    ml: { type: 'പലചരക്ക് കട', reward: 'ബില്ലിൽ ₹50 കിഴിവ്.', short: '₹50 കിഴിവ്', line: 'എല്ലാ ആഴ്ചയും സാധനം വാങ്ങുന്ന കുടുംബങ്ങൾ' },
+    key: 'cafe',
+    icon: Coffee,
+    shop: 'Brew & Bean Café',
+    needed: 5,
+    en: { type: 'Café', reward: 'a free cappuccino.', short: 'Free cappuccino', line: 'Regulars who come for their morning coffee' },
+    hi: { type: 'कैफ़े', reward: 'मुफ़्त कैपुचीनो।', short: 'मुफ़्त कैपुचीनो', line: 'सुबह की कॉफ़ी वाले पक्के ग्राहक' },
+    ml: { type: 'കഫേ', reward: 'ഒരു ഫ്രീ കാപ്പുച്ചിനോ.', short: 'ഫ്രീ കാപ്പുച്ചിനോ', line: 'രാവിലത്തെ കോഫിക്ക് സ്ഥിരം വരുന്നവർ' },
   },
   {
     key: 'bakery',
@@ -170,10 +170,11 @@ const COPY = {
     start: 'Start free',
     open: 'Open your shop',
     eyebrow: 'The loyalty card for every local shop',
-    h1: (n: number) => `Every ${ordinal(n)} visit,`,
-    sub: 'A stamp card on the customer’s phone number. Type the number, tap “Add visit” — the app tells you when to give the reward. No app for customers, no QR codes, no points.',
+    h1: 'Turn every customer',
+    h1b: 'into a regular.',
+    sub: 'Customers get a stamp on every visit and a reward when the card is full — so they come back to you, not the shop next door. All they need is their phone number.',
     watch: 'Watch it work',
-    note: 'Free · No card needed · Ready in 1 minute',
+    note: 'Free · No payment needed · Ready in 1 minute',
     pickLabel: 'Pick a shop like yours',
     demoHint: 'Try it — tap “Add visit”',
     demoAdd: 'Add visit',
@@ -186,7 +187,7 @@ const COPY = {
     floatVisit: '+1 visit',
     rule: (n: number, r: string) => `Every ${n} visits → ${r}`,
     filmKicker: 'See it at the counter',
-    filmTitle: '15 seconds. Two taps. A customer for life.',
+    filmTitle: '15 seconds. Two taps. One more reason to come back.',
     scenes: [
       ['The customer says their number', 'No app to open, no QR to scan. Regulars pop up after 4 digits.'],
       ['You tap “Add visit”', 'One big button. A stamp lands on their card.'],
@@ -215,7 +216,7 @@ const COPY = {
     howVisits: 'visits',
     howReward: 'Reward',
     howPhone: 'Customer’s number',
-    everyKicker: 'Not just cafés',
+    everyKicker: 'Any shop with regulars',
     everyTitle: 'One card. Every kind of shop.',
     everySub: 'If people visit you again and again, it works for you. You choose the rule — here are some ideas.',
     everyRule: (n: number) => `Every ${n} visits`,
@@ -277,7 +278,7 @@ const COPY = {
     pro: {
       name: 'Pro',
       monthly: 'a month',
-      yearly: (price: string) => `or ${price} a year`,
+      yearly: (price: string, month: string, save: number) => `or ${price} a year${save > 0 ? ` (${month}/month, save ${save}%)` : ''}`,
       lifetime: (price: string) => `or ${price} once, for life`,
       list: [
         'Unlimited customers',
@@ -295,6 +296,16 @@ const COPY = {
     faqTitle: 'Asked at the counter.',
     finalTitle: 'Your next regular walks in today.',
     finalSub: 'Set up takes one minute. Their first stamp can land today.',
+    worth: {
+      kicker: 'Do the maths',
+      title: 'What is one more visit worth?',
+      sub: 'Move the sliders to match your shop. The gain is customers you already have, coming back a little more often.',
+      bill: 'Average bill',
+      back: 'Customers who come one extra time a month',
+      month: 'more a month',
+      year: (y: string) => `That’s ${y} a year.`,
+      foot: 'And Regularhood is free to start.',
+    },
     footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', cities: 'Shops by city', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', shipping: 'Delivery', contact: 'Contact', tag: 'From first visit to “the usual”.' },
   },
   hi: {
@@ -302,10 +313,11 @@ const COPY = {
     start: 'मुफ़्त शुरू करें',
     open: 'अपनी दुकान खोलें',
     eyebrow: 'हर लोकल दुकान के लिए लॉयल्टी कार्ड',
-    h1: (n: number) => `हर ${n}वीं विज़िट पर`,
-    sub: 'ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड। नंबर लिखें, “विज़िट जोड़ें” दबाएँ — इनाम कब देना है, ऐप खुद बताएगा। ग्राहक को न ऐप, न QR, न पॉइंट्स।',
+    h1: 'हर ग्राहक को बनाइए',
+    h1b: 'पक्का ग्राहक।',
+    sub: 'हर विज़िट पर ग्राहक को स्टैम्प, कार्ड भरते ही इनाम — तो वो बगल वाली दुकान नहीं, आपके पास लौटता है। ग्राहक को बस अपना फ़ोन नंबर बताना है।',
     watch: 'देखें कैसे चलता है',
-    note: 'मुफ़्त · कोई कार्ड नहीं चाहिए · 1 मिनट में तैयार',
+    note: 'मुफ़्त · कोई पेमेंट नहीं · 1 मिनट में तैयार',
     pickLabel: 'अपनी जैसी दुकान चुनें',
     demoHint: 'आज़माएँ — “विज़िट जोड़ें” दबाएँ',
     demoAdd: 'विज़िट जोड़ें',
@@ -318,7 +330,7 @@ const COPY = {
     floatVisit: '+1 विज़िट',
     rule: (n: number, r: string) => `हर ${n} विज़िट पर → ${r}`,
     filmKicker: 'काउंटर पर देखें',
-    filmTitle: '15 सेकंड। दो टैप। ग्राहक हमेशा के लिए।',
+    filmTitle: '15 सेकंड। दो टैप। लौटकर आने की एक और वजह।',
     scenes: [
       ['ग्राहक अपना नंबर बताता है', 'न ऐप खोलना, न QR स्कैन। पुराने ग्राहक 4 अंक में दिख जाते हैं।'],
       ['आप “विज़िट जोड़ें” दबाते हैं', 'एक बड़ा बटन। कार्ड पर एक स्टैम्प लग जाता है।'],
@@ -347,7 +359,7 @@ const COPY = {
     howVisits: 'विज़िट पर',
     howReward: 'इनाम',
     howPhone: 'ग्राहक का नंबर',
-    everyKicker: 'सिर्फ़ कैफ़े नहीं',
+    everyKicker: 'हर दुकान के लिए',
     everyTitle: 'एक कार्ड। हर तरह की दुकान।',
     everySub: 'अगर ग्राहक आपके पास बार-बार आते हैं, तो यह आपके लिए है। नियम आप चुनें — ये रहे कुछ आइडिया।',
     everyRule: (n: number) => `हर ${n} विज़िट पर`,
@@ -407,7 +419,7 @@ const COPY = {
     pro: {
       name: 'Pro',
       monthly: 'महीने का',
-      yearly: (price: string) => `या ${price} साल का`,
+      yearly: (price: string, month: string, save: number) => `या ${price} साल का${save > 0 ? ` (${month}/महीना, ${save}% बचत)` : ''}`,
       lifetime: (price: string) => `या ${price} एक बार, हमेशा के लिए`,
       list: [
         'जितने चाहें ग्राहक',
@@ -425,6 +437,16 @@ const COPY = {
     faqTitle: 'काउंटर पर पूछे गए सवाल।',
     finalTitle: 'आपका अगला पक्का ग्राहक आज ही आएगा।',
     finalSub: 'सेटअप में एक मिनट। पहला स्टैम्प आज ही लग सकता है।',
+    worth: {
+      kicker: 'हिसाब लगाइए',
+      title: 'एक और विज़िट से कितना फ़ायदा?',
+      sub: 'अपनी दुकान के हिसाब से स्लाइडर खिसकाइए। फ़ायदा उन्हीं ग्राहकों से है जो पहले से आते हैं — बस थोड़ा ज़्यादा आएँ।',
+      bill: 'औसत बिल',
+      back: 'महीने में एक बार ज़्यादा आने वाले ग्राहक',
+      month: 'हर महीने ज़्यादा',
+      year: (y: string) => `यानी साल में ${y}।`,
+      foot: 'और Regularhood शुरू करना मुफ़्त है।',
+    },
     footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', shipping: 'डिलीवरी', contact: 'संपर्क', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
   },
   ml: {
@@ -432,10 +454,11 @@ const COPY = {
     start: 'സൗജന്യമായി തുടങ്ങൂ',
     open: 'നിങ്ങളുടെ കട തുറക്കൂ',
     eyebrow: 'ഓരോ ലോക്കൽ കടയ്ക്കും ഒരു ലോയൽറ്റി കാർഡ്',
-    h1: (n: number) => `ഓരോ ${n}-ാം സന്ദർശനത്തിലും,`,
-    sub: 'കസ്റ്റമറുടെ ഫോൺ നമ്പറിൽ ഒരു സ്റ്റാമ്പ് കാർഡ്. നമ്പർ ടൈപ്പ് ചെയ്ത് “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ — സമ്മാനം എപ്പോൾ കൊടുക്കണമെന്ന് ആപ്പ് പറയും. കസ്റ്റമർക്ക് ആപ്പ് വേണ്ട, QR വേണ്ട, പോയിന്റുകളും വേണ്ട.',
+    h1: 'ഓരോ കസ്റ്റമറെയും',
+    h1b: 'സ്ഥിരം കസ്റ്റമറാക്കൂ.',
+    sub: 'ഓരോ സന്ദർശനത്തിലും ഒരു സ്റ്റാമ്പ്, കാർഡ് നിറയുമ്പോൾ ഒരു സമ്മാനം — അതുകൊണ്ട് അവർ തൊട്ടടുത്ത കടയിലേക്കല്ല, നിങ്ങളുടെ അടുത്തേക്ക് തിരികെ വരും. അവരുടെ ഫോൺ നമ്പർ മാത്രം മതി.',
     watch: 'എങ്ങനെയെന്ന് കാണൂ',
-    note: 'സൗജന്യം · കാർഡ് വേണ്ട · 1 മിനിറ്റിൽ റെഡി',
+    note: 'സൗജന്യം · പണം വേണ്ട · 1 മിനിറ്റിൽ റെഡി',
     pickLabel: 'നിങ്ങളുടേത് പോലെയുള്ള ഒരു കട തിരഞ്ഞെടുക്കൂ',
     demoHint: 'പരീക്ഷിച്ചു നോക്കൂ — “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ',
     demoAdd: 'സന്ദർശനം ചേർക്കൂ',
@@ -448,7 +471,7 @@ const COPY = {
     floatVisit: '+1 സന്ദർശനം',
     rule: (n: number, r: string) => `ഓരോ ${n} സന്ദർശനത്തിനും → ${r}`,
     filmKicker: 'കൗണ്ടറിൽ കാണൂ',
-    filmTitle: '15 സെക്കൻഡ്. രണ്ട് ടാപ്പ്. ജീവിതകാലം മുഴുവൻ ഒരു കസ്റ്റമർ.',
+    filmTitle: '15 സെക്കൻഡ്. രണ്ട് ടാപ്പ്. തിരികെ വരാൻ ഒരു കാരണം കൂടി.',
     scenes: [
       ['കസ്റ്റമർ നമ്പർ പറയുന്നു', 'ആപ്പ് തുറക്കേണ്ട, QR സ്കാൻ ചെയ്യേണ്ട. സ്ഥിരം കസ്റ്റമർമാർ 4 അക്കത്തിൽ തന്നെ തെളിയും.'],
       ['നിങ്ങൾ “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യുന്നു', 'ഒരു വലിയ ബട്ടൺ. അവരുടെ കാർഡിൽ ഒരു സ്റ്റാമ്പ് വീഴും.'],
@@ -477,7 +500,7 @@ const COPY = {
     howVisits: 'സന്ദർശനത്തിനും',
     howReward: 'സമ്മാനം',
     howPhone: 'കസ്റ്റമറുടെ നമ്പർ',
-    everyKicker: 'കഫേകൾക്ക് മാത്രമല്ല',
+    everyKicker: 'സ്ഥിരം കസ്റ്റമർമാരുള്ള ഏത് കടയ്ക്കും',
     everyTitle: 'ഒരു കാർഡ്. എല്ലാ തരം കടകൾക്കും.',
     everySub: 'ആളുകൾ നിങ്ങളുടെ അടുത്ത് വീണ്ടും വീണ്ടും വരുന്നുണ്ടെങ്കിൽ, ഇത് നിങ്ങൾക്കുള്ളതാണ്. നിയമം നിങ്ങൾ തീരുമാനിക്കൂ — ചില ആശയങ്ങൾ ഇതാ.',
     everyRule: (n: number) => `ഓരോ ${n} സന്ദർശനത്തിനും`,
@@ -537,7 +560,7 @@ const COPY = {
     pro: {
       name: 'Pro',
       monthly: 'മാസം',
-      yearly: (price: string) => `അല്ലെങ്കിൽ വർഷം ${price}`,
+      yearly: (price: string, month: string, save: number) => `അല്ലെങ്കിൽ വർഷം ${price}${save > 0 ? ` (മാസം ${month}, ${save}% ലാഭം)` : ''}`,
       lifetime: (price: string) => `അല്ലെങ്കിൽ ഒരിക്കൽ ${price}, എന്നേക്കും`,
       list: [
         'എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും',
@@ -555,6 +578,16 @@ const COPY = {
     faqTitle: 'കൗണ്ടറിൽ ചോദിച്ചത്.',
     finalTitle: 'നിങ്ങളുടെ അടുത്ത സ്ഥിരം കസ്റ്റമർ ഇന്ന് തന്നെ വരും.',
     finalSub: 'സെറ്റപ്പിന് ഒരു മിനിറ്റ്. ആദ്യ സ്റ്റാമ്പ് ഇന്ന് തന്നെ വീഴാം.',
+    worth: {
+      kicker: 'കണക്ക് നോക്കൂ',
+      title: 'ഒരു സന്ദർശനം കൂടി വന്നാൽ എത്ര?',
+      sub: 'നിങ്ങളുടെ കടയ്ക്ക് അനുസരിച്ച് സ്ലൈഡർ നീക്കൂ. ഇപ്പോൾ വരുന്ന കസ്റ്റമർമാർ കുറച്ചുകൂടി വരുന്നതാണ് ലാഭം.',
+      bill: 'ശരാശരി ബിൽ',
+      back: 'മാസത്തിൽ ഒരു തവണ കൂടുതൽ വരുന്ന കസ്റ്റമർമാർ',
+      month: 'മാസം അധികം',
+      year: (y: string) => `അതായത് വർഷം ${y}.`,
+      foot: 'Regularhood തുടങ്ങാൻ സൗജന്യമാണ്.',
+    },
     footer: { how: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു', price: 'വില', shops: 'നിങ്ങളുടെ തരം കടയ്ക്ക്', cities: 'നഗരം അനുസരിച്ച്', guides: 'ഗൈഡുകൾ', login: 'കട ലോഗ് ഇൻ', privacy: 'പ്രൈവസി', terms: 'നിബന്ധനകൾ', refunds: 'റീഫണ്ട്', shipping: 'ഡെലിവറി', contact: 'ബന്ധപ്പെടുക', tag: 'ആദ്യ സന്ദർശനം മുതൽ “എന്നും വരുന്നയാൾ” വരെ.' },
   },
 };
@@ -867,7 +900,6 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
 }
 
 function Hero({ c, lang }: { c: Copy; lang: Lang }) {
-  const { ex } = useExample();
   return (
     <section className="lp-hero" data-section="hero">
       <div className="lp-aurora" aria-hidden="true">
@@ -882,20 +914,9 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
             <span className="lp-dot" /> {c.eyebrow}
           </p>
           <h1>
-            <span className="lp-h1-line">{c.h1(ex.needed)}</span>
+            <span className="lp-h1-line">{c.h1}</span>
             <span className="lp-h1-swap">
-              <AnimatePresence initial={false}>
-                <m.span
-                  key={`${ex.key}-${lang}`}
-                  className="lp-h1-reward"
-                  initial={{ y: '0.6em', opacity: 0, filter: 'blur(8px)' }}
-                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                  exit={{ y: '-0.5em', opacity: 0, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
-                >
-                  {ex[lang].reward}
-                </m.span>
-              </AnimatePresence>
+              <span className="lp-h1-reward">{c.h1b}</span>
             </span>
           </h1>
           <p className="lp-sub">{c.sub}</p>
@@ -908,12 +929,17 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
             </a>
           </div>
           <p className="lp-note">{c.note}</p>
-          <div className="lp-pick-wrap">
+          <div className="lp-pick-wrap lp-pick-wide">
             <span className="lp-pick-label">{c.pickLabel}</span>
             <ShopPicker lang={lang} className="hero" />
           </div>
         </div>
         <DemoPhone c={c} lang={lang} />
+        {/* phones: the picker sits under the phone it changes */}
+        <div className="lp-pick-wrap lp-pick-narrow">
+          <span className="lp-pick-label">{c.pickLabel}</span>
+          <ShopPicker lang={lang} className="hero" />
+        </div>
       </div>
     </section>
   );
@@ -1445,6 +1471,48 @@ function ShopsUsing({ c }: { c: Copy }) {
   );
 }
 
+/** "Do the maths": the shop's own numbers turned into rupees. Only what the visitor sets, so no claim of ours. */
+function Worth({ c }: { c: Copy }) {
+  const w = c.worth;
+  const [bill, setBill] = useState(250);
+  const [back, setBack] = useState(20);
+  const month = bill * back;
+  const rs = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  return (
+    <section className="lp-section lp-wrap" id="worth" data-section="worth">
+      <p className="lp-kicker rv">{w.kicker}</p>
+      <h2 className="lp-h2 rv">{w.title}</h2>
+      <p className="lp-sub rv">{w.sub}</p>
+      <div className="lp-worth rv">
+        <div className="lp-worth-inputs">
+          <label>
+            <span>
+              {w.bill} <strong>{rs(bill)}</strong>
+            </span>
+            <input type="range" min={50} max={2000} step={50} value={bill} onChange={(e) => setBill(+e.target.value)} data-track="worth: bill" />
+          </label>
+          <label>
+            <span>
+              {w.back} <strong>{back}</strong>
+            </span>
+            <input type="range" min={5} max={200} step={5} value={back} onChange={(e) => setBack(+e.target.value)} data-track="worth: customers" />
+          </label>
+        </div>
+        <div className="lp-worth-out" aria-live="polite">
+          <p className="lp-worth-num">
+            +{rs(month)} <span>{w.month}</span>
+          </p>
+          <p className="lp-worth-year">{w.year(rs(month * 12))}</p>
+          <p className="lp-worth-foot">{w.foot}</p>
+          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="worth: Start free">
+            {c.start} <ArrowRight size={18} />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type Founding = { open: boolean; total: number; left: number; prices: { monthly: number; yearly: number; lifetime: number }; freeCustomers: number };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -1487,13 +1555,19 @@ function Pricing({ c }: { c: Copy }) {
           {lifetime && (
             <span className="lp-price-badge">
               {f.only(founding.total)}
-              {founding.left > 0 && ` · ${f.left(founding.left, founding.total)}`}
+              {founding.left > 0 && founding.left < founding.total && ` · ${f.left(founding.left, founding.total)}`}
             </span>
           )}
           <p className="lp-price-name">{f.name}</p>
           <div>
             <strong className="lp-price-tag">{inr(founding.prices.monthly)}</strong> <span className="lp-price-per">{f.monthly}</span>
-            <p className="lp-price-alt">{f.yearly(inr(founding.prices.yearly))}</p>
+            <p className="lp-price-alt">
+              {f.yearly(
+                inr(founding.prices.yearly),
+                inr(Math.round(founding.prices.yearly / 1200) * 100),
+                Math.round((1 - founding.prices.yearly / (founding.prices.monthly * 12)) * 100),
+              )}
+            </p>
             {lifetime && <p className="lp-price-alt">{f.lifetime(inr(founding.prices.lifetime))}</p>}
           </div>
           <ul>
@@ -1534,7 +1608,7 @@ function Faq({ c, lang }: { c: Copy; lang: Lang }) {
 
 /** Cycles the example shop in the hero until the visitor picks one, only while the hero is on screen. */
 function useExampleTour() {
-  const [key, setKey] = useState<ExKey>('cafe');
+  const [key, setKey] = useState<ExKey>('kirana');
   const [picked, setPicked] = useState(false);
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -1587,6 +1661,7 @@ export function Landing() {
             <ForCustomers c={c} lang={lang} />
             <Why c={c} />
             <ShopsUsing c={c} />
+            <Worth c={c} />
             <Autopilot c={c} lang={lang} />
             <Pricing c={c} />
             <Faq c={c} lang={lang} />

@@ -428,7 +428,6 @@
 .lp-h1-swap {
   position: relative;
   display: block;
-  min-height: 2.08em;
 }
 
 /* Swapped text (hero reward, film caption, card count): the leaving copy comes first and is lifted out of the flow,
@@ -463,9 +462,53 @@
 }
 
 @media (max-width: 560px) {
-  .lp-cta,
-  .lp-cta .lp-btn {
+  .lp-cta {
     width: 100%;
+  }
+
+  /* side by side on phones, so the demo phone comes up into the first screen */
+  .lp-cta .lp-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding-inline: 16px;
+  }
+
+  .lp[lang='ml'] .lp-cta .lp-btn {
+    width: 100%;
+  }
+
+  .lp-hero {
+    padding-top: 92px;
+  }
+
+  .lp-hero-text {
+    gap: 18px;
+  }
+}
+
+/* The shop picker: beside the headline on wide screens, under the demo phone on narrow ones. */
+.lp-pick-wrap.lp-pick-narrow {
+  justify-items: center;
+  margin-top: -28px;
+}
+
+.lp-pick-narrow .lp-picker {
+  justify-content: center;
+}
+
+@media (max-width: 959px) {
+  .lp-pick-wrap.lp-pick-wide {
+    display: none;
+  }
+
+  .lp-hero-grid {
+    gap: 36px;
+  }
+}
+
+@media (min-width: 960px) {
+  .lp-pick-wrap.lp-pick-narrow {
+    display: none;
   }
 }
 
@@ -2211,6 +2254,102 @@ button.lp-phone-btn:not(.orange) {
   background: radial-gradient(100% 80% at 100% 0%, rgba(11, 122, 82, 0.35), transparent 60%), var(--night);
   color: var(--paper);
   box-shadow: 0 40px 80px -40px rgba(15, 46, 36, 0.8);
+}
+
+/* ---------------------------------------------------------------- do the maths */
+
+.lp-worth {
+  display: grid;
+  gap: 18px;
+  margin-top: 36px;
+}
+
+@media (min-width: 860px) {
+  .lp-worth {
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+}
+
+.lp-worth-inputs {
+  display: grid;
+  gap: 28px;
+  align-content: center;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--sheet);
+}
+
+.lp-worth-inputs label {
+  display: grid;
+  gap: 12px;
+}
+
+.lp-worth-inputs label > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lp-worth-inputs strong {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.lp-worth-inputs input[type='range'] {
+  width: 100%;
+  height: 28px;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+.lp-worth-out {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+  justify-items: start;
+  padding: 30px 28px;
+  border-radius: 28px;
+  background: radial-gradient(100% 80% at 100% 0%, rgba(11, 122, 82, 0.35), transparent 60%), var(--night);
+  color: var(--paper);
+}
+
+.lp-worth-num {
+  margin: 0;
+  color: var(--marigold);
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 850;
+  font-stretch: 92%;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-worth-num span {
+  display: block;
+  margin-top: 8px;
+  color: var(--paper);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.lp-worth-year {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.lp-worth-foot {
+  margin: 0 0 10px;
+  color: rgba(238, 242, 236, 0.72);
+  font-size: 15px;
 }
 
 /* the button sits at the bottom, so both cards' buttons line up */
