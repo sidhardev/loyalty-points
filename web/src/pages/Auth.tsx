@@ -13,9 +13,33 @@ const FEATURES = [
   { icon: UserX, text: 'See who stopped coming and remind them' },
 ];
 
+/** A card made in the free stamp card maker (/tools/stamp-card-maker), sent along in the sign-up link. Kept for the tab,
+ *  so it survives the Google step and a reload. */
+type ToolCard = { shop: string; reward: string; visits: number };
+const TOOL_CARD = 'rh_tool_card';
+
+function readToolCard(): ToolCard | null {
+  try {
+    const q = new URLSearchParams(location.search);
+    const reward = (q.get('reward') ?? '').trim().slice(0, 60);
+    const visits = Number(q.get('visits'));
+    if (reward && Number.isInteger(visits) && visits >= 2 && visits <= 50) {
+      const card = { shop: (q.get('shop') ?? '').trim().slice(0, 80), reward, visits };
+      sessionStorage.setItem(TOOL_CARD, JSON.stringify(card));
+      return card;
+    }
+    const saved = JSON.parse(sessionStorage.getItem(TOOL_CARD) ?? 'null') as ToolCard | null;
+    return saved && saved.reward && saved.visits ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
-  const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' ? 'signup' : 'login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', login: '' });
+  const [card] = useState(readToolCard);
+  const rule = card ? { visitsNeeded: card.visits, rewardName: card.reward } : undefined;
+  const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' || card ? 'signup' : 'login');
+  const [form, setForm] = useState({ name: card?.shop ?? '', email: '', password: '', phone: '', login: '' });
   const { busy, error, setError, run } = useAction();
   // A new Google account: its token waits here while the shop name and WhatsApp number are asked for.
   const [google, setGoogle] = useState<{ credential: string; email: string } | null>(null);
@@ -26,6 +50,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         credential,
         ...details,
         attribution: arrival(),
+        rule,
       });
       if ('needs' in r) {
         // A new Google account; Admin → Visits shows who got this far but didn't finish.
@@ -34,7 +59,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         return;
       }
       setToken(r.token);
-      if (details) trackEvent('signup', 'shop-google');
+      if (details) trackEvent('signup', card ? 'shop-google: from stamp card maker' : 'shop-google');
       onAuthed(r.merchant);
     });
 
@@ -45,10 +70,10 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
       const { token, merchant } = await api<{ token: string; merchant: Merchant }>(
         `auth/${mode}`,
         'POST',
-        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival() } : { login: form.login, password: form.password },
+        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival(), rule } : { login: form.login, password: form.password },
       );
       setToken(token);
-      if (mode === 'signup') trackEvent('signup', 'shop');
+      if (mode === 'signup') trackEvent('signup', card ? 'shop: from stamp card maker' : 'shop');
       onAuthed(merchant);
     });
   };
@@ -119,6 +144,15 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
                 <h2 style={{ fontSize: 22 }}>{mode === 'login' ? 'Welcome back' : 'Create your shop account'}</h2>
                 <p className="muted small">{mode === 'login' ? 'Log in to your shop.' : 'Free, and ready in under a minute.'}</p>
               </div>
+              {mode === 'signup' && card && (
+                <div className="tool-card-note">
+                  <span className="tool-card-kicker">Your card</span>
+                  <strong>
+                    Every {card.visits} visits: {card.reward}
+                  </strong>
+                  <span className="muted small">It goes live on customers’ phone numbers as soon as you create the account.</span>
+                </div>
+              )}
               <GoogleButton text={mode === 'login' ? 'signin_with' : 'signup_with'} onCredential={(c) => void withGoogle(c)} />
               {mode === 'signup' && (
                 <label>

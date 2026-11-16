@@ -32,6 +32,7 @@ const ADDED = '2026-10-22';
 const ADDED_OCT26 = '2026-10-26';
 const ADDED_NOV10 = '2026-11-10';
 const ADDED_NOV12 = '2026-11-12';
+const ADDED_NOV16 = '2026-11-16';
 
 const en: Guide[] = [
   {
@@ -785,8 +786,8 @@ const en: Guide[] = [
   {
     slug: 'follow-up-message-for-repeat-service',
     name: 'Follow-up message for repeat service',
-    title: 'Follow-Up Message Asking a Customer for Repeat Service (Examples)',
-    description: 'How to write a short, polite follow-up message asking a customer for a repeat service or order, with offer ideas (free add-on, 10% off) and ready examples.',
+    title: 'Short, Polite Follow-Up Message for Repeat Service or Order (Samples + Offers)',
+    description: 'Sample short and polite follow-up messages asking a customer for a repeat service or order, with offers to attract repeat customers: free add-ons, free delivery, 10% discount. Copy and use.',
     eyebrow: 'Follow-up messages',
     h1: 'How to write a follow-up message asking a customer to come back',
     intro:
@@ -1879,6 +1880,200 @@ const hi: Guide[] = [
       { q: 'छोटे रेस्टोरेंट के लिए सबसे अच्छा लॉयल्टी प्रोग्राम कौन-सा है?', a: 'फ़ोन नंबर पर विज़िट कार्ड: हर कुछ विज़िट पर एक मुफ़्त डिश। मेहमान के लिए कोई ऐप नहीं, स्टाफ़ के लिए बस कुछ सेकंड।' },
       { q: 'क्या ढाबे और कैफ़े में भी चलेगा?', a: 'हाँ। जहाँ भी वही लोग बार-बार आते हैं — बैठकर खाएँ या डिलीवरी — वहाँ विज़िट गिनकर इनाम दिया जा सकता है।' },
       { q: 'इसका ख़र्च कितना है?', a: 'Regularhood शुरू करना मुफ़्त है। असली ख़र्च इनाम का है, इसलिए डेज़र्ट या ड्रिंक जैसी कम लागत वाली चीज़ चुनें।' },
+    ],
+  },
+  {
+    // Roman-script searches seen in Search Console: "customer bulane ka mantra", "grahak bulane ka mantra",
+    // "vyapar badhane ka mantra", "dukaan mein grahak bulane ki dua".
+    slug: 'grahak-bulane-ka-mantra',
+    name: 'Grahak bulane ka mantra',
+    title: 'Dukan Mein Grahak Bulane ka Mantra: Asli Mantra Jo Roz Kaam Aata Hai',
+    description: 'Grahak bulane ka mantra aur vyapar badhane ka tarika: jo customer ek baar aaya, use baar-baar bulane ke 7 aasan upay — naam, reward, WhatsApp aur counter. Free.',
+    eyebrow: 'Grahak bulane ka mantra',
+    h1: 'Dukan mein grahak bulane ka mantra: woh mantra jo roz kaam aata hai',
+    intro:
+      'Puja-paath aur shubh muhurat apni jagah — har dukaandaar ki apni aastha hoti hai. Par counter pe roz jo mantra kaam aata hai, woh seedha hai: jo grahak ek baar aaya, use dobara aane ki wajah do. Naya grahak dhoondhne se kahin aasan hai purane grahak ko baar-baar bulana.',
+    updated: ADDED_NOV16,
+    blocks: [
+      {
+        h2: 'Asli mantra: ek baar aaya, toh baar-baar aaye',
+        p: [
+          'Zyada tar dukaan ki kamai pakke grahakon se aati hai — woh log jo hafte mein, mahine mein, ya roz aate hain. Agar unme se har koi mahine mein bas ek baar zyada aaye, toh bina kisi ad ke sale badh jaati hai.',
+          'Isliye mantra naye grahak bulane ka nahi, purane grahak ko rokne ka hai.',
+        ],
+      },
+      {
+        h2: 'Grahak bulane ke 7 upay',
+        steps: [
+          { title: 'Naam se bulao', text: '“Aaiye Verma ji” — grahak ko lagta hai yeh uski apni dukaan hai. Yaad na rahe toh number ke saath naam likh lo.' },
+          { title: 'Har visit ka hisaab rakho', text: 'Ek aasan niyam: har 5 ya 6 visit pe ek chhota free gift. Grahak ke paas bagal wali dukaan chhod kar aapke paas aane ki wajah hoti hai.' },
+          { title: 'Batao reward kitna paas hai', text: '“Bas ek visit aur, aapka gift ready hai” — yeh sunke log jaldi lautte hain.' },
+          { title: 'Counter pe niyam likh do', text: 'Jahan paise diye jaate hain wahan ek chhota poster: “Har 5 visit pe gift free”. Log khud poochte hain.' },
+          { title: 'WhatsApp status lagao', text: 'Naya maal, aaj ka special, aapka reward — jinke paas aapka number save hai, woh sab free mein dekhte hain.' },
+          { title: 'Jo aana band kare, use yaad karo', text: '“Namaste Suresh ji, kaafi din se nahi aaye — sab theek?” Ek pyaara sa message kaafi hai.' },
+          { title: 'Wada nibhao', text: 'Jo reward bola, woh time pe do. Bharosa hi woh cheez hai jo grahak ko pakka banata hai.' },
+        ],
+      },
+      {
+        h2: 'Kya aksar kaam nahi karta',
+        list: [
+          'Bhaari discount — grahak ek baar aata hai aur agli sale ka intezaar karta hai.',
+          'Anjaan numbers pe bulk SMS — spam lagta hai, dukaan ki izzat ghatti hai.',
+          'Har grahak se app download karwana — zyada tar nahi karte.',
+        ],
+      },
+      {
+        h2: 'Regularhood se yeh mantra roz chalta hai',
+        p: [
+          'Regularhood mein aap ek niyam rakhte ho — har N visit (3 se 10) pe ek reward. Counter pe grahak ka phone number likho aur Add visit dabao; reward kab dena hai, app batata hai.',
+          'Grahak ko ek tap mein WhatsApp pe uska card jaata hai. Jo grahak nahi laute, unki list “hum aapko miss kar rahe hain” message ke saath ready milti hai. Shuru karna free hai.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Grahak bulane ka sabse aasan mantra kya hai?', a: 'Jo grahak ek baar aaya, use dobara aane ki wajah do: naam se pehchaano, har visit ka chhota reward rakho, aur jo aana band kare use pyaar se yaad dilao.' },
+      { q: 'Vyapar badhane ka mantra kya hai?', a: 'Naye grahak dhoondhne se pehle purane grahak ko baar-baar bulao. Woh aapko pehle se jaante hain, isliye unhe lautana sabse sasta hai.' },
+      { q: 'Kya totke ya dua se grahak aate hain?', a: 'Aastha har kisi ki apni hai. Par jo cheez har dukaan mein dikhti hai, woh yeh hai: grahak wahi lautta hai jahan use pehchana jaata hai aur kuch milta hai.' },
+    ],
+  },
+  {
+    // Pairs with the free stamp card maker (/hi/tools/stamp-card-maker).
+    slug: 'loyalty-card-kaise-banaye',
+    name: 'Loyalty card kaise banaye',
+    title: 'Loyalty Card Kaise Banaye? Dukan ke Liye Stamp Card (Free Maker)',
+    description: 'Dukan ke liye loyalty card kaise banaye: kitni visit, kya reward, paper card ya phone number pe card. Free stamp card maker se 1 minute mein print karein.',
+    eyebrow: 'Loyalty card',
+    h1: 'Loyalty card kaise banaye: dukan ke liye stamp card, step by step',
+    intro:
+      'Loyalty card ka matlab hai: har visit pe ek stamp, card bhar gaya toh ek free reward. Iske liye na koi bada system chahiye, na kharcha. Bas teen cheezein tay karni hain — kitni visit, kya reward, aur card kahan rahega.',
+    updated: ADDED_NOV16,
+    blocks: [
+      {
+        h2: 'Loyalty card banane ke 4 step',
+        steps: [
+          { title: 'Visit tay karo', text: 'Zyada tar dukaan ke liye 5 se 8. Jahan log roz aate hain (kirana, doodh, sabzi) wahan 10; salon jaise jahan kuch hafte mein aate hain, wahan 4.' },
+          { title: 'Reward chuno', text: 'Aisi cheez jo aap roz bechte ho aur jiski laagat kam hai: ek free item, chhota add-on, ya bill pe tay chhoot jaise ₹50 off. Poora bill free nahi.' },
+          { title: 'Card banao', text: 'Paper card ke liye hamara free stamp card maker use karo: dukaan ka naam aur reward likho, A4 pe 10 card print karo aur kaat lo.' },
+          { title: 'Har grahak ko batao', text: 'Bill dete waqt ek line: “Aapka pehla stamp lag gaya — 5 visit aur, phir gift free.” Counter pe poster lagao.' },
+        ],
+      },
+      {
+        h2: 'Paper card ya phone number pe card?',
+        table: {
+          head: ['', 'Paper card', 'Phone number pe card'],
+          rows: [
+            ['Kharcha', 'Printing ka', 'Shuru karna free'],
+            ['Grahak bhool jaaye', 'Stamp nahi lagta', 'Number bolo, ho gaya'],
+            ['Nakli stamp', 'Pen se koi bhi laga de', 'Sirf counter se lagta hai'],
+            ['Kaun aana band kar gaya', 'Pata nahi chalta', 'List milti hai'],
+            ['Grahak ko yaad dilana', 'Nahi ho sakta', 'WhatsApp pe ek tap'],
+          ],
+        },
+      },
+      {
+        h2: 'Regularhood: phone number pe loyalty card',
+        p: [
+          'Regularhood mein card grahak ke phone number pe rehta hai. Counter pe number likho, Add visit dabao — reward kab dena hai, app batata hai. Grahak ko WhatsApp pe uska card milta hai, koi app download nahi karni padti.',
+          'Shuru karna free hai. Agar abhi paper se shuru karna hai, toh free stamp card maker se card print kar lo.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Loyalty card kaise banaye free mein?', a: 'Hamare free stamp card maker mein dukaan ka naam, reward aur visit likho, aur A4 pe 10 card print karo. Ya Regularhood pe grahak ke phone number pe card banao — woh bhi free shuru hota hai.' },
+      { q: 'Loyalty card pe kitni visit rakhein?', a: 'Zyada tar dukaan ke liye 5 se 8. Bahut zyada visit rakhoge toh grahak beech mein hi chhod dega.' },
+      { q: 'Loyalty card ka size kya hota hai?', a: 'Visiting card jitna, 85 × 55 mm, taaki batue mein aa jaaye.' },
+    ],
+  },
+  {
+    // Roman twin in spirit of /hi/guide/win-back-old-customers (237 impressions in Search Console).
+    slug: 'purane-customer-wapas-kaise-laye',
+    name: 'Purane customer wapas kaise laye',
+    title: 'Purane Customer Wapas Kaise Laye? 5 Step + WhatsApp Message (Copy Karein)',
+    description: 'Jo customer aana band kar gaye, unhe wapas kaise laye: list kaise banaye, kab message bhejein, aur 6 ready WhatsApp message jo aap copy kar sakte ho. Free.',
+    eyebrow: 'Purane customer',
+    h1: 'Purane customer wapas kaise laye: 5 step aur ready message',
+    intro:
+      'Pakka customer chupchaap chala jaata hai — na shikayat karta hai, na batata hai. Zyada tar baar koi badi wajah nahi hoti: bas aadat toot gayi. Aur toot-ti aadat ko ek pyaare se message se phir joda ja sakta hai, agar time pe pata chal jaaye.',
+    updated: ADDED_NOV16,
+    blocks: [
+      {
+        h2: '5 step',
+        steps: [
+          { title: 'List banao', text: 'Jo customer pehle regular aate the aur 30 din se nahi aaye, unke naam aur number likho.' },
+          { title: 'Jaldi bhejo', text: '30–45 din mein message bhejo. Chhe mahine baad aadat poori tarah badal chuki hoti hai.' },
+          { title: 'Apne number se, naam se', text: 'Message dukaan ke number se jaaye aur customer ka naam ho. Anjaan number ka message spam lagta hai.' },
+          { title: 'Aane ki wajah do', text: 'Agar woh reward ke paas hain toh batao: “Bas ek visit aur, aapka gift ready hai.”' },
+          { title: 'Ek hi baar', text: 'Ek message kaafi hai. Baar-baar bhejoge toh woh number block kar denge.' },
+        ],
+      },
+      {
+        h2: 'Ready WhatsApp message (copy karein)',
+        list: [
+          'Namaste {naam} ji, kaafi din se aap nahi aaye — sab theek hai? Aapka intezaar rahega. — {dukaan}',
+          '{naam} ji, aapka card bas ek visit door hai. Agli baar aaoge toh {reward} aapka. — {dukaan}',
+          'Namaste {naam} ji, naya maal aaya hai jo aapko pasand aayega. Kabhi bhi aaiye. — {dukaan}',
+          '{naam} ji, aapki yaad aayi! Is hafte zaroor aaiye, aapka swagat hai. — {dukaan}',
+          'Hello {naam} ji, aap humare purane customer ho — koi shikayat ho toh zaroor batana, sudhaar karenge. — {dukaan}',
+          '{naam} ji, aapka {reward} abhi bhi aapke card pe hai. Kab aa rahe ho? — {dukaan}',
+        ],
+      },
+      {
+        h2: 'Regularhood mein yeh list khud banti hai',
+        p: [
+          'Regularhood har visit ka hisaab rakhta hai, isliye “Not seen” list mein woh customer khud aa jaate hain jo 30 din se nahi aaye. Message ready milta hai — aap use apne WhatsApp se ek tap mein bhejte ho, apni dukaan ke naam se.',
+          'Shuru karna free hai; reminder wali list Pro mein hai.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Purane customer ko wapas kaise bulaye?', a: 'Unki list banao, 30–45 din mein apne number se naam ke saath ek pyaara message bhejo, aur agar woh reward ke paas hain toh batao.' },
+      { q: 'Customer ko kya message bhejein?', a: '“Namaste {naam} ji, kaafi din se aap nahi aaye — sab theek hai? Aapka intezaar rahega.” Chhota, apna-sa, bina discount ke.' },
+      { q: 'Kitni baar message bhejna chahiye?', a: 'Ek baar. Jawab na aaye toh agle mahine ek aur, bas. Zyada bhejne se number block ho jaata hai.' },
+    ],
+  },
+  {
+    // Roman twin in spirit of /hi/guide/get-customers-for-new-shop (442 impressions, the most in Search Console).
+    slug: 'nayi-dukan-me-customer-kaise-laye',
+    name: 'Nayi dukan me customer kaise laye',
+    title: 'Nayi Dukan Me Customer Kaise Laye? Pehle 30 Din ka Plan',
+    description: 'Nayi dukan khuli hai? Pehle customer kaise laye aur unhe pakka customer kaise banaye — opening, Google, WhatsApp aur reward ka 4 hafte ka aasan plan. Free.',
+    eyebrow: 'Nayi dukan',
+    h1: 'Nayi dukan me customer kaise laye: pehle 30 din ka plan',
+    intro:
+      'Nayi dukan mein sabse bada sawaal hota hai — log aayenge kaise? Par asli kaam pehli visit ke baad shuru hota hai. Jo log pehle mahine aate hain, unme se kitne dobara aate hain, wahi tay karta hai ki dukaan chalegi ya nahi.',
+    updated: ADDED_NOV16,
+    blocks: [
+      {
+        h2: '4 hafte ka plan',
+        steps: [
+          { title: 'Hafta 1: sabko batao', text: 'Dukaan ke bahar saaf board, aas-paas ke ghar aur society WhatsApp group mein opening ki khabar. Google Business Profile banao — photo, timing, phone number.' },
+          { title: 'Hafta 1: har customer ka number lo', text: 'Pehle din se. “Offer aur naye maal ki khabar ke liye” — zyada tar log khushi se de dete hain.' },
+          { title: 'Hafta 2: dobara aane ki wajah do', text: 'Ek aasan reward ka niyam: har 5 visit pe ek chhota gift. Pehli visit pe hi pehla stamp lagao.' },
+          { title: 'Hafta 3: WhatsApp status roz', text: 'Jinke paas aapka number hai, woh roz aapki dukaan dekhte hain — naya maal, aaj ka special, reward ka niyam.' },
+          { title: 'Hafta 4: review maango', text: 'Jo khush customer do-teen baar aa chuke, unse Google review maango. Naye log reviews dekh kar hi aate hain.' },
+          { title: 'Hafta 4: jo nahi laute, unhe yaad karo', text: 'Jo pehle hafte aaye aur phir nahi aaye, unhe ek pyaara sa message: “Kaisa laga humara maal? Phir aaiye.”' },
+        ],
+      },
+      {
+        h2: 'Opening mein kya na karein',
+        list: [
+          'Pehle hafte bhaari discount — log sasta dhoondhne aate hain aur discount khatam hote hi chale jaate hain.',
+          'Sirf pamphlet pe paisa — pata hi nahi chalta kaun aaya.',
+          'Number na lena — phir unhe dobara bulane ka koi raasta nahi bachta.',
+        ],
+      },
+      {
+        h2: 'Regularhood pehle din se',
+        p: [
+          'Regularhood mein customer ka number likho aur Add visit dabao — number bhi save ho gaya, pehla stamp bhi lag gaya. Customer ko WhatsApp pe uska card milta hai, aur counter poster aur WhatsApp status ki photo ready milti hai.',
+          'Pehle 50 customer free hain, toh nayi dukaan ke liye bina kharche shuru ho jaata hai.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Nayi dukan me customer kaise laye?', a: 'Board, Google Business Profile aur society WhatsApp group se pehle customer laao, har customer ka number lo, aur pehli visit se hi reward ka niyam shuru karo taaki woh dobara aaye.' },
+      { q: 'Nayi dukan ka pehla mahina kaise chalaye?', a: 'Pehle hafte sabko batao, doosre hafte dobara aane ki wajah do, teesre hafte roz WhatsApp status lagao, aur chauthe hafte review maango aur jo nahi laute unhe yaad karo.' },
+      { q: 'Kya opening pe discount dena chahiye?', a: 'Chhota sa opening gift theek hai, par bhaari discount se sasta dhoondhne wale aate hain. Baar-baar aane pe reward se pakke customer bante hain.' },
     ],
   },
 ];

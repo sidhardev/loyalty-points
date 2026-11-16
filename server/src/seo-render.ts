@@ -5,6 +5,7 @@
 
 import type { Guide, GuideBlock } from './guides';
 import { LEGAL, type LegalDoc } from './legal';
+import type { StampMakerCopy } from './tools';
 
 export type SeoLang = 'en' | 'hi';
 export type SeoKind = 'shop' | 'city';
@@ -81,6 +82,7 @@ const T = {
     footRefunds: 'Refunds',
     footShipping: 'Delivery',
     footContact: 'Contact',
+    tool: 'Free stamp card maker',
   },
   hi: {
     home: 'होम',
@@ -127,6 +129,7 @@ const T = {
     footRefunds: 'रिफ़ंड',
     footShipping: 'डिलीवरी',
     footContact: 'संपर्क',
+    tool: 'फ़्री स्टैम्प कार्ड मेकर',
   },
 };
 
@@ -227,7 +230,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justif
 `;
 
 /** Counts the visit in Admin → Visits (same format as the app's own tracker; no cookies, nothing personal). */
-const BEACON = `<script>(function(){try{if(localStorage.getItem('lp_sa_ignore')==='1'||navigator.webdriver)return;var r=function(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12))};var d=new Date().toISOString().slice(0,10);var v=(localStorage.getItem('lp_sa_vid')||'').split('|');var ret=!!localStorage.getItem('lp_sa_seen');if(v[0]!==d){v=[d,r()];localStorage.setItem('lp_sa_vid',v.join('|'))}localStorage.setItem('lp_sa_seen','1');var s=sessionStorage.getItem('lp_sa_sid');if(!s){s=r();sessionStorage.setItem('lp_sa_sid',s)}var p=new URLSearchParams(location.search);var b=JSON.stringify({t:'view',id:r(),ts:new Date().toISOString(),path:location.pathname,title:document.title,host:location.hostname,ref:document.referrer,utmSource:p.get('utm_source')||p.get('ref')||'',utmMedium:p.get('utm_medium')||'',utmCampaign:p.get('utm_campaign')||'',tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'',lang:navigator.language,w:screen.width,vid:v[1],sid:s,ret:ret});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}})();</script>`;
+const BEACON = `<script>(function(){try{if(localStorage.getItem('lp_sa_ignore')==='1'||navigator.webdriver)return;var r=function(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12))};var d=new Date().toISOString().slice(0,10);var v=(localStorage.getItem('lp_sa_vid')||'').split('|');var ret=!!localStorage.getItem('lp_sa_seen');if(v[0]!==d){v=[d,r()];localStorage.setItem('lp_sa_vid',v.join('|'))}localStorage.setItem('lp_sa_seen','1');var s=sessionStorage.getItem('lp_sa_sid');if(!s){s=r();sessionStorage.setItem('lp_sa_sid',s)}var p=new URLSearchParams(location.search);var w=r();window.__rhv=w;var b=JSON.stringify({t:'view',id:w,ts:new Date().toISOString(),path:location.pathname,title:document.title,host:location.hostname,ref:document.referrer,utmSource:p.get('utm_source')||p.get('ref')||'',utmMedium:p.get('utm_medium')||'',utmCampaign:p.get('utm_campaign')||'',tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'',lang:navigator.language,w:screen.width,vid:v[1],sid:s,ret:ret});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}})();</script>`;
 
 function shell(o: { lang: SeoLang; site: string; path: string; title: string; description: string; alternates?: { lang: SeoLang; path: string }[]; jsonLd?: object; body: string; noindex?: boolean }) {
   const t = T[o.lang];
@@ -269,6 +272,7 @@ ${o.body}
   [path(o.lang), t.footShops],
   [path(o.lang, '', 'city'), t.footCities],
   [guidePath(o.lang), t.guides],
+  [toolPath(o.lang, 'stamp-card-maker'), t.tool],
   ['/privacy', t.footPrivacy],
   ['/terms', t.footTerms],
   ['/refunds', t.footRefunds],
@@ -464,6 +468,9 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
       urls.push(gUrl(guidePath(lang, g.slug), g.updated, twins.length > 1 ? twins.map((l) => ({ lang: l, path: guidePath(l, g.slug) })) : []));
     }
   }
+  // Free tools, each in both languages.
+  for (const lang of ['en', 'hi'] as SeoLang[])
+    urls.push(gUrl(toolPath(lang, 'stamp-card-maker'), '2026-11-16', (['en', 'hi'] as SeoLang[]).map((l) => ({ lang: l, path: toolPath(l, 'stamp-card-maker') }))));
   urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated), url('/shipping', LEGAL.shipping.updated), url('/contact', LEGAL.contact.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
@@ -537,7 +544,7 @@ ${g.blocks.map(block).join('\n')}
 </div></section>
 <section style="padding-top:0"><div class="wrap">
   <h2 style="font-size:24px">${t.moreGuides}</h2>
-  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
+  <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${toolPath(lang, 'stamp-card-maker')}">${t.tool} →</a><a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
 </div></section>
 </main>`;
   return shell({ lang, site, path: here, title: g.title, description: g.description, alternates, jsonLd, body });
@@ -575,4 +582,232 @@ ${doc.blocks.map(block).join('\n')}
 <section></section>
 </main>`;
   return shell({ lang: 'en', site, path: here, title: doc.title, description: doc.description, alternates: [{ lang: 'en', path: here }], body });
+}
+
+const toolPath = (lang: SeoLang, slug: string) => `${lang === 'hi' ? '/hi' : ''}/tools/${slug}`;
+
+const TOOL_CSS = `
+.tool{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;margin-top:8px}
+.tform{display:grid;gap:16px;background:var(--sheet);border:1px solid var(--line);border-radius:20px;padding:24px}
+.tform label{display:grid;gap:6px;font-weight:600;font-size:15px;color:var(--ink2)}
+.tform input,.tform select{font:inherit;font-size:17px;color:var(--ink);padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;width:100%}
+.tform input:focus,.tform select:focus{outline:2px solid var(--green);outline-offset:1px}
+.swatches{display:flex;gap:10px}
+.swatches button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;background:var(--c)}
+.swatches button[aria-pressed=true]{box-shadow:0 0 0 3px var(--ink)}
+.tprev{display:grid;gap:14px;justify-items:center;position:sticky;top:84px}
+.ttabs{display:inline-flex;padding:4px;border-radius:999px;background:var(--sheet);border:1px solid var(--line)}
+.ttabs button{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:8px 16px;background:transparent;color:var(--ink2);cursor:pointer}
+.ttabs button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.tpanel[hidden]{display:none}
+.tip{color:var(--soft);font-size:14px;margin:0;text-align:center;max-width:34em}
+.scard{--c:#0b7a52;--on:#fff;width:340px;max-width:100%;aspect-ratio:85/55;border-radius:14px;background:var(--c);color:var(--on);padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 24px 48px -24px rgba(15,46,36,.55);font-family:Inter,'Noto Sans Devanagari',system-ui,sans-serif;overflow:hidden}
+.scard .k{font:700 10px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.scard .s{font:800 20px/1.15 Archivo,'Noto Sans Devanagari',Inter,sans-serif;overflow-wrap:anywhere}
+.scard .r{font-size:13px;font-weight:600;opacity:.95}
+.scard .dots{display:flex;gap:5px;margin-top:auto}
+.scard .dots i{flex:1 1 0;max-width:34px;aspect-ratio:1;border-radius:50%;border:2px dashed currentColor;opacity:.75;display:grid;place-items:center}
+.scard .dots i.g{border:0;background:#f0a202;color:#0f2e24;opacity:1}
+.scard .dots i.on{border-style:solid;background:currentColor;opacity:.9}
+.scard .dots svg{width:58%;height:58%}
+.scard .f{display:flex;justify-content:space-between;gap:10px;font-size:11px;opacity:.85}
+.scard .f span:first-child{flex:1;border-bottom:1px solid currentColor;opacity:.8}
+.pphone{width:300px;max-width:100%;border:10px solid var(--ink);border-radius:34px;background:#ece5dd;padding:18px 12px 22px;display:grid;gap:10px;box-shadow:0 24px 48px -24px rgba(15,46,36,.55)}
+.pphone .who{font-size:12px;font-weight:700;color:var(--soft);text-align:center}
+.bubble{justify-self:start;max-width:92%;background:#fff;border-radius:4px 14px 14px 14px;padding:10px 12px 8px;font-size:14px;line-height:1.45;color:#111;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+.bubble .open{display:block;margin-top:8px;padding-top:8px;border-top:1px solid #e5e5e5;text-align:center;color:#0b7a52;font-weight:700}
+.pphone .scard{width:100%;padding:12px 14px}
+.pphone .scard .s{font-size:16px}
+.sheet{display:none}
+dialog.tsheet{border:0;padding:0;border-radius:24px;max-width:460px;width:calc(100% - 32px);background:var(--sheet);color:var(--ink);box-shadow:0 40px 80px -30px rgba(15,46,36,.6)}
+dialog.tsheet::backdrop{background:rgba(15,46,36,.55)}
+.tsheet .in{display:grid;gap:14px;padding:26px 24px 22px}
+.tsheet h2{font-size:24px;margin:0;padding-right:28px}
+.tsheet .lead{margin:0;color:var(--ink2)}
+.tsheet .x{position:absolute;top:14px;right:14px;width:36px;height:36px;border:0;border-radius:50%;background:var(--paper);font-size:20px;line-height:1;cursor:pointer;color:var(--ink2)}
+.tcmp{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px}
+.tcmp b{padding:9px 12px;background:var(--paper);font-size:13px}
+.tcmp b:last-of-type{background:var(--mint);color:var(--deep)}
+.tcmp span{padding:9px 12px;border-top:1px solid var(--line);color:var(--soft)}
+.tcmp span:nth-of-type(even){color:var(--ink);font-weight:600;background:#f6fbf8}
+.tsheet .btn{width:100%}
+.tsheet .both{margin:0;color:var(--soft);font-size:13px;text-align:center}
+.tafter{position:fixed;left:16px;right:16px;bottom:16px;z-index:20;max-width:560px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 16px;border-radius:16px;background:var(--ink);color:var(--paper);box-shadow:0 20px 50px -20px rgba(15,46,36,.7)}
+.tafter[hidden]{display:none}
+.tafter p{margin:0;flex:1 1 240px;font-size:15px}
+.tafter a{color:var(--marigold);font-weight:700}
+.tafter button{border:0;background:transparent;color:var(--paper);font-size:20px;cursor:pointer;opacity:.8}
+@media (max-width:820px){.tool{grid-template-columns:1fr}.tprev{position:static;order:-1}}
+@media (max-width:560px){dialog.tsheet{margin:auto auto 0;width:100%;max-width:none;border-radius:24px 24px 0 0}}
+@media print{
+  @page{size:A4;margin:10mm}
+  body>*:not(.sheet){display:none!important}
+  .sheet{display:grid!important;grid-template-columns:repeat(2,85mm);grid-auto-rows:55mm;gap:0;justify-content:center}
+  .sheet .scard{width:85mm;max-width:none;height:55mm;aspect-ratio:auto;border-radius:0;box-shadow:none;outline:1px dashed #999;padding:4.5mm 5mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet .scard .dots i{max-width:9mm}
+}
+`;
+
+const js = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
+
+/** The reward box's gift, drawn rather than an emoji so it looks the same on every phone and printer. */
+const GIFT =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
+
+/**
+ * The stamp card maker (/tools/stamp-card-maker, /hi/tools/stamp-card-maker). Without JavaScript it is a page to read;
+ * with it, the card follows the form and prints 10 to an A4 sheet.
+ *
+ * The visitor is about to run a loyalty card, which is what Regularhood is, so the page offers the same card on
+ * customers' phones without ever standing in the way of printing: a "On their phone" preview beside the paper one,
+ * one sheet the first time they press Print (their own card, what paper loses, and "Print paper cards" right there),
+ * and one line after printing. Every link to sign up carries the card, so the app opens on it.
+ * Everything typed stays in the browser until they choose to sign up.
+ */
+export function renderStampMaker(site: string, lang: SeoLang, c: StampMakerCopy, o: { slug: string; guides: Guide[] }) {
+  const t = T[lang];
+  const here = toolPath(lang, o.slug);
+  const other: SeoLang = lang === 'en' ? 'hi' : 'en';
+  const alternates = [
+    { lang: 'en' as SeoLang, path: toolPath('en', o.slug) },
+    { lang: 'hi' as SeoLang, path: toolPath('hi', o.slug) },
+  ];
+  const n = 6;
+  const fill = (tpl: string, v: Record<string, string | number>) => tpl.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ''));
+  const rule = (v: number, r: string) => fill(c.card.rule, { n: v, r });
+  const dots = (v: number, stamped = 0) =>
+    Array.from({ length: v }, (_, i) => (i === v - 1 ? `<i class="g">${GIFT}</i>` : `<i${i < stamped ? ' class="on"' : ''}></i>`)).join('');
+  const card = (id: string, stamped = 0) => `<div class="scard" id="${id}">
+        <span class="k">${esc(c.card.kicker)}</span>
+        <span class="s">${esc(c.defaults.shop)}</span>
+        <span class="r">${esc(rule(n, c.defaults.reward))}</span>
+        <div class="dots">${dots(n, stamped)}</div>
+        <div class="f"><span>${esc(c.card.name)}:</span><span>${esc(c.defaults.contact)}</span></div>
+      </div>`;
+  const colours = [
+    ['#0b7a52', '#fff', 'Green'],
+    ['#0f2e24', '#fff', 'Dark green'],
+    ['#8b1e3f', '#fff', 'Maroon'],
+    ['#1d4e89', '#fff', 'Blue'],
+    ['#f0a202', '#0f2e24', 'Marigold'],
+  ];
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        name: c.name,
+        description: c.description,
+        url: `${site}${here}`,
+        inLanguage: lang === 'hi' ? 'hi-IN' : 'en-IN',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Any',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+        publisher: { '@type': 'Organization', name: 'Regularhood', url: `${site}/` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Regularhood', item: `${site}/` },
+          { '@type': 'ListItem', position: 2, name: c.name, item: `${site}${here}` },
+        ],
+      },
+      { '@type': 'FAQPage', mainEntity: c.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+    ],
+  };
+  const sh = c.sheet;
+  // Text the visitor typed is only ever set with textContent. Events go to Admin → Visits on this page's view.
+  const script = `<script>(function(){
+var f=document.getElementById('tf');if(!f)return;
+var C=${js({ rule: c.card.rule, shop: c.defaults.shop, reward: c.defaults.reward, bubble: c.preview.bubble, title: sh.title, lead: sh.lead, mobileLead: sh.mobileLead, print: sh.print, pdf: sh.pdf, gift: GIFT })};
+var card=document.getElementById('sc'),mini=document.getElementById('sc2'),sheet=document.getElementById('sheet'),dlg=document.getElementById('tsheet'),after=document.getElementById('tafter');
+var small=matchMedia('(max-width:720px)').matches,printed=false;
+function q(n){return f.elements[n]}
+function fill(t,v){return t.replace(/\\{(\\w+)\\}/g,function(_,k){return v[k]==null?'':v[k]})}
+function ev(name){try{var id=window.__rhv;if(!id)return;var b=JSON.stringify({t:'event',id:id,kind:'click',name:name});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}}
+function val(){return{v:+q('visits').value,s:q('shop').value.trim()||C.shop,r:q('reward').value.trim()||C.reward,ct:q('contact').value.trim()}}
+function paint(el,d,stamped){el.querySelector('.s').textContent=d.s;el.querySelector('.r').textContent=fill(C.rule,{n:d.v,r:d.r});
+var box=el.querySelector('.dots');box.textContent='';for(var i=0;i<d.v;i++){var e=document.createElement('i');if(i===d.v-1){e.className='g';e.innerHTML=C.gift}else if(i<stamped)e.className='on';box.appendChild(e)}
+el.querySelector('.f span:last-child').textContent=d.ct}
+function link(camp){var d=val();return '/app?utm_source=seo&utm_medium=organic&utm_campaign='+camp+'&shop='+encodeURIComponent(d.s)+'&reward='+encodeURIComponent(d.r)+'&visits='+d.v+'#signup'}
+function draw(){var d=val();paint(card,d,0);paint(mini,d,d.v-2);
+document.getElementById('bub').textContent=fill(C.bubble,{shop:d.s,x:d.v-2,n:d.v,left:2,r:d.r});document.getElementById('who').textContent=d.s;
+document.querySelectorAll('[data-camp]').forEach(function(a){a.href=link(a.getAttribute('data-camp'))})}
+f.addEventListener('input',draw);
+document.querySelectorAll('.swatches button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.swatches button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});[card,mini].forEach(function(el){el.style.setProperty('--c',b.dataset.c);el.style.setProperty('--on',b.dataset.on)})})});
+document.querySelectorAll('.ttabs button').forEach(function(b){b.addEventListener('click',function(){var on=b.getAttribute('data-tab');document.querySelectorAll('.ttabs button').forEach(function(x){x.setAttribute('aria-selected',String(x===b))});document.querySelectorAll('.tpanel').forEach(function(p){p.hidden=p.id!=='tp-'+on});ev('tool: preview '+on)})});
+function doPrint(){sheet.textContent='';for(var i=0;i<10;i++)sheet.appendChild(card.cloneNode(true)).removeAttribute('id');printed=true;window.print()}
+var seen=false;try{seen=sessionStorage.getItem('rh_tool_sheet')==='1'}catch(e){}
+document.getElementById('tp').addEventListener('click',function(){
+if(seen||!dlg.showModal){ev('tool: print');return doPrint()}
+seen=true;try{sessionStorage.setItem('rh_tool_sheet','1')}catch(e){}
+var d=val();document.getElementById('sh-t').textContent=fill(C.title,{shop:d.s});document.getElementById('sh-l').textContent=small?C.mobileLead:fill(C.lead,{n:d.v});document.getElementById('sh-p').textContent=small?C.pdf:C.print;
+dlg.showModal();ev(small?'tool: sheet shown (phone)':'tool: sheet shown')});
+document.getElementById('sh-p').addEventListener('click',function(){dlg.close();ev('tool: sheet → print paper');doPrint()});
+document.getElementById('sh-x').addEventListener('click',function(){dlg.close();ev('tool: sheet closed')});
+document.getElementById('sh-d').addEventListener('click',function(){ev('tool: sheet → digital card')});
+document.querySelectorAll('[data-camp]').forEach(function(a){if(a.id!=='sh-d')a.addEventListener('click',function(){ev('tool: digital card ('+a.getAttribute('data-camp')+')')})});
+window.addEventListener('afterprint',function(){if(!printed)return;printed=false;var shown=false;try{shown=sessionStorage.getItem('rh_tool_after')==='1';sessionStorage.setItem('rh_tool_after','1')}catch(e){}if(!shown){after.hidden=false;ev('tool: after-print shown')}});
+document.getElementById('ta-x').addEventListener('click',function(){after.hidden=true});
+draw()})();</script>`;
+  const body = `<style>${TOOL_CSS}</style>
+<main>
+<div class="wrap" style="padding-top:40px">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Regularhood</a> › ${esc(c.name)}</nav>
+  <p class="eyebrow">${esc(c.eyebrow)}</p>
+  <h1>${esc(c.h1)}</h1>
+  <p class="intro">${esc(c.intro)} <a href="${toolPath(other, o.slug)}" hreflang="${other}">${t.twin}</a></p>
+  <div class="tool">
+    <form class="tform" id="tf" onsubmit="return false">
+      <label>${esc(c.form.shop)}<input name="shop" maxlength="40" value="${esc(c.defaults.shop)}" autocomplete="organization"></label>
+      <label>${esc(c.form.reward)}<input name="reward" maxlength="40" value="${esc(c.defaults.reward)}"></label>
+      <label>${esc(c.form.visits)}<select name="visits">${[3, 4, 5, 6, 7, 8, 9, 10].map((v) => `<option${v === n ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label>${esc(c.form.contact)}<input name="contact" maxlength="40" value="${esc(c.defaults.contact)}"></label>
+      <div><p style="margin:0 0 8px;font-weight:600;font-size:15px;color:var(--ink2)">${esc(c.form.colour)}</p><div class="swatches">${colours
+        .map(([bg, on, name], i) => `<button type="button" style="--c:${bg}" data-c="${bg}" data-on="${on}" aria-pressed="${i === 0}" aria-label="${name}"></button>`)
+        .join('')}</div></div>
+      <button type="button" class="btn" id="tp">${esc(c.form.print)} →</button>
+    </form>
+    <div class="tprev">
+      <div class="ttabs" role="tablist"><button type="button" role="tab" data-tab="paper" aria-selected="true">${esc(c.preview.paper)}</button><button type="button" role="tab" data-tab="phone" aria-selected="false">${esc(c.preview.phone)}</button></div>
+      <div class="tpanel" id="tp-paper">${card('sc')}</div>
+      <div class="tpanel" id="tp-phone" hidden>
+        <div class="pphone">
+          <div class="who" id="who">${esc(c.defaults.shop)}</div>
+          <div class="bubble"><span id="bub">${esc(fill(c.preview.bubble, { shop: c.defaults.shop, x: n - 2, n, left: 2, r: c.defaults.reward }))}</span><span class="open">${esc(c.preview.open)}</span></div>
+          ${card('sc2', n - 2)}
+        </div>
+        <p class="tip" style="margin-top:12px">${esc(c.preview.note)} <a data-camp="tool-preview" href="${signup(here)}">${esc(c.preview.cta)} →</a></p>
+      </div>
+      <p class="tip">${esc(c.form.tip)}</p>
+    </div>
+  </div>
+</div>
+${block({ h2: c.how.h2, steps: c.how.steps })}
+${block({ h2: c.wrong.h2, list: c.wrong.list })}
+<section><div class="wrap">
+  <div class="final"><div><h2>${esc(c.digital.h2)}</h2>${c.digital.p.map((p) => `<p style="margin-bottom:10px">${esc(p)}</p>`).join('')}</div><a class="btn" data-camp="tool-section" href="${signup(here)}">${esc(c.digital.cta)} →</a></div>
+</div></section>
+<section><div class="wrap"><div class="article">
+  <h2>${t.faq}</h2>
+  ${c.faqs.map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
+</div></div></section>
+<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${t.moreGuides}</h2>
+  <div class="links">${o.guides.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${path(lang)}">${t.forShops} →</a></div>
+</div></section>
+</main>
+<dialog class="tsheet" id="tsheet" aria-labelledby="sh-t"><div class="in">
+  <button type="button" class="x" id="sh-x" aria-label="${esc(sh.close)}">×</button>
+  <h2 id="sh-t">${esc(fill(sh.title, { shop: c.defaults.shop }))}</h2>
+  <p class="lead" id="sh-l">${esc(fill(sh.lead, { n }))}</p>
+  <div class="tcmp"><b>${esc(sh.paperH)}</b><b>${esc(sh.phoneH)}</b>${sh.rows.map(([a, b]) => `<span>${esc(a)}</span><span>${esc(b)}</span>`).join('')}</div>
+  <a class="btn" id="sh-d" data-camp="tool-print" href="${signup(here)}">${esc(sh.digital)}</a>
+  <button type="button" class="btn line" id="sh-p">${esc(sh.print)}</button>
+  <p class="both">${esc(sh.both)}</p>
+</div></dialog>
+<div class="tafter" id="tafter" hidden role="status"><p>${esc(c.after.text)} <a data-camp="tool-after-print" href="${signup(here)}">${esc(c.after.cta)} →</a></p><button type="button" id="ta-x" aria-label="${esc(sh.close)}">×</button></div>
+<div class="sheet" id="sheet" aria-hidden="true"></div>
+${script}`;
+  return shell({ lang, site, path: here, title: c.title, description: c.description, alternates, jsonLd, body });
 }

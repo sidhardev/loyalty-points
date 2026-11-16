@@ -1951,6 +1951,24 @@ button.row-item:hover {
   box-shadow: var(--shadow);
 }
 
+/* The card a shop owner made in the stamp card maker, carried into sign-up. */
+.tool-card-note {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--brand);
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+
+.tool-card-kicker {
+  color: var(--brand-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .referral-page {
   /* The homepage's counter colours (landing.css); dark mode below uses its deep-green night panels. */
   color-scheme: light;

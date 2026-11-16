@@ -73,6 +73,19 @@ function wholeNumber(value: unknown, label: string, min: number, max: number) {
 
 export const SUSPENDED = 'This shop account is paused. Please contact support.';
 
+/**
+ * The card a shop owner made before signing up (the free stamp card maker sends it along). Anything odd is dropped
+ * rather than refused: the sign-up itself must never fail because of it.
+ */
+function readRule(value: unknown): { visits: number; reward: string } | null {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as { visitsNeeded?: unknown; rewardName?: unknown };
+  const visits = Number(v.visitsNeeded);
+  const reward = String(v.rewardName ?? '').trim().slice(0, 60);
+  if (!Number.isInteger(visits) || visits < 2 || visits > 50 || !reward) return null;
+  return { visits, reward };
+}
+
 /** sha256 of a reset-link token; only this is stored, so a database copy can't be used to reset passwords. */
 export const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -126,7 +139,7 @@ export class AuthController {
   ) {}
 
   @Post('auth/signup')
-  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown }) {
+  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown; rule?: unknown }) {
     const name = body?.name?.trim();
     const email = body?.email?.trim().toLowerCase() ?? '';
     const password = body?.password ?? '';
@@ -141,7 +154,7 @@ export class AuthController {
     }
     if (phone && this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in instead.');
 
-    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution }));
+    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution, rule: body?.rule }));
   }
 
   /** The website shows "Continue with Google" only when the server has a Google client id. */
@@ -156,7 +169,7 @@ export class AuthController {
    * and sends the same token again.
    */
   @Post('auth/google')
-  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown }) {
+  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown; rule?: unknown }) {
     const g = await verifyGoogleToken(String(body?.credential ?? ''));
     if (!g) throw new UnauthorizedException('Google sign-in did not work. Please try again.');
 
@@ -177,11 +190,11 @@ export class AuthController {
     if (!name || !phone) return { needs: 'details', email: g.email, name: g.name };
     if (this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in with your number and password.');
     // Nobody knows this password; a reset link from support can set one later.
-    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub });
+    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub, rule: body?.rule });
     return this.session(id);
   }
 
-  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string }) {
+  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string; rule?: unknown }) {
     // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
     const from = readAttribution(s.attribution);
     const referrer =
@@ -201,7 +214,11 @@ export class AuthController {
            signup_ref, signup_landing, referred_by, partner_id, google_sub) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null, s.googleSub ?? null);
-    return Number(lastInsertRowid);
+    const id = Number(lastInsertRowid);
+    // The card they made in the stamp card maker becomes the shop's rule, so the app opens on their own card.
+    const rule = readRule(s.rule);
+    if (rule) this.db.sql.prepare('UPDATE merchants SET visits_needed = ?, reward_name = ? WHERE id = ?').run(rule.visits, rule.reward, id);
+    return id;
   }
 
   @Post('auth/login')

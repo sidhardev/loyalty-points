@@ -96,7 +96,7 @@ Sitemap: ${PHUSRO_ORIGIN}/sitemap.xml
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
       // Server-rendered SEO pages (shop types and cities), guides, privacy/terms/refunds/shipping/contact and the live sitemap (seo.ts).
-      if (/^\/(hi\/)?(for|city|guide)(\/|$)/.test(req.path) || ['/sitemap.xml', '/privacy', '/terms', '/refunds', '/shipping', '/contact'].includes(req.path)) return next();
+      if (/^\/(hi\/)?(for|city|guide|tools)(\/|$)/.test(req.path) || ['/sitemap.xml', '/privacy', '/terms', '/refunds', '/shipping', '/contact'].includes(req.path)) return next();
       // Well-known files we don't publish (ard.json, ai-catalog.json…) are a 404, not the app page, so crawlers and
       // AI agents don't read HTML as a manifest.
       if (req.path.startsWith('/.well-known/')) return next();
