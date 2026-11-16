@@ -23,8 +23,6 @@ export type WaSettings = {
   utilityPriceUsd: number;
   monthlyBudgetUsd: number;
   verifyToken: string;
-  customerMessages: boolean; // Founding Shops' automatic messages to their customers (Admin → Customer WhatsApp)
-  customerQuota: number;
 };
 type SecretInfo = { source: 'panel' | 'env' | null; last4: string };
 type Suggested = { name: string; body: string; yes: string; no: string };

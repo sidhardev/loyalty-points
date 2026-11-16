@@ -703,6 +703,29 @@ const MIGRATIONS: string[] = [
   ALTER TABLE merchants ADD COLUMN google_sub TEXT;
   CREATE UNIQUE INDEX idx_merchants_google ON merchants (google_sub);
   `,
+
+  // 38: Admin → Shops → "Draft a message" (drafts.ts): the admin's own message types, next to the built-in ones. Each is
+  // an instruction for Claude ("thank them and ask for a referral"), not the message itself.
+  `
+  CREATE TABLE msg_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    instruction TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
+
+  // 39: Free and Pro (plans.ts). Pro is bought by the month, the year or for life; Regularhood's number no longer sends
+  // shops' customers automatic messages (the auto_* columns stay, unused). A Pro shop's logo (pro.ts) is kept in its own
+  // table, so loading a shop doesn't read the image; merchants.logo_at says one exists and when it last changed.
+  `
+  CREATE TABLE merchant_logos (
+    merchant_id INTEGER PRIMARY KEY REFERENCES merchants(id) ON DELETE CASCADE,
+    data BLOB NOT NULL,
+    type TEXT NOT NULL
+  );
+  ALTER TABLE merchants ADD COLUMN logo_at TEXT;
+  `,
 ];
 
 const INDEXES = `

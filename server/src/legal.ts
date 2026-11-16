@@ -20,7 +20,7 @@ export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'devsidharr@gmail.com'
 const CONTACT_PHONE = process.env.CONTACT_PHONE || '+91 78500 18347';
 const CONTACT_ADDRESS = process.env.CONTACT_ADDRESS || '3, 30 PS, RSNR, SGNR';
 
-const UPDATED = '2026-10-26';
+const UPDATED = '2026-11-16';
 
 const privacy: LegalDoc = {
   slug: 'privacy',
@@ -48,7 +48,7 @@ const privacy: LegalDoc = {
       list: [
         'Shop name, WhatsApp number and password, and an email address if you give one. You log in with the number or the email. Passwords are stored only as a salted hash; nobody, including us, can read them.',
         'We use your WhatsApp number to log you in and to help you set up. We don’t share it.',
-        'Your shop’s settings: the number of visits for a reward, the reward, bonuses and limits.',
+        'Your shop’s settings: the number of visits for a reward, the reward, bonuses and limits. On Pro, also your logo and your Google review link, if you add them; both are shown on your customers’ cards.',
         'Where you first came from (for example a search result, an Instagram post or another shop’s referral link), so we know which of our marketing works and can give referral rewards.',
         'A log of actions in your shop account (visits added, rewards given, customers deleted), shown to you in the activity log.',
       ],
@@ -87,7 +87,7 @@ const privacy: LegalDoc = {
         'Supporting shops: answering questions and helping with setup.',
         'Improving Regularhood and knowing which marketing brings shops in, using counts and totals.',
         'Meeting legal obligations, and preventing fraud and misuse.',
-        'We never use customers’ information for advertising. We message a shop’s customers only when that shop turns on automatic WhatsApp messages (Founding Shop), and only about their card at that shop.',
+        'We never use customers’ information for advertising, and we never message a shop’s customers. Any WhatsApp message a customer gets about their card is sent by the shop, from the shop’s own phone.',
       ],
     },
     {
@@ -98,15 +98,15 @@ const privacy: LegalDoc = {
         'Vercel: delivers the website.',
         'Google Fonts: the website’s fonts are loaded from Google, which sees your IP address when it sends them.',
         'Google Gemini: writes some of our website’s articles. No shop or customer information is sent to it.',
-        'Razorpay: takes payments for the Founding Shop plan (UPI, cards, net banking). It receives the shop’s name, phone number and email for the payment; we never see or store card or bank details.',
+        'Razorpay: takes payments for the Pro plan (UPI, cards, net banking). It receives the shop’s name, phone number and email for the payment; we never see or store card or bank details.',
         'Google Maps and WhatsApp (Meta): we look up publicly listed businesses on Google Maps and may send them one WhatsApp message about Regularhood. A business that replies “Not now” or STOP is never messaged again.',
       ],
     },
     {
       h2: 'WhatsApp messages from shops',
       p: [
-        'When a shop sends a customer their card or a reminder on WhatsApp, Regularhood opens WhatsApp on the shop’s own phone with the message filled in, and the shop sends it. We don’t send these messages and don’t see the chat.',
-        'A Founding Shop can turn on automatic messages. Then Regularhood’s own WhatsApp Business number sends that shop’s customers their card after a visit, a note when their reward is ready, a reminder if they haven’t visited for a while, and a request to review the shop on Google after a reward. Each message names the shop, and the shop can switch each kind off. These messages are sent through WhatsApp (Meta), which receives the customer’s phone number and the message. A customer who replies STOP gets no more messages from Regularhood’s number.',
+        'When a shop sends a customer their card, a reminder or a request for a Google review on WhatsApp, Regularhood opens WhatsApp on the shop’s own phone with the message filled in, and the shop sends it. We don’t send these messages and don’t see the chat.',
+        'Regularhood’s own WhatsApp number never messages a shop’s customers.',
       ],
     },
     {
@@ -213,7 +213,9 @@ const terms: LegalDoc = {
       h2: 'Price',
       p: [
         'Regularhood is free to start. The Free plan keeps a limited number of customers, shown on the price section of our website and in the app; customers already added always keep getting visits and rewards.',
-        'Founding Shop removes the limit and adds automatic WhatsApp messages and Google review requests. It is offered to a limited number of shops, paid once (for as long as Regularhood runs) or once a year (renewed by paying again, at the price you first paid while you keep renewing). The price, including any taxes, is shown before you pay. If a yearly plan is not renewed, the shop goes back to the Free plan and nothing is deleted.',
+        'Pro removes the customer limit and adds a list of customers who stopped coming (with one-tap WhatsApp reminders sent from your phone), Google review requests, downloading your customers and visits as a spreadsheet, and your logo on every customer card.',
+        'Pro can be paid for a month, for a year, or once for as long as Regularhood runs (lifetime). Lifetime is our Founding offer, open to a limited number of shops only. Every payment is a one-time payment: nothing is charged automatically, and a monthly or yearly plan is renewed by paying again. The price, including any taxes, is shown before you pay.',
+        'When a monthly or yearly plan ends, the shop goes back to the Free plan and nothing is deleted. Customers already added keep getting visits and rewards; only new customers over the Free limit can’t be added.',
         'Shops that signed up before plans were introduced keep using Regularhood with no customer limit, as promised when they joined.',
         'Payments are taken by Razorpay. Refunds are explained in our refund policy (/refunds).',
       ],
@@ -221,7 +223,7 @@ const terms: LegalDoc = {
     {
       h2: 'Your content and ours',
       p: [
-        'Your shop’s information and your customer list stay yours. You let us store and process them only to run Regularhood for you, and you can download your customers as a spreadsheet at any time. The Regularhood name, logo, website and software belong to us; posters and images we make for your shop are yours to use for promoting your shop.',
+        `Your shop’s information and your customer list stay yours. You let us store and process them only to run Regularhood for you. Pro shops can download their customers as a spreadsheet at any time; any shop, including on the Free plan, can write to us at ${CONTACT_EMAIL} and we will send its customer list. The Regularhood name, logo, website and software belong to us; posters and images we make for your shop are yours to use for promoting your shop.`,
       ],
     },
     {
@@ -277,16 +279,16 @@ const refunds: LegalDoc = {
   slug: 'refunds',
   name: 'Refund policy',
   title: 'Refund Policy · Regularhood',
-  description: 'Refunds and cancellations for the Regularhood Founding Shop plan: a full refund within 7 days, how to ask, and how long it takes.',
+  description: 'Refunds and cancellations for the Regularhood Pro plan: a full refund within 7 days, how to ask, and how long it takes.',
   h1: 'Refund and cancellation policy',
   intro:
-    'This page covers payments for the Founding Shop plan (paid once, or once a year). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
+    'This page covers payments for the Pro plan (paid for a month, for a year, or once for lifetime). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
   updated: UPDATED,
   blocks: [
     {
       h2: 'Full refund within 7 days',
       p: [
-        `If Founding Shop isn’t right for you, write to ${CONTACT_EMAIL} within 7 days of paying, from your shop’s email or WhatsApp number, with your shop name. We refund the full amount, no questions asked. Your shop moves back to the Free plan and keeps all its customers and visits.`,
+        `If Pro isn’t right for you, write to ${CONTACT_EMAIL} within 7 days of paying, from your shop’s email or WhatsApp number, with your shop name. We refund the full amount, no questions asked. Your shop moves back to the Free plan and keeps all its customers and visits.`,
       ],
     },
     {
@@ -297,9 +299,9 @@ const refunds: LegalDoc = {
       ],
     },
     {
-      h2: 'Cancelling a yearly plan',
+      h2: 'Cancelling a monthly or yearly plan',
       p: [
-        'A yearly plan does not renew by itself: nothing is charged unless you pay again. To cancel, simply don’t renew. The plan stays on until its end date, then the shop moves to the Free plan; nothing is deleted.',
+        'A monthly or yearly plan does not renew by itself: nothing is charged unless you pay again. To cancel, simply don’t renew. The plan stays on until its end date, then the shop moves to the Free plan; nothing is deleted.',
       ],
     },
     {
@@ -319,17 +321,17 @@ const shipping: LegalDoc = {
   slug: 'shipping',
   name: 'Shipping and delivery',
   title: 'Shipping and Delivery Policy · Regularhood',
-  description: 'Regularhood is software delivered online: nothing is shipped, and a paid Founding Shop plan switches on as soon as the payment goes through.',
+  description: 'Regularhood is software delivered online: nothing is shipped, and a paid Pro plan switches on as soon as the payment goes through.',
   h1: 'Shipping and delivery policy',
   intro:
     'Regularhood is a software service used in a web browser. We don’t sell or ship physical goods, so there are no shipping charges and no delivery address is needed.',
   updated: UPDATED,
   blocks: [
     {
-      h2: 'How the Founding Shop plan is delivered',
+      h2: 'How the Pro plan is delivered',
       list: [
-        'The plan switches on in your shop account as soon as Razorpay confirms the payment, usually within a few seconds. The Plan page then shows your Founding Shop number.',
-        'A lifetime plan has no end date. A yearly plan runs for one year from the day you pay (or from the end of your current year, if you renew early).',
+        'The plan switches on in your shop account as soon as Razorpay confirms the payment, usually within a few seconds. The Plan page then shows Pro and, for a monthly or yearly plan, the day it ends.',
+        'A lifetime plan has no end date. A monthly plan runs for one month and a yearly plan for one year from the day you pay (or from the end of your current plan, if you renew early).',
         'There is nothing to download or install: you keep using Regularhood at regularhood.in on the same phone or computer.',
       ],
     },
@@ -378,7 +380,7 @@ const contact: LegalDoc = {
     },
     {
       h2: 'Payments and refunds',
-      p: ['Founding Shop payments can be refunded in full within 7 days. See the refund policy (/refunds) and the shipping and delivery policy (/shipping).'],
+      p: ['Pro payments can be refunded in full within 7 days. See the refund policy (/refunds) and the shipping and delivery policy (/shipping).'],
     },
     {
       h2: 'Grievances',

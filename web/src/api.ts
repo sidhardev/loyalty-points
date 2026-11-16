@@ -10,8 +10,10 @@ export type Merchant = {
   phone: string; // owner's WhatsApp number, '' = not given
   visitsNeeded: number; // every this many visits…
   rewardName: string; // …the customer gets this ('' until the shop sets it up)
-  founding: boolean; // Founding Shop (paid): automatic WhatsApp and Google review requests
+  pro: boolean; // on Pro (plans.ts on the server lists what it adds; PRO_PERKS in billing.tsx shows it)
   review: boolean; // the shop saved its Google review link
+  reviewUrl: string;
+  logo: string; // the logo's link, '' = none
 };
 
 /** A customer is just a phone number with stamps: one per visit, the reward at `merchant.visitsNeeded`. */
@@ -27,32 +29,26 @@ export type Customer = {
 };
 
 /** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
-export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer; auto: AutoKind | null };
+export type VisitResult = { already: boolean; isNew: boolean; visitId: number | null; customer: Customer };
 
-/** Automatic WhatsApp messages Regularhood sends a Founding Shop's customers. */
-export type AutoKind = 'card' | 'reward' | 'missyou' | 'review';
-export type AutoStatus = {
-  founding: boolean;
-  live: boolean; // Regularhood's WhatsApp number is set up to send
-  quota: number; // a month
-  used: number;
-  settings: { card: boolean; reward: boolean; missyou: boolean; review: boolean; lang: 'hi' | 'en'; reviewUrl: string };
-  recent: { kind: AutoKind; status: string; created_at: string; phone: string | null; name: string | null }[];
-};
+export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
 
 /** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise. */
 export type Billing = {
-  plan: 'free' | 'grandfathered' | 'lifetime' | 'yearly';
-  paidPlan: string;
+  plan: 'free' | 'grandfathered' | PaidKind; // the plan in force now: an ended month or year is 'free'
+  paidPlan: string; // what was last bought, even after it ended
   expiresAt: string | null;
-  foundingNo: number | null;
+  foundingNo: number | null; // lifetime shops
   customers: number;
   limit: number | null;
-  seats: { total: number; left: number };
-  prices: { lifetime: number; yearly: number };
-  open: boolean; // false: Founding Shop isn't on sale (renewals still are)
+  seats: { total: number; left: number }; // lifetime places
+  prices: Record<PaidKind, number>;
+  open: boolean; // false: lifetime isn't on sale (monthly and yearly always are)
   keyId: string;
 };
+
+/** The server's answer when a Free shop tries a Pro feature. */
+export const isProLocked = (e: unknown) => (e as { status?: number })?.status === 403;
 
 const TOKEN = 'lp_token';
 
@@ -83,8 +79,16 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   }
   if (!res.ok) {
     const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-    throw Object.assign(new Error(message || `Something went wrong (${res.status})`), { code: data.code as string | undefined });
+    throw Object.assign(new Error(message || `Something went wrong (${res.status})`), { code: data.code as string | undefined, status: res.status });
   }
+  return data as T;
+}
+
+/** Sends a file as the request body (the shop's logo). */
+export async function upload<T>(path: string, file: Blob): Promise<T> {
+  const res = await fetch(`/api/${path}`, { method: 'PUT', headers: { authorization: `Bearer ${getToken()}`, 'content-type': file.type }, body: file });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message || `Upload failed (${res.status})`);
   return data as T;
 }
 

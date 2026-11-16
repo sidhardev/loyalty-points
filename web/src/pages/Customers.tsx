@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
+import { Crown, Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
 import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Customer, type Merchant } from '../api';
-import { LimitStrip, refreshBilling } from '../billing';
+import { LimitStrip, ProLock, refreshBilling } from '../billing';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
@@ -23,14 +23,17 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
   const [sent, setSent] = useState<Set<number>>(new Set());
   const version = useDataVersion();
   useEffect(() => void refreshBilling().catch(() => {}), [version]);
+  // The "not seen" list is Pro; on Free the page shows what it would do instead.
+  const locked = filter === 'inactive' && !merchant.pro;
 
   const load = useCallback(() => {
+    if (locked) return setList(null);
     const timer = setTimeout(
       () => api<Customer[]>(`customers?q=${encodeURIComponent(q)}${filter === 'all' ? '' : `&filter=${filter}`}`).then(setList),
       q ? 200 : 0,
     );
     return () => clearTimeout(timer);
-  }, [q, filter]);
+  }, [q, filter, locked]);
   useEffect(load, [load, version]);
 
   const chips: { id: Filter; label: string; icon?: typeof Users }[] = [
@@ -54,10 +57,20 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
         {chips.map(({ id, label, icon: Icon }) => (
           <a key={id} href={id === 'all' ? '#/customers' : `#/customers?filter=${id}`} className={`chip ${filter === id ? 'active' : ''}`}>
             {Icon && <Icon size={14} />} {label}
+            {id === 'inactive' && !merchant.pro && <Crown size={12} aria-label={t('Pro')} />}
           </a>
         ))}
       </div>
 
+      {locked ? (
+        <ProLock perk="winback">
+          <p className="small" style={{ margin: 0 }}>
+            {t('Customers who haven’t come for {n} days show up here. Tap Remind and WhatsApp opens on your phone with a message about their stamps.', {
+              n: merchant.inactiveDays,
+            })}
+          </p>
+        </ProLock>
+      ) : (
       <section className="card">
         <div className="input-icon">
           <Search size={18} />
@@ -129,6 +142,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
           />
         )}
       </section>
+      )}
     </>
   );
 }

@@ -21,11 +21,11 @@ import { AdminGuard, AdminId } from './admin';
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
-import { customerLimit, effectivePlan, planSettings, prices, savePlanSettings, seatsLeft, seatsTaken, type PlanSettings } from './plans';
+import { customerLimit, effectivePlan, planSettings, prices, savePlanSettings, seatsLeft, seatsTaken, type PaidKind, type PlanSettings } from './plans';
 
-// Founding Shop payments through Razorpay Standard Checkout: the shop's page asks for an order, Razorpay's checkout
-// takes the money (UPI first), and the plan is switched on from either the checkout's signed answer (/verify) or
-// Razorpay's webhook, whichever arrives first. Both are one-time payments; a yearly plan is renewed by paying again.
+// Pro payments through Razorpay Standard Checkout: the shop's page asks for an order, Razorpay's checkout takes the
+// money (UPI first), and the plan is switched on from either the checkout's signed answer (/verify) or Razorpay's
+// webhook, whichever arrives first. All are one-time payments: a month or a year is renewed by paying again.
 // Kept on its own so other payment providers can be added next to it.
 //
 // Every step is kept in payment_events so Admin → Plans can show a payment's whole story, spot a webhook that stopped
@@ -33,7 +33,9 @@ import { customerLimit, effectivePlan, planSettings, prices, savePlanSettings, s
 //
 // Settings (server/.env, deploy/.env): RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 
-type Kind = 'lifetime' | 'yearly';
+type Kind = PaidKind;
+const KINDS: readonly string[] = ['monthly', 'yearly', 'lifetime'];
+const LABEL: Record<Kind, string> = { monthly: '1 month', yearly: '1 year', lifetime: 'lifetime' };
 /**
  * order: the shop opened the checkout · closed: it closed the checkout without paying · failed: a payment attempt failed
  * (the checkout or Razorpay's payment.failed) · verified / verify_failed: the checkout's signed answer · webhook /
@@ -106,28 +108,28 @@ export class Billing {
     const m = this.loyalty.merchant(merchantId);
     return {
       plan: effectivePlan(m),
-      paidPlan: m.plan, // 'yearly' even after it ran out, so the page can offer a renewal
+      paidPlan: m.plan, // 'monthly' or 'yearly' even after it ran out, so the page can offer a renewal
       expiresAt: m.plan_expires_at,
-      foundingNo: m.founding_no,
+      foundingNo: m.founding_no, // lifetime shops only
       customers: this.loyalty.customerCount(merchantId),
       limit: customerLimit(this.db.sql, m),
-      seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) },
+      seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) }, // lifetime places
       prices: prices(this.db.sql),
-      open: planSettings(this.db.sql).salesOpen, // false: only shops renewing can pay
+      open: planSettings(this.db.sql).salesOpen, // false: lifetime isn't on sale (monthly and yearly always are)
       keyId: keyId(),
     };
   }
 
-  /** A Razorpay order for this shop. A shop without a seat needs one to be free. */
+  /** A Razorpay order for this shop. Lifetime needs sales open and a place left; a month or a year can always be bought. */
   async order(merchantId: number, kindInput: unknown) {
-    const kind = kindInput === 'lifetime' || kindInput === 'yearly' ? kindInput : null;
-    if (!kind) throw new BadRequestException('Pick lifetime or yearly');
+    const kind = KINDS.includes(String(kindInput)) ? (kindInput as Kind) : null;
+    if (!kind) throw new BadRequestException('Pick monthly, yearly or lifetime');
     if (!keyId() || !keySecret()) throw new ServiceUnavailableException('Payments are not set up yet. Please try again later.');
     const m = this.loyalty.merchant(merchantId);
-    if (m.plan === 'lifetime') throw new ConflictException('You are already a Founding Shop for life');
-    const renewing = this.holdsSeat(m);
-    if (!renewing && !planSettings(this.db.sql).salesOpen) throw new ConflictException('Founding Shop is not on sale right now');
-    if (!renewing && seatsLeft(this.db.sql) === 0) throw new ConflictException('All Founding Shop places are taken');
+    if (m.plan === 'lifetime') throw new ConflictException('You already have Pro for life');
+    if (kind === 'lifetime' && !planSettings(this.db.sql).salesOpen) throw new ConflictException('Lifetime is not on sale right now');
+    if (kind === 'lifetime' && seatsLeft(this.db.sql) === 0) throw new ConflictException('All lifetime places are taken');
+    const renewing = effectivePlan(m) === 'monthly' || effectivePlan(m) === 'yearly';
 
     const amount = prices(this.db.sql)[kind];
     const body = await razorpay<{ id?: string }>('orders', {
@@ -250,23 +252,30 @@ export class Billing {
         .prepare("UPDATE payments SET status = 'paid', razorpay_payment_id = ?, paid_at = datetime('now'), failure_reason = NULL WHERE id = ?")
         .run(paymentId, p.id);
       const m = this.loyalty.merchant(p.merchant_id);
-      const no = m.founding_no ?? ((this.db.sql.prepare('SELECT MAX(founding_no) AS n FROM merchants').get() as { n: number | null }).n ?? 0) + 1;
       if (p.kind === 'lifetime') {
+        const no = m.founding_no ?? ((this.db.sql.prepare('SELECT MAX(founding_no) AS n FROM merchants').get() as { n: number | null }).n ?? 0) + 1;
         this.db.sql.prepare("UPDATE merchants SET plan = 'lifetime', plan_expires_at = NULL, founding_no = ? WHERE id = ?").run(no, m.id);
+        this.loyalty.log(m.id, 'shop', 'plan', `Pro for life, Founding Shop #${no} (₹${p.amount_paise / 100})`);
+        this.event(p.id, m.id, 'activated', `lifetime, Founding Shop #${no}, by the ${from}`);
       } else {
-        const from = m.plan === 'yearly' && m.plan_expires_at && m.plan_expires_at > sqlNow() ? m.plan_expires_at : sqlNow();
-        this.db.sql
-          .prepare("UPDATE merchants SET plan = 'yearly', plan_expires_at = datetime(?, '+1 year'), founding_no = ? WHERE id = ?")
-          .run(from, no, m.id);
+        const to = this.addTime(m, p.kind);
+        this.loyalty.log(m.id, 'shop', 'plan', `Pro for ${LABEL[p.kind]} (₹${p.amount_paise / 100}), until ${to.slice(0, 10)}`);
+        this.event(p.id, m.id, 'activated', `${p.kind}, until ${to.slice(0, 10)}, by the ${from}`);
       }
-      this.loyalty.log(m.id, 'shop', 'plan', `Became Founding Shop #${no} (${p.kind}, ₹${p.amount_paise / 100})`);
-      this.event(p.id, m.id, 'activated', `Founding Shop #${no}, ${p.kind}, by the ${from}`);
     });
   }
 
-  /** A lifetime shop, or a yearly one that is paid up or within its grace days, already has a seat. */
-  private holdsSeat(m: MerchantRow) {
-    return seatsTaken(this.db.sql, m.id) !== seatsTaken(this.db.sql);
+  /**
+   * Adds a month or a year of Pro, from the end of the time still left (a shop on monthly that buys a year keeps its
+   * remaining days), else from now. Returns the new end.
+   */
+  addTime(m: MerchantRow, kind: 'monthly' | 'yearly') {
+    const active = (m.plan === 'monthly' || m.plan === 'yearly') && m.plan_expires_at && m.plan_expires_at > sqlNow();
+    const from = active ? m.plan_expires_at! : sqlNow();
+    this.db.sql
+      .prepare('UPDATE merchants SET plan = ?, plan_expires_at = datetime(?, ?) WHERE id = ?')
+      .run(kind, from, kind === 'monthly' ? '+1 month' : '+1 year', m.id);
+    return (this.db.sql.prepare('SELECT plan_expires_at AS t FROM merchants WHERE id = ?').get(m.id) as { t: string }).t;
   }
 
   /**
@@ -371,21 +380,11 @@ export class BillingAdminController {
            (SELECT MIN(paid_at) FROM payments p WHERE p.merchant_id = m.id AND p.status = 'paid') AS since,
            (SELECT COALESCE(SUM(amount_paise), 0) FROM payments p WHERE p.merchant_id = m.id AND p.status = 'paid') AS paid,
            (SELECT COUNT(*) FROM customers c WHERE c.merchant_id = m.id) AS customers
-         FROM merchants m WHERE m.plan IN ('lifetime', 'yearly') ORDER BY m.founding_no`,
+         FROM merchants m WHERE m.plan IN ('lifetime', 'yearly', 'monthly') ORDER BY m.plan = 'lifetime' DESC, m.plan_expires_at DESC`,
       )
       .all() as { plan: string; plan_expires_at: string | null }[];
-    const graceUntil = (exp: string) => Date.parse(`${exp.replace(' ', 'T')}Z`) + settings.graceDays * 86_400_000;
-    const founding = shops.map((m) => ({
-      ...m,
-      state:
-        m.plan === 'lifetime'
-          ? 'lifetime'
-          : effectivePlan(m) === 'yearly'
-            ? 'active'
-            : m.plan_expires_at && graceUntil(m.plan_expires_at) > Date.now()
-              ? 'grace'
-              : 'lapsed',
-    }));
+    // Every shop that ever paid: lifetime, active (paid up), or lapsed (back on Free until it renews).
+    const pro = shops.map((m) => ({ ...m, state: m.plan === 'lifetime' ? 'lifetime' : effectivePlan(m) === 'free' ? 'lapsed' : 'active' }));
     const payments = sql
       .prepare(
         `SELECT p.id, p.merchant_id AS shopId, m.name, m.phone, p.kind, p.amount_paise, p.status, p.razorpay_order_id, p.razorpay_payment_id,
@@ -397,7 +396,7 @@ export class BillingAdminController {
     const nearLimit = sql
       .prepare(
         `SELECT m.id, m.name, m.phone, COUNT(c.id) AS customers FROM merchants m JOIN customers c ON c.merchant_id = m.id
-         WHERE m.suspended_at IS NULL AND (m.plan = 'free' OR (m.plan = 'yearly' AND m.plan_expires_at <= datetime('now')))
+         WHERE m.suspended_at IS NULL AND (m.plan = 'free' OR (m.plan IN ('monthly', 'yearly') AND m.plan_expires_at <= datetime('now')))
          GROUP BY m.id HAVING COUNT(c.id) >= ? ORDER BY customers DESC LIMIT 50`,
       )
       .all(Math.ceil(settings.freeCustomers * 0.7));
@@ -405,7 +404,7 @@ export class BillingAdminController {
       settings,
       seats: { total: settings.seats, left: seatsLeft(sql), taken: seatsTaken(sql) },
       money,
-      founding,
+      pro,
       payments,
       nearLimit,
       razorpay: { keyId: keyId(), test: keyId().startsWith('rzp_test_'), webhook: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) },
@@ -468,12 +467,12 @@ export class BillingAdminController {
   save(@AdminId() adminId: number, @Body() body: Partial<PlanSettings>) {
     const { before, after } = savePlanSettings(this.db.sql, body ?? {});
     const label: Record<keyof PlanSettings, string> = {
-      salesOpen: 'sales open',
-      seats: 'places',
-      lifetimePaise: 'lifetime ₹',
+      salesOpen: 'lifetime on sale',
+      seats: 'lifetime places',
+      monthlyPaise: 'monthly ₹',
       yearlyPaise: 'yearly ₹',
+      lifetimePaise: 'lifetime ₹',
       freeCustomers: 'free customers',
-      graceDays: 'grace days',
     };
     const show = (k: keyof PlanSettings, v: number | boolean) => (k.endsWith('Paise') ? Number(v) / 100 : v);
     const changes = (Object.keys(after) as (keyof PlanSettings)[]).filter((k) => before[k] !== after[k]).map((k) => `${label[k]} ${show(k, before[k])} → ${show(k, after[k])}`);
@@ -489,18 +488,20 @@ export class BillingAdminController {
     return this.overview();
   }
 
-  /** A year more for a yearly shop (from its end date, or from today if it ran out), e.g. as a goodwill gesture. */
+  /**
+   * A month or a year of Pro for any shop that isn't lifetime (from its end date, or from today), e.g. as a goodwill
+   * gesture or a trial for a shop on Free.
+   */
   @Post('shops/:id/extend')
   @HttpCode(200)
-  extend(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number) {
+  extend(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { kind?: string }) {
     const m = this.loyalty.merchant(id);
-    if (m.plan !== 'yearly') throw new BadRequestException('Only a yearly Founding Shop can be extended');
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const from = m.plan_expires_at && m.plan_expires_at > now ? m.plan_expires_at : now;
-    this.db.sql.prepare("UPDATE merchants SET plan_expires_at = datetime(?, '+1 year') WHERE id = ?").run(from, id);
-    const to = (this.db.sql.prepare('SELECT plan_expires_at AS t FROM merchants WHERE id = ?').get(id) as { t: string }).t;
-    this.audit(adminId, id, 'plan', `Gave ${m.name} one more year (until ${to.slice(0, 10)})`);
-    this.loyalty.log(id, 'admin', 'plan', `Support added a year to the plan (until ${to.slice(0, 10)})`);
+    if (m.plan === 'lifetime') throw new BadRequestException('This shop already has Pro for life');
+    const kind = body?.kind === 'monthly' ? 'monthly' : 'yearly';
+    const to = this.billing.addTime(m, kind);
+    const what = kind === 'monthly' ? 'one month' : 'one year';
+    this.audit(adminId, id, 'plan', `Gave ${m.name} ${what} of Pro (until ${to.slice(0, 10)})`);
+    this.loyalty.log(id, 'admin', 'plan', `Support added ${what} of Pro (until ${to.slice(0, 10)})`);
     return this.overview();
   }
 

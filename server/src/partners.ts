@@ -146,7 +146,7 @@ export function earningsOf(db: Db, partner: PartnerRow): Earning[] {
       refId: p.id,
       shopId: p.merchant_id,
       shop: p.name,
-      what: `${rate}% of ₹${p.amount_paise / 100} ${p.kind === 'lifetime' ? 'lifetime' : 'yearly'}${renewal ? ' renewal' : ''}`,
+      what: `${rate}% of ₹${p.amount_paise / 100} ${p.kind === 'lifetime' ? 'lifetime' : p.kind === 'monthly' ? 'monthly' : 'yearly'}${renewal ? ' renewal' : ''}`,
       amount: Math.round((p.amount_paise * rate) / 10_000) * 100, // whole rupees: 20% of ₹1,499 is ₹300
       dueAt: p.due_at,
     });
@@ -165,7 +165,7 @@ function summary(db: Db, p: PartnerRow) {
     totals: {
       shops: shops.length,
       active: shops.filter((s) => s.active).length,
-      paying: shops.filter((s) => s.plan === 'lifetime' || s.plan === 'yearly').length,
+      paying: shops.filter((s) => s.plan === 'lifetime' || s.plan === 'yearly' || s.plan === 'monthly').length,
       sent: sum(earnings, 'sent'),
       due: sum(earnings, 'due'),
       hold: sum(earnings, 'hold'),

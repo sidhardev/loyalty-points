@@ -28,11 +28,13 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
         attribution: arrival(),
       });
       if ('needs' in r) {
+        // A new Google account; Admin → Visits shows who got this far but didn't finish.
+        trackEvent('click', 'Google sign-in: asked for shop name and number');
         setGoogle({ credential, email: r.email });
         return;
       }
       setToken(r.token);
-      if (details) trackEvent('signup', 'shop');
+      if (details) trackEvent('signup', 'shop-google');
       onAuthed(r.merchant);
     });
 

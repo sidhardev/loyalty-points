@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Check, ChevronRight, Crown, Infinity as InfinityIcon, Lock, MessageCircle, RotateCcw, Star, Users } from 'lucide-react';
-import { api, LOGGED_OUT, num, type Billing, type Merchant } from './api';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Check, ChevronRight, Crown, FileSpreadsheet, Image, Lock, RotateCcw, Star, UserX, Users } from 'lucide-react';
+import { api, LOGGED_OUT, num, type Billing, type Merchant, type PaidKind } from './api';
 import { t, useLang } from './i18n';
 import { ErrorText, Sheet, confetti, toast, useAction } from './ui';
 
 // The shop's plan, shared by every screen: one copy of /billing that the topbar, sidebar, counter and Customers page
-// all read, the Free plan's customer limit shown on each, and the Founding Shop sheet that any of them opens.
+// all read, the Free plan's customer limit shown on each, the Pro sheet that any of them opens, and the card a Pro
+// feature shows to a shop on Free.
+//
+// Free: up to the limit of customers. Pro adds what PRO_PERKS lists (server/src/plans.ts says the same); it is paid by
+// the month, the year, or once for life (the limited Founding offer), always as one payment, never auto-debit.
 
 // ---------------------------------------------------------------- shared billing
 
@@ -34,7 +38,19 @@ export function useBilling() {
   return b;
 }
 
-const isFounding = (b: Billing) => b.plan === 'lifetime' || b.plan === 'yearly';
+export const isPro = (b: Billing) => b.plan === 'monthly' || b.plan === 'yearly' || b.plan === 'lifetime';
+
+/** What Pro adds, in the order a shop owner cares about. The Plan page, the sheet and the locked cards show these. */
+export const PRO_PERKS = [
+  { id: 'unlimited', icon: Users, title: 'Unlimited customers', text: 'No customer limit. Every regular gets a card.' },
+  { id: 'winback', icon: UserX, title: 'Bring back lost customers', text: 'See who stopped coming and remind them on WhatsApp in one tap.' },
+  { id: 'review', icon: Star, title: 'More Google reviews', text: 'A review button on every customer’s card, and one tap to ask after a reward.' },
+  { id: 'logo', icon: Image, title: 'Your logo on the card', text: 'Customers see your shop’s logo every time they open their card.' },
+  { id: 'export', icon: FileSpreadsheet, title: 'Download in Excel', text: 'Your customers and every visit, as a spreadsheet.' },
+] as const;
+export type ProPerk = (typeof PRO_PERKS)[number]['id'];
+
+export const KINDS: PaidKind[] = ['monthly', 'yearly', 'lifetime'];
 
 /** How close the Free plan is to its limit: '' while there's room, then 'is-warn' from 40, 'is-full' at the limit. */
 function level(b: Billing & { limit: number }) {
@@ -42,7 +58,7 @@ function level(b: Billing & { limit: number }) {
 }
 const WARN_AT = 40;
 const COUNTER_AT = 45; // the counter stays quiet until the last few places
-const FEW_SEATS = 30; // "Only … left" once Founding places are running out
+const FEW_SEATS = 30; // "Only … left" once lifetime places are running out
 
 /** The Free plan's numbers, or null when the shop has no limit. */
 function freeUsage(b: Billing | null) {
@@ -58,14 +74,13 @@ function Meter({ b }: { b: Billing & { limit: number } }) {
   );
 }
 
-// ---------------------------------------------------------------- the sheet
+// ---------------------------------------------------------------- paying
 
 const OPEN_PLAN = 'lp-open-plan';
 
-/** Opens the Founding Shop sheet from anywhere in the shop app. */
+/** Opens the Pro sheet from anywhere in the shop app. */
 export const openPlan = () => dispatchEvent(new Event(OPEN_PLAN));
 
-type Kind = 'lifetime' | 'yearly';
 type Order = { orderId: string; amount: number; keyId: string; shop: string; phone: string; email: string };
 type CheckoutAnswer = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
 type RazorpayCheckout = new (options: object) => { open: () => void; on: (event: string, fn: (r: { error?: { description?: string } }) => void) => void };
@@ -84,11 +99,13 @@ function loadCheckout() {
 
 export const price = (paise: number) => `₹${num(paise / 100)}`;
 
+const DESCRIPTION: Record<PaidKind, string> = { monthly: 'Regularhood Pro · 1 month', yearly: 'Regularhood Pro · 1 year', lifetime: 'Regularhood Pro · lifetime' };
+
 /**
- * Pays for Founding Shop in Razorpay's checkout. Resolves when the checkout closes; `onPaid` runs once the plan is on,
- * which is right away, or a few seconds later when only Razorpay's webhook could confirm the payment.
+ * Pays for Pro in Razorpay's checkout. Resolves when the checkout closes; `onPaid` runs once the plan is on, which is
+ * right away, or a few seconds later when only Razorpay's webhook could confirm the payment.
  */
-export async function payFounding(kind: Kind, onPaid: (b: Billing) => void) {
+export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
   const [Razorpay, order] = await Promise.all([loadCheckout(), api<Order>('billing/order', 'POST', { kind })]);
   const paid = (next: Billing) => {
     setBilling(next);
@@ -101,7 +118,7 @@ export async function payFounding(kind: Kind, onPaid: (b: Billing) => void) {
       amount: order.amount,
       currency: 'INR',
       name: 'Regularhood',
-      description: kind === 'lifetime' ? 'Founding Shop · lifetime' : 'Founding Shop · 1 year',
+      description: DESCRIPTION[kind],
       prefill: { name: order.shop, contact: order.phone, email: order.email },
       notes: { shop: order.shop },
       theme: { color: '#047857' },
@@ -110,7 +127,7 @@ export async function payFounding(kind: Kind, onPaid: (b: Billing) => void) {
           (next) => {
             paid(next);
             confetti();
-            toast(t('Welcome, Founding Shop #{n}!', { n: next.foundingNo ?? '' }));
+            toast(next.plan === 'lifetime' ? t('Welcome, Founding Shop #{n}!', { n: next.foundingNo ?? '' }) : t('Welcome to Pro!'));
             resolve();
           },
           // Paid, but our check failed: Razorpay's webhook will still switch the plan on.
@@ -135,7 +152,45 @@ export async function payFounding(kind: Kind, onPaid: (b: Billing) => void) {
   });
 }
 
-/** Mounted once in the shop app; shows the Founding Shop sheet whenever something calls openPlan(). */
+/** Whether lifetime can be bought now: on sale, a place left, and not already lifetime. */
+export const lifetimeOpen = (b: Billing) => b.plan !== 'lifetime' && b.open && b.seats.left > 0;
+
+/** The ways to pay, as radio buttons. Lifetime drops out when it isn't on sale or the places are gone. */
+export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; kind: PaidKind; setKind: (k: PaidKind) => void; busy: boolean; notes?: boolean }) {
+  useLang();
+  const perMonth = Math.round(b.prices.yearly / 12 / 100);
+  const saving = Math.round((1 - b.prices.yearly / (b.prices.monthly * 12)) * 100);
+  const kinds = KINDS.filter((k) => k !== 'lifetime' || lifetimeOpen(b));
+  const name: Record<PaidKind, string> = { monthly: t('Monthly'), yearly: t('Yearly'), lifetime: t('Lifetime') };
+  const per: Record<PaidKind, string> = { monthly: t('/ month'), yearly: t('/ year'), lifetime: t('once') };
+  const note: Record<PaidKind, string> = {
+    monthly: t('Try it for a month. Renew when you want.'),
+    yearly: t('About ₹{n} a month.', { n: num(perMonth) }),
+    lifetime: t('Pay once, Pro for good. Only {left} of {total} places.', { left: num(b.seats.left), total: num(b.seats.total) }),
+  };
+  return (
+    <div className="plan-options" role="radiogroup" aria-label={t('Choose how to pay')}>
+      {kinds.map((k) => (
+        <button key={k} type="button" role="radio" aria-checked={kind === k} className={`plan-option ${kind === k ? 'selected' : ''}`} disabled={busy} onClick={() => setKind(k)}>
+          <span className="plan-radio" aria-hidden />
+          <span className="plan-option-main">
+            <span className="plan-option-name">{name[k]}</span>
+            {notes && <span className="plan-option-note">{note[k]}</span>}
+          </span>
+          <span className="plan-option-price">
+            <strong>{price(b.prices[k])}</strong>
+            <span>{per[k]}</span>
+          </span>
+          {k === 'yearly' && saving > 0 && <span className="plan-best">{t('Save {n}%', { n: saving })}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the sheet
+
+/** Mounted once in the shop app; shows the Pro sheet whenever something calls openPlan(). */
 export function PlanHost({ onMerchant }: { onMerchant: (m: Merchant) => void }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -149,24 +204,22 @@ export function PlanHost({ onMerchant }: { onMerchant: (m: Merchant) => void }) 
   return open ? <PlanSheet onMerchant={onMerchant} onClose={() => setOpen(false)} /> : null;
 }
 
-/** Founding Shop in one look: what you get, two prices, one button. The Plan page has the full details. */
+/** Pro in one look: what you get, the prices, one button. The Plan page has the full details. */
 function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void; onClose: () => void }) {
   useLang();
   const b = useBilling();
-  const [kind, setKind] = useState<Kind>('lifetime');
+  const [kind, setKind] = useState<PaidKind>('yearly');
   const { busy, error, run } = useAction();
   if (!b) return null;
 
-  const founding = isFounding(b);
-  const lapsed = b.paidPlan === 'yearly' && !founding;
-  // Same rules as the Plan page: renewals can always pay, new shops need sales open and a place left.
-  const soldOut = !founding && !lapsed && (!b.open || b.seats.left === 0);
+  const lapsed = (b.paidPlan === 'monthly' || b.paidPlan === 'yearly') && !isPro(b);
   const usage = freeUsage(b);
+  const pick = kind === 'lifetime' && !lifetimeOpen(b) ? 'yearly' : kind;
 
   const buy = () =>
     void run(() =>
-      payFounding(kind, () => {
-        void api<Merchant>('me').then(onMerchant); // the counter and Settings switch to the Founding Shop extras
+      payPro(pick, () => {
+        void api<Merchant>('me').then(onMerchant); // the counter, Customers and Settings switch on the Pro features
         onClose();
       }),
     );
@@ -177,10 +230,10 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
         <span className="plan-crown">
           <Crown size={24} />
         </span>
-        <h2>{t('Founding Shop')}</h2>
+        <h2>{t('Regularhood Pro')}</h2>
         <p>
           {lapsed
-            ? t('Your yearly plan has ended. Renew to add new customers again.')
+            ? t('Your Pro plan has ended. Renew to add new customers again.')
             : usage && usage.left === 0
               ? t('Your {limit} free spots are full. Get unlimited to add new customers.', { limit: num(usage.limit) })
               : usage
@@ -190,66 +243,21 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
       </div>
 
       <ul className="plan-sheet-perks">
-        <li>
-          <Users size={18} /> {t('Unlimited customers')}
-        </li>
-        <li>
-          <MessageCircle size={18} /> {t('WhatsApp cards sent automatically')}
-        </li>
-        <li>
-          <Star size={18} /> {t('More Google reviews')}
-        </li>
+        {PRO_PERKS.map(({ id, icon: Icon, title }) => (
+          <li key={id}>
+            <Icon size={18} /> {t(title)}
+          </li>
+        ))}
       </ul>
 
-      <div className="plan-options" role="radiogroup" aria-label={t('Choose how to pay')}>
-        {(['lifetime', 'yearly'] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={kind === k}
-            className={`plan-option ${kind === k ? 'selected' : ''}`}
-            disabled={busy || soldOut}
-            onClick={() => setKind(k)}
-          >
-            <span className="plan-radio" aria-hidden />
-            <span className="plan-option-main">
-              <span className="plan-option-name">
-                {k === 'lifetime' ? (
-                  <>
-                    <InfinityIcon size={16} /> {t('Lifetime')}
-                  </>
-                ) : (
-                  t('Yearly')
-                )}
-              </span>
-            </span>
-            <span className="plan-option-price">
-              <strong>{price(b.prices[k])}</strong>
-              <span>{k === 'lifetime' ? t('once') : t('/ year')}</span>
-            </span>
-            {k === 'lifetime' && <span className="plan-best">{t('Best value')}</span>}
-          </button>
-        ))}
-      </div>
+      <PriceOptions b={b} kind={pick} setKind={setKind} busy={busy} />
 
-      {!founding && !lapsed && !soldOut && (
-        <p className="plan-sheet-seats">
-          {t(b.seats.left <= FEW_SEATS ? 'Only {left} of {total} Founding places left' : '{left} of {total} places left', {
-            left: num(b.seats.left),
-            total: num(b.seats.total),
-          })}
-        </p>
+      {pick === 'lifetime' && b.seats.left <= FEW_SEATS && (
+        <p className="plan-sheet-seats">{t('Only {left} of {total} lifetime places left', { left: num(b.seats.left), total: num(b.seats.total) })}</p>
       )}
       <ErrorText text={error} />
-      <button className="btn btn-primary btn-xl" disabled={busy || soldOut} onClick={buy}>
-        {soldOut
-          ? !b.open
-            ? t('Founding Shop is not on sale right now')
-            : t('All Founding Shop places are taken')
-          : busy
-            ? t('Opening payment…')
-            : t('Pay {price} with UPI', { price: price(b.prices[kind]) })}
+      <button className="btn btn-primary btn-xl" disabled={busy} onClick={buy}>
+        {busy ? t('Opening payment…') : t('Pay {price} with UPI', { price: price(b.prices[pick]) })}
       </button>
       <div className="plan-sheet-foot">
         <span>
@@ -266,16 +274,40 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
   );
 }
 
+/** What a Pro feature shows a shop on Free: the feature, why it helps, and the way to Pro. */
+export function ProLock({ perk, children }: { perk: ProPerk; children?: ReactNode }) {
+  useLang();
+  const p = PRO_PERKS.find((x) => x.id === perk)!;
+  const Icon = p.icon;
+  return (
+    <section className="card pro-lock">
+      <div className="card-head">
+        <h2>
+          <Icon size={18} /> {t(p.title)}
+        </h2>
+        <span className="badge badge-gold">
+          <Crown size={13} /> {t('Pro')}
+        </span>
+      </div>
+      <p className="muted small">{t(p.text)}</p>
+      {children}
+      <button type="button" className="btn btn-primary" onClick={openPlan}>
+        <Crown size={17} /> {t('Get Pro')}
+      </button>
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- where the limit shows
 
-/** Phone topbar: "23/50" with a thin meter, or a small crown for Founding Shops. */
+/** Phone topbar: "23/50" with a thin meter, or a small crown for Pro shops. */
 export function LimitPill() {
   useLang();
   const b = useBilling();
-  if (b && isFounding(b)) {
+  if (b && isPro(b)) {
     return (
       <a className="founding-pill" href="#/plan">
-        <Crown size={14} /> {t('Founding')}
+        <Crown size={14} /> {t('Pro')}
       </a>
     );
   }

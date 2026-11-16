@@ -230,37 +230,30 @@ const COPY = {
       ['Anyone at the counter can use it', 'A keypad and one button. No training, no manual.', Smartphone],
       ['Works for every customer', 'Only a phone number. No sign-up, no app, no QR, no PIN.', Phone],
       ['Bring back the ones who stopped', 'See who hasn’t come in 30 days and send a “we miss you” in one tap.', UserX],
-      ['Your customers stay yours', 'We never sell your list or use it for ads. Download everything anytime.', Lock],
+      ['Your customers stay yours', 'We never sell your list or use it for ads. Download it on Pro, or just ask us for it.', Lock],
     ] as const,
-    autoKicker: 'Founding Shop',
-    autoTitle: 'The follow-ups you never have time for. Sent for you.',
-    autoSub: 'Regularhood’s WhatsApp number writes to your customers at the right moment, in your shop’s name, while you keep serving.',
-    // One customer's month: when each message goes out, and what it says.
+    autoKicker: 'Pro',
+    autoTitle: 'The follow-ups you never have time for. One tap each.',
+    autoSub: 'Regularhood tells you who to message and has the message ready. You send it from your own WhatsApp in one tap, in your shop’s name.',
+    // One customer's month: the messages the shop sends from its own phone, and what they say.
     autoSteps: [
       {
-        when: 'After every visit',
+        when: 'After a visit',
         tag: (n: number) => `Visit ${n - 2}`,
         time: '6:42 pm',
         text: (shop: string, n: number, r: string) => `Your visit at ${shop} is stamped.\n${n - 2} of ${n} stamps — 2 more for ${r}.`,
         button: 'See my card',
       },
       {
-        when: 'When the card is full',
-        tag: (n: number) => `Visit ${n}`,
-        time: '7:15 pm',
-        text: (shop: string, _n: number, r: string) => `Good news! Your ${r} at ${shop} is ready. Just tell your number next time.`,
-        button: 'See my card',
-      },
-      {
         when: 'If they stop coming',
-        tag: () => 'Day 30, once',
+        tag: () => 'On your “Not seen” list',
         time: '11:30 am',
         text: (shop: string, _n: number, r: string) => `We miss you at ${shop}. Two more visits and the ${r} is yours.`,
         button: 'See my card',
       },
       {
         when: 'After the reward',
-        tag: () => 'Same day',
+        tag: () => 'Ask at the counter',
         time: '7:20 pm',
         text: (shop: string) => `Thank you for visiting ${shop}. A Google review would help us a lot.`,
         button: 'Rate on Google',
@@ -268,33 +261,33 @@ const COPY = {
     ],
     autoAlso: [
       ['Unlimited customers', 'Every regular gets a card. No cap.'],
-      ['Your price, locked', 'Every feature we add later, at no extra cost.'],
-      ['Your call', 'Hindi or English, each message on or off. Customers can reply STOP.'],
+      ['Your logo on every card', 'Customers see your shop’s logo when they open their card.'],
+      ['Download everything', 'Customers and visit history as a spreadsheet, anytime.'],
     ] as const,
-    autoCta: 'See the Founding price',
+    autoCta: 'See Pro prices',
     shopsKicker: 'Already on Regularhood',
     shopsTitle: 'Shops using Regularhood',
     priceKicker: 'Price',
     // The numbers come from Admin → Plans (/api/public/founding); the prerendered page shows the defaults.
-    priceTitle: (seats: number) => `Free to start. A founding price for the first ${seats} shops.`,
+    priceTitle: 'Free to start. Pro when your regulars grow.',
     priceSub: (free: number) =>
-      `Start free with up to ${free} customers. When your regulars grow, become a Founding Shop: WhatsApp messages and Google reviews on autopilot, at a price we won’t offer again.`,
+      `Start free with up to ${free} customers. Go Pro for no limit, win-back reminders, Google reviews and your logo. Pay for a month, a year or once for life. Nothing is auto-debited.`,
     priceFree: { name: 'Free', per: 'forever', limit: (n: number) => `Up to ${n} customers` },
-    priceList: ['Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Spreadsheet export and daily backups'],
-    founding: {
-      name: 'Founding Shop',
-      once: 'once, for life',
+    priceList: ['Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Daily backups'],
+    pro: {
+      name: 'Pro',
+      monthly: 'a month',
       yearly: (price: string) => `or ${price} a year`,
+      lifetime: (price: string) => `or ${price} once, for life`,
       list: [
         'Unlimited customers',
-        'Card and “reward ready” sent on WhatsApp for you',
-        '“We miss you” reminders, sent by themselves',
-        'Google review requests after every reward',
-        'Founding price locked, with every new feature',
+        '“Not seen” list with one-tap WhatsApp reminders',
+        'Google reviews: a button on the card, an ask after each reward',
+        'Your logo on every customer card',
+        'Download customers and visits (CSV)',
       ],
-      only: (seats: number) => `Only for the first ${seats} shops`,
-      left: (left: number, total: number) => (left ? `${left} of ${total} places left` : 'All places taken'),
-      closed: 'Not on sale right now',
+      only: (seats: number) => `Lifetime: Founding offer, only ${seats} places`,
+      left: (left: number, total: number) => (left ? `${left} of ${total} left` : 'all taken'),
       cta: 'Start free, upgrade anytime',
     },
     create: 'Create your shop',
@@ -369,36 +362,29 @@ const COPY = {
       ['काउंटर पर कोई भी चला ले', 'एक कीपैड और एक बटन। न ट्रेनिंग, न मैनुअल।', Smartphone],
       ['हर ग्राहक के लिए', 'सिर्फ़ फ़ोन नंबर। न साइन-अप, न ऐप, न QR, न PIN।', Phone],
       ['रुके हुए ग्राहकों को वापस लाएँ', 'देखें कौन 30 दिन से नहीं आया और एक टैप में “आपकी याद आई” भेजें।', UserX],
-      ['आपके ग्राहक आपके ही रहें', 'हम आपकी लिस्ट न बेचते हैं, न विज्ञापन में इस्तेमाल करते हैं। कभी भी सब डाउनलोड करें।', Lock],
+      ['आपके ग्राहक आपके ही रहें', 'हम आपकी लिस्ट न बेचते हैं, न विज्ञापन में इस्तेमाल करते हैं। Pro पर डाउनलोड करें, या हमसे माँग लें।', Lock],
     ] as const,
-    autoKicker: 'फ़ाउंडिंग शॉप',
-    autoTitle: 'जिन ग्राहकों को मैसेज करने का टाइम नहीं मिलता, उन्हें हम करते हैं।',
-    autoSub: 'Regularhood का WhatsApp नंबर सही वक्त पर, आपकी दुकान के नाम से ग्राहकों को लिखता है, और आप काउंटर संभालते रहते हैं।',
+    autoKicker: 'Pro',
+    autoTitle: 'जिन ग्राहकों को मैसेज करने का टाइम नहीं मिलता, अब एक टैप में।',
+    autoSub: 'Regularhood बताता है किसे मैसेज करना है, और मैसेज तैयार रखता है। आप अपने WhatsApp से, अपनी दुकान के नाम से, एक टैप में भेजते हैं।',
     autoSteps: [
       {
-        when: 'हर विज़िट के बाद',
+        when: 'विज़िट के बाद',
         tag: (n: number) => `विज़िट ${n - 2}`,
         time: 'शाम 6:42',
         text: (shop: string, n: number, r: string) => `${shop} पर आपकी विज़िट जुड़ गई।\n${n} में से ${n - 2} स्टैम्प — ${r} के लिए बस 2 और।`,
         button: 'मेरा कार्ड देखें',
       },
       {
-        when: 'कार्ड पूरा होने पर',
-        tag: (n: number) => `विज़िट ${n}`,
-        time: 'शाम 7:15',
-        text: (shop: string, _n: number, r: string) => `खुशखबरी! ${shop} पर आपका ${r} तैयार है। अगली बार बस नंबर बताइए।`,
-        button: 'मेरा कार्ड देखें',
-      },
-      {
         when: 'आना बंद करें तो',
-        tag: () => '30वें दिन, एक बार',
+        tag: () => '“नहीं आए” लिस्ट में',
         time: 'सुबह 11:30',
         text: (shop: string, _n: number, r: string) => `${shop} पर आपकी याद आ रही है। बस दो और विज़िट, फिर ${r} आपका।`,
         button: 'मेरा कार्ड देखें',
       },
       {
         when: 'इनाम के बाद',
-        tag: () => 'उसी दिन',
+        tag: () => 'काउंटर पर पूछें',
         time: 'शाम 7:20',
         text: (shop: string) => `${shop} पर आने के लिए धन्यवाद। आपका Google रिव्यू हमारी बहुत मदद करेगा।`,
         button: 'Google पर रिव्यू दें',
@@ -406,32 +392,32 @@ const COPY = {
     ],
     autoAlso: [
       ['जितने चाहें ग्राहक', 'हर रेगुलर को कार्ड। कोई लिमिट नहीं।'],
-      ['आपकी कीमत, लॉक', 'आगे आने वाले सारे फ़ीचर, बिना ज़्यादा पैसे।'],
-      ['आपकी मर्ज़ी', 'हिंदी या English, हर मैसेज चालू/बंद। ग्राहक STOP लिख सकते हैं।'],
+      ['हर कार्ड पर आपका लोगो', 'ग्राहक कार्ड खोलें तो आपकी दुकान का लोगो दिखे।'],
+      ['सब डाउनलोड करें', 'ग्राहक और विज़िट की पूरी हिस्ट्री, स्प्रेडशीट में, कभी भी।'],
     ] as const,
-    autoCta: 'फ़ाउंडिंग कीमत देखें',
+    autoCta: 'Pro की कीमत देखें',
     shopsKicker: 'Regularhood पर पहले से',
     shopsTitle: 'ये दुकानें Regularhood इस्तेमाल करती हैं',
     priceKicker: 'कीमत',
-    priceTitle: (seats: number) => `शुरू करना मुफ़्त है। पहली ${seats} दुकानों के लिए फ़ाउंडिंग कीमत।`,
+    priceTitle: 'शुरू करना मुफ़्त है। ग्राहक बढ़ें तो Pro।',
     priceSub: (free: number) =>
-      `${free} ग्राहकों तक मुफ़्त शुरू करें। ग्राहक बढ़ें तो फ़ाउंडिंग शॉप बनें: WhatsApp मैसेज और Google रिव्यू अपने आप, ऐसी कीमत पर जो दोबारा नहीं मिलेगी।`,
+      `${free} ग्राहकों तक मुफ़्त शुरू करें। Pro में कोई लिमिट नहीं, रुके ग्राहकों को रिमाइंडर, Google रिव्यू और आपका लोगो। एक महीने, एक साल या हमेशा के लिए एक बार पेमेंट करें। कोई ऑटो-डेबिट नहीं।`,
     priceFree: { name: 'फ़्री', per: 'हमेशा', limit: (n: number) => `${n} ग्राहकों तक` },
-    priceList: ['हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'स्प्रेडशीट डाउनलोड और रोज़ बैकअप'],
-    founding: {
-      name: 'फ़ाउंडिंग शॉप',
-      once: 'एक बार, हमेशा के लिए',
+    priceList: ['हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'रोज़ बैकअप'],
+    pro: {
+      name: 'Pro',
+      monthly: 'महीने का',
       yearly: (price: string) => `या ${price} साल का`,
+      lifetime: (price: string) => `या ${price} एक बार, हमेशा के लिए`,
       list: [
         'जितने चाहें ग्राहक',
-        'कार्ड और “इनाम तैयार” WhatsApp पर अपने आप',
-        '“आपकी याद आ रही है” रिमाइंडर, अपने आप',
-        'हर इनाम के बाद Google रिव्यू की रिक्वेस्ट',
-        'फ़ाउंडिंग कीमत लॉक, हर नए फ़ीचर के साथ',
+        '“नहीं आए” लिस्ट, एक टैप में WhatsApp रिमाइंडर',
+        'Google रिव्यू: कार्ड पर बटन, हर इनाम के बाद रिक्वेस्ट',
+        'हर ग्राहक कार्ड पर आपका लोगो',
+        'ग्राहक और विज़िट डाउनलोड करें (CSV)',
       ],
-      only: (seats: number) => `सिर्फ़ पहली ${seats} दुकानों के लिए`,
-      left: (left: number, total: number) => (left ? `${total} में से ${left} जगह बाकी` : 'सारी जगहें भर गईं'),
-      closed: 'अभी उपलब्ध नहीं',
+      only: (seats: number) => `लाइफ़टाइम: फ़ाउंडिंग ऑफ़र, सिर्फ़ ${seats} जगह`,
+      left: (left: number, total: number) => (left ? `${total} में से ${left} बाकी` : 'सब भर गईं'),
       cta: 'मुफ़्त शुरू करें, कभी भी अपग्रेड करें',
     },
     create: 'अपनी दुकान बनाएँ',
@@ -506,36 +492,29 @@ const COPY = {
       ['കൗണ്ടറിൽ ആർക്കും ഉപയോഗിക്കാം', 'ഒരു കീപാഡും ഒരു ബട്ടണും. ട്രെയിനിങ് വേണ്ട, മാനുവൽ വേണ്ട.', Smartphone],
       ['എല്ലാ കസ്റ്റമർക്കും പറ്റും', 'ഫോൺ നമ്പർ മാത്രം മതി. സൈൻ-അപ്പ് വേണ്ട, ആപ്പ് വേണ്ട, QR വേണ്ട, PIN വേണ്ട.', Phone],
       ['വരാതായവരെ തിരികെ കൊണ്ടുവരൂ', '30 ദിവസമായി വരാത്തവരെ കാണൂ, ഒറ്റ ടാപ്പിൽ “ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” അയക്കൂ.', UserX],
-      ['നിങ്ങളുടെ കസ്റ്റമർമാർ നിങ്ങളുടേത് തന്നെ', 'നിങ്ങളുടെ ലിസ്റ്റ് ഞങ്ങൾ വിൽക്കില്ല, പരസ്യത്തിന് ഉപയോഗിക്കില്ല. എപ്പോൾ വേണമെങ്കിലും എല്ലാം ഡൗൺലോഡ് ചെയ്യാം.', Lock],
+      ['നിങ്ങളുടെ കസ്റ്റമർമാർ നിങ്ങളുടേത് തന്നെ', 'നിങ്ങളുടെ ലിസ്റ്റ് ഞങ്ങൾ വിൽക്കില്ല, പരസ്യത്തിന് ഉപയോഗിക്കില്ല. Pro-യിൽ ഡൗൺലോഡ് ചെയ്യാം, അല്ലെങ്കിൽ ഞങ്ങളോട് ചോദിച്ചാൽ മതി.', Lock],
     ] as const,
-    autoKicker: 'ഫൗണ്ടിങ് ഷോപ്പ്',
-    autoTitle: 'സമയം കിട്ടാത്ത ഫോളോ-അപ്പുകൾ. നിങ്ങൾക്കായി ഞങ്ങൾ അയക്കും.',
-    autoSub: 'Regularhood-ന്റെ WhatsApp നമ്പർ ശരിയായ സമയത്ത്, നിങ്ങളുടെ കടയുടെ പേരിൽ കസ്റ്റമർമാർക്ക് എഴുതും, നിങ്ങൾ കൗണ്ടറിൽ തിരക്കിലായിരിക്കുമ്പോഴും.',
+    autoKicker: 'Pro',
+    autoTitle: 'സമയം കിട്ടാത്ത ഫോളോ-അപ്പുകൾ. ഓരോന്നും ഒറ്റ ടാപ്പിൽ.',
+    autoSub: 'ആർക്ക് മെസേജ് അയക്കണമെന്ന് Regularhood പറയും, മെസേജ് തയ്യാറാക്കി വെക്കും. നിങ്ങളുടെ സ്വന്തം WhatsApp-ൽ നിന്ന്, കടയുടെ പേരിൽ, ഒറ്റ ടാപ്പിൽ നിങ്ങൾ അയക്കും.',
     autoSteps: [
       {
-        when: 'ഓരോ സന്ദർശനത്തിനും ശേഷം',
+        when: 'സന്ദർശനത്തിന് ശേഷം',
         tag: (n: number) => `സന്ദർശനം ${n - 2}`,
         time: 'വൈകുന്നേരം 6:42',
         text: (shop: string, n: number, r: string) => `${shop}-ലെ നിങ്ങളുടെ സന്ദർശനം രേഖപ്പെടുത്തി.\n${n}-ൽ ${n - 2} സ്റ്റാമ്പ് — ${r} കിട്ടാൻ ഇനി 2 മാത്രം.`,
         button: 'എന്റെ കാർഡ് കാണൂ',
       },
       {
-        when: 'കാർഡ് നിറയുമ്പോൾ',
-        tag: (n: number) => `സന്ദർശനം ${n}`,
-        time: 'വൈകുന്നേരം 7:15',
-        text: (shop: string, _n: number, r: string) => `സന്തോഷ വാർത്ത! ${shop}-ൽ നിങ്ങളുടെ ${r} തയ്യാർ. അടുത്ത തവണ നമ്പർ പറഞ്ഞാൽ മതി.`,
-        button: 'എന്റെ കാർഡ് കാണൂ',
-      },
-      {
         when: 'വരാതാകുമ്പോൾ',
-        tag: () => '30-ാം ദിവസം, ഒരിക്കൽ',
+        tag: () => '“വരാത്തവർ” ലിസ്റ്റിൽ',
         time: 'രാവിലെ 11:30',
         text: (shop: string, _n: number, r: string) => `${shop}-ൽ ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു. രണ്ട് സന്ദർശനം കൂടി, ${r} നിങ്ങളുടേത്.`,
         button: 'എന്റെ കാർഡ് കാണൂ',
       },
       {
         when: 'സമ്മാനത്തിന് ശേഷം',
-        tag: () => 'അതേ ദിവസം',
+        tag: () => 'കൗണ്ടറിൽ ചോദിക്കൂ',
         time: 'വൈകുന്നേരം 7:20',
         text: (shop: string) => `${shop} സന്ദർശിച്ചതിന് നന്ദി. ഒരു Google റിവ്യൂ ഞങ്ങൾക്ക് വലിയ സഹായമാണ്.`,
         button: 'Google-ൽ റിവ്യൂ ചെയ്യൂ',
@@ -543,32 +522,32 @@ const COPY = {
     ],
     autoAlso: [
       ['എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും', 'ഓരോ സ്ഥിരക്കാരനും ഒരു കാർഡ്. പരിധിയില്ല.'],
-      ['നിങ്ങളുടെ വില, ലോക്ക്', 'ഇനി വരുന്ന എല്ലാ ഫീച്ചറുകളും, അധിക പണം ഇല്ലാതെ.'],
-      ['നിങ്ങളുടെ ഇഷ്ടം', 'ഓരോ മെസേജും ഓൺ/ഓഫ് ചെയ്യാം. ഇപ്പോൾ ഹിന്ദിയിലും ഇംഗ്ലീഷിലും, മലയാളം ഉടൻ. കസ്റ്റമർക്ക് STOP എന്ന് മറുപടി നൽകാം.'],
+      ['ഓരോ കാർഡിലും നിങ്ങളുടെ ലോഗോ', 'കസ്റ്റമർ കാർഡ് തുറക്കുമ്പോൾ നിങ്ങളുടെ കടയുടെ ലോഗോ കാണും.'],
+      ['എല്ലാം ഡൗൺലോഡ് ചെയ്യാം', 'കസ്റ്റമർമാരും സന്ദർശന ചരിത്രവും സ്പ്രെഡ്ഷീറ്റായി, എപ്പോൾ വേണമെങ്കിലും.'],
     ] as const,
-    autoCta: 'ഫൗണ്ടിങ് വില കാണൂ',
+    autoCta: 'Pro വില കാണൂ',
     shopsKicker: 'ഇതിനകം Regularhood-ൽ',
     shopsTitle: 'Regularhood ഉപയോഗിക്കുന്ന കടകൾ',
     priceKicker: 'വില',
-    priceTitle: (seats: number) => `തുടങ്ങാൻ സൗജന്യം. ആദ്യത്തെ ${seats} കടകൾക്ക് ഫൗണ്ടിങ് വില.`,
+    priceTitle: 'തുടങ്ങാൻ സൗജന്യം. സ്ഥിരക്കാർ കൂടുമ്പോൾ Pro.',
     priceSub: (free: number) =>
-      `${free} കസ്റ്റമർമാർ വരെ സൗജന്യമായി തുടങ്ങൂ. സ്ഥിരക്കാർ കൂടുമ്പോൾ ഫൗണ്ടിങ് ഷോപ്പ് ആകൂ: WhatsApp മെസേജുകളും Google റിവ്യൂകളും തനിയെ, ഇനി ഒരിക്കലും കിട്ടാത്ത വിലയ്ക്ക്.`,
+      `${free} കസ്റ്റമർമാർ വരെ സൗജന്യമായി തുടങ്ങൂ. Pro-യിൽ പരിധിയില്ല, വരാത്തവർക്ക് റിമൈൻഡർ, Google റിവ്യൂ, നിങ്ങളുടെ ലോഗോ. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ എന്നേക്കുമായി ഒരിക്കലോ പണമടയ്ക്കാം. ഓട്ടോ-ഡെബിറ്റ് ഇല്ല.`,
     priceFree: { name: 'ഫ്രീ', per: 'എന്നും', limit: (n: number) => `${n} കസ്റ്റമർമാർ വരെ` },
-    priceList: ['മലയാളം, ഹിന്ദി, ഇംഗ്ലീഷ് ഭാഷകളിൽ കസ്റ്റമർ കാർഡ്', 'ഒറ്റ ടാപ്പിൽ കാർഡ് WhatsApp-ൽ അയക്കൂ', 'കൗണ്ടർ പോസ്റ്ററും WhatsApp സ്റ്റാറ്റസ് ഇമേജും', 'സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡും ദിവസേന ബാക്കപ്പും'],
-    founding: {
-      name: 'ഫൗണ്ടിങ് ഷോപ്പ്',
-      once: 'ഒരിക്കൽ, എന്നേക്കും',
+    priceList: ['മലയാളം, ഹിന്ദി, ഇംഗ്ലീഷ് ഭാഷകളിൽ കസ്റ്റമർ കാർഡ്', 'ഒറ്റ ടാപ്പിൽ കാർഡ് WhatsApp-ൽ അയക്കൂ', 'കൗണ്ടർ പോസ്റ്ററും WhatsApp സ്റ്റാറ്റസ് ഇമേജും', 'ദിവസേന ബാക്കപ്പ്'],
+    pro: {
+      name: 'Pro',
+      monthly: 'മാസം',
       yearly: (price: string) => `അല്ലെങ്കിൽ വർഷം ${price}`,
+      lifetime: (price: string) => `അല്ലെങ്കിൽ ഒരിക്കൽ ${price}, എന്നേക്കും`,
       list: [
         'എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും',
-        'കാർഡും “സമ്മാനം തയ്യാർ” മെസേജും WhatsApp-ൽ തനിയെ',
-        '“ഞങ്ങൾ നിങ്ങളെ മിസ്സ് ചെയ്യുന്നു” റിമൈൻഡറുകൾ, തനിയെ',
-        'ഓരോ സമ്മാനത്തിനും ശേഷം Google റിവ്യൂ അഭ്യർത്ഥന',
-        'ഫൗണ്ടിങ് വില ലോക്ക്, എല്ലാ പുതിയ ഫീച്ചറുകളോടും കൂടി',
+        '“വരാത്തവർ” ലിസ്റ്റ്, ഒറ്റ ടാപ്പിൽ WhatsApp റിമൈൻഡർ',
+        'Google റിവ്യൂ: കാർഡിൽ ബട്ടൺ, ഓരോ സമ്മാനത്തിനും ശേഷം അഭ്യർത്ഥന',
+        'ഓരോ കസ്റ്റമർ കാർഡിലും നിങ്ങളുടെ ലോഗോ',
+        'കസ്റ്റമർമാരെയും സന്ദർശനങ്ങളും ഡൗൺലോഡ് ചെയ്യാം (CSV)',
       ],
-      only: (seats: number) => `ആദ്യത്തെ ${seats} കടകൾക്ക് മാത്രം`,
-      left: (left: number, total: number) => (left ? `${total}-ൽ ${left} സ്ഥാനം ബാക്കി` : 'എല്ലാ സ്ഥാനങ്ങളും നിറഞ്ഞു'),
-      closed: 'ഇപ്പോൾ ലഭ്യമല്ല',
+      only: (seats: number) => `ലൈഫ്‌ടൈം: ഫൗണ്ടിങ് ഓഫർ, ${seats} സ്ഥാനം മാത്രം`,
+      left: (left: number, total: number) => (left ? `${total}-ൽ ${left} ബാക്കി` : 'എല്ലാം നിറഞ്ഞു'),
       cta: 'സൗജന്യമായി തുടങ്ങൂ, എപ്പോൾ വേണമെങ്കിലും അപ്ഗ്രേഡ് ചെയ്യാം',
     },
     create: 'നിങ്ങളുടെ കട ഉണ്ടാക്കൂ',
@@ -590,7 +569,7 @@ export const FAQ = [
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
-  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. The first shops can become a Founding Shop, paid once for life or once a year (prices above): unlimited customers, WhatsApp messages sent to customers for you, and Google review requests. Pay by UPI; full refund within 7 days.'],
+  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. Pro (prices above) removes the limit and adds a list of customers who stopped coming with one-tap WhatsApp reminders, Google reviews, your logo on the card and spreadsheet downloads. Pay for a month, a year or once for life; nothing is auto-debited. Pay by UPI; full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -600,7 +579,7 @@ const FAQ_HI = [
   ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
-  ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। शुरुआती दुकानें एक बार (हमेशा के लिए) या साल में एक बार पेमेंट करके फ़ाउंडिंग शॉप बन सकती हैं (कीमत ऊपर देखें): जितने चाहें ग्राहक, ग्राहकों को WhatsApp मैसेज अपने आप, और Google रिव्यू की रिक्वेस्ट। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
+  ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। Pro (कीमत ऊपर देखें) में कोई लिमिट नहीं, साथ में आना बंद कर चुके ग्राहकों की लिस्ट और एक टैप में WhatsApp रिमाइंडर, Google रिव्यू, कार्ड पर आपका लोगो और स्प्रेडशीट डाउनलोड। एक महीने, एक साल या हमेशा के लिए एक बार पेमेंट करें; कोई ऑटो-डेबिट नहीं। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
 ] as const;
 
 const FAQ_ML = [
@@ -610,7 +589,7 @@ const FAQ_ML = [
   ['കൗണ്ടറിൽ എന്താണ് വേണ്ടത്?', 'ഇന്റർനെറ്റ് ഉള്ള ഏത് ഫോണോ ടാബ്‌ലെറ്റോ കമ്പ്യൂട്ടറോ. ബ്രൗസറിൽ Regularhood തുറക്കൂ, അല്ലെങ്കിൽ ഹോം സ്ക്രീനിൽ ചേർക്കൂ.'],
   ['ഒരു ദിവസം രണ്ട് സ്റ്റാമ്പ് കിട്ടുമോ?', 'ഇല്ല. ഒരു ഫോൺ നമ്പർ ദിവസം ഒരിക്കൽ മാത്രമേ കണക്കാക്കൂ, അതുകൊണ്ട് അബദ്ധത്തിൽ രണ്ട് തവണ ചേരില്ല. ഏത് സന്ദർശനവും സമ്മാനവും തിരിച്ചെടുക്കാം.'],
   ['നിയമം പിന്നീട് മാറ്റാമോ?', 'മാറ്റാം. സെറ്റിംഗ്സിൽ എപ്പോൾ വേണമെങ്കിലും സന്ദർശനങ്ങളുടെ എണ്ണമോ സമ്മാനമോ മാറ്റൂ. എല്ലാവരുടെയും പഴയ സന്ദർശനങ്ങൾ അതുപോലെ നിൽക്കും.'],
-  ['ഇതിന് എത്ര ചെലവാകും?', 'ഫ്രീ പ്ലാനിന്റെ കസ്റ്റമർ പരിധി വരെ സൗജന്യം. ആദ്യത്തെ കടകൾക്ക് ഒരിക്കൽ (എന്നേക്കും) അല്ലെങ്കിൽ വർഷത്തിൽ ഒരിക്കൽ പണമടച്ച് ഫൗണ്ടിങ് ഷോപ്പ് ആകാം (വില മുകളിൽ കാണാം): എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും, കസ്റ്റമർമാർക്ക് WhatsApp മെസേജുകൾ തനിയെ, Google റിവ്യൂ അഭ്യർത്ഥനകൾ. UPI വഴി പണമടയ്ക്കാം; 7 ദിവസത്തിനകം മുഴുവൻ റീഫണ്ട്.'],
+  ['ഇതിന് എത്ര ചെലവാകും?', 'ഫ്രീ പ്ലാനിന്റെ കസ്റ്റമർ പരിധി വരെ സൗജന്യം. Pro-യിൽ (വില മുകളിൽ കാണാം) പരിധിയില്ല, കൂടാതെ വരാതായ കസ്റ്റമർമാരുടെ ലിസ്റ്റും ഒറ്റ ടാപ്പിൽ WhatsApp റിമൈൻഡറും, Google റിവ്യൂ, കാർഡിൽ നിങ്ങളുടെ ലോഗോ, സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡ്. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ എന്നേക്കുമായി ഒരിക്കലോ പണമടയ്ക്കാം; ഓട്ടോ-ഡെബിറ്റ് ഇല്ല. UPI വഴി പണമടയ്ക്കാം; 7 ദിവസത്തിനകം മുഴുവൻ റീഫണ്ട്.'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -1365,8 +1344,8 @@ function ForCustomers({ c, lang }: { c: Copy; lang: Lang }) {
 }
 
 /**
- * Founding Shop, shown as one customer's month: each message Regularhood sends by itself, at the moment it goes out,
- * on a WhatsApp chat background. Uses the shop picked at the top of the page.
+ * Pro, shown as one customer's month: the messages the shop sends from its own WhatsApp in one tap (Regularhood never
+ * messages customers itself), on a WhatsApp chat background. Uses the shop picked at the top of the page.
  */
 function Autopilot({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
@@ -1466,24 +1445,26 @@ function ShopsUsing({ c }: { c: Copy }) {
   );
 }
 
-type Founding = { open: boolean; total: number; left: number; prices: { lifetime: number; yearly: number }; freeCustomers: number };
+type Founding = { open: boolean; total: number; left: number; prices: { monthly: number; yearly: number; lifetime: number }; freeCustomers: number };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 
-/** Free, and the Founding Shop offer with its places left (live; the prerendered page shows the default prices). */
+/** Free and Pro: monthly, yearly, and the lifetime Founding offer while it has places (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
-  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { lifetime: 149_900, yearly: 49_900 }, freeCustomers: 50 });
+  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { monthly: 9_900, yearly: 49_900, lifetime: 149_900 }, freeCustomers: 50 });
   useEffect(() => {
     fetch('/api/public/founding')
       .then((r) => (r.ok ? r.json() : null))
       .then((f: Founding | null) => f && setFounding(f))
       .catch(() => {});
   }, []);
-  const f = c.founding;
+  const f = c.pro;
+  // Lifetime is shown only while it is on sale and has places (left is -1 until the live numbers arrive).
+  const lifetime = founding.open && founding.left !== 0;
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <p className="lp-kicker rv">{c.priceKicker}</p>
-      <h2 className="lp-h2 rv">{c.priceTitle(founding.total)}</h2>
+      <h2 className="lp-h2 rv">{c.priceTitle}</h2>
       <p className="lp-sub rv">{c.priceSub(founding.freeCustomers)}</p>
       <div className="lp-price-cards">
         <div className="lp-price-card lp-price-free rv">
@@ -1503,14 +1484,17 @@ function Pricing({ c }: { c: Copy }) {
           </a>
         </div>
         <div className="lp-price-card rv">
-          <span className="lp-price-badge">
-            {founding.open ? f.only(founding.total) : f.closed}
-            {founding.open && founding.left >= 0 && ` · ${f.left(founding.left, founding.total)}`}
-          </span>
+          {lifetime && (
+            <span className="lp-price-badge">
+              {f.only(founding.total)}
+              {founding.left > 0 && ` · ${f.left(founding.left, founding.total)}`}
+            </span>
+          )}
           <p className="lp-price-name">{f.name}</p>
           <div>
-            <strong className="lp-price-tag">{inr(founding.prices.lifetime)}</strong> <span className="lp-price-per">{f.once}</span>
+            <strong className="lp-price-tag">{inr(founding.prices.monthly)}</strong> <span className="lp-price-per">{f.monthly}</span>
             <p className="lp-price-alt">{f.yearly(inr(founding.prices.yearly))}</p>
+            {lifetime && <p className="lp-price-alt">{f.lifetime(inr(founding.prices.lifetime))}</p>}
           </div>
           <ul>
             {f.list.map((item) => (
@@ -1519,7 +1503,7 @@ function Pricing({ c }: { c: Copy }) {
               </li>
             ))}
           </ul>
-          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Founding Shop">
+          <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="pricing: Pro">
             {f.cta} <ArrowRight size={18} />
           </a>
         </div>

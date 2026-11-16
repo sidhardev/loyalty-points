@@ -9,7 +9,7 @@ import { WhatsApp, type LeadReply } from './whatsapp';
 //
 //   how it works → [Video dikhao] [Kitna kharcha?] [Free shuru karo]
 //   video        → the demo video (Admin → WhatsApp API → demo video link; the button is hidden without one)
-//   price        → the free plan and Founding Shop, read from Admin → Plans
+//   price        → the Free plan and Pro (monthly, yearly, and lifetime while places are left), read from Admin → Plans
 //   sign-up      → a link button with the lead's own sign-up link (a sign-up marks the lead joined)
 //   questions    → a list of common questions; "Aapse baat karni hai" hands the chat to the admin
 //
@@ -36,9 +36,9 @@ const TEXT = {
     video: '30 second mein dekhiye counter pe kaise kaam karta hai.',
     price: (o: ReturnType<typeof offer>) =>
       `Shuru karna free hai: ${o.freeCustomers} customers tak, hamesha ke liye.` +
-      (o.open && o.left > 0
-        ? `\n\nZyada customers ho jaayein to Founding Shop: ${rupees(o.prices.lifetime)} ek baar (lifetime) ya ${rupees(o.prices.yearly)}/saal. Isme customers ko unka card, "gift ready hai" aur "bahut din ho gaye" messages WhatsApp pe khud jaate hain.\nSirf ${o.total} shops ke liye, abhi ${o.left} jagah baaki.`
-        : ''),
+      `\n\nZyada customers chahiye to Pro: ${rupees(o.prices.monthly)}/mahina ya ${rupees(o.prices.yearly)}/saal` +
+      (o.open && o.left > 0 ? `, ya ${rupees(o.prices.lifetime)} ek baar (lifetime, sirf ${o.total} shops ke liye, abhi ${o.left} jagah baaki)` : '') +
+      '.\nPro mein: unlimited customers, jo customers aana band kar chuke unki list (ek tap mein WhatsApp reminder), Google reviews, card pe aapka logo, aur Excel/CSV download.\nKoi auto-debit nahi.',
     signup: 'Bas 2 minute lagenge: shop ka naam aur mobile number daaliye, phir pehle customer ka visit add kijiye. Koi payment nahi chahiye.',
     signupButton: 'Free account banao',
     faq: 'Kya jaanna hai? Neeche se chuniye.',
@@ -68,9 +68,9 @@ const TEXT = {
     video: '30 सेकंड में देखिए काउंटर पर कैसे काम करता है।',
     price: (o: ReturnType<typeof offer>) =>
       `शुरू करना फ्री है: ${o.freeCustomers} ग्राहकों तक, हमेशा के लिए।` +
-      (o.open && o.left > 0
-        ? `\n\nज़्यादा ग्राहक हो जाएँ तो Founding Shop: ${rupees(o.prices.lifetime)} एक बार (lifetime) या ${rupees(o.prices.yearly)}/साल। इसमें ग्राहकों को उनका कार्ड, "गिफ़्ट तैयार है" और "बहुत दिन हो गए" मैसेज WhatsApp पर अपने आप जाते हैं।\nसिर्फ़ ${o.total} दुकानों के लिए, अभी ${o.left} जगह बाकी।`
-        : ''),
+      `\n\nज़्यादा ग्राहक चाहिए तो Pro: ${rupees(o.prices.monthly)}/महीना या ${rupees(o.prices.yearly)}/साल` +
+      (o.open && o.left > 0 ? `, या ${rupees(o.prices.lifetime)} एक बार (lifetime, सिर्फ़ ${o.total} दुकानों के लिए, अभी ${o.left} जगह बाकी)` : '') +
+      '।\nPro में: अनलिमिटेड ग्राहक, जो ग्राहक आना बंद कर गए उनकी लिस्ट (एक टैप में WhatsApp रिमाइंडर), Google रिव्यू, कार्ड पर आपका लोगो, और Excel/CSV डाउनलोड।\nकोई ऑटो-डेबिट नहीं।',
     signup: 'बस 2 मिनट लगेंगे: दुकान का नाम और मोबाइल नंबर डालिए, फिर पहले ग्राहक की विज़िट जोड़िए। कोई पेमेंट नहीं चाहिए।',
     signupButton: 'फ्री अकाउंट बनाएँ',
     faq: 'क्या जानना है? नीचे से चुनिए।',

@@ -29,6 +29,8 @@ import {
   Stamp,
   ScrollText,
   Search,
+  Settings,
+  Sparkles,
   ShieldCheck,
   Store,
   StickyNote,
@@ -41,13 +43,13 @@ import { daysAgo, num, rupees, when } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
 import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
-import { CustomerWhatsAppPage } from './AdminCustomerWa';
 import { PlansPage } from './AdminPlans';
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
 import { PartnersPage } from './AdminPartners';
 import { PlaybooksPage } from './AdminPlaybooks';
+import { DraftSheet, SettingsPage } from './AdminDrafts';
 import { PhusroPage } from './AdminPhusro';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageDraft, type PageEvent, type PageView, type VisitShop } from './Visits';
@@ -125,10 +127,11 @@ type Shop = {
   on_landing: number; // 1 = listed on the homepage
   last_contact: string | null;
   last_contact_detail: string | null;
-  plan: string; // stored plan: free | grandfathered | lifetime | yearly
+  plan: string; // stored plan: free | grandfathered | monthly | yearly | lifetime
   activePlan: string; // in force now (a yearly plan that ran out is free)
   plan_expires_at: string | null;
   founding_no: number | null;
+  google: number; // 1 = logs in with Google
 };
 type Comeback = { customers: number; visits: number; wonBack: number; allVisits: number; rewards: number };
 
@@ -384,12 +387,12 @@ function OverviewPage() {
 
 // ---------------------------------------------------------------- shops
 
-/** "Founding #3 · lifetime", "Free", "Early shop" — a shop's plan in a few words. */
+/** "Pro · lifetime (Founding #3)", "Pro · monthly to …", "Free", "Early shop" — a shop's plan in a few words. */
 const planLabel = (s: Pick<Shop, 'plan' | 'activePlan' | 'founding_no' | 'plan_expires_at'>) => {
-  if (s.activePlan === 'lifetime') return `Founding #${s.founding_no} · lifetime`;
-  if (s.activePlan === 'yearly') return `Founding #${s.founding_no} · yearly to ${when(s.plan_expires_at!)}`;
+  if (s.activePlan === 'lifetime') return `Pro · lifetime (Founding #${s.founding_no})`;
+  if (s.activePlan === 'yearly' || s.activePlan === 'monthly') return `Pro · ${s.activePlan} to ${when(s.plan_expires_at!)}`;
   if (s.activePlan === 'grandfathered') return 'Early shop (no limit)';
-  return s.plan === 'yearly' ? 'Free (yearly ran out)' : 'Free';
+  return s.plan === 'yearly' || s.plan === 'monthly' ? `Free (${s.plan} ran out)` : 'Free';
 };
 
 type Payment = { id: number; kind: string; amount_paise: number; razorpay_order_id: string; razorpay_payment_id: string | null; status: string; created_at: string; paid_at: string | null };
@@ -407,6 +410,7 @@ function ShopsPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'' | Status>('');
   const [shops, setShops] = useState<Shop[] | null>(null);
+  const [drafting, setDrafting] = useState<Shop | null>(null);
   const [billing, setBilling] = useState<{ payments: (Payment & { shopId: number; name: string })[]; seats: { total: number; left: number } } | null>(null);
   useEffect(() => void adminApi<NonNullable<typeof billing>>('payments').then(setBilling), []);
   const paid = billing?.payments.filter((p) => p.status === 'paid') ?? [];
@@ -434,11 +438,13 @@ function ShopsPage() {
       <header className="page-head">
         <div>
           <h1>Shops</h1>
-          <p>{shops ? `${num(shops.length)} shown` : 'Loading…'}</p>
+          <p>
+            {shops ? `${num(shops.length)} shown · ${num(shops.filter((s) => s.google).length)} log in with Google` : 'Loading…'}
+          </p>
           {billing && (
             <p className="follow-meta">
               <span>
-                Founding Shops: {num(billing.seats.total - billing.seats.left)} of {num(billing.seats.total)} places taken
+                Lifetime: {num(billing.seats.total - billing.seats.left)} of {num(billing.seats.total)} places taken
               </span>
               <span>
                 {num(paid.length)} payments · {rupees(paid.reduce((n, p) => n + p.amount_paise, 0) / 100)}
@@ -491,7 +497,22 @@ function ShopsPage() {
                         <strong>{s.name}</strong>
                       </a>
                       <span className="muted small">{s.email || s.phone}</span>
-                      {s.founding_no && s.activePlan !== 'free' && <span className="source-chip">{planLabel(s)}</span>}
+                      {['monthly', 'yearly', 'lifetime'].includes(s.activePlan) && <span className="source-chip">{planLabel(s)}</span>}
+                      {!!s.google && (
+                        <span className="source-chip" title="Logs in with Google">
+                          Google
+                        </span>
+                      )}
+                      <button
+                        className="btn btn-sm btn-soft shop-draft-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDrafting(s);
+                        }}
+                        title={`Draft a message for ${s.name}`}
+                      >
+                        <Sparkles size={14} /> Draft message
+                      </button>
                     </td>
                     <td>
                       <StatusBadge status={s.status} />
@@ -524,6 +545,7 @@ function ShopsPage() {
           <EmptyState icon={Store} title="No shops here" text="Try another filter or search." />
         )}
       </section>
+      {drafting && <DraftSheet api={adminApi} shop={drafting} onClose={() => setDrafting(null)} onSent={() => toast(`Marked ${drafting.name} as contacted`)} />}
     </>
   );
 }
@@ -571,6 +593,7 @@ function ShopPage({ id }: { id: number }) {
   const [pauseReason, setPauseReason] = useState('');
   const [pausing, setPausing] = useState(false);
   const [planForm, setPlanForm] = useState<{ plan: string; reason: string } | null>(null);
+  const [drafting, setDrafting] = useState(false);
   const action = useAction();
 
   const load = useCallback(() => {
@@ -663,6 +686,7 @@ function ShopPage({ id }: { id: number }) {
           <p className="follow-meta">
             <span className="source-chip">From: {sourceName(shop.source)}</span>
             <span className="source-chip">Plan: {planLabel(shop)}</span>
+            <span className="source-chip">Login: {shop.google ? 'Google' : 'Password'}</span>
             {shop.signup_campaign && !shop.referred_by && <span>Campaign: {shop.signup_campaign}</span>}
             {shop.referred_by && (
               <span>
@@ -674,7 +698,13 @@ function ShopPage({ id }: { id: number }) {
           </p>
         </div>
       </header>
-      <ContactButtons shop={shop} onDone={load} />
+      <div className="follow-actions">
+        <ContactButtons shop={shop} onDone={load} />
+        <button className="btn btn-primary" onClick={() => setDrafting(true)}>
+          <Sparkles size={16} /> Draft message
+        </button>
+      </div>
+      {drafting && <DraftSheet api={adminApi} shop={shop} onClose={() => setDrafting(false)} onSent={load} />}
 
       {shop.suspended_at && (
         <p className="alert alert-error">
@@ -807,9 +837,10 @@ function ShopPage({ id }: { id: number }) {
                 Plan
                 <select value={planForm.plan} onChange={(e) => setPlanForm({ ...planForm, plan: e.target.value })}>
                   <option value="free">Free (customer limit)</option>
-                  <option value="grandfathered">Early shop (no limit, no Founding place)</option>
-                  <option value="lifetime">Founding Shop · lifetime</option>
-                  <option value="yearly">Founding Shop · 1 year from today</option>
+                  <option value="grandfathered">Early shop (no limit, no Pro features)</option>
+                  <option value="monthly">Pro · 1 month from today</option>
+                  <option value="yearly">Pro · 1 year from today</option>
+                  <option value="lifetime">Pro · lifetime (takes a Founding place)</option>
                 </select>
               </label>
               <label>
@@ -1421,15 +1452,6 @@ const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { path: '/chats', label: 'Chats', icon: MessagesSquare },
       {
-        path: '/customer-whatsapp',
-        label: 'Customer WhatsApp',
-        icon: BellRing,
-        subs: [
-          ['messages', 'Messages'],
-          ['setup', 'Setup'],
-        ],
-      },
-      {
         path: '/status',
         label: 'WhatsApp status',
         icon: MessageCircle,
@@ -1469,6 +1491,20 @@ const NAV: { group: string; items: NavItem[] }[] = [
         subs: [
           ['settings', 'Limit & login'],
           ['usage', 'AI calls'],
+        ],
+      },
+    ],
+  },
+  {
+    group: 'Setup',
+    items: [
+      {
+        path: '/settings',
+        label: 'Settings',
+        icon: Settings,
+        subs: [
+          ['ai', 'Claude API key'],
+          ['templates', 'Message types'],
         ],
       },
     ],
@@ -1627,8 +1663,6 @@ export function AdminApp() {
     <FollowUpPage />
   ) : hash.startsWith('/seo') ? (
     <SeoPage api={adminApi} adminToken={getAdminToken} />
-  ) : hash.startsWith('/customer-whatsapp') ? (
-    <CustomerWhatsAppPage api={adminApi} />
   ) : hash.startsWith('/chats') ? (
     <ChatsPage api={adminApi} />
   ) : hash.startsWith('/leads') ? (
@@ -1643,6 +1677,8 @@ export function AdminApp() {
     <StatusPage api={adminApi} />
   ) : hash.startsWith('/visits') ? (
     <VisitsPage fetchViews={fetchViews} />
+  ) : hash.startsWith('/settings') ? (
+    <SettingsPage api={adminApi} />
   ) : hash.startsWith('/log') ? (
     <LogPage />
   ) : (

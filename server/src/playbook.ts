@@ -48,7 +48,8 @@ const SCHEMA = {
 
 const SYSTEM = `You write one-page Loyalty Playbooks for small Indian businesses (salons, cafés, gyms, clinics, home services, shops).
 Regularhood is a simple loyalty app: a digital stamp card on the customer's phone (a reward after N visits), referral rewards,
-automatic WhatsApp messages that bring back customers who stopped coming, and Google review requests after a visit.
+one-tap WhatsApp reminders (sent from the shop's own phone) that bring back customers who stopped coming, and Google
+review requests after a reward.
 
 Write for the owner: plain, warm, practical English an Indian small-business owner reads in one minute. No jargon, no hype,
 no made-up statistics or percentages. Prices in ₹ and realistic for the city. Fit the ideas to how this business actually
@@ -69,7 +70,7 @@ export class PlaybookService {
     return row ? unseal(row.value) : null;
   }
 
-  private key() {
+  key() {
     return this.panelKey() || process.env.ANTHROPIC_API_KEY?.trim() || '';
   }
 

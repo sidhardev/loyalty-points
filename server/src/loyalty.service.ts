@@ -38,12 +38,9 @@ export type MerchantRow = {
   plan: string; // see plans.ts
   plan_expires_at: string | null;
   founding_no: number | null;
-  auto_card: number;
-  auto_reward: number;
-  auto_missyou: number;
-  auto_review: number;
-  review_url: string;
+  review_url: string; // Google review link (Pro)
   msg_lang: string;
+  logo_at: string | null; // the shop has a logo (Pro), last changed then
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';
@@ -145,7 +142,7 @@ export class LoyaltyService {
     const limit = customerLimit(this.db.sql, this.merchant(merchantId));
     if (limit !== null && !this.byLast10(merchantId, phone) && this.customerCount(merchantId) >= limit) {
       this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers`);
-      throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: 'The Free plan’s customer limit is reached. Become a Founding Shop to add more.' });
+      throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: 'The Free plan’s customer limit is reached. Get Pro to add more.' });
     }
 
     return this.db.transaction(() => {

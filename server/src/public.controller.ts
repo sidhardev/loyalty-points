@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { APP_MANIFEST } from './manifest';
 import { Db } from './db';
 import { LoyaltyService, type CustomerRow, type MerchantRow } from './loyalty.service';
-import { isFounding, offer } from './plans';
+import { isPro, offer } from './plans';
 import { SITE } from './seo';
 
 // Pages customers open without an account:
@@ -18,7 +18,7 @@ export class PublicController {
     private readonly loyalty: LoyaltyService,
   ) {}
 
-  /** The homepage's price section: Founding Shop places left and prices. */
+  /** The homepage's price section: prices, and lifetime places left. */
   @Get('founding')
   founding() {
     return offer(this.db.sql);
@@ -34,6 +34,19 @@ export class PublicController {
     res.redirect(302, m?.review_url || SITE);
   }
 
+  /** A Pro shop's logo for its customers' cards; long-cached, since its link changes with the logo. */
+  @Get('logo/:code')
+  logo(@Param('code') code: string, @Res() res: Response) {
+    const row = this.db.sql
+      .prepare(
+        `SELECT l.data, l.type, m.plan, m.plan_expires_at FROM merchants m JOIN merchant_logos l ON l.merchant_id = m.id
+         WHERE m.join_code = ? AND m.suspended_at IS NULL`,
+      )
+      .get(code) as { data: Uint8Array; type: string; plan: string; plan_expires_at: string | null } | undefined;
+    if (!row || !isPro(row)) throw new NotFoundException('No logo');
+    res.set('Cache-Control', 'public, max-age=31536000, immutable').type(row.type).send(Buffer.from(row.data));
+  }
+
   @Get('wallet/:token')
   wallet(@Param('token') token: string) {
     const c = this.db.sql.prepare('SELECT * FROM customers WHERE wallet_token = ?').get(token) as CustomerRow | undefined;
@@ -47,7 +60,15 @@ export class PublicController {
       )
       .all(c.id) as { type: string; note: string | null; created_at: string }[];
     return {
-      shop: { name: m.name, joinCode: m.join_code, visitsNeeded: m.visits_needed, rewardName: m.reward_name, review: Boolean(m.review_url && isFounding(m)) },
+      shop: {
+        name: m.name,
+        joinCode: m.join_code,
+        visitsNeeded: m.visits_needed,
+        rewardName: m.reward_name,
+        // Pro: a "Review us on Google" button, and the shop's logo at the top of the card
+        review: Boolean(m.review_url && isPro(m)),
+        logo: m.logo_at && isPro(m) ? `/api/public/logo/${m.join_code}?v=${encodeURIComponent(m.logo_at)}` : '',
+      },
       stamps: c.points,
       since: c.created_at,
       history: history.map((h) => ({ kind: h.type === 'earn' ? 'visit' : 'reward', note: h.note, createdAt: h.created_at })),

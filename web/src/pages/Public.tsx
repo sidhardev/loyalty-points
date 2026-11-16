@@ -13,7 +13,8 @@ import { Stamps } from './Counter';
 // There's nothing for the customer to do: the shop types their number, and the WhatsApp link opens their card.
 
 type WalletData = {
-  shop: { name: string; joinCode: string; visitsNeeded: number; rewardName: string; review: boolean };
+  // Pro shops: `review` = a Google review button, `logo` = the shop's logo link ('' = none)
+  shop: { name: string; joinCode: string; visitsNeeded: number; rewardName: string; review: boolean; logo: string };
   stamps: number;
   since: string;
   history: { kind: 'visit' | 'reward'; note: string | null; createdAt: string }[];
@@ -106,7 +107,7 @@ export function Wallet({ token }: { token: string }) {
       <section className="member-card stamp-card">
         <div className="member-top">
           <span className="member-shop">
-            <Logo /> <span>{shop.name}</span>
+            {shop.logo ? <img className="member-logo" src={shop.logo} alt="" /> : <Logo />} <span>{shop.name}</span>
           </span>
         </div>
         <span className="member-name">{t('Every {n} visits → {reward}', { n, reward: shop.rewardName })}</span>
@@ -129,7 +130,7 @@ export function Wallet({ token }: { token: string }) {
         </div>
       </div>
 
-      {shop.review && history.some((h) => h.kind === 'reward') && (
+      {shop.review && (
         <a className="btn btn-soft review-btn" href={reviewUrl(shop.joinCode)} target="_blank" rel="noreferrer">
           <Star size={18} /> {t('Liked {shop}? Rate it on Google', { shop: shop.name })}
         </a>

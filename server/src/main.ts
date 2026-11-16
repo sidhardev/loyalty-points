@@ -9,13 +9,15 @@ import { join } from 'node:path';
 import { AdminController, AdminGuard } from './admin';
 import { AnalyticsController, AnalyticsStore } from './analytics';
 import { AuthController, AuthGuard } from './auth';
-import { AutoMessages, AutoMessagesController } from './automessages';
 import { Billing, BillingAdminController, BillingController } from './billing';
 import { Db } from './db';
+import { DraftService, DraftsAdminController } from './drafts';
+import { SettingsAdminController } from './settings';
 import { Gemini } from './gemini';
 import { LoyaltyController } from './loyalty.controller';
 import { LoyaltyService } from './loyalty.service';
 import { PartnersAdminController, PartnersController } from './partners';
+import { ProController } from './pro';
 import { PublicController } from './public.controller';
 import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
@@ -33,8 +35,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, AutoMessagesController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, WhatsAppAdminController, WhatsAppWebhookController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AutoMessages, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, Storage, WhatsApp, WaBot],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, DraftService, Storage, WhatsApp, WaBot],
 })
 class AppModule {}
 
@@ -52,6 +54,9 @@ async function bootstrap() {
   app.use((req: Request, res: Response, next: NextFunction) =>
     req.method === 'POST' && /^\/api\/admin\/whatsapp\/chats\/\d+\/media$/.test(req.path) ? fileUpload(req, res, next) : next(),
   );
+  // A Pro shop's logo arrives the same way (pro.ts), already made small by the page.
+  const logoUpload = raw({ type: () => true, limit: '400kb' });
+  app.use((req: Request, res: Response, next: NextFunction) => (req.method === 'PUT' && req.path === '/api/pro/logo' ? logoUpload(req, res, next) : next()));
 
   // In production the API also serves the built website (web/dist), so one process runs everything.
   const web = join(__dirname, '..', '..', 'web', 'dist');

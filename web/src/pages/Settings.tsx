@@ -7,7 +7,8 @@ import '../poster.css';
 import { ReferralCard, ShareCard } from '../share';
 import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
-import { AutoWhatsApp } from './AutoWhatsApp';
+import { openPlan } from '../billing';
+import { ProSettings } from './ProSettings';
 import { Stamps, messageLang } from './Counter';
 
 /** The counter poster: tells customers the rule and that they only need to say their number. Prints on A4 or saves as a PNG. */
@@ -80,7 +81,7 @@ function Poster({ merchant }: { merchant: Merchant }) {
 }
 
 /** Activity log and spreadsheet downloads. */
-function YourData() {
+function YourData({ merchant }: { merchant: Merchant }) {
   const [busy, setBusy] = useState('');
   const save = async (path: string, file: string) => {
     setBusy(path);
@@ -105,7 +106,7 @@ function YourData() {
         <Crown size={19} />
         <span className="row-main">
           <strong>{t('Your plan')}</strong>
-          <span>{t('Customer limit and Founding Shop')}</span>
+          <span>{t('Free or Pro, and your customer limit')}</span>
         </span>
         <ChevronRight size={18} />
       </a>
@@ -118,8 +119,15 @@ function YourData() {
         <ChevronRight size={18} />
       </a>
       <p className="muted small" style={{ margin: 0 }}>
-        {t('Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.')}
+        {merchant.pro
+          ? t('Download a spreadsheet (opens in Excel or Google Sheets). Keep a copy as a backup.')
+          : t('Downloading in Excel is part of Pro. On Free, write to us and we’ll send your customer list.')}
       </p>
+      {!merchant.pro ? (
+        <button className="btn btn-soft" onClick={openPlan}>
+          <Crown size={17} /> {t('Get Pro to download')}
+        </button>
+      ) : (
       <div className="actions">
         <button className="btn btn-soft" disabled={!!busy} onClick={() => void save('export/customers.csv', `customers-${date}.csv`)}>
           <FileSpreadsheet size={17} /> {busy === 'export/customers.csv' ? t('Preparing…') : t('Customers')}
@@ -128,6 +136,7 @@ function YourData() {
           <FileSpreadsheet size={17} /> {busy === 'export/transactions.csv' ? t('Preparing…') : t('Visit history')}
         </button>
       </div>
+      )}
     </section>
   );
 }
@@ -245,11 +254,11 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
           </button>
         </form>
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
-          <AutoWhatsApp merchant={merchant} onMerchant={onSaved} />
+          <ProSettings merchant={merchant} onMerchant={onSaved} />
           <Poster merchant={merchant} />
           <ShareCard merchant={merchant} />
           <ReferralCard merchant={merchant} />
-          <YourData />
+          <YourData merchant={merchant} />
           <section className="card">
             <div className="card-head">
               <h2>

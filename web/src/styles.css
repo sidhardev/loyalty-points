@@ -5648,22 +5648,64 @@ circle.trend-views {
   justify-content: center;
 }
 
-/* Founding Shop: the counter says Regularhood already sent the WhatsApp message */
-.auto-note {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: var(--ok-soft);
-  color: var(--ok);
-  font-size: 14px;
-  font-weight: 650;
+/* ---------------------------------------------------------------- Pro: settings card and locked features (ProSettings.tsx, billing.tsx) */
+
+.pro-card,
+.pro-lock {
+  display: grid;
+  gap: 14px;
 }
 
-/* ---------------------------------------------------------------- automatic WhatsApp (AutoWhatsApp.tsx) */
+.pro-lock p {
+  margin: 0;
+}
+
+.pro-lock .small svg {
+  vertical-align: -2px;
+}
+
+.pro-logo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.pro-logo-preview {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.pro-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pro-logo-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* the shop's own logo on its customers' cards (Pro) */
+.member-logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+}
+
+/* ---------------------------------------------------------------- shared bits once used by automatic WhatsApp */
 
 .seg-sm button {
   padding: 5px 10px;
@@ -5675,47 +5717,6 @@ circle.trend-views {
   color: var(--gold);
 }
 
-.auto-list {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.auto-list li {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.auto-list li:last-child {
-  border-bottom: 0;
-}
-
-.auto-list li > span:nth-child(2) {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.auto-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-}
-
-.auto-locked .auto-icon {
-  background: var(--surface-2);
-  color: var(--muted);
-}
 
 .switch {
   position: relative;
@@ -5773,19 +5774,6 @@ circle.trend-views {
   align-items: center;
   gap: 6px;
   font-weight: 650;
-}
-
-.auto-usage {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-
-.auto-usage > div:first-child {
-  display: grid;
-  gap: 2px;
 }
 
 /* ---------------------------------------------------------------- Admin → Customer WhatsApp (AdminCustomerWa.tsx) */
@@ -6292,4 +6280,46 @@ circle.trend-views {
 .j-typed-text {
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+/* Admin → Shops → Draft message (AdminDrafts.tsx) */
+.draft-form {
+  display: grid;
+  gap: 14px;
+}
+.draft-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.draft-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.draft-templates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.draft-templates li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.draft-templates li:last-child {
+  border-bottom: 0;
+}
+.draft-templates p {
+  margin: 4px 0 0;
+}
+.shop-draft-btn {
+  margin-top: 6px;
+  width: fit-content;
 }

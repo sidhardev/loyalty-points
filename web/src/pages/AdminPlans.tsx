@@ -22,30 +22,30 @@ import { EmptyState, ErrorText, Sheet, Skeleton, toast, useAction } from '../ui'
 import type { AdminApi } from './AdminSeo';
 import { Sub } from './AdminSub';
 
-// Admin → Plans: everything about Free and Founding Shop in one place. The offer (on sale or not, places, prices, the
-// Free plan's customer limit, grace days), the money, every Founding Shop with its state, every payment with a refund
+// Admin → Plans: everything about Free and Pro in one place. The offer (prices by the month, year and lifetime, whether
+// lifetime is on sale and its places, the Free plan's customer limit), the money, every Pro shop with its state, every payment with a refund
 // button (through Razorpay), and Free shops close to their limit with a WhatsApp nudge. Below that, watching the payments:
 // whether Razorpay is live and its webhooks arrive, how checkouts end, yearly plans due for renewal, each payment's story
 // and a "check with Razorpay" for one that didn't switch the plan on.
 
-type Settings = { salesOpen: boolean; seats: number; lifetimePaise: number; yearlyPaise: number; freeCustomers: number; graceDays: number };
+type Settings = { salesOpen: boolean; seats: number; monthlyPaise: number; yearlyPaise: number; lifetimePaise: number; freeCustomers: number };
 type FoundingShop = {
   id: number;
   name: string;
   phone: string | null;
-  plan: 'lifetime' | 'yearly';
+  plan: 'lifetime' | 'yearly' | 'monthly';
   plan_expires_at: string | null;
   founding_no: number | null;
   since: string | null;
   paid: number;
   customers: number;
-  state: 'lifetime' | 'active' | 'grace' | 'lapsed';
+  state: 'lifetime' | 'active' | 'lapsed';
 };
 type Payment = {
   id: number;
   shopId: number;
   name: string;
-  kind: 'lifetime' | 'yearly';
+  kind: 'lifetime' | 'yearly' | 'monthly';
   amount_paise: number;
   status: 'created' | 'paid' | 'failed' | 'refunded';
   phone: string | null;
@@ -61,7 +61,7 @@ type Overview = {
   settings: Settings;
   seats: { total: number; left: number; taken: number };
   money: { paid: number; month: number; refunded: number; abandoned: number; failed: number };
-  founding: FoundingShop[];
+  pro: FoundingShop[];
   payments: Payment[];
   nearLimit: { id: number; name: string; phone: string | null; customers: number }[];
   razorpay: { keyId: string; test: boolean; webhook: boolean };
@@ -75,8 +75,7 @@ type SyncAnswer = { result: { attempts?: number; captured?: boolean; authorized?
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const STATE: Record<FoundingShop['state'], { label: string; tone: string }> = {
   lifetime: { label: 'Lifetime', tone: 'ok' },
-  active: { label: 'Yearly', tone: 'ok' },
-  grace: { label: 'Ran out · grace', tone: 'wait' },
+  active: { label: 'Paid up', tone: 'ok' },
   lapsed: { label: 'Ran out', tone: 'bad' },
 };
 const PAY_STATUS: Record<Payment['status'], { label: string; tone: string }> = {
@@ -104,7 +103,13 @@ const daysLeft = (sqlTime: string) => Math.ceil((Date.parse(`${sqlTime.replace('
 
 /** The offer's numbers, edited in rupees and saved together. */
 function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Partial<Settings>) => void; busy: boolean }) {
-  const toForm = (x: Settings) => ({ seats: String(x.seats), lifetime: String(x.lifetimePaise / 100), yearly: String(x.yearlyPaise / 100), free: String(x.freeCustomers), grace: String(x.graceDays) });
+  const toForm = (x: Settings) => ({
+    seats: String(x.seats),
+    monthly: String(x.monthlyPaise / 100),
+    yearly: String(x.yearlyPaise / 100),
+    lifetime: String(x.lifetimePaise / 100),
+    free: String(x.freeCustomers),
+  });
   const [f, setF] = useState(toForm(s));
   useEffect(() => setF(toForm(s)), [s]);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -113,10 +118,10 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
     e.preventDefault();
     onSave({
       seats: Number(f.seats),
-      lifetimePaise: Math.round(Number(f.lifetime) * 100),
+      monthlyPaise: Math.round(Number(f.monthly) * 100),
       yearlyPaise: Math.round(Number(f.yearly) * 100),
+      lifetimePaise: Math.round(Number(f.lifetime) * 100),
       freeCustomers: Number(f.free),
-      graceDays: Number(f.grace),
     });
   };
   return (
@@ -128,16 +133,16 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
       </div>
       <div className="cw-live-row">
         <div>
-          <strong>{s.salesOpen ? 'Founding Shop is on sale' : 'Founding Shop is not on sale'}</strong>
+          <strong>{s.salesOpen ? 'Lifetime is on sale' : 'Lifetime is not on sale'}</strong>
           <span className="muted small">
-            {s.salesOpen ? 'New shops can buy it from the Plan page and the homepage.' : 'New shops see “Not on sale right now”. Yearly shops can still renew.'}
+            {s.salesOpen ? 'Shops can pay once for Pro for life, until the places run out.' : 'Lifetime is hidden. Monthly and yearly can always be bought.'}
           </span>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={s.salesOpen}
-          aria-label="Founding Shop on sale"
+          aria-label="Lifetime on sale"
           className={`switch ${s.salesOpen ? 'on' : ''}`}
           disabled={busy}
           onClick={() => onSave({ salesOpen: !s.salesOpen })}
@@ -145,24 +150,24 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
       </div>
       <form className="plans-form" onSubmit={save}>
         <label>
-          Lifetime price (₹)
-          <input type="number" min="1" step="1" value={f.lifetime} onChange={set('lifetime')} required />
+          Monthly price (₹)
+          <input type="number" min="1" step="1" value={f.monthly} onChange={set('monthly')} required />
         </label>
         <label>
           Yearly price (₹)
           <input type="number" min="1" step="1" value={f.yearly} onChange={set('yearly')} required />
         </label>
         <label>
-          Founding places
+          Lifetime price (₹)
+          <input type="number" min="1" step="1" value={f.lifetime} onChange={set('lifetime')} required />
+        </label>
+        <label>
+          Lifetime places
           <input type="number" min="0" step="1" value={f.seats} onChange={set('seats')} required />
         </label>
         <label>
           Free plan: customers
           <input type="number" min="1" step="1" value={f.free} onChange={set('free')} required />
-        </label>
-        <label>
-          Grace days after a year runs out
-          <input type="number" min="0" max="365" step="1" value={f.grace} onChange={set('grace')} required />
         </label>
         <div className="plans-form-save">
           <button className="btn btn-primary" disabled={busy || !changed}>
@@ -210,8 +215,8 @@ export function PlansPage({ api }: { api: AdminApi }) {
     });
   const extend = (shop: FoundingShop) =>
     void run(async () => {
-      setData(await api<Overview>(`plans/shops/${shop.id}/extend`, 'POST'));
-      toast(`${shop.name}: one more year`);
+      setData(await api<Overview>(`plans/shops/${shop.id}/extend`, 'POST', { kind: shop.plan === 'monthly' ? 'monthly' : 'yearly' }));
+      toast(`${shop.name}: one more ${shop.plan === 'monthly' ? 'month' : 'year'}`);
     });
   const refund = () =>
     void run(async () => {
@@ -264,20 +269,20 @@ export function PlansPage({ api }: { api: AdminApi }) {
     { ok: h.verifyFailed || h.mismatched ? false : true, label: 'Checks that failed, 7 days', text: h.verifyFailed || h.mismatched ? `${num(h.verifyFailed)} checkout answers, ${num(h.mismatched)} wrong amounts` : 'None' },
   ];
   const pct = (n: number) => (f.started ? `${Math.round((n / f.started) * 100)}%` : '–');
-  const renewals = data.founding
-    .filter((s) => s.plan === 'yearly' && s.plan_expires_at && (s.state !== 'active' || daysLeft(s.plan_expires_at) <= 30))
+  const renewals = data.pro
+    .filter((s) => s.plan !== 'lifetime' && s.plan_expires_at && (s.state !== 'active' || daysLeft(s.plan_expires_at) <= (s.plan === 'monthly' ? 5 : 30)))
     .sort((a, b) => (a.plan_expires_at ?? '').localeCompare(b.plan_expires_at ?? ''));
   const renewNudge = (s: FoundingShop) =>
-    `Namaste! 🙏 Regularhood Founding Shop ka aapka saal ${s.plan_expires_at ? day(s.plan_expires_at) : ''} ko ${s.state === 'active' ? 'khatam ho raha hai' : 'khatam ho gaya'}. ${inr(data.settings.yearlyPaise)} mein ek saal aur: app mein Settings → Your plan → Renew. Aapke ${num(s.customers)} customers ka sab data waisa hi rahega.`;
+    `Namaste! Regularhood Pro aapka ${s.plan_expires_at ? day(s.plan_expires_at) : ''} ko ${s.state === 'active' ? 'khatam ho raha hai' : 'khatam ho gaya'}. ${inr(data.settings.monthlyPaise)} mein ek mahina ya ${inr(data.settings.yearlyPaise)} mein ek saal aur: app mein Settings → Your plan. Aapke ${num(s.customers)} customers ka sab data waisa hi rahega.`;
   const retryNudge = (p: Payment) =>
-    `Namaste! 🙏 Regularhood Founding Shop ka payment poora nahi hua${p.failure_reason ? ` (${p.failure_reason})` : ''}. Koi dikkat ho to batayiye, ya app mein Settings → Your plan se dobara try kar sakte hain.`;
+    `Namaste! Regularhood Pro ka payment poora nahi hua${p.failure_reason ? ` (${p.failure_reason})` : ''}. Koi dikkat ho to batayiye, ya app mein Settings → Your plan se dobara try kar sakte hain.`;
 
-  const lifetime = data.founding.filter((s) => s.plan === 'lifetime').length;
-  const yearly = data.founding.filter((s) => s.plan === 'yearly');
-  const expiring = yearly.filter((s) => s.plan_expires_at && daysLeft(s.plan_expires_at) <= 30 && daysLeft(s.plan_expires_at) > 0).length;
+  const lifetime = data.pro.filter((s) => s.plan === 'lifetime').length;
+  const timed = data.pro.filter((s) => s.plan !== 'lifetime' && s.state === 'active');
+  const expiring = timed.filter((s) => s.plan_expires_at && daysLeft(s.plan_expires_at) <= 30 && daysLeft(s.plan_expires_at) > 0).length;
   const payments = data.payments.filter((p) => filter === 'all' || p.status === filter);
   const nudge = (customers: number) =>
-    `Namaste! 🙏 Regularhood par aapke ${customers} customers ho gaye hain, badhai ho! Free plan mein ${data.settings.freeCustomers} customers tak hote hain. Founding Shop (${inr(data.settings.lifetimePaise)} ek baar, ya ${inr(data.settings.yearlyPaise)} saal ka) mein unlimited customers, unhe WhatsApp apne aap, aur Google reviews milte hain. App mein Settings → Your plan dekhiye.`;
+    `Namaste! Regularhood par aapke ${customers} customers ho gaye hain, badhai ho! Free plan mein ${data.settings.freeCustomers} customers tak hote hain. Pro (${inr(data.settings.monthlyPaise)}/mahina ya ${inr(data.settings.yearlyPaise)}/saal) mein unlimited customers, jo customers aana band kar dein unki list, Google reviews, card pe aapka logo aur Excel download milta hai. App mein Settings → Your plan dekhiye.`;
 
   return (
     <>
@@ -287,7 +292,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
             Plans & payments{' '}
             <span className={`cw-live ${data.razorpay.test ? '' : 'on'}`}>{data.razorpay.keyId ? (data.razorpay.test ? 'Razorpay test mode' : 'Razorpay live') : 'Razorpay not set up'}</span>
           </h1>
-          <p>The Founding Shop offer, every paying shop and every payment.</p>
+          <p>The Pro offer, every paying shop and every payment.</p>
         </div>
       </header>
       <ErrorText text={error} />
@@ -301,7 +306,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
       <section className="stats">
         <div className="stat">
           <span className="stat-label">
-            <Crown size={16} /> Founding places
+            <Crown size={16} /> Lifetime places
           </span>
           <strong>
             {num(data.seats.taken)} / {num(data.seats.total)}
@@ -319,9 +324,9 @@ export function PlansPage({ api }: { api: AdminApi }) {
           <span className="stat-label">
             <Users size={16} /> Paying shops
           </span>
-          <strong>{num(data.founding.length)}</strong>
+          <strong>{num(lifetime + timed.length)}</strong>
           <em>
-            {num(lifetime)} lifetime · {num(yearly.length)} yearly{expiring ? ` · ${num(expiring)} end within 30 days` : ''}
+            {num(lifetime)} lifetime · {num(timed.filter((s) => s.plan === 'yearly').length)} yearly · {num(timed.filter((s) => s.plan === 'monthly').length)} monthly{expiring ? ` · ${num(expiring)} end within 30 days` : ''}
           </em>
         </div>
         <div className="stat">
@@ -401,7 +406,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
               <h2>
                 <CalendarClock size={18} /> Renewals
               </h2>
-              <span className="muted small">Yearly plans ending within 30 days, in grace or ended</span>
+              <span className="muted small">Monthly plans ending within 5 days, yearly within 30, and ones that ended</span>
             </div>
             <ul className="rows">
               {renewals.map((s) => (
@@ -475,11 +480,11 @@ export function PlansPage({ api }: { api: AdminApi }) {
         <section className="card">
           <div className="card-head">
             <h2>
-              <Crown size={18} /> Founding Shops
+              <Crown size={18} /> Pro shops
             </h2>
             <span className="muted small">Change a plan by hand (paid by UPI, a mistake) from the shop’s page</span>
           </div>
-          {data.founding.length ? (
+          {data.pro.length ? (
             <div className="table-wrap">
               <table className="admin-table">
                 <thead>
@@ -495,7 +500,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.founding.map((s) => (
+                  {data.pro.map((s) => (
                     <tr key={s.id}>
                       <td>{s.founding_no ?? '–'}</td>
                       <td>
@@ -504,7 +509,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
                         </a>
                       </td>
                       <td>
-                        <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{STATE[s.state].label}</span>
+                        <span className={`cw-chip cw-chip-${STATE[s.state].tone}`}>{s.state === 'active' ? s.plan : STATE[s.state].label}</span>
                       </td>
                       <td className="small">{s.since ? day(s.since) : 'by hand'}</td>
                       <td className="small">
@@ -513,9 +518,9 @@ export function PlansPage({ api }: { api: AdminApi }) {
                       <td className="num">{num(s.customers)}</td>
                       <td className="num">{inr(s.paid)}</td>
                       <td>
-                        {s.plan === 'yearly' && (
-                          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => extend(s)} title="Add one year, free">
-                            <CalendarPlus size={15} /> +1 year
+                        {s.plan !== 'lifetime' && (
+                          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => extend(s)} title={`Add one ${s.plan === 'monthly' ? 'month' : 'year'}, free`}>
+                            <CalendarPlus size={15} /> +1 {s.plan === 'monthly' ? 'month' : 'year'}
                           </button>
                         )}
                       </td>
@@ -525,7 +530,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
               </table>
             </div>
           ) : (
-            <EmptyState icon={Crown} title="No Founding Shops yet" text="They show here as soon as a shop pays." />
+            <EmptyState icon={Crown} title="No Pro shops yet" text="They show here as soon as a shop pays." />
           )}
         </section>
       </Sub>

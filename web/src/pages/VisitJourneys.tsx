@@ -321,7 +321,7 @@ export function Journeys({ views, allViews, events, shops, onOpen }: { views: Pa
 
 /** What one event says in the timeline. */
 function describe(e: PageEvent): { icon: ReactNode; text: ReactNode; sub?: string; tone?: string } | null {
-  if (e.kind === 'signup') return { icon: <Rocket size={15} />, text: <strong>Signed up as a shop</strong>, tone: 'ok' };
+  if (e.kind === 'signup') return { icon: <Rocket size={15} />, text: <strong>Signed up as a shop{e.name === 'shop-google' ? ' with Google' : ''}</strong>, tone: 'ok' };
   if (e.kind === 'section') return { icon: <Eye size={15} />, text: <>Scrolled to <strong>{sectionLabel(e.name)}</strong></> };
   if (e.kind === 'scroll') return { icon: <ArrowDownToLine size={15} />, text: <>Scrolled {e.name} down the page</>, tone: 'quiet' };
   if (e.kind === 'form') return { icon: <Keyboard size={15} />, text: <>Started filling <strong>{e.name}</strong></>, tone: 'warm' };

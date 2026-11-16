@@ -13,8 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard, MerchantId } from './auth';
-import { AutoMessages } from './automessages';
 import { Db } from './db';
+import { requirePro } from './plans';
 import { LoyaltyService, cleanPhone, tzShift, type CustomerRow } from './loyalty.service';
 import { ACTIVE_DAYS, ACTIVE_VISITS, rewardsFor, UPI_AMOUNT, UPI_EVERY } from './referrals';
 
@@ -37,7 +37,6 @@ export class LoyaltyController {
   constructor(
     private readonly db: Db,
     private readonly loyalty: LoyaltyService,
-    private readonly auto: AutoMessages,
   ) {}
 
   // ---- the counter ----
@@ -55,17 +54,14 @@ export class LoyaltyController {
       .get(merchantId, shift, shift);
   }
 
-  /** `auto`: the WhatsApp message Regularhood is sending the customer by itself (Founding Shop), if any. */
   @Post('visits')
   addVisit(@MerchantId() merchantId: number, @Body() body: { phone?: string; tz?: number }) {
-    const result = this.loyalty.addVisit(merchantId, body?.phone, body?.tz);
-    return { ...result, auto: this.auto.afterVisit(merchantId, result.customer.id, result.already) };
+    return this.loyalty.addVisit(merchantId, body?.phone, body?.tz);
   }
 
   @Post('customers/:id/reward')
   giveReward(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number) {
-    const result = this.loyalty.giveReward(merchantId, id);
-    return { ...result, auto: this.auto.afterReward(merchantId, id) };
+    return this.loyalty.giveReward(merchantId, id);
   }
 
   @Post('transactions/:id/undo')
@@ -93,7 +89,7 @@ export class LoyaltyController {
     };
   }
 
-  // ---- activity log and exports ----
+  // ---- activity log and exports (exports are Pro) ----
 
   @Get('activity')
   activity(@MerchantId() merchantId: number, @Query('limit') limitParam = '200') {
@@ -107,6 +103,7 @@ export class LoyaltyController {
   @Header('content-type', 'text/csv; charset=utf-8')
   @Header('content-disposition', 'attachment; filename="customers.csv"')
   exportCustomers(@MerchantId() merchantId: number) {
+    requirePro(this.loyalty.merchant(merchantId), 'export');
     const rows = this.db.sql
       .prepare(
         `SELECT c.*, (SELECT COUNT(*) FROM transactions t WHERE t.customer_id = c.id AND t.type = 'earn' AND t.reversed = 0) AS visits,
@@ -125,6 +122,7 @@ export class LoyaltyController {
   @Header('content-type', 'text/csv; charset=utf-8')
   @Header('content-disposition', 'attachment; filename="history.csv"')
   exportTransactions(@MerchantId() merchantId: number) {
+    requirePro(this.loyalty.merchant(merchantId), 'export');
     const rows = this.db.sql
       .prepare(
         `SELECT t.created_at, c.phone, c.name, t.type, t.note, t.reversed
@@ -147,10 +145,11 @@ export class LoyaltyController {
     return this.loyalty.suggest(merchantId, digits);
   }
 
-  /** `filter=inactive`: not seen for the shop's inactive period. `filter=reward`: a reward is waiting. */
+  /** `filter=inactive`: not seen for the shop's inactive period (Pro: the win-back list). `filter=reward`: a reward is waiting. */
   @Get('customers')
   customers(@MerchantId() merchantId: number, @Query('q') q = '', @Query('filter') filter = '') {
     const m = this.loyalty.merchant(merchantId);
+    if (filter === 'inactive') requirePro(m, 'winback');
     const rows = this.db.sql
       .prepare(
         `SELECT * FROM customers
