@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   ServiceUnavailableException,
   UseGuards,
@@ -21,11 +22,26 @@ import { AdminGuard, AdminId } from './admin';
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
-import { customerLimit, effectivePlan, planSettings, prices, savePlanSettings, seatsLeft, seatsTaken, type PaidKind, type PlanSettings } from './plans';
+import {
+  currencyFor,
+  customerLimit,
+  effectivePlan,
+  money,
+  planSettings,
+  prices,
+  savePlanSettings,
+  seatsLeft,
+  seatsTaken,
+  usdToInr,
+  type Currency,
+  type PaidKind,
+  type PlanSettings,
+} from './plans';
 
 // Pro payments through Razorpay Standard Checkout: the shop's page asks for an order, Razorpay's checkout takes the
-// money (UPI first), and the plan is switched on from either the checkout's signed answer (/verify) or Razorpay's
-// webhook, whichever arrives first. All are one-time payments: a month or a year is renewed by paying again.
+// money (UPI first in India; card or PayPal in US dollars everywhere else, see currencyFor), and the plan is switched on
+// from either the checkout's signed answer (/verify) or Razorpay's webhook, whichever arrives first. All are one-time
+// payments: a month or a year is renewed by paying again.
 // Kept on its own so other payment providers can be added next to it.
 //
 // Every step is kept in payment_events so Admin → Plans can show a payment's whole story, spot a webhook that stopped
@@ -58,7 +74,8 @@ type PaymentRow = {
   id: number;
   merchant_id: number;
   kind: Kind;
-  amount_paise: number;
+  amount_paise: number; // in the smallest unit of `currency`
+  currency: Currency;
   razorpay_order_id: string;
   razorpay_payment_id: string | null;
   status: string; // created | paid | failed | refunded
@@ -103,9 +120,10 @@ export class Billing {
     private readonly loyalty: LoyaltyService,
   ) {}
 
-  /** What the shop's Plan page shows. */
-  status(merchantId: number) {
+  /** What the shop's Plan page shows. `tz`: the browser's time zone, for a shop without a WhatsApp number. */
+  status(merchantId: number, tz?: string) {
     const m = this.loyalty.merchant(merchantId);
+    const currency = currencyFor(m, tz);
     return {
       plan: effectivePlan(m),
       paidPlan: m.plan, // 'monthly' or 'yearly' even after it ran out, so the page can offer a renewal
@@ -114,14 +132,15 @@ export class Billing {
       customers: this.loyalty.customerCount(merchantId),
       limit: customerLimit(this.db.sql, m),
       seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) }, // lifetime places
-      prices: prices(this.db.sql),
+      currency,
+      prices: prices(this.db.sql, currency),
       open: planSettings(this.db.sql).salesOpen, // false: lifetime isn't on sale (monthly and yearly always are)
       keyId: keyId(),
     };
   }
 
   /** A Razorpay order for this shop. Lifetime needs sales open and a place left; a month or a year can always be bought. */
-  async order(merchantId: number, kindInput: unknown) {
+  async order(merchantId: number, kindInput: unknown, tz?: string) {
     const kind = KINDS.includes(String(kindInput)) ? (kindInput as Kind) : null;
     if (!kind) throw new BadRequestException('Pick monthly, yearly or lifetime');
     if (!keyId() || !keySecret()) throw new ServiceUnavailableException('Payments are not set up yet. Please try again later.');
@@ -131,19 +150,21 @@ export class Billing {
     if (kind === 'lifetime' && seatsLeft(this.db.sql) === 0) throw new ConflictException('All lifetime places are taken');
     const renewing = effectivePlan(m) === 'monthly' || effectivePlan(m) === 'yearly';
 
-    const amount = prices(this.db.sql)[kind];
+    const currency = currencyFor(m, tz);
+    const amount = prices(this.db.sql, currency)[kind];
+    const inrPaise = currency === 'USD' ? Math.round(amount * usdToInr(this.db.sql)) : amount;
     const body = await razorpay<{ id?: string }>('orders', {
       amount,
-      currency: 'INR',
+      currency,
       receipt: `shop-${merchantId}-${Date.now()}`,
       notes: { merchant_id: String(merchantId), kind },
     });
     if (!body.id) throw new ServiceUnavailableException('Razorpay could not start the payment');
     const { lastInsertRowid } = this.db.sql
-      .prepare('INSERT INTO payments (merchant_id, kind, amount_paise, razorpay_order_id) VALUES (?, ?, ?, ?)')
-      .run(merchantId, kind, amount, body.id);
-    this.event(Number(lastInsertRowid), merchantId, 'order', `${kind}, ₹${amount / 100}${renewing ? ', renewal' : ''}`);
-    return { orderId: body.id, amount, keyId: keyId(), shop: m.name, phone: m.phone ?? '', email: m.email ?? '' };
+      .prepare('INSERT INTO payments (merchant_id, kind, amount_paise, currency, inr_paise, razorpay_order_id) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(merchantId, kind, amount, currency, inrPaise, body.id);
+    this.event(Number(lastInsertRowid), merchantId, 'order', `${kind}, ${money(amount, currency)}${renewing ? ', renewal' : ''}`);
+    return { orderId: body.id, amount, currency, keyId: keyId(), shop: m.name, phone: m.phone ?? '', email: m.email ?? '' };
   }
 
   /** The checkout's answer, signed with our key secret. */
@@ -190,9 +211,9 @@ export class Billing {
       return 'ok';
     }
     if (payload.event !== 'payment.captured' && payload.event !== 'order.paid') return 'ok';
-    if (pay.amount !== p.amount_paise) {
-      console.error(`Razorpay paid ${pay.amount} for order ${p.razorpay_order_id}, expected ${p.amount_paise}`);
-      this.event(p.id, p.merchant_id, 'amount_mismatch', `paid ₹${(pay.amount ?? 0) / 100}, expected ₹${p.amount_paise / 100}`);
+    if (pay.amount !== p.amount_paise || (pay.currency && pay.currency !== p.currency)) {
+      console.error(`Razorpay paid ${pay.amount} ${pay.currency} for order ${p.razorpay_order_id}, expected ${p.amount_paise} ${p.currency}`);
+      this.event(p.id, p.merchant_id, 'amount_mismatch', `paid ${money(pay.amount ?? 0, pay.currency ?? p.currency)}, expected ${money(p.amount_paise, p.currency)}`);
       return 'ok';
     }
     this.activate(p, pay.id, 'webhook');
@@ -255,11 +276,11 @@ export class Billing {
       if (p.kind === 'lifetime') {
         const no = m.founding_no ?? ((this.db.sql.prepare('SELECT MAX(founding_no) AS n FROM merchants').get() as { n: number | null }).n ?? 0) + 1;
         this.db.sql.prepare("UPDATE merchants SET plan = 'lifetime', plan_expires_at = NULL, founding_no = ? WHERE id = ?").run(no, m.id);
-        this.loyalty.log(m.id, 'shop', 'plan', `Pro for life, Founding Shop #${no} (₹${p.amount_paise / 100})`);
+        this.loyalty.log(m.id, 'shop', 'plan', `Pro for life, Founding Shop #${no} (${money(p.amount_paise, p.currency)})`);
         this.event(p.id, m.id, 'activated', `lifetime, Founding Shop #${no}, by the ${from}`);
       } else {
         const to = this.addTime(m, p.kind);
-        this.loyalty.log(m.id, 'shop', 'plan', `Pro for ${LABEL[p.kind]} (₹${p.amount_paise / 100}), until ${to.slice(0, 10)}`);
+        this.loyalty.log(m.id, 'shop', 'plan', `Pro for ${LABEL[p.kind]} (${money(p.amount_paise, p.currency)}), until ${to.slice(0, 10)}`);
         this.event(p.id, m.id, 'activated', `${p.kind}, until ${to.slice(0, 10)}, by the ${from}`);
       }
     });
@@ -290,7 +311,7 @@ export class Billing {
     this.db.transaction(() => {
       this.db.sql.prepare("UPDATE payments SET status = 'refunded', razorpay_refund_id = ?, refunded_at = datetime('now') WHERE id = ?").run(r.id ?? null, p.id);
       if (toFree) this.db.sql.prepare("UPDATE merchants SET plan = 'free', plan_expires_at = NULL WHERE id = ?").run(p.merchant_id);
-      this.loyalty.log(p.merchant_id, 'admin', 'plan', `Support refunded ₹${p.amount_paise / 100}${toFree ? ' and moved the shop to the Free plan' : ''}`);
+      this.loyalty.log(p.merchant_id, 'admin', 'plan', `Support refunded ${money(p.amount_paise, p.currency)}${toFree ? ' and moved the shop to the Free plan' : ''}`);
       this.event(p.id, p.merchant_id, 'refunded', `${r.id ?? 'refund'}${toFree ? ', shop moved to Free' : ''}`);
     });
     return p;
@@ -306,7 +327,7 @@ const sqlNow = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 type RazorpayPayment = { id: string; status: string; amount: number; method?: string; error_description?: string };
 type WebhookPayload = {
   event?: string;
-  payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number; method?: string; error_description?: string } } };
+  payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number; currency?: string; method?: string; error_description?: string } } };
 };
 
 @Controller('api/billing')
@@ -315,14 +336,14 @@ export class BillingController {
 
   @Get()
   @UseGuards(AuthGuard)
-  status(@MerchantId() merchantId: number) {
-    return this.billing.status(merchantId);
+  status(@MerchantId() merchantId: number, @Query('tz') tz?: string) {
+    return this.billing.status(merchantId, tz);
   }
 
   @Post('order')
   @UseGuards(AuthGuard)
-  order(@MerchantId() merchantId: number, @Body() body: { kind?: string }) {
-    return this.billing.order(merchantId, body?.kind);
+  order(@MerchantId() merchantId: number, @Body() body: { kind?: string; tz?: string }) {
+    return this.billing.order(merchantId, body?.kind, typeof body?.tz === 'string' ? body.tz : undefined);
   }
 
   @Post('verify')
@@ -366,9 +387,10 @@ export class BillingAdminController {
     const settings = planSettings(sql);
     const money = sql
       .prepare(
-        `SELECT COALESCE(SUM(amount_paise) FILTER (WHERE status = 'paid'), 0) AS paid,
-           COALESCE(SUM(amount_paise) FILTER (WHERE status = 'paid' AND paid_at >= date('now', 'start of month')), 0) AS month,
-           COALESCE(SUM(amount_paise) FILTER (WHERE status = 'refunded'), 0) AS refunded,
+        `SELECT COALESCE(SUM(inr_paise) FILTER (WHERE status = 'paid'), 0) AS paid,
+           COALESCE(SUM(inr_paise) FILTER (WHERE status = 'paid' AND paid_at >= date('now', 'start of month')), 0) AS month,
+           COALESCE(SUM(inr_paise) FILTER (WHERE status = 'refunded'), 0) AS refunded,
+           COALESCE(SUM(amount_paise) FILTER (WHERE status = 'paid' AND currency = 'USD'), 0) AS paidUsdCents,
            COUNT(*) FILTER (WHERE status = 'created' AND created_at < datetime('now', '-1 hour')) AS abandoned,
            COUNT(*) FILTER (WHERE status = 'failed') AS failed
          FROM payments`,
@@ -378,7 +400,7 @@ export class BillingAdminController {
       .prepare(
         `SELECT m.id, m.name, m.phone, m.plan, m.plan_expires_at, m.founding_no,
            (SELECT MIN(paid_at) FROM payments p WHERE p.merchant_id = m.id AND p.status = 'paid') AS since,
-           (SELECT COALESCE(SUM(amount_paise), 0) FROM payments p WHERE p.merchant_id = m.id AND p.status = 'paid') AS paid,
+           (SELECT COALESCE(SUM(inr_paise), 0) FROM payments p WHERE p.merchant_id = m.id AND p.status = 'paid') AS paid,
            (SELECT COUNT(*) FROM customers c WHERE c.merchant_id = m.id) AS customers
          FROM merchants m WHERE m.plan IN ('lifetime', 'yearly', 'monthly') ORDER BY m.plan = 'lifetime' DESC, m.plan_expires_at DESC`,
       )
@@ -387,7 +409,7 @@ export class BillingAdminController {
     const pro = shops.map((m) => ({ ...m, state: m.plan === 'lifetime' ? 'lifetime' : effectivePlan(m) === 'free' ? 'lapsed' : 'active' }));
     const payments = sql
       .prepare(
-        `SELECT p.id, p.merchant_id AS shopId, m.name, m.phone, p.kind, p.amount_paise, p.status, p.razorpay_order_id, p.razorpay_payment_id,
+        `SELECT p.id, p.merchant_id AS shopId, m.name, m.phone, p.kind, p.amount_paise, p.currency, p.inr_paise, p.status, p.razorpay_order_id, p.razorpay_payment_id,
            p.razorpay_refund_id, p.failure_reason, p.created_at, p.paid_at, p.refunded_at
          FROM payments p JOIN merchants m ON m.id = p.merchant_id ORDER BY p.id DESC LIMIT 300`,
       )
@@ -410,7 +432,7 @@ export class BillingAdminController {
       // Money in per month (IST), the last 12 months, split by plan.
       monthly: sql
         .prepare(
-          `SELECT strftime('%Y-%m', paid_at, '+330 minutes') AS month, kind, SUM(amount_paise) AS paise, COUNT(*) AS n FROM payments
+          `SELECT strftime('%Y-%m', paid_at, '+330 minutes') AS month, kind, SUM(inr_paise) AS paise, COUNT(*) AS n FROM payments
            WHERE status = 'paid' AND paid_at >= datetime('now', 'start of month', '-11 months') GROUP BY month, kind ORDER BY month`,
         )
         .all(),
@@ -479,9 +501,12 @@ export class BillingAdminController {
       monthlyPaise: 'monthly ₹',
       yearlyPaise: 'yearly ₹',
       lifetimePaise: 'lifetime ₹',
+      usdMonthlyCents: 'monthly $',
+      usdYearlyCents: 'yearly $',
+      usdLifetimeCents: 'lifetime $',
       freeCustomers: 'free customers',
     };
-    const show = (k: keyof PlanSettings, v: number | boolean) => (k.endsWith('Paise') ? Number(v) / 100 : v);
+    const show = (k: keyof PlanSettings, v: number | boolean) => (k.endsWith('Paise') || k.endsWith('Cents') ? Number(v) / 100 : v);
     const changes = (Object.keys(after) as (keyof PlanSettings)[]).filter((k) => before[k] !== after[k]).map((k) => `${label[k]} ${show(k, before[k])} → ${show(k, after[k])}`);
     if (changes.length) this.audit(adminId, null, 'plans', `Plans: ${changes.join(', ')}`);
     return this.overview();
@@ -491,7 +516,7 @@ export class BillingAdminController {
   @HttpCode(200)
   async refund(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { toFree?: boolean }) {
     const p = await this.billing.refund(id, body?.toFree !== false);
-    this.audit(adminId, p.merchant_id, 'refund', `Refunded ₹${p.amount_paise / 100} (${p.kind}, ${p.razorpay_payment_id})${body?.toFree !== false ? ', shop moved to Free' : ''}`);
+    this.audit(adminId, p.merchant_id, 'refund', `Refunded ${money(p.amount_paise, p.currency)} (${p.kind}, ${p.razorpay_payment_id})${body?.toFree !== false ? ', shop moved to Free' : ''}`);
     return this.overview();
   }
 

@@ -213,7 +213,7 @@ export class AdminController {
       `SELECT ${ist} AS day, COUNT(DISTINCT merchant_id) AS n FROM transactions WHERE type = 'earn' AND reversed = 0 AND created_at >= ${since} GROUP BY day`,
     );
     const revenue = perDay(
-      `SELECT date(paid_at, '+330 minutes') AS day, SUM(amount_paise) AS n FROM payments WHERE status = 'paid' AND paid_at >= ${since} GROUP BY day`,
+      `SELECT date(paid_at, '+330 minutes') AS day, SUM(inr_paise) AS n FROM payments WHERE status = 'paid' AND paid_at >= ${since} GROUP BY day`,
     );
     const visitors = perDay(`SELECT day, COUNT(DISTINCT vid) AS n FROM page_views WHERE day >= date('now', '-${DAYS} days') GROUP BY day`);
     const today = new Date(Date.now() + 330 * 60_000);
@@ -234,10 +234,10 @@ export class AdminController {
     const money = sql
       .prepare(
         `SELECT
-           COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_paise END), 0) AS allTime,
-           COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= datetime('now', 'start of month') THEN amount_paise END), 0) AS thisMonth,
+           COALESCE(SUM(CASE WHEN status = 'paid' THEN inr_paise END), 0) AS allTime,
+           COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= datetime('now', 'start of month') THEN inr_paise END), 0) AS thisMonth,
            COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= datetime('now', 'start of month', '-1 month')
-             AND paid_at < datetime('now', 'start of month') THEN amount_paise END), 0) AS lastMonth,
+             AND paid_at < datetime('now', 'start of month') THEN inr_paise END), 0) AS lastMonth,
            COUNT(CASE WHEN status = 'paid' THEN 1 END) AS paidCount,
            COUNT(CASE WHEN status = 'refunded' THEN 1 END) AS refunded,
            COUNT(CASE WHEN status = 'created' AND created_at >= datetime('now', '-30 days') THEN 1 END) AS abandoned30
@@ -280,7 +280,7 @@ export class AdminController {
           `SELECT * FROM (
              SELECT 'signup' AS kind, id AS shopId, name AS text, created_at AS at FROM merchants ORDER BY id DESC LIMIT 15)
            UNION ALL SELECT * FROM (
-             SELECT 'payment', p.merchant_id, m.name || ' · ' || p.kind || ' · ₹' || (p.amount_paise / 100), p.paid_at
+             SELECT 'payment', p.merchant_id, m.name || ' · ' || p.kind || ' · ' || (CASE WHEN p.currency = 'USD' THEN '$' ELSE '₹' END) || (p.amount_paise / 100), p.paid_at
              FROM payments p JOIN merchants m ON m.id = p.merchant_id WHERE p.status = 'paid' ORDER BY p.paid_at DESC LIMIT 15)
            UNION ALL SELECT * FROM (
              SELECT 'admin', merchant_id, detail, created_at FROM admin_log ORDER BY id DESC LIMIT 15)
@@ -390,7 +390,7 @@ export class AdminController {
       loyalty,
       notes,
       log,
-      payments: sql.prepare('SELECT id, kind, amount_paise, razorpay_order_id, razorpay_payment_id, status, created_at, paid_at FROM payments WHERE merchant_id = ? ORDER BY id DESC').all(id),
+      payments: sql.prepare('SELECT id, kind, amount_paise, currency, inr_paise, razorpay_order_id, razorpay_payment_id, status, created_at, paid_at FROM payments WHERE merchant_id = ? ORDER BY id DESC').all(id),
     };
   }
 
@@ -421,7 +421,7 @@ export class AdminController {
   payments() {
     const rows = this.db.sql
       .prepare(
-        `SELECT p.id, p.merchant_id AS shopId, m.name, p.kind, p.amount_paise, p.razorpay_order_id, p.razorpay_payment_id, p.status, p.created_at, p.paid_at
+        `SELECT p.id, p.merchant_id AS shopId, m.name, p.kind, p.amount_paise, p.currency, p.inr_paise, p.razorpay_order_id, p.razorpay_payment_id, p.status, p.created_at, p.paid_at
          FROM payments p JOIN merchants m ON m.id = p.merchant_id ORDER BY p.id DESC LIMIT 300`,
       )
       .all();

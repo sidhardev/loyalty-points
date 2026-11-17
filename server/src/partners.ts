@@ -17,7 +17,7 @@ import type { Request } from 'express';
 import { AdminGuard, AdminId } from './admin';
 import { Db, randomToken } from './db';
 import { cleanCode, readPhone } from './growth';
-import { effectivePlan } from './plans';
+import { effectivePlan, money } from './plans';
 
 // Partners bring shops for a commission. Their link is the homepage with ?p=<code> (web/src/main.tsx tags the visit as
 // utm_source=partner), so the shop that signs up from it gets merchants.partner_id; an admin can also give a shop to a
@@ -129,11 +129,11 @@ export function earningsOf(db: Db, partner: PartnerRow): Earning[] {
   // Paid payments in the order they were paid; the rate goes up once more than HIGH_AFTER different shops have paid.
   const payments = db.sql
     .prepare(
-      `SELECT p.id, p.merchant_id, p.kind, p.amount_paise, p.paid_at, m.name, datetime(p.paid_at, '+${HOLD_DAYS} days') AS due_at
+      `SELECT p.id, p.merchant_id, p.kind, p.amount_paise, p.currency, COALESCE(p.inr_paise, p.amount_paise) AS inr_paise, p.paid_at, m.name, datetime(p.paid_at, '+${HOLD_DAYS} days') AS due_at
        FROM payments p JOIN merchants m ON m.id = p.merchant_id
        WHERE m.partner_id = ? AND p.status = 'paid' AND p.paid_at IS NOT NULL ORDER BY p.paid_at, p.id`,
     )
-    .all(partner.id) as { id: number; merchant_id: number; kind: string; amount_paise: number; paid_at: string; name: string; due_at: string }[];
+    .all(partner.id) as { id: number; merchant_id: number; kind: string; amount_paise: number; currency: string; inr_paise: number; paid_at: string; name: string; due_at: string }[];
   const paying = new Set<number>();
   const seen = new Set<number>();
   for (const p of payments) {
@@ -146,8 +146,9 @@ export function earningsOf(db: Db, partner: PartnerRow): Earning[] {
       refId: p.id,
       shopId: p.merchant_id,
       shop: p.name,
-      what: `${rate}% of ₹${p.amount_paise / 100} ${p.kind === 'lifetime' ? 'lifetime' : p.kind === 'monthly' ? 'monthly' : 'yearly'}${renewal ? ' renewal' : ''}`,
-      amount: Math.round((p.amount_paise * rate) / 10_000) * 100, // whole rupees: 20% of ₹1,499 is ₹300
+      what: `${rate}% of ${money(p.amount_paise, p.currency)} ${p.kind === 'lifetime' ? 'lifetime' : p.kind === 'monthly' ? 'monthly' : 'yearly'}${renewal ? ' renewal' : ''}`,
+      // Paid out in whole rupees on UPI: 20% of ₹1,499 is ₹300; a dollar payment counts at its rupee value.
+      amount: Math.round((p.inr_paise * rate) / 10_000) * 100,
       dueAt: p.due_at,
     });
   }

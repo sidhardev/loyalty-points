@@ -33,8 +33,18 @@ export type Customer = {
 export type VisitResult = { already: boolean; isNew: boolean; welcome?: number; visitId: number | null; customer: Customer };
 
 export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
+export type Currency = 'INR' | 'USD';
 
-/** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise. */
+/** The browser's time zone: tells the server a shop without a WhatsApp number is in India. */
+export const timeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch {
+    return '';
+  }
+};
+
+/** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise, or cents for USD. */
 export type Billing = {
   plan: 'free' | 'grandfathered' | PaidKind; // the plan in force now: an ended month or year is 'free'
   paidPlan: string; // what was last bought, even after it ended
@@ -43,6 +53,7 @@ export type Billing = {
   customers: number;
   limit: number | null;
   seats: { total: number; left: number }; // lifetime places
+  currency: Currency; // INR for shops in India (UPI), USD everywhere else (card or PayPal)
   prices: Record<PaidKind, number>;
   open: boolean; // false: lifetime isn't on sale (monthly and yearly always are)
   keyId: string;

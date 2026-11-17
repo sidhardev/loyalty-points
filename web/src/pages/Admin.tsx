@@ -55,6 +55,7 @@ import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
 import { PartnersPage } from './AdminPartners';
+import { WaitlistPage } from './AdminWaitlist';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { DraftSheet, SettingsPage } from './AdminDrafts';
 import { PhusroPage } from './AdminPhusro';
@@ -649,7 +650,7 @@ const planLabel = (s: Pick<Shop, 'plan' | 'activePlan' | 'founding_no' | 'plan_e
   return s.plan === 'yearly' || s.plan === 'monthly' ? `Free (${s.plan} ran out)` : 'Free';
 };
 
-type Payment = { id: number; kind: string; amount_paise: number; razorpay_order_id: string; razorpay_payment_id: string | null; status: string; created_at: string; paid_at: string | null };
+type Payment = { id: number; kind: string; amount_paise: number; currency?: string; inr_paise?: number | null; razorpay_order_id: string; razorpay_payment_id: string | null; status: string; created_at: string; paid_at: string | null };
 
 const FILTERS: { key: '' | Status; label: string }[] = [
   { key: '', label: 'All' },
@@ -772,7 +773,7 @@ function ShopsPage() {
                 Lifetime: {num(billing.seats.total - billing.seats.left)} of {num(billing.seats.total)} places taken
               </span>
               <span>
-                {num(paid.length)} payments · {rupees(paid.reduce((n, p) => n + p.amount_paise, 0) / 100)}
+                {num(paid.length)} payments · {rupees(paid.reduce((n, p) => n + (p.inr_paise ?? p.amount_paise), 0) / 100)}
               </span>
               {paid[0] && (
                 <span>
@@ -1352,7 +1353,7 @@ function ShopPage({ id }: { id: number }) {
                 <strong>Plan: {planLabel(shop)}</strong>
                 <span className="muted small">
                   {data.payments.length
-                    ? data.payments.map((p) => `${p.kind} ₹${num(p.amount_paise / 100)} ${p.status} ${ago(p.paid_at ?? p.created_at)}`).join(' · ')
+                    ? data.payments.map((p) => `${p.kind} ${p.currency === 'USD' ? '$' : '₹'}${num(p.amount_paise / 100)} ${p.status} ${ago(p.paid_at ?? p.created_at)}`).join(' · ')
                     : 'No Razorpay payments. Refunds are made in the Razorpay dashboard, then set the plan here.'}
                 </span>
               </div>
@@ -2068,6 +2069,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
           ['recent', 'Recent views'],
         ],
       },
+      { path: '/waitlist', label: 'UAE waitlist', icon: Globe2 },
       {
         path: '/leads',
         label: 'Leads',
@@ -2301,6 +2303,8 @@ export function AdminApp() {
     <LeadsPage api={adminApi} />
   ) : hash.startsWith('/partners') ? (
     <PartnersPage api={adminApi} />
+  ) : hash.startsWith('/waitlist') ? (
+    <WaitlistPage api={adminApi} />
   ) : hash.startsWith('/playbooks') ? (
     <PlaybooksPage api={adminApi} />
   ) : hash.startsWith('/phusro') ? (

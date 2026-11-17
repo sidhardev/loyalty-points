@@ -736,6 +736,33 @@ const MIGRATIONS: string[] = [
   `
   UPDATE app_settings SET value = json_set(value, '$.freeCustomers', 15) WHERE key = 'plans';
   `,
+  // 42: shops outside India pay in US dollars (plans.ts currencyFor). amount_paise is now in the smallest unit of
+  // `currency` (paise or cents); inr_paise is what the payment is worth in paise, for totals and partner commission
+  // (a dollar payment at Admin → SEO's USD to INR rate on the day it was ordered).
+  `
+  ALTER TABLE payments ADD COLUMN currency TEXT NOT NULL DEFAULT 'INR';
+  ALTER TABLE payments ADD COLUMN inr_paise INTEGER;
+  UPDATE payments SET inr_paise = amount_paise;
+  `,
+  // 43: waitlists for countries Regularhood isn't open in yet (waitlist.ts), starting with the UAE (/uae). `would_pay`
+  // is the shop's own answer to the price question (yes / maybe / no); `source` is the utm_source it came from.
+  `
+  CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    market TEXT NOT NULL,
+    name TEXT NOT NULL,
+    shop TEXT NOT NULL,
+    shop_type TEXT NOT NULL DEFAULT '',
+    area TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL,
+    would_pay TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    contacted_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (market, phone)
+  );
+  `,
 ];
 
 const INDEXES = `

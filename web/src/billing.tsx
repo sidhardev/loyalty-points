@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, ChevronRight, Crown, FileSpreadsheet, Image, Lock, RotateCcw, Star, UserX, Users } from 'lucide-react';
-import { api, LOGGED_OUT, num, type Billing, type Merchant, type PaidKind } from './api';
+import { api, LOGGED_OUT, num, timeZone, type Billing, type Currency, type Merchant, type PaidKind } from './api';
 import { t, useLang } from './i18n';
 import { ErrorText, Sheet, confetti, toast, useAction } from './ui';
 
@@ -22,7 +22,8 @@ function setBilling(b: Billing | null) {
 }
 
 /** Fetches the plan again, e.g. after a new customer or a payment, and updates every screen showing it. */
-export const refreshBilling = () => api<Billing>('billing').then((b) => (setBilling(b), b));
+const billingPath = () => `billing?tz=${encodeURIComponent(timeZone())}`;
+export const refreshBilling = () => api<Billing>(billingPath()).then((b) => (setBilling(b), b));
 
 /** Forgets the last shop's plan, so a new login never shows it. */
 export const clearBilling = () => setBilling(null);
@@ -81,7 +82,7 @@ const OPEN_PLAN = 'lp-open-plan';
 /** Opens the Pro sheet from anywhere in the shop app. */
 export const openPlan = () => dispatchEvent(new Event(OPEN_PLAN));
 
-type Order = { orderId: string; amount: number; keyId: string; shop: string; phone: string; email: string };
+type Order = { orderId: string; amount: number; currency: Currency; keyId: string; shop: string; phone: string; email: string };
 type CheckoutAnswer = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
 type RazorpayCheckout = new (options: object) => { open: () => void; on: (event: string, fn: (r: { error?: { description?: string } }) => void) => void };
 
@@ -97,7 +98,13 @@ function loadCheckout() {
   });
 }
 
-export const price = (paise: number) => `₹${num(paise / 100)}`;
+/** "₹1,499" or "$39": amounts are in paise or cents. */
+export const price = (minor: number, currency: Currency = 'INR') =>
+  currency === 'USD' ? `$${(minor / 100).toFixed(minor % 100 ? 2 : 0)}` : `₹${num(minor / 100)}`;
+
+/** The pay button: UPI in India; card or PayPal for dollars. */
+export const payLabel = (b: Billing, kind: PaidKind) =>
+  b.currency === 'USD' ? t('Pay {price}', { price: price(b.prices[kind], 'USD') }) : t('Pay {price} with UPI', { price: price(b.prices[kind]) });
 
 const DESCRIPTION: Record<PaidKind, string> = { monthly: 'Regularhood Pro · 1 month', yearly: 'Regularhood Pro · 1 year', lifetime: 'Regularhood Pro · lifetime' };
 
@@ -106,7 +113,7 @@ const DESCRIPTION: Record<PaidKind, string> = { monthly: 'Regularhood Pro · 1 m
  * right away, or a few seconds later when only Razorpay's webhook could confirm the payment.
  */
 export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
-  const [Razorpay, order] = await Promise.all([loadCheckout(), api<Order>('billing/order', 'POST', { kind })]);
+  const [Razorpay, order] = await Promise.all([loadCheckout(), api<Order>('billing/order', 'POST', { kind, tz: timeZone() })]);
   const paid = (next: Billing) => {
     setBilling(next);
     onPaid(next);
@@ -116,7 +123,7 @@ export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
       key: order.keyId,
       order_id: order.orderId,
       amount: order.amount,
-      currency: 'INR',
+      currency: order.currency,
       name: 'Regularhood',
       description: DESCRIPTION[kind],
       prefill: { name: order.shop, contact: order.phone, email: order.email },
@@ -133,7 +140,7 @@ export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
           // Paid, but our check failed: Razorpay's webhook will still switch the plan on.
           () => {
             toast(t('Payment received. Your plan will switch on in a few minutes.'));
-            setTimeout(() => void api<Billing>('billing').then(paid), 5000);
+            setTimeout(() => void api<Billing>(billingPath()).then(paid), 5000);
             resolve();
           },
         ),
@@ -158,14 +165,14 @@ export const lifetimeOpen = (b: Billing) => b.plan !== 'lifetime' && b.open && b
 /** The ways to pay, as radio buttons. Lifetime drops out when it isn't on sale or the places are gone. */
 export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; kind: PaidKind; setKind: (k: PaidKind) => void; busy: boolean; notes?: boolean }) {
   useLang();
-  const perMonth = Math.round(b.prices.yearly / 12 / 100);
+  const perMonth = b.currency === 'USD' ? Math.round(b.prices.yearly / 12) : Math.round(b.prices.yearly / 12 / 100) * 100;
   const saving = Math.round((1 - b.prices.yearly / (b.prices.monthly * 12)) * 100);
   const kinds = KINDS.filter((k) => k !== 'lifetime' || lifetimeOpen(b));
   const name: Record<PaidKind, string> = { monthly: t('Monthly'), yearly: t('Yearly'), lifetime: t('Lifetime') };
   const per: Record<PaidKind, string> = { monthly: t('/ month'), yearly: t('/ year'), lifetime: t('once') };
   const note: Record<PaidKind, string> = {
     monthly: t('Try it for a month. Renew when you want.'),
-    yearly: t('About ₹{n} a month.', { n: num(perMonth) }),
+    yearly: t('About {price} a month.', { price: price(perMonth, b.currency) }),
     lifetime: t('Pay once, Pro for good. Only {left} of {total} places.', { left: num(b.seats.left), total: num(b.seats.total) }),
   };
   return (
@@ -178,7 +185,7 @@ export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; ki
             {notes && <span className="plan-option-note">{note[k]}</span>}
           </span>
           <span className="plan-option-price">
-            <strong>{price(b.prices[k])}</strong>
+            <strong>{price(b.prices[k], b.currency)}</strong>
             <span>{per[k]}</span>
           </span>
           {k === 'yearly' && saving > 0 && <span className="plan-best">{t('Save {n}%', { n: saving })}</span>}
@@ -257,7 +264,7 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
       )}
       <ErrorText text={error} />
       <button className="btn btn-primary btn-xl" disabled={busy} onClick={buy}>
-        {busy ? t('Opening payment…') : t('Pay {price} with UPI', { price: price(b.prices[pick]) })}
+        {busy ? t('Opening payment…') : payLabel(b, pick)}
       </button>
       <div className="plan-sheet-foot">
         <span>

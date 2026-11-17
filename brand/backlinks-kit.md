@@ -49,6 +49,7 @@ loyalty program, stamp card, punch card, customer retention, small business, ret
 | Google Search Console | Verified (domain property), 68 pages indexed | https://search.google.com/search-console?resource_id=sc-domain:regularhood.in | Check the Links report as backlinks come in |
 | LinkedIn article | Draft (2026-11-03), guide 'Digital Stamp Card for Shops in India — Free, No App', og.png cover. The paper-vs-digital table is written as a bullet list (LinkedIn articles have no tables) | https://www.linkedin.com/article/edit/7523241010328633344/ | User to approve, then Next → post text → Publish. Don't put this guide on Medium |
 | LinkedIn article | Draft (2026-11-10), guide 'WhatsApp Loyalty Card: Send Customers Their Stamps', og.png cover | https://www.linkedin.com/article/edit/7525777763635548160/ | User to approve, then Next → post text → Publish. Don't put this guide on Medium |
+| LinkedIn article | Draft (2026-11-17), guide 'How to Increase Sales in Your Shop: 8 Ideas That Cost Little', og.png cover | https://www.linkedin.com/article/edit/7528314598366683137/ | User to approve, then Next → post text → Publish. Don't put this guide on Medium |
 
 ## Targets
 

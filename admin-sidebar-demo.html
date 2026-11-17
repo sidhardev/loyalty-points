@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Regularhood Admin · Sidebar demo</title>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f8f6; --surface: #fff; --ink: #0d1f19; --muted: #5b6b65;
+    --line: #e0e9e5; --line-strong: #c9d6d1;
+    --brand: #047857; --brand-fill: #10b981; --brand-soft: #e3f4ec; --on-brand: #fff;
+    --bad: #dc2626; --bad-soft: #fdecec; --gold: #92400e; --gold-soft: #fdf2d0;
+    --blue: #1d4ed8; --blue-soft: #e8efff;
+    --side: #ffffff; --side-hover: #eef4f1;
+    --shadow: 0 1px 2px rgba(13,31,25,.05), 0 10px 30px -14px rgba(13,31,25,.18);
+    --scrim: rgba(8,20,16,.5);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a110e; --surface: #121b18; --ink: #e8f3ee; --muted: #93a69f;
+    --line: #1f2d28; --line-strong: #2e3f38;
+    --brand: #34d399; --brand-fill: #34d399; --brand-soft: #123026; --on-brand: #04261b;
+    --bad: #f87171; --bad-soft: #3a1414; --gold: #fbbf24; --gold-soft: #3a2a0b;
+    --blue: #93b4ff; --blue-soft: #16223f;
+    --side: #0e1714; --side-hover: #16231f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  svg { flex: none; }
+
+  .layout { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; transition: grid-template-columns .2s; }
+  .layout.collapsed { grid-template-columns: 68px 1fr; }
+
+  /* ---------- sidebar */
+  .side { position: sticky; top: 0; height: 100vh; background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
+  .side-top { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; }
+  .logo { width: 32px; height: 32px; border-radius: 9px; background: var(--brand); color: var(--on-brand); display: grid; place-items: center; font-weight: 800; }
+  .brand-name { font-weight: 700; white-space: nowrap; }
+  .brand-name small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+  .search { margin: 0 12px 8px; position: relative; }
+  .search input { width: 100%; padding: 8px 10px 8px 32px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--ink); font: inherit; font-size: 14px; }
+  .search svg { position: absolute; left: 10px; top: 50%; translate: 0 -50%; color: var(--muted); }
+  .search kbd { position: absolute; right: 8px; top: 50%; translate: 0 -50%; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; }
+  .nav { flex: 1; overflow-y: auto; padding: 4px 10px 16px; }
+  .group-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 14px 8px 6px; white-space: nowrap; }
+  .item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; background: none; border-radius: 9px; text-align: left; white-space: nowrap; color: var(--ink); }
+  .item:hover { background: var(--side-hover); }
+  .item.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .item .label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .item .chev { transition: rotate .15s; color: var(--muted); }
+  .item.open .chev { rotate: 90deg; }
+  .badge { background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; border-radius: 99px; padding: 0 7px; line-height: 18px; font-style: normal; }
+  .badge.soft { background: var(--gold-soft); color: var(--gold); }
+  .subs { margin: 2px 0 6px 21px; padding-left: 12px; border-left: 1px solid var(--line); display: none; }
+  .item.open + .subs { display: block; }
+  .sub { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 6px 10px; border: 0; background: none; border-radius: 7px; text-align: left; font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .sub:hover { background: var(--side-hover); color: var(--ink); }
+  .sub.active { color: var(--brand); font-weight: 600; background: var(--brand-soft); }
+  .side-foot { border-top: 1px solid var(--line); padding: 10px; display: flex; align-items: center; gap: 6px; }
+  .who { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-btn { border: 0; background: none; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); }
+  .icon-btn:hover { background: var(--side-hover); color: var(--ink); }
+
+  /* collapsed rail: icons only, subtabs pop out on hover */
+  .collapsed .brand-name, .collapsed .search, .collapsed .group-label, .collapsed .item .label,
+  .collapsed .item .chev, .collapsed .item .badge, .collapsed .who, .collapsed .subs { display: none !important; }
+  .collapsed .item { justify-content: center; position: relative; }
+  .collapsed .item[data-badge]::after { content: ''; position: absolute; top: 6px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  .collapsed .group-sep { display: block; }
+  .group-sep { display: none; height: 1px; background: var(--line); margin: 8px 6px; }
+  .collapsed .side-foot { flex-direction: column; }
+  .flyout { position: fixed; z-index: 30; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; min-width: 200px; }
+  .flyout b { display: block; padding: 6px 10px; font-size: 13px; }
+
+  /* ---------- main */
+  .main { min-width: 0; }
+  .topbar { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 12px 28px 0; }
+  .crumbs { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .head-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+  .head-row h1 { font-size: 24px; margin: 0; flex: 1; }
+  .menu-btn { display: none; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 -4px; }
+  .tab { border: 0; background: none; padding: 9px 12px; border-bottom: 2px solid transparent; color: var(--muted); white-space: nowrap; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+  .content { padding: 24px 28px 60px; max-width: 1180px; }
+
+  .btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 9px; padding: 7px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); font-weight: 600; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .stat b { display: block; font-size: 26px; margin-top: 2px; }
+  .stat em { font-style: normal; font-size: 12px; color: var(--brand); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
+  .card-head { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .card-head h2 { font-size: 16px; margin: 0; flex: 1; display: flex; gap: 8px; align-items: center; }
+  .card-body { padding: 16px 18px; color: var(--muted); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 18px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--brand-soft); color: var(--brand); }
+  .pill.warn { background: var(--gold-soft); color: var(--gold); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.blue { background: var(--blue-soft); color: var(--blue); }
+  .note { background: var(--blue-soft); color: var(--blue); border-radius: 12px; padding: 12px 16px; font-size: 14px; margin-bottom: 18px; display: flex; gap: 10px; align-items: flex-start; }
+
+  .scrim { display: none; }
+  @media (max-width: 860px) {
+    .layout, .layout.collapsed { grid-template-columns: 1fr; }
+    .side { position: fixed; z-index: 40; left: 0; top: 0; width: 280px; translate: -100% 0; transition: translate .2s; }
+    .layout.drawer .side { translate: 0 0; }
+    .layout.drawer .scrim { display: block; position: fixed; inset: 0; background: var(--scrim); z-index: 35; }
+    .collapse-btn { display: none !important; }
+    .menu-btn { display: grid; }
+    .topbar { padding: 10px 16px 0; }
+    .content { padding: 18px 16px 60px; }
+    .head-row h1 { font-size: 20px; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat b { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout" id="layout">
+  <aside class="side">
+    <div class="side-top">
+      <div class="logo">R</div>
+      <div class="brand-name">Regularhood<small>Superadmin</small></div>
+    </div>
+    <label class="search">
+      <i data-lucide="search" width="15" height="15"></i>
+      <input id="q" placeholder="Jump to…" autocomplete="off" />
+      <kbd>/</kbd>
+    </label>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <span class="who">dev@regularhood.in</span>
+      <button class="icon-btn" id="themeBtn" title="Dark mode"><i data-lucide="moon" width="18" height="18"></i></button>
+      <button class="icon-btn collapse-btn" id="collapseBtn" title="Collapse sidebar"><i data-lucide="panel-left-close" width="18" height="18"></i></button>
+      <button class="icon-btn" title="Log out"><i data-lucide="log-out" width="18" height="18"></i></button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="head-row">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu"><i data-lucide="menu" width="20" height="20"></i></button>
+        <h1 id="title"></h1>
+        <span id="actions"></span>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<script>
+// Every current admin page, grouped. Each page's sections (its h2 cards today) become subtabs.
+const NAV = [
+  { group: 'Home', items: [
+    { id: 'overview', label: 'Overview', icon: 'layout-dashboard', subs: [] },
+  ]},
+  { group: 'Shops', items: [
+    { id: 'shops', label: 'All shops', icon: 'store', subs: ['All', 'Active', 'Sleeping', 'Never started', 'Paused'] },
+    { id: 'follow-up', label: 'Follow up', icon: 'phone', badge: 12, soft: true, subs: ['Needs a start', 'Sleeping'] },
+    { id: 'log', label: 'Admin log', icon: 'scroll-text', subs: [] },
+  ]},
+  { group: 'Money', items: [
+    { id: 'plans', label: 'Plans', icon: 'badge-indian-rupee', subs: ['Payments', 'Payment activity', 'Payment health', 'Checkouts', 'Renewals', 'Founding Shops', 'Close to Free limit', 'Offer'] },
+  ]},
+  { group: 'Growth', items: [
+    { id: 'growth', label: 'Growth', icon: 'rocket', subs: ['Funnel', 'By source', 'Latest sign-ups', 'Shops bringing shops', 'Referral rewards'] },
+    { id: 'visits', label: 'Website visits', icon: 'globe-2', subs: ['Traffic', 'Homepage', 'Recent page views'] },
+    { id: 'leads', label: 'Lead finder', icon: 'target', subs: ['Leads', 'Find shops', 'Cost log'] },
+  ]},
+  { group: 'WhatsApp', items: [
+    { id: 'chats', label: 'Chats', icon: 'messages-square', badge: 3, subs: ['All', 'Unread', 'Leads'] },
+    { id: 'customer-wa', label: 'Customer messages', icon: 'bell-ring', subs: ['What customers get', 'Latest messages', 'Founding Shops', 'Setup'] },
+    { id: 'status', label: 'Status ideas', icon: 'message-circle', subs: ['New ideas', 'Earlier ideas', 'Instagram posts', 'Logos'] },
+  ]},
+  { group: 'Content', items: [
+    { id: 'seo', label: 'SEO pages', icon: 'file-text', subs: ['Pages', 'Add shop kinds / cities', 'Schedule & budget', 'AI calls'] },
+    { id: 'playbooks', label: 'Playbooks', icon: 'book-open', subs: ['All playbooks', 'New playbook'] },
+  ]},
+  { group: 'Settings', items: [
+    { id: 'settings', label: 'Settings', icon: 'settings-2', subs: ['API keys', 'WhatsApp setup', 'Admins'] },
+  ]},
+];
+
+const ITEMS = NAV.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const $ = (id) => document.getElementById(id);
+const layout = $('layout');
+const open = new Set();
+let query = '';
+
+function route() {
+  const [, id = 'overview', sub = ''] = location.hash.split('/');
+  const item = ITEMS.find((i) => i.id === id) ?? ITEMS[0];
+  const subLabel = item.subs.find((s) => slug(s) === sub) ?? item.subs[0] ?? null;
+  return { item, sub: subLabel };
+}
+const go = (id, sub) => (location.hash = `/${id}${sub ? '/' + slug(sub) : ''}`);
+
+function renderNav() {
+  const { item: cur, sub: curSub } = route();
+  open.add(cur.id);
+  const q = query.trim().toLowerCase();
+  let html = '';
+  NAV.forEach((g, gi) => {
+    const rows = g.items.map((it) => {
+      const subs = q ? it.subs.filter((s) => s.toLowerCase().includes(q)) : it.subs;
+      const hit = !q || it.label.toLowerCase().includes(q) || g.group.toLowerCase().includes(q) || subs.length;
+      if (!hit) return '';
+      const showSubs = q ? (subs.length ? subs : it.subs) : it.subs;
+      const isOpen = it.subs.length && (open.has(it.id) || (q && subs.length));
+      const badge = it.badge ? `<em class="badge ${it.soft ? 'soft' : ''}">${it.badge}</em>` : '';
+      return `<button class="item ${it.id === cur.id ? 'active' : ''} ${isOpen ? 'open' : ''}" data-id="${it.id}" ${it.badge ? 'data-badge' : ''} title="${it.label}">
+          <i data-lucide="${it.icon}" width="18" height="18"></i><span class="label">${it.label}</span>${badge}
+          ${it.subs.length ? '<i class="chev" data-lucide="chevron-right" width="15" height="15"></i>' : ''}
+        </button>
+        ${it.subs.length ? `<div class="subs">${showSubs.map((s) => `<button class="sub ${it.id === cur.id && s === curSub ? 'active' : ''}" data-id="${it.id}" data-sub="${s}">${s}</button>`).join('')}</div>` : ''}`;
+    }).join('');
+    if (rows.trim()) html += `${gi ? '<div class="group-sep"></div>' : ''}<div class="group-label">${g.group}</div>${rows}`;
+  });
+  $('nav').innerHTML = html || '<p class="group-label">No match</p>';
+}
+
+function renderMain() {
+  const { item, sub } = route();
+  $('crumbs').innerHTML = `${item.group} <i data-lucide="chevron-right" width="13" height="13"></i> ${item.label}${sub ? ` <i data-lucide="chevron-right" width="13" height="13"></i> ${sub}` : ''}`;
+  $('title').textContent = item.label;
+  $('actions').innerHTML = ACTIONS[item.id] ?? '';
+  $('tabs').innerHTML = item.subs.map((s) => `<button class="tab ${s === sub ? 'active' : ''}" data-id="${item.id}" data-sub="${s}">${s}</button>`).join('');
+  $('tabs').style.display = item.subs.length ? '' : 'none';
+  $('content').innerHTML = page(item, sub);
+  document.title = `${sub ? sub + ' · ' : ''}${item.label} · Regularhood Admin`;
+}
+
+function render() {
+  renderNav();
+  renderMain();
+  lucide.createIcons();
+}
+
+// ---------------------------------------------------------------- mock pages
+
+const ACTIONS = {
+  shops: '<button class="btn"><i data-lucide="download" width="15" height="15"></i> Export</button>',
+  leads: '<button class="btn primary"><i data-lucide="search" width="15" height="15"></i> Find shops</button>',
+  seo: '<button class="btn primary"><i data-lucide="plus" width="15" height="15"></i> Queue pages</button>',
+  playbooks: '<button class="btn primary"><i data-lucide="sparkles" width="15" height="15"></i> New playbook</button>',
+  status: '<button class="btn primary"><i data-lucide="wand-2" width="15" height="15"></i> New ideas</button>',
+};
+
+const stats = (list) => `<div class="stats">${list.map(([k, v, d]) => `<div class="stat"><span>${k}</span><b>${v}</b>${d ? `<em>${d}</em>` : ''}</div>`).join('')}</div>`;
+const card = (title, icon, body, extra = '') => `<section class="card"><div class="card-head"><h2><i data-lucide="${icon}" width="17" height="17"></i> ${title}</h2>${extra}</div>${body}</section>`;
+const table = (cols, rows) => `<div class="table-wrap"><table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const pill = (t, k = '') => `<span class="pill ${k}">${t}</span>`;
+const SHOPS = [
+  ['Sharma Sweets', 'Jaipur', pill('Active'), '142', '2 hrs ago'],
+  ['Glow Salon', 'Indore', pill('Sleeping', 'warn'), '38', '9 days ago'],
+  ['Fresh Bakes', 'Pune', pill('New', 'blue'), '6', 'Today'],
+  ['Om Kirana', 'Surat', pill('Never started', 'bad'), '0', '—'],
+  ['Cafe Twelve', 'Ahmedabad', pill('Active'), '311', '20 min ago'],
+];
+
+function page(item, sub) {
+  const note = (t) => `<div class="note"><i data-lucide="info" width="17" height="17"></i><span>${t}</span></div>`;
+  switch (item.id) {
+    case 'overview':
+      return stats([['Shops', '214', '+9 this week'], ['Active (7 days)', '131'], ['Paid shops', '37', '₹41,963 total'], ['Visits added today', '1,082']]) +
+        card('Needs a call', 'phone', table(['Shop', 'City', 'Status', 'Visits', 'Last visit'], SHOPS.slice(1, 4))) +
+        card('Visits per day', 'stamp', '<div class="card-body">Chart here (same as today).</div>');
+    case 'shops':
+      return note(`Filter <b>${sub}</b> is now a subtab instead of a dropdown, so it can be linked and bookmarked.`) +
+        card(`${sub} shops`, 'store', table(['Shop', 'City', 'Status', 'Visits', 'Last visit'], sub === 'All' ? SHOPS : SHOPS.filter((r) => r[2].includes(sub))));
+    case 'plans':
+      if (sub === 'Payments') return stats([['Collected', '₹41,963'], ['Lifetime', '21'], ['Yearly', '16'], ['Founding seats left', '63 / 100']]) +
+        card('Payments', 'badge-indian-rupee', table(['Shop', 'Plan', 'Amount', 'Status', 'When'], [
+          ['Cafe Twelve', 'Lifetime', '₹1,499', pill('Paid'), 'Today'], ['Glow Salon', 'Yearly', '₹499', pill('Failed', 'bad'), 'Yesterday'], ['Sharma Sweets', 'Lifetime', '₹1,499', pill('Paid'), '3 days ago']]),
+          '<button class="btn">Check with Razorpay</button>');
+      break;
+    case 'chats':
+      return card(`${sub} chats`, 'messages-square', table(['Contact', 'Last message', 'When'], [
+        ['+91 98xxx 11223 ' + pill('Unread', 'bad'), 'Haan ji, demo dikha do', '5 min ago'], ['Fresh Bakes', 'Thank you!', '1 hr ago'], ['+91 70xxx 44556 ' + pill('Lead', 'blue'), 'Price kitna hai?', 'Yesterday']]));
+    case 'log':
+      return card('Admin log', 'scroll-text', table(['When', 'Admin', 'Action'], [['Today 11:20', 'dev', 'Paused Om Kirana'], ['Today 10:02', 'dev', 'WhatsApp to Glow Salon'], ['Yesterday', 'dev', 'Refunded a payment']]));
+  }
+  return card(sub ?? item.label, item.icon, `<div class="card-body">The <b>${sub}</b> section of <b>${item.label}</b> goes here — same content as the card on today's long page, but on its own subtab.</div>`);
+}
+
+// ---------------------------------------------------------------- events
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-id]');
+  if (!el) return;
+  const it = ITEMS.find((i) => i.id === el.dataset.id);
+  if (el.dataset.sub) { go(it.id, el.dataset.sub); return closeFly(); }
+  if (layout.classList.contains('collapsed') && it.subs.length && el.classList.contains('item')) return flyout(el, it);
+  if (it.subs.length && route().item.id === it.id) {
+    open.has(it.id) ? open.delete(it.id) : open.add(it.id);
+    return render();
+  }
+  go(it.id);
+});
+
+let fly;
+function closeFly() { fly?.remove(); fly = null; }
+function flyout(el, it) {
+  closeFly();
+  const r = el.getBoundingClientRect();
+  fly = document.createElement('div');
+  fly.className = 'flyout';
+  fly.style.left = r.right + 8 + 'px';
+  fly.style.top = r.top + 'px';
+  fly.innerHTML = `<b>${it.label}</b>` + it.subs.map((s) => `<button class="sub" data-id="${it.id}" data-sub="${s}">${s}</button>`).join('');
+  document.body.append(fly);
+}
+document.addEventListener('pointerdown', (e) => { if (fly && !fly.contains(e.target) && !e.target.closest('.item')) closeFly(); });
+
+$('collapseBtn').onclick = () => {
+  layout.classList.toggle('collapsed');
+  try { localStorage.setItem('rh-side', layout.classList.contains('collapsed') ? '1' : ''); } catch {}
+  closeFly();
+};
+try { if (localStorage.getItem('rh-side')) layout.classList.add('collapsed'); } catch {}
+$('themeBtn').onclick = () => {
+  const dark = document.documentElement.dataset.theme !== 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+};
+$('menuBtn').onclick = () => layout.classList.add('drawer');
+$('scrim').onclick = () => layout.classList.remove('drawer');
+$('q').oninput = (e) => { query = e.target.value; renderNav(); lucide.createIcons(); };
+$('q').onkeydown = (e) => {
+  if (e.key !== 'Enter') return;
+  const first = [...$('nav').querySelectorAll('.item, .sub')].find((b) => b.offsetParent && (b.classList.contains('sub') || !b.classList.contains('open')));
+  first?.click();
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); layout.classList.remove('collapsed'); $('q').focus(); }
+  if (e.key === 'Escape') { $('q').value = ''; query = ''; $('q').blur(); layout.classList.remove('drawer'); closeFly(); render(); }
+});
+addEventListener('hashchange', () => { layout.classList.remove('drawer'); render(); scrollTo(0, 0); });
+render();
+</script>
+</body>
+</html>

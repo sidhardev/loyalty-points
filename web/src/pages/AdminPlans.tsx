@@ -29,7 +29,17 @@ import { MonthlyRevenue } from './AdminCharts';
 // whether Razorpay is live and its webhooks arrive, how checkouts end, yearly plans due for renewal, each payment's story
 // and a "check with Razorpay" for one that didn't switch the plan on.
 
-type Settings = { salesOpen: boolean; seats: number; monthlyPaise: number; yearlyPaise: number; lifetimePaise: number; freeCustomers: number };
+type Settings = {
+  salesOpen: boolean;
+  seats: number;
+  monthlyPaise: number;
+  yearlyPaise: number;
+  lifetimePaise: number;
+  usdMonthlyCents: number;
+  usdYearlyCents: number;
+  usdLifetimeCents: number;
+  freeCustomers: number;
+};
 type FoundingShop = {
   id: number;
   name: string;
@@ -47,7 +57,8 @@ type Payment = {
   shopId: number;
   name: string;
   kind: 'lifetime' | 'yearly' | 'monthly';
-  amount_paise: number;
+  amount_paise: number; // in the smallest unit of `currency`
+  currency: 'INR' | 'USD';
   status: 'created' | 'paid' | 'failed' | 'refunded';
   phone: string | null;
   failure_reason: string | null;
@@ -61,7 +72,7 @@ type Payment = {
 type Overview = {
   settings: Settings;
   seats: { total: number; left: number; taken: number };
-  money: { paid: number; month: number; refunded: number; abandoned: number; failed: number };
+  money: { paid: number; month: number; refunded: number; abandoned: number; failed: number; paidUsdCents?: number };
   pro: FoundingShop[];
   payments: Payment[];
   nearLimit: { id: number; name: string; phone: string | null; customers: number }[];
@@ -75,6 +86,9 @@ type PayEvent = { id: number; created_at: string; event: string; detail: string;
 type SyncAnswer = { result: { attempts?: number; captured?: boolean; authorized?: boolean; checked?: number; fixed?: number }; overview: Overview };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+/** A payment's own amount: rupees, or dollars for a shop outside India. Totals elsewhere are in rupees. */
+const amt = (p: { amount_paise: number; currency?: string }) =>
+  p.currency === 'USD' ? `$${(p.amount_paise / 100).toFixed(p.amount_paise % 100 ? 2 : 0)}` : inr(p.amount_paise);
 const STATE: Record<FoundingShop['state'], { label: string; tone: string }> = {
   lifetime: { label: 'Lifetime', tone: 'ok' },
   active: { label: 'Paid up', tone: 'ok' },
@@ -103,13 +117,16 @@ const eventLabel = (e: string) => EVENT[e] ?? { label: e, tone: 'none' };
 const day = (sqlTime: string) => parseTime(sqlTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const daysLeft = (sqlTime: string) => Math.ceil((Date.parse(`${sqlTime.replace(' ', 'T')}Z`) - Date.now()) / 86_400_000);
 
-/** The offer's numbers, edited in rupees and saved together. */
+/** The offer's numbers, edited in rupees (India) and dollars (everywhere else) and saved together. */
 function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Partial<Settings>) => void; busy: boolean }) {
   const toForm = (x: Settings) => ({
     seats: String(x.seats),
     monthly: String(x.monthlyPaise / 100),
     yearly: String(x.yearlyPaise / 100),
     lifetime: String(x.lifetimePaise / 100),
+    usdMonthly: String(x.usdMonthlyCents / 100),
+    usdYearly: String(x.usdYearlyCents / 100),
+    usdLifetime: String(x.usdLifetimeCents / 100),
     free: String(x.freeCustomers),
   });
   const [f, setF] = useState(toForm(s));
@@ -123,6 +140,9 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
       monthlyPaise: Math.round(Number(f.monthly) * 100),
       yearlyPaise: Math.round(Number(f.yearly) * 100),
       lifetimePaise: Math.round(Number(f.lifetime) * 100),
+      usdMonthlyCents: Math.round(Number(f.usdMonthly) * 100),
+      usdYearlyCents: Math.round(Number(f.usdYearly) * 100),
+      usdLifetimeCents: Math.round(Number(f.usdLifetime) * 100),
       freeCustomers: Number(f.free),
     });
   };
@@ -162,6 +182,18 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
         <label>
           Lifetime price (₹)
           <input type="number" min="1" step="1" value={f.lifetime} onChange={set('lifetime')} required />
+        </label>
+        <label>
+          Monthly price ($, outside India)
+          <input type="number" min="1" step="0.01" value={f.usdMonthly} onChange={set('usdMonthly')} required />
+        </label>
+        <label>
+          Yearly price ($, outside India)
+          <input type="number" min="1" step="0.01" value={f.usdYearly} onChange={set('usdYearly')} required />
+        </label>
+        <label>
+          Lifetime price ($, outside India)
+          <input type="number" min="1" step="0.01" value={f.usdLifetime} onChange={set('usdLifetime')} required />
         </label>
         <label>
           Lifetime places
@@ -224,7 +256,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
     void run(async () => {
       if (!refunding) return;
       setData(await api<Overview>(`plans/payments/${refunding.id}/refund`, 'POST', { toFree }));
-      toast(`Refunded ${inr(refunding.amount_paise)} to ${refunding.name}`);
+      toast(`Refunded ${amt(refunding)} to ${refunding.name}`);
       setRefunding(null);
     });
 
@@ -585,7 +617,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
                         </a>
                       </td>
                       <td>{p.kind}</td>
-                      <td className="num">{inr(p.amount_paise)}</td>
+                      <td className="num">{amt(p)}</td>
                       <td>
                         <span className={`cw-chip cw-chip-${PAY_STATUS[p.status].tone}`}>{PAY_STATUS[p.status].label}</span>
                         {p.refunded_at && <span className="muted small"> {when(p.refunded_at)}</span>}
@@ -657,7 +689,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
       </Sub>
 
       {story && (
-        <Sheet title={`${story.payment.name} · ${inr(story.payment.amount_paise)} ${story.payment.kind}`} onClose={() => setStory(null)}>
+        <Sheet title={`${story.payment.name} · ${amt(story.payment)} ${story.payment.kind}`} onClose={() => setStory(null)}>
           <p className="muted small mono">
             {story.payment.razorpay_order_id}
             {story.payment.razorpay_payment_id ? ` · ${story.payment.razorpay_payment_id}` : ''}
@@ -688,10 +720,10 @@ export function PlansPage({ api }: { api: AdminApi }) {
       )}
 
       {refunding && (
-        <Sheet title={`Refund ${inr(refunding.amount_paise)} to ${refunding.name}?`} onClose={() => setRefunding(null)}>
+        <Sheet title={`Refund ${amt(refunding)} to ${refunding.name}?`} onClose={() => setRefunding(null)}>
           <div className="plans-refund">
             <p>
-              Razorpay refunds the full {inr(refunding.amount_paise)} ({refunding.kind}, paid {when(refunding.paid_at ?? refunding.created_at)}) to the UPI, card or bank
+              Razorpay refunds the full {amt(refunding)} ({refunding.kind}, paid {when(refunding.paid_at ?? refunding.created_at)}) to the UPI, card or bank
               they paid with. It usually arrives in 5–7 working days. This can’t be undone.
             </p>
             <label className="poster-check">
@@ -703,7 +735,7 @@ export function PlansPage({ api }: { api: AdminApi }) {
                 Cancel
               </button>
               <button className="btn btn-danger" disabled={busy} onClick={refund}>
-                <RotateCcw size={16} /> {busy ? 'Refunding…' : `Refund ${inr(refunding.amount_paise)}`}
+                <RotateCcw size={16} /> {busy ? 'Refunding…' : `Refund ${amt(refunding)}`}
               </button>
             </div>
           </div>

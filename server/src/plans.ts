@@ -18,10 +18,15 @@ import type { DatabaseSync } from 'node:sqlite';
 //    start costing), but not the Pro features.
 // Every WhatsApp message to a shop's customers is sent by the shop from its own phone; Regularhood's number never
 // messages customers. Prices and numbers are set in Admin → Plans (app_settings 'plans'); .env gives the defaults.
+//
+// Two currencies: shops in India pay in rupees (UPI first), every other shop pays in US dollars by card or PayPal
+// (Razorpay's international payments). currencyFor() decides which; amounts are always in the smallest unit (paise
+// or cents).
 
 export type Plan = 'free' | 'grandfathered' | 'monthly' | 'yearly' | 'lifetime';
 export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
 export type PlanFields = { plan: string; plan_expires_at: string | null };
+export type Currency = 'INR' | 'USD';
 
 export const PRO_FEATURES = ['winback', 'review', 'export', 'logo'] as const;
 export type ProFeature = (typeof PRO_FEATURES)[number];
@@ -40,6 +45,9 @@ export type PlanSettings = {
   monthlyPaise: number;
   yearlyPaise: number;
   lifetimePaise: number;
+  usdMonthlyCents: number;
+  usdYearlyCents: number;
+  usdLifetimeCents: number;
   freeCustomers: number;
 };
 
@@ -49,6 +57,9 @@ const DEFAULTS: PlanSettings = {
   monthlyPaise: Number(process.env.PRO_MONTHLY_PAISE) || 9_900,
   yearlyPaise: Number(process.env.PRO_YEARLY_PAISE) || 79_900,
   lifetimePaise: Number(process.env.FOUNDING_LIFETIME_PAISE) || 149_900,
+  usdMonthlyCents: 500,
+  usdYearlyCents: 3_900,
+  usdLifetimeCents: 7_900,
   freeCustomers: 15,
 };
 
@@ -75,15 +86,49 @@ export function savePlanSettings(sql: DatabaseSync, input: Partial<PlanSettings>
   if (input.monthlyPaise !== undefined) s.monthlyPaise = whole(input.monthlyPaise, 'Monthly price (paise)', 100, 10_000_000);
   if (input.yearlyPaise !== undefined) s.yearlyPaise = whole(input.yearlyPaise, 'Yearly price (paise)', 100, 10_000_000);
   if (input.lifetimePaise !== undefined) s.lifetimePaise = whole(input.lifetimePaise, 'Lifetime price (paise)', 100, 10_000_000);
+  if (input.usdMonthlyCents !== undefined) s.usdMonthlyCents = whole(input.usdMonthlyCents, 'Monthly price (cents)', 100, 1_000_000);
+  if (input.usdYearlyCents !== undefined) s.usdYearlyCents = whole(input.usdYearlyCents, 'Yearly price (cents)', 100, 1_000_000);
+  if (input.usdLifetimeCents !== undefined) s.usdLifetimeCents = whole(input.usdLifetimeCents, 'Lifetime price (cents)', 100, 1_000_000);
   if (input.freeCustomers !== undefined) s.freeCustomers = whole(input.freeCustomers, 'Free plan customers', 1, 100_000);
   sql.prepare("INSERT INTO app_settings (key, value) VALUES ('plans', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(s));
   return { before, after: s };
 }
 
-export const prices = (sql: DatabaseSync): Record<PaidKind, number> => {
+/** Pro's prices in the smallest unit of `currency`: paise, or cents. */
+export const prices = (sql: DatabaseSync, currency: Currency = 'INR'): Record<PaidKind, number> => {
   const s = planSettings(sql);
-  return { monthly: s.monthlyPaise, yearly: s.yearlyPaise, lifetime: s.lifetimePaise };
+  return currency === 'USD'
+    ? { monthly: s.usdMonthlyCents, yearly: s.usdYearlyCents, lifetime: s.usdLifetimeCents }
+    : { monthly: s.monthlyPaise, yearly: s.yearlyPaise, lifetime: s.lifetimePaise };
 };
+
+/** Time zones that mean India (the browser's, for a shop or visitor with nothing better to go on). */
+const INDIA_ZONES = new Set(['Asia/Kolkata', 'Asia/Calcutta']);
+
+/**
+ * What a shop pays in: its WhatsApp number says the country (+91 is India), else the browser's time zone, else rupees
+ * (most shops are Indian). The page can't change an order's amount, so the worst a faked time zone does is ask a
+ * foreign shop for rupees, which mostly only UPI and Indian cards can pay.
+ */
+export function currencyFor(m: { phone?: string | null }, tz?: string): Currency {
+  const phone = (m.phone ?? '').trim();
+  if (phone) return phone.startsWith('+91') ? 'INR' : 'USD';
+  if (tz) return INDIA_ZONES.has(tz) ? 'INR' : 'USD';
+  return 'INR';
+}
+
+/** "₹1,499" or "$39" (cents only when there are some). */
+export function money(minor: number, currency: string) {
+  const n = minor / 100;
+  return currency === 'USD' ? `$${n.toFixed(Number.isInteger(n) ? 0 : 2)}` : `₹${n.toLocaleString('en-IN')}`;
+}
+
+/** Rupees for one US dollar, for adding dollar payments into rupee totals (Admin → SEO keeps the rate). */
+export function usdToInr(sql: DatabaseSync) {
+  const row = sql.prepare("SELECT value FROM app_settings WHERE key = 'seo'").get() as { value: string } | undefined;
+  const rate = row ? Number((JSON.parse(row.value) as { usdToInr?: number }).usdToInr) : NaN;
+  return Number.isFinite(rate) && rate > 0 ? rate : 88;
+}
 
 /** SQLite's "YYYY-MM-DD HH:MM:SS" (UTC) as a time. */
 const at = (sqlTime: string) => Date.parse(`${sqlTime.replace(' ', 'T')}Z`);
@@ -117,5 +162,5 @@ export const seatsLeft = (sql: DatabaseSync) => Math.max(0, planSettings(sql).se
 /** The homepage, the Plan page and the reply bot all read the offer from here. */
 export function offer(sql: DatabaseSync) {
   const s = planSettings(sql);
-  return { open: s.salesOpen, total: s.seats, left: seatsLeft(sql), prices: prices(sql), freeCustomers: s.freeCustomers };
+  return { open: s.salesOpen, total: s.seats, left: seatsLeft(sql), prices: prices(sql), usdPrices: prices(sql, 'USD'), freeCustomers: s.freeCustomers };
 }

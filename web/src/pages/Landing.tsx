@@ -1513,13 +1513,37 @@ function Worth({ c }: { c: Copy }) {
   );
 }
 
-type Founding = { open: boolean; total: number; left: number; prices: { monthly: number; yearly: number; lifetime: number }; freeCustomers: number };
+type Prices = { monthly: number; yearly: number; lifetime: number };
+type Founding = { open: boolean; total: number; left: number; prices: Prices; usdPrices?: Prices; freeCustomers: number };
 
 const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
+const usd = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+
+/** Visitors outside India see Pro in US dollars, the way they would pay (the prerendered page shows rupees). */
+function useAbroad() {
+  const [abroad, setAbroad] = useState(false);
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setAbroad(Boolean(tz) && tz !== 'Asia/Kolkata' && tz !== 'Asia/Calcutta');
+    } catch {
+      // stays in rupees
+    }
+  }, []);
+  return abroad;
+}
 
 /** Free and Pro: monthly, yearly, and the lifetime Founding offer while it has places (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
-  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { monthly: 9_900, yearly: 49_900, lifetime: 149_900 }, freeCustomers: 15 });
+  const [founding, setFounding] = useState<Founding>({
+    open: true,
+    total: 100,
+    left: -1,
+    prices: { monthly: 9_900, yearly: 79_900, lifetime: 149_900 },
+    usdPrices: { monthly: 500, yearly: 3_900, lifetime: 7_900 },
+    freeCustomers: 15,
+  });
+  const abroad = useAbroad();
   useEffect(() => {
     fetch('/api/public/founding')
       .then((r) => (r.ok ? r.json() : null))
@@ -1529,6 +1553,8 @@ function Pricing({ c }: { c: Copy }) {
   const f = c.pro;
   // Lifetime is shown only while it is on sale and has places (left is -1 until the live numbers arrive).
   const lifetime = founding.open && founding.left !== 0;
+  const fmt = abroad ? usd : inr;
+  const pr = abroad && founding.usdPrices ? founding.usdPrices : founding.prices;
   return (
     <section className="lp-section lp-wrap" id="pricing" data-section="pricing">
       <p className="lp-kicker rv">{c.priceKicker}</p>
@@ -1538,7 +1564,7 @@ function Pricing({ c }: { c: Copy }) {
         <div className="lp-price-card lp-price-free rv">
           <p className="lp-price-name">{c.priceFree.name}</p>
           <div>
-            <strong className="lp-price-tag">₹0</strong> <span className="lp-price-per">{c.priceFree.per}</span>
+            <strong className="lp-price-tag">{abroad ? '$0' : '₹0'}</strong> <span className="lp-price-per">{c.priceFree.per}</span>
           </div>
           <ul>
             {[c.priceFree.limit(founding.freeCustomers), ...c.priceList].map((item) => (
@@ -1560,15 +1586,15 @@ function Pricing({ c }: { c: Copy }) {
           )}
           <p className="lp-price-name">{f.name}</p>
           <div>
-            <strong className="lp-price-tag">{inr(founding.prices.monthly)}</strong> <span className="lp-price-per">{f.monthly}</span>
+            <strong className="lp-price-tag">{fmt(pr.monthly)}</strong> <span className="lp-price-per">{f.monthly}</span>
             <p className="lp-price-alt">
               {f.yearly(
-                inr(founding.prices.yearly),
-                inr(Math.round(founding.prices.yearly / 1200) * 100),
-                Math.round((1 - founding.prices.yearly / (founding.prices.monthly * 12)) * 100),
+                fmt(pr.yearly),
+                fmt(abroad ? Math.round(pr.yearly / 12) : Math.round(pr.yearly / 1200) * 100),
+                Math.round((1 - pr.yearly / (pr.monthly * 12)) * 100),
               )}
             </p>
-            {lifetime && <p className="lp-price-alt">{f.lifetime(inr(founding.prices.lifetime))}</p>}
+            {lifetime && <p className="lp-price-alt">{f.lifetime(fmt(pr.lifetime))}</p>}
           </div>
           <ul>
             {f.list.map((item) => (

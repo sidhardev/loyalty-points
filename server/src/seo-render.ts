@@ -29,7 +29,7 @@ export type SeoContent = {
 
 type PageRef = { slug: string; lang: SeoLang; kind?: SeoKind; topic: string; title: string; content?: string | null; generated_at?: string | null; published_at?: string | null };
 
-const esc = (s: unknown) =>
+export const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const inr = (n: number) => n.toLocaleString('en-IN');
 const path = (lang: SeoLang, slug = '', kind: SeoKind = 'shop') => `${lang === 'hi' ? '/hi' : ''}/${kind === 'city' ? 'city' : 'for'}${slug ? `/${slug}` : ''}`;
@@ -159,7 +159,7 @@ const HI_NAMES: Record<SeoKind, Record<string, string>> = {
 /** A page's name in its own language (the English topic when there's no Hindi name yet). */
 const label = (p: PageRef) => (p.lang === 'hi' && HI_NAMES[p.kind ?? 'shop'][p.slug]) || p.topic;
 
-const CSS = `
+export const CSS = `
 :root{--paper:#eef2ec;--sheet:#fff;--ink:#0f2e24;--ink2:#3f564c;--soft:#5b7066;--line:#cbd6cd;--green:#0b7a52;--deep:#0a5e40;--mint:#d7ece1;--marigold:#f0a202;--mink:#8a5a00}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 Inter,system-ui,-apple-system,'Segoe UI',sans-serif}
@@ -234,7 +234,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justif
 `;
 
 /** Counts the visit in Admin → Visits (same format as the app's own tracker; no cookies, nothing personal). */
-const BEACON = `<script>(function(){try{if(localStorage.getItem('lp_sa_ignore')==='1'||navigator.webdriver)return;var r=function(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12))};var d=new Date().toISOString().slice(0,10);var v=(localStorage.getItem('lp_sa_vid')||'').split('|');var ret=!!localStorage.getItem('lp_sa_seen');if(v[0]!==d){v=[d,r()];localStorage.setItem('lp_sa_vid',v.join('|'))}localStorage.setItem('lp_sa_seen','1');var s=sessionStorage.getItem('lp_sa_sid');if(!s){s=r();sessionStorage.setItem('lp_sa_sid',s)}var p=new URLSearchParams(location.search);var w=r();window.__rhv=w;var b=JSON.stringify({t:'view',id:w,ts:new Date().toISOString(),path:location.pathname,title:document.title,host:location.hostname,ref:document.referrer,utmSource:p.get('utm_source')||p.get('ref')||'',utmMedium:p.get('utm_medium')||'',utmCampaign:p.get('utm_campaign')||'',tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'',lang:navigator.language,w:screen.width,vid:v[1],sid:s,ret:ret});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}})();</script>`;
+export const BEACON = `<script>(function(){try{if(localStorage.getItem('lp_sa_ignore')==='1'||navigator.webdriver)return;var r=function(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12))};var d=new Date().toISOString().slice(0,10);var v=(localStorage.getItem('lp_sa_vid')||'').split('|');var ret=!!localStorage.getItem('lp_sa_seen');if(v[0]!==d){v=[d,r()];localStorage.setItem('lp_sa_vid',v.join('|'))}localStorage.setItem('lp_sa_seen','1');var s=sessionStorage.getItem('lp_sa_sid');if(!s){s=r();sessionStorage.setItem('lp_sa_sid',s)}var p=new URLSearchParams(location.search);var w=r();window.__rhv=w;var b=JSON.stringify({t:'view',id:w,ts:new Date().toISOString(),path:location.pathname,title:document.title,host:location.hostname,ref:document.referrer,utmSource:p.get('utm_source')||p.get('ref')||'',utmMedium:p.get('utm_medium')||'',utmCampaign:p.get('utm_campaign')||'',tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'',lang:navigator.language,w:screen.width,vid:v[1],sid:s,ret:ret});if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/collect',new Blob([b],{type:'application/json'}))))fetch('/api/collect',{method:'POST',body:b,headers:{'content-type':'application/json'},keepalive:true})}catch(e){}})();</script>`;
 
 function shell(o: { lang: SeoLang; site: string; path: string; title: string; description: string; alternates?: { lang: SeoLang; path: string }[]; jsonLd?: object; body: string; noindex?: boolean }) {
   const t = T[o.lang];
@@ -478,6 +478,8 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
   for (const [slug, updated] of [['stamp-card-maker', '2026-11-16'], ['google-review-qr-code', '2026-11-16']])
     for (const lang of ['en', 'hi'] as SeoLang[])
       urls.push(gUrl(toolPath(lang, slug), updated, (['en', 'hi'] as SeoLang[]).map((l) => ({ lang: l, path: toolPath(l, slug) }))));
+  // The UAE waitlist page (waitlist.ts).
+  urls.push(url('/uae', '2026-11-17'));
   urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated), url('/shipping', LEGAL.shipping.updated), url('/contact', LEGAL.contact.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }

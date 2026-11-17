@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Crown, RotateCcw, Settings as SettingsIcon, ShieldCheck, Users, X } from 'lucide-react';
 import { api, num, parseTime, type Merchant, type PaidKind } from '../api';
-import { isPro, lifetimeOpen, payPro, price, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
+import { isPro, lifetimeOpen, payLabel, payPro, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
 import { t, useLang } from '../i18n';
 import { ErrorText, Skeleton, useAction } from '../ui';
 
@@ -119,11 +119,11 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
 
           <ErrorText text={error} />
           <button className="btn btn-primary btn-xl plan-pay" disabled={busy} onClick={buy}>
-            {busy ? t('Opening payment…') : t('Pay {price} with UPI', { price: price(b.prices[pick]) })}
+            {busy ? t('Opening payment…') : payLabel(b, pick)}
           </button>
           <ul className="plan-trust">
             <li>
-              <ShieldCheck size={15} /> {t('UPI, cards, net banking via Razorpay')}
+              <ShieldCheck size={15} /> {b.currency === 'USD' ? t('Card or PayPal, in US dollars, via Razorpay') : t('UPI, cards, net banking via Razorpay')}
             </li>
             <li>
               <RotateCcw size={15} /> {t('Full refund within 7 days')}{' '}
