@@ -15,7 +15,7 @@ import {
 import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { requirePro } from './plans';
-import { LoyaltyService, cleanPhone, tzShift, type CustomerRow } from './loyalty.service';
+import { LoyaltyService, tzShift, type CustomerRow } from './loyalty.service';
 import { ACTIVE_DAYS, ACTIVE_VISITS, rewardsFor, UPI_AMOUNT, UPI_EVERY } from './referrals';
 
 /** One CSV cell; text that looks like a formula is prefixed so spreadsheets don't run it. */
@@ -199,12 +199,9 @@ export class LoyaltyController {
   @Patch('customers/:id')
   editCustomer(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { phone?: string }) {
     const c = this.loyalty.customer(merchantId, id);
-    const phone = cleanPhone(body?.phone);
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10 || digits.length > 13) throw new BadRequestException('Enter the 10-digit phone number');
-    const other = this.loyalty.byLast10(merchantId, phone);
+    const next = this.loyalty.customerPhone(merchantId, body?.phone);
+    const other = this.loyalty.byNumber(merchantId, next);
     if (other && other.id !== c.id) throw new BadRequestException('Another customer already has this phone number');
-    const next = digits.length === 10 ? digits : phone;
     this.db.sql.prepare('UPDATE customers SET phone = ? WHERE id = ?').run(next, c.id);
     if (next !== c.phone) this.loyalty.log(merchantId, 'shop', 'edit_customer', `Changed phone ${c.phone} → ${next}`, this.loyalty.who({ ...c, phone: next }));
     return this.loyalty.view(this.loyalty.merchant(merchantId), this.loyalty.customer(merchantId, c.id));

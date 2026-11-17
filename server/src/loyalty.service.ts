@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Db, randomToken } from './db';
+import { country, nationalDigits } from './countries';
 import { customerLimit } from './plans';
 
 // The stamp card: every visit is one stamp, and every `visits_needed` stamps the customer gets the shop's one reward.
@@ -42,6 +43,7 @@ export type MerchantRow = {
   review_url: string; // Google review link (Pro)
   msg_lang: string;
   logo_at: string | null; // the shop has a logo (Pro), last changed then
+  country: string; // countries.ts
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';
@@ -62,7 +64,6 @@ export type CustomerRow = {
 type TxRow = { id: number; customer_id: number; type: string; points: number; amount: number | null; reward_id: number | null; reversal_of: number | null; reversed: number; created_at: string };
 
 export const cleanPhone = (phone: unknown) => String(phone ?? '').replace(/[\s()-]/g, '');
-export const last10 = (phone: unknown) => String(phone ?? '').replace(/\D/g, '').slice(-10);
 
 /** "+05:30"-style SQLite modifier for the shop's time zone (`tz` = minutes ahead of UTC, 330 for India). */
 export const tzShift = (tz: unknown) => {
@@ -92,11 +93,24 @@ export class LoyaltyService {
     return (this.db.sql.prepare('SELECT COUNT(*) AS n FROM customers WHERE merchant_id = ?').get(merchantId) as { n: number }).n;
   }
 
-  /** Same number written differently (+91, spaces) still finds the customer. */
-  byLast10(merchantId: number, phone: string) {
+  /**
+   * The customer with this number: the same number written differently (+971, a leading 0, spaces) is the same
+   * customer, so it's matched on the number's own digits in the shop's country (10 in India, 9 in the UAE…).
+   */
+  byNumber(merchantId: number, phone: string) {
+    const c = country(this.merchant(merchantId).country);
+    const digits = nationalDigits(phone, c) || phone.replace(/\D/g, '');
     return this.db.sql
-      .prepare("SELECT * FROM customers WHERE merchant_id = ? AND substr(replace(replace(phone, '+', ''), ' ', ''), -10) = ?")
-      .get(merchantId, last10(phone)) as CustomerRow | undefined;
+      .prepare("SELECT * FROM customers WHERE merchant_id = ? AND substr(replace(replace(phone, '+', ''), ' ', ''), ?) = ?")
+      .get(merchantId, -c.nsn, digits.slice(-c.nsn)) as CustomerRow | undefined;
+  }
+
+  /** A customer's number as typed at the counter, checked for the shop's country: its own digits (no code, no 0). */
+  customerPhone(merchantId: number, input: unknown) {
+    const c = country(this.merchant(merchantId).country);
+    const digits = nationalDigits(cleanPhone(input), c);
+    if (!digits) throw new BadRequestException(`Enter the ${c.nsn}-digit phone number`);
+    return digits;
   }
 
   /** Shape sent to the website (never includes other shops' data). */
@@ -115,15 +129,17 @@ export class LoyaltyService {
 
   /** Customers whose number starts with these digits (at least 4), for the keypad's suggestions. */
   suggest(merchantId: number, digits: string) {
-    const d = String(digits ?? '').replace(/\D/g, '').slice(0, 10);
-    if (d.length < 4) return [];
     const m = this.merchant(merchantId);
+    const c = country(m.country);
+    // A leading 0 (how UAE and UK numbers are often typed) isn't part of the number.
+    const d = String(digits ?? '').replace(/\D/g, '').replace(/^0/, '').slice(0, c.nsn);
+    if (d.length < 4) return [];
     const rows = this.db.sql
       .prepare(
-        `SELECT * FROM customers WHERE merchant_id = ? AND substr(replace(replace(phone, '+', ''), ' ', ''), -10) LIKE ?
+        `SELECT * FROM customers WHERE merchant_id = ? AND substr(replace(replace(phone, '+', ''), ' ', ''), ?) LIKE ?
          ORDER BY COALESCE(last_visit, created_at) DESC LIMIT 4`,
       )
-      .all(merchantId, `${d}%`) as CustomerRow[];
+      .all(merchantId, -c.nsn, `${d}%`) as CustomerRow[];
     return rows.map((c) => this.view(m, c));
   }
 
@@ -133,27 +149,25 @@ export class LoyaltyService {
    * adds nothing and says so, but still shows whether a reward is due.
    */
   addVisit(merchantId: number, phoneInput: unknown, tz: unknown) {
-    const phone = cleanPhone(phoneInput);
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10 || digits.length > 13) throw new BadRequestException('Enter the 10-digit phone number');
+    const phone = this.customerPhone(merchantId, phoneInput);
     const shift = tzShift(tz);
 
     // A new number on the Free plan needs room under its customer limit (checked outside the transaction, so the
     // activity log keeps the refusal).
     const limit = customerLimit(this.db.sql, this.merchant(merchantId));
-    if (limit !== null && !this.byLast10(merchantId, phone) && this.customerCount(merchantId) >= limit) {
+    if (limit !== null && !this.byNumber(merchantId, phone) && this.customerCount(merchantId) >= limit) {
       this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers`);
       throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: 'The Free plan’s customer limit is reached. Get Pro to add more.' });
     }
 
     return this.db.transaction(() => {
       const m = this.merchant(merchantId);
-      let c = this.byLast10(merchantId, phone);
+      let c = this.byNumber(merchantId, phone);
       const isNew = !c;
       if (!c) {
         const { lastInsertRowid } = this.db.sql
           .prepare("INSERT INTO customers (merchant_id, name, phone, wallet_token, card_code) VALUES (?, '', ?, ?, ?)")
-          .run(merchantId, digits.length === 10 ? digits : phone, randomToken(), randomToken(9));
+          .run(merchantId, phone, randomToken(), randomToken(9));
         c = this.customer(merchantId, Number(lastInsertRowid));
       }
 

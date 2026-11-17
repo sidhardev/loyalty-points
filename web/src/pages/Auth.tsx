@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Gift, MessageCircle, Phone, UserX } from 'lucide-react';
 import { api, setToken, type Merchant } from '../api';
+import { browserCountry, COUNTRIES, country, example } from '../country';
 import { trackEvent } from '../analytics';
 import { arrival } from '../attribution';
 import { GoogleButton } from '../google';
@@ -37,21 +38,57 @@ function readToolCard(): ToolCard | null {
   }
 }
 
+/** The shop's country to start with: a link's ?country=AE, else where this browser is, else India. */
+function startCountry() {
+  try {
+    const q = new URLSearchParams(location.search).get('country')?.toUpperCase() ?? '';
+    if (COUNTRIES.some((c) => c.code === q)) return q;
+  } catch {
+    // No query string.
+  }
+  return browserCountry() || 'IN';
+}
+
+/** The shop's country, next to its WhatsApp number: it decides how customers' numbers are typed at the counter. */
+function CountrySelect({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+  return (
+    <label>
+      Country
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {COUNTRIES.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.name} (+{c.dial})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const [card] = useState(readToolCard);
   const rule = card?.reward ? { visitsNeeded: card.visits, rewardName: card.reward } : undefined;
   const reviewUrl = card?.review || undefined;
   const [mode, setMode] = useState<'login' | 'signup'>(location.hash === '#signup' || card ? 'signup' : 'login');
-  const [form, setForm] = useState({ name: card?.shop ?? '', email: '', password: '', phone: '', login: '' });
+  const [form, setForm] = useState({ name: card?.shop ?? '', email: '', password: '', phone: '', login: '', country: startCountry() });
+  const place = country(form.country);
+  const tz = (() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+    } catch {
+      return '';
+    }
+  })();
   const { busy, error, setError, run } = useAction();
   // A new Google account: its token waits here while the shop name and WhatsApp number are asked for.
   const [google, setGoogle] = useState<{ credential: string; email: string } | null>(null);
 
-  const withGoogle = (credential: string, details?: { name: string; phone: string }) =>
+  const withGoogle = (credential: string, details?: { name: string; phone: string; country: string }) =>
     run(async () => {
       const r = await api<{ token: string; merchant: Merchant } | { needs: 'details'; email: string; name: string }>('auth/google', 'POST', {
         credential,
         ...details,
+        tz,
         attribution: arrival(),
         rule,
         reviewUrl,
@@ -69,12 +106,12 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (google) return void withGoogle(google.credential, { name: form.name, phone: form.phone });
+    if (google) return void withGoogle(google.credential, { name: form.name, phone: form.phone, country: form.country });
     void run(async () => {
       const { token, merchant } = await api<{ token: string; merchant: Merchant }>(
         `auth/${mode}`,
         'POST',
-        mode === 'signup' ? { name: form.name, phone: form.phone, email: form.email, password: form.password, attribution: arrival(), rule, reviewUrl } : { login: form.login, password: form.password },
+        mode === 'signup' ? { name: form.name, phone: form.phone, country: form.country, tz, email: form.email, password: form.password, attribution: arrival(), rule, reviewUrl } : { login: form.login, password: form.password },
       );
       setToken(token);
       if (mode === 'signup') trackEvent('signup', card ? `shop: from ${card.reward ? 'stamp card maker' : 'review QR maker'}` : 'shop');
@@ -116,9 +153,10 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
                 Shop name
                 <input value={form.name} onChange={set('name')} placeholder="Sharma General Store, MG Road" required autoFocus />
               </label>
+              <CountrySelect value={form.country} onChange={(code) => setForm({ ...form, country: code })} />
               <label>
                 WhatsApp number
-                <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" required />
+                <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder={example(place)} required />
                 <span className="hint">For your account and reminders. We never share it.</span>
               </label>
               <ErrorText text={error} />
@@ -167,14 +205,17 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
               {mode === 'login' ? (
                 <label>
                   WhatsApp number or email
-                  <input autoComplete="username" value={form.login} onChange={set('login')} placeholder="98765 43210" required autoFocus />
+                  <input autoComplete="username" value={form.login} onChange={set('login')} placeholder={example(place)} required autoFocus />
                 </label>
               ) : (
-                <label>
-                  WhatsApp number
-                  <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" required />
-                  <span className="hint">You log in with it. We never share it.</span>
-                </label>
+                <>
+                  <CountrySelect value={form.country} onChange={(code) => setForm({ ...form, country: code })} />
+                  <label>
+                    WhatsApp number
+                    <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder={example(place)} required />
+                    <span className="hint">You log in with it. We never share it.</span>
+                  </label>
+                </>
               )}
               <label>
                 Password

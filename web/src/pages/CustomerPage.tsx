@@ -60,7 +60,7 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
 
   const { customer, history } = data;
   const n = merchant.visitsNeeded;
-  const label = phoneLabel(customer.phone);
+  const label = phoneLabel(customer.phone, merchant.country);
 
   const act = (action: () => Promise<void>) =>
     void run(async () => {
@@ -135,7 +135,7 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
               </div>
             </div>
             <div className="actions">
-              <a className="btn btn-sm btn-whatsapp" href={whatsapp(customer.phone, cardMessage(merchant, customer, messageLang()))} target="_blank" rel="noreferrer">
+              <a className="btn btn-sm btn-whatsapp" href={whatsapp(customer.phone, cardMessage(merchant, customer, messageLang()), merchant.country)} target="_blank" rel="noreferrer">
                 <MessageCircle size={15} /> {t('Send card')}
               </a>
               <a className="btn btn-sm btn-soft" href={walletUrl(customer.walletToken)} target="_blank" rel="noreferrer">

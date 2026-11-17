@@ -106,11 +106,12 @@ export const prices = (sql: DatabaseSync, currency: Currency = 'INR'): Record<Pa
 const INDIA_ZONES = new Set(['Asia/Kolkata', 'Asia/Calcutta']);
 
 /**
- * What a shop pays in: its WhatsApp number says the country (+91 is India), else the browser's time zone, else rupees
+ * What a shop pays in: its country (India pays in rupees), else its WhatsApp number says the country (+91 is India), else the browser's time zone, else rupees
  * (most shops are Indian). The page can't change an order's amount, so the worst a faked time zone does is ask a
  * foreign shop for rupees, which mostly only UPI and Indian cards can pay.
  */
-export function currencyFor(m: { phone?: string | null }, tz?: string): Currency {
+export function currencyFor(m: { phone?: string | null; country?: string | null }, tz?: string): Currency {
+  if (m.country) return m.country === 'IN' ? 'INR' : 'USD';
   const phone = (m.phone ?? '').trim();
   if (phone) return phone.startsWith('+91') ? 'INR' : 'USD';
   if (tz) return INDIA_ZONES.has(tz) ? 'INR' : 'USD';

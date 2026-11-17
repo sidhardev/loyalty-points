@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Download, Gift, Image as ImageIcon, MessageCircle, Share2, Store, Users } from 'lucide-react';
-import { api, num, type Merchant } from './api';
+import { Check, Copy, Download, Image as ImageIcon, MessageCircle, Share2, Store, Users } from 'lucide-react';
+import { api, type Merchant } from './api';
 import { Awning, C, DISPLAY, fit, HINDI, saveFile, StampRow, Star, svgToPng } from './poster';
 import './poster.css';
-import { t, useLang } from './i18n';
-import { LogoMark, Sheet, SkeletonRows, toast } from './ui';
+import { t } from './i18n';
+import { LogoMark, Sheet, toast } from './ui';
 
 // "Share your shop": a WhatsApp status / Instagram post image and ready messages, in Hindi or English. The image
 // tells the shop's customers its one rule ("Every 5 visits → Free chai", say your number at the counter) and, in the
@@ -338,123 +338,6 @@ const NO_DATA: ShareData = {
   upi: { earned: 0, sent: 0 },
   rules: { visits: 20, days: 3, upiEvery: 3, upiAmount: 100 },
 };
-
-/** What the shop gets for bringing shops, and how far each shop it brought is from counting (server/src/referrals.ts). */
-function ReferralRewards({ data, merchant }: { data: ShareData; merchant: Merchant }) {
-  const appLang = useLang();
-  const { rules } = data;
-  const rule = t('A shop counts once it adds {visits} visits on {days} different days.')
-    .replace('{visits}', String(rules.visits))
-    .replace('{days}', String(rules.days));
-  const toNextUpi = rules.upiEvery - (data.active % rules.upiEvery);
-  const status = (e: Earned) => (e.sent >= e.earned && e.earned > 0 ? t('Sent ✓') : e.earned > e.sent ? t('On its way 🎉') : '');
-  return (
-    <section className="card referral-card">
-      <div className="card-head">
-        <h2>
-          <Gift size={18} /> {t('Bring shops, get rewards')}
-        </h2>
-      </div>
-      <ul className="referral-rewards">
-        <li>
-          <span className="referral-icon" aria-hidden>
-            🪧
-          </span>
-          <span>
-            <b>{t('A counter standee')}</b> {t('with your shop name and rule, for the first shop you bring')}
-            {status(data.standee) && <em>{status(data.standee)}</em>}
-          </span>
-        </li>
-        <li>
-          <span className="referral-icon" aria-hidden>
-            💸
-          </span>
-          <span>
-            <b>{t('₹{amount} on UPI').replace('{amount}', String(rules.upiAmount))}</b>{' '}
-            {t('for every {n} shops you bring').replace('{n}', String(rules.upiEvery))}
-            {data.upi.earned > 0 ? <em>{t('{n} earned').replace('{n}', num(data.upi.earned))}</em> : null}
-            {data.active > 0 && <em>{t('{n} more shops for the next ₹{amount}').replace('{n}', String(toNextUpi)).replace('{amount}', String(rules.upiAmount))}</em>}
-          </span>
-        </li>
-      </ul>
-      <p className="muted small" style={{ margin: 0 }}>
-        {rule} {t('We message you on WhatsApp to send your reward.')}
-      </p>
-
-      <InvitedShops data={data} />
-
-      {data.referred && data.standee.earned === 0 && (
-        <p className="alert alert-ok small" style={{ margin: 0 }}>
-          {t('You joined from another shop’s link: you get a counter standee too once you add {visits} visits.').replace('{visits}', String(rules.visits))}
-        </p>
-      )}
-
-      <a className="btn btn-whatsapp" href={waLink(ownerMessage(merchant, appLang === 'hi' ? 'hi' : 'en'))} target="_blank" rel="noreferrer">
-        <Store size={17} /> {t('Send your link to other shop owners')}
-      </a>
-    </section>
-  );
-}
-
-/** Settings: the referral rewards and the shops this one brought, always shown so owners know the offer. */
-export function ReferralCard({ merchant }: { merchant: Merchant }) {
-  const [data, setData] = useState<ShareData | null>(null);
-  useEffect(() => {
-    api<ShareData>('share').then(setData, () => setData(NO_DATA));
-  }, []);
-  if (!data)
-    return (
-      <section className="card">
-        <SkeletonRows count={3} />
-      </section>
-    );
-  return <ReferralRewards data={data} merchant={merchant} />;
-}
-
-/** The shops this one brought: which already count, and what the rest still need (visits and days). */
-function InvitedShops({ data }: { data: ShareData }) {
-  const { rules } = data;
-  if (!data.invited.length)
-    return (
-      <p className="muted small" style={{ margin: 0 }}>
-        {t('Shops that sign up from your link or your image show up here.')}
-      </p>
-    );
-  const waiting = data.invited.length - data.active;
-  return (
-    <>
-      <p className="referral-summary">
-        <b>{t('{n} shops joined').replace('{n}', num(data.invited.length))}</b>
-        <span className="chip-ok">{t('{n} active').replace('{n}', num(data.active))}</span>
-        {waiting > 0 && <span className="chip-wait">{t('{n} not yet').replace('{n}', num(waiting))}</span>}
-      </p>
-      <ul className="referral-shops">
-        {data.invited.map((s, i) => {
-          const visits = Math.min(s.visits, rules.visits);
-          const days = Math.min(s.days, rules.days);
-          const done = s.active ? 1 : (visits / rules.visits + days / rules.days) / 2;
-          return (
-            <li key={i}>
-              <span>
-                <b>{s.name}</b>
-                {s.active ? <em className="chip-ok">{t('Active ✓')}</em> : <em className="chip-wait">{t('Not yet')}</em>}
-              </span>
-              <i className="referral-bar">
-                <i style={{ width: `${Math.max(3, Math.min(s.active ? 100 : 97, done * 100))}%` }} />
-              </i>
-              {!s.active && (
-                <small>
-                  {t('{x} of {n} visits').replace('{x}', num(visits)).replace('{n}', String(rules.visits))} ·{' '}
-                  {t('{x} of {n} days').replace('{x}', String(days)).replace('{n}', String(rules.days))}
-                </small>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </>
-  );
-}
 
 /** Settings' invitation to share, with the shops that joined from this shop's links. */
 export function ShareCard({ merchant }: { merchant: Merchant }) {

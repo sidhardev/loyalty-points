@@ -1,5 +1,6 @@
 // Talks to the NestJS API. The login token is kept in localStorage and sent with every request.
 import { identifyShop } from './analytics';
+import { country, groupDigits, nationalDigits, waDigits } from './country';
 
 export type Merchant = {
   id: number;
@@ -8,6 +9,7 @@ export type Merchant = {
   joinCode: string; // public: the shop's share link /r/<code> and old counter-poster QRs /join/<code>
   inactiveDays: number; // "not seen" after this many days
   phone: string; // owner's WhatsApp number, '' = not given
+  country: string; // 'IN', 'AE'… (country.ts): how customers' numbers are typed, shown and sent
   visitsNeeded: number; // every this many visits…
   rewardName: string; // …the customer gets this ('' until the shop sets it up)
   welcomeStamps: number; // extra stamps on a new customer's first visit (0 = off)
@@ -161,8 +163,12 @@ export function reminderMessage(m: Merchant, c: Customer, lang: MsgLang = 'hi') 
   return `We miss you at ${m.name}! 👋 ${hook}\nYour card: ${url}`;
 }
 
-/** "98765 43210" for a 10-digit number; anything else as stored. */
-export const phoneLabel = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(0, 5)} ${phone.slice(5)}` : phone);
+/** A customer's number grouped the shop's country's way ("98765 43210", "50 123 4567"); anything else as stored. */
+export const phoneLabel = (phone: string, countryCode = 'IN') => {
+  const c = country(countryCode);
+  const local = nationalDigits(phone, c);
+  return local ? groupDigits(local, c) : phone;
+};
 
 /** The customer's card message the shop sends on WhatsApp after a visit (`given`: right after handing over the reward). */
 export function cardMessage(m: Merchant, c: Customer, lang: MsgLang = 'hi', given = false) {
@@ -192,9 +198,8 @@ Your card: ${url}`;
 Your card: ${url}`;
 }
 
-/** wa.me link with the message filled in; 10-digit numbers are treated as Indian (+91). */
-export function whatsapp(phone: string, text: string) {
-  let digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) digits = `91${digits}`;
+/** wa.me link with the message filled in; a number without its code is read in `countryCode` (India by default). */
+export function whatsapp(phone: string, text: string, countryCode = 'IN') {
+  const digits = waDigits(phone, country(countryCode));
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }

@@ -478,7 +478,7 @@ export function renderSitemap(site: string, pages: PageRef[], guides: Record<Seo
   for (const [slug, updated] of [['stamp-card-maker', '2026-11-16'], ['google-review-qr-code', '2026-11-16']])
     for (const lang of ['en', 'hi'] as SeoLang[])
       urls.push(gUrl(toolPath(lang, slug), updated, (['en', 'hi'] as SeoLang[]).map((l) => ({ lang: l, path: toolPath(l, slug) }))));
-  // The UAE waitlist page (waitlist.ts).
+  // The UAE page (uae.ts).
   urls.push(url('/uae', '2026-11-17'));
   urls.push(url('/privacy', LEGAL.privacy.updated), url('/terms', LEGAL.terms.updated), url('/refunds', LEGAL.refunds.updated), url('/shipping', LEGAL.shipping.updated), url('/contact', LEGAL.contact.updated));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;

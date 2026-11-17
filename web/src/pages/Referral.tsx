@@ -82,10 +82,6 @@ export function Referral({ code }: { code: string }) {
             </li>
           ))}
         </ul>
-        <p className="referral-gift">
-          <span aria-hidden>🪧</span>
-          <span>{t('Add 20 visits and we send you a free counter standee with your shop name.')}</span>
-        </p>
       </section>
 
       <div className="auth-form-wrap">

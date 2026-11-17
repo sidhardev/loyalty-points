@@ -28,7 +28,7 @@ import { PlaybookAdminController, PlaybookService } from './playbook';
 import { PhusroAdminController, PhusroController, PhusroGuard, PhusroService } from './phusro';
 import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
-import { WaitlistAdminController, WaitlistController, WaitlistPageController } from './waitlist';
+import { UaePageController } from './uae';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
 // on the server the same values come from deploy/.env. Variables already set in the environment win.
@@ -36,7 +36,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, WaitlistPageController, WaitlistController, WaitlistAdminController],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, UaePageController],
   providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, DraftService, Storage, WhatsApp, WaBot],
 })
 class AppModule {}
@@ -97,7 +97,7 @@ Sitemap: ${PHUSRO_ORIGIN}/sitemap.xml
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
       // Server-rendered SEO pages (shop types and cities), guides, privacy/terms/refunds/shipping/contact, the live sitemap (seo.ts)
-      // and the UAE waitlist page (waitlist.ts).
+      // and the UAE page (uae.ts).
       if (/^\/(hi\/)?(for|city|guide|tools)(\/|$)/.test(req.path) || ['/sitemap.xml', '/privacy', '/terms', '/refunds', '/shipping', '/contact', '/uae', '/ae', '/dubai'].includes(req.path)) return next();
       // Well-known files we don't publish (ard.json, ai-catalog.json…) are a 404, not the app page, so crawlers and
       // AI agents don't read HTML as a manifest.

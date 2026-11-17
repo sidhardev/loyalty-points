@@ -23,7 +23,11 @@ import type { Request } from 'express';
 import { googleClientId, verifyGoogleToken } from './google';
 import { isPro } from './plans';
 import { Db, randomToken } from './db';
-import { CARD_SOURCE, cleanCode, PARTNER_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
+import { countryFromTz, knownCountry } from './countries';
+import { CARD_SOURCE, cleanCode, loginPhones, PARTNER_SOURCE, readAttribution, readPhone, SHOP_SOURCE } from './growth';
+
+/** A new shop's country: the one chosen on the sign-up page, else the browser's time zone, else India. */
+const shopCountry = (b: { country?: unknown; tz?: unknown } | undefined) => knownCountry(b?.country) || countryFromTz(b?.tz) || 'IN';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 import { readReviewUrl } from './review-url';
 
@@ -50,6 +54,7 @@ export const publicMerchant = (m: MerchantRow) => ({
   joinCode: m.join_code,
   inactiveDays: m.inactive_days,
   phone: m.phone ?? '',
+  country: m.country || 'IN', // countries.ts: how customers' numbers are read and shown
   visitsNeeded: m.visits_needed,
   rewardName: m.reward_name,
   welcomeStamps: m.welcome_stamps,
@@ -62,6 +67,7 @@ export const publicMerchant = (m: MerchantRow) => ({
 type Settings = {
   name?: string;
   phone?: string;
+  country?: string;
   visitsNeeded?: number;
   rewardName?: string;
   welcomeStamps?: number;
@@ -142,12 +148,13 @@ export class AuthController {
   ) {}
 
   @Post('auth/signup')
-  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
+  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; country?: string; tz?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
     const name = body?.name?.trim();
     const email = body?.email?.trim().toLowerCase() ?? '';
     const password = body?.password ?? '';
     if (!name) throw new BadRequestException('Shop name is required');
-    const phone = readPhone(body?.phone);
+    const country = shopCountry(body);
+    const phone = readPhone(body?.phone, country);
     if (!phone && !email) throw new BadRequestException('Enter your WhatsApp number');
     if (email && !EMAIL.test(email)) throw new BadRequestException('Enter a valid email');
     if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
@@ -157,7 +164,7 @@ export class AuthController {
     }
     if (phone && this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in instead.');
 
-    return this.session(this.createShop({ name, email, phone, passwordHash: hashPassword(password), attribution: body?.attribution, rule: body?.rule, reviewUrl: body?.reviewUrl }));
+    return this.session(this.createShop({ name, email, phone, country, passwordHash: hashPassword(password), attribution: body?.attribution, rule: body?.rule, reviewUrl: body?.reviewUrl }));
   }
 
   /** The website shows "Continue with Google" only when the server has a Google client id. */
@@ -172,7 +179,7 @@ export class AuthController {
    * and sends the same token again.
    */
   @Post('auth/google')
-  async google(@Body() body: { credential?: string; name?: string; phone?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
+  async google(@Body() body: { credential?: string; name?: string; phone?: string; country?: string; tz?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
     const g = await verifyGoogleToken(String(body?.credential ?? ''));
     if (!g) throw new UnauthorizedException('Google sign-in did not work. Please try again.');
 
@@ -189,15 +196,16 @@ export class AuthController {
     }
 
     const name = body?.name?.trim().slice(0, 80);
-    const phone = readPhone(body?.phone);
+    const country = shopCountry(body);
+    const phone = readPhone(body?.phone, country);
     if (!name || !phone) return { needs: 'details', email: g.email, name: g.name };
     if (this.phoneTaken(phone)) throw new ConflictException('An account with this WhatsApp number already exists. Log in with your number and password.');
     // Nobody knows this password; a reset link from support can set one later.
-    const id = this.createShop({ name, email: g.email, phone, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub, rule: body?.rule, reviewUrl: body?.reviewUrl });
+    const id = this.createShop({ name, email: g.email, phone, country, passwordHash: hashPassword(randomBytes(24).toString('hex')), attribution: body?.attribution, googleSub: g.sub, rule: body?.rule, reviewUrl: body?.reviewUrl });
     return this.session(id);
   }
 
-  private createShop(s: { name: string; email: string; phone: string; passwordHash: string; attribution: unknown; googleSub?: string; rule?: unknown; reviewUrl?: unknown }) {
+  private createShop(s: { name: string; email: string; phone: string; country: string; passwordHash: string; attribution: unknown; googleSub?: string; rule?: unknown; reviewUrl?: unknown }) {
     // Where they came from; a customer card's link and a shop's share link name the shop by its (public) join code.
     const from = readAttribution(s.attribution);
     const referrer =
@@ -214,9 +222,9 @@ export class AuthController {
     const { lastInsertRowid } = this.db.sql
       .prepare(
         `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
-           signup_ref, signup_landing, referred_by, partner_id, google_sub) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           signup_ref, signup_landing, referred_by, partner_id, google_sub, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null, s.googleSub ?? null);
+      .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null, s.googleSub ?? null, s.country);
     const id = Number(lastInsertRowid);
     // The card they made in the stamp card maker becomes the shop's rule, so the app opens on their own card.
     const rule = readRule(s.rule);
@@ -240,14 +248,11 @@ export class AuthController {
     if (id.includes('@')) {
       candidates = this.db.sql.prepare('SELECT * FROM merchants WHERE email = ?').all(id.toLowerCase()) as MerchantRow[];
     } else if (id) {
-      let phone = '';
-      try {
-        phone = readPhone(id);
-      } catch {
-        // Not a number either; falls through to "wrong".
-      }
+      // The login page doesn't know the shop's country, so the number is tried as written in each one.
+      const phones = loginPhones(id);
       // Numbers given before sign-up by number weren't checked for repeats, so the password picks the account.
-      if (phone) candidates = this.db.sql.prepare('SELECT * FROM merchants WHERE phone = ? ORDER BY id').all(phone) as MerchantRow[];
+      if (phones.length)
+        candidates = this.db.sql.prepare(`SELECT * FROM merchants WHERE phone IN (${phones.map(() => '?').join(',')}) ORDER BY id`).all(...phones) as MerchantRow[];
     }
     const merchant = candidates.find((m) => checkPassword(body?.password ?? '', m.password_hash));
     if (!merchant) throw new UnauthorizedException('Wrong WhatsApp number, email or password');
@@ -299,7 +304,9 @@ export class AuthController {
     const m = this.find(req.merchantId);
     const b = body ?? {};
     const name = (b.name?.trim() || m.name).slice(0, 80);
-    const phone = b.phone === undefined ? (m.phone ?? '') : readPhone(b.phone);
+    const country = b.country === undefined ? m.country || 'IN' : knownCountry(b.country);
+    if (!country) throw new BadRequestException('Choose your country');
+    const phone = b.phone === undefined ? (m.phone ?? '') : readPhone(b.phone, country);
     if (!phone && !m.email) throw new BadRequestException('Keep your WhatsApp number: you log in with it');
     if (phone && phone !== m.phone && this.phoneTaken(phone, m.id)) throw new ConflictException('Another shop account already uses this WhatsApp number');
     const needed = wholeNumber(b.visitsNeeded ?? m.visits_needed, 'Visits', 2, 50);
@@ -309,12 +316,13 @@ export class AuthController {
     // Welcome stamps leave at least one real visit before the reward; fewer visits than that brings them down.
     const welcome = Math.min(wholeNumber(b.welcomeStamps ?? m.welcome_stamps, 'Welcome stamps', 0, 2), needed - 2);
     this.db.sql
-      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, welcome_stamps = ?, inactive_days = ?, phone = ? WHERE id = ?')
-      .run(name, needed, reward, welcome, inactive, phone || null, m.id);
+      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, welcome_stamps = ?, inactive_days = ?, phone = ?, country = ? WHERE id = ?')
+      .run(name, needed, reward, welcome, inactive, phone || null, country, m.id);
 
     const changed = (
       [
         ['shop name', m.name, name],
+        ['country', m.country || 'IN', country],
         ['visits for a reward', m.visits_needed, needed],
         ['reward', m.reward_name, reward],
         ['welcome stamps', m.welcome_stamps, welcome],

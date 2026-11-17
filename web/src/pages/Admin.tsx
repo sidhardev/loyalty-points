@@ -55,7 +55,6 @@ import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
 import { LeadsPage } from './AdminLeads';
 import { PartnersPage } from './AdminPartners';
-import { WaitlistPage } from './AdminWaitlist';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { DraftSheet, SettingsPage } from './AdminDrafts';
 import { PhusroPage } from './AdminPhusro';
@@ -2069,7 +2068,6 @@ const NAV: { group: string; items: NavItem[] }[] = [
           ['recent', 'Recent views'],
         ],
       },
-      { path: '/waitlist', label: 'UAE waitlist', icon: Globe2 },
       {
         path: '/leads',
         label: 'Leads',
@@ -2303,8 +2301,6 @@ export function AdminApp() {
     <LeadsPage api={adminApi} />
   ) : hash.startsWith('/partners') ? (
     <PartnersPage api={adminApi} />
-  ) : hash.startsWith('/waitlist') ? (
-    <WaitlistPage api={adminApi} />
   ) : hash.startsWith('/playbooks') ? (
     <PlaybooksPage api={adminApi} />
   ) : hash.startsWith('/phusro') ? (

@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { COUNTRIES, country, e164 } from './countries';
 
 // Where new shops come from. The website remembers a visitor's first arrival (web/src/attribution.ts) and sends it
 // with the sign-up; page views carry the same fields, so visits and sign-ups can be counted per source.
@@ -54,15 +55,24 @@ export function sourceLabel(source: string, ref: string) {
   return SITES.find(([re]) => re.test(host))?.[1] ?? host;
 }
 
-/** The owner's WhatsApp number: 10-digit Indian numbers get +91; other countries need their + code. '' = none. */
-export function readPhone(value: unknown) {
+/** How a mobile is written in each country, for "Enter a valid WhatsApp number, like …". */
+const EXAMPLE: Record<string, string> = { IN: '98765 43210', AE: '050 123 4567', SA: '050 123 4567', GB: '07400 123456', US: '(201) 555-0123' };
+
+/**
+ * The owner's WhatsApp number as +<code><number>. A number without + is read in the shop's country (India unless
+ * given); one with + can be from anywhere. '' = none given.
+ */
+export function readPhone(value: unknown, countryCode: string = 'IN') {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) return '';
-  let digits = raw.replace(/\D/g, '');
-  if (!raw.startsWith('+')) {
-    if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
-    if (digits.length === 10) digits = `91${digits}`;
-  }
-  if (digits.length < 10 || digits.length > 15) throw new BadRequestException('Enter a valid WhatsApp number, like 98765 43210');
-  return `+${digits}`;
+  const c = country(countryCode);
+  const phone = e164(raw, c);
+  if (!phone) throw new BadRequestException(`Enter a valid WhatsApp number, like ${EXAMPLE[c.code] ?? `+${c.dial} …`}`);
+  return phone;
+}
+
+/** Every way a typed login number could be a shop's saved number: read in each country, or as written with its +. */
+export function loginPhones(value: unknown) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  return [...new Set(COUNTRIES.map((c) => e164(raw, c)).filter(Boolean))];
 }

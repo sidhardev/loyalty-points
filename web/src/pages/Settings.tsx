@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { country, COUNTRIES, example } from '../country';
 import { Bell, ChevronRight, Crown, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
 import { api, download, type Merchant, type MsgLang } from '../api';
 import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
 import '../poster.css';
-import { ReferralCard, ShareCard } from '../share';
+import { ShareCard } from '../share';
 import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { openPlan } from '../billing';
@@ -149,6 +150,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
   const [form, setForm] = useState({
     name: merchant.name,
     phone: merchant.phone,
+    country: merchant.country || 'IN',
     visitsNeeded: merchant.visitsNeeded,
     rewardName: merchant.rewardName,
     welcomeStamps: merchant.welcomeStamps ?? 0,
@@ -157,7 +159,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
   const [lang, setLang] = useState(messageLang);
   const { busy, error, run } = useAction();
 
-  const set = (key: 'name' | 'phone' | 'rewardName' | 'inactiveDays') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
+  const set = (key: 'name' | 'phone' | 'country' | 'rewardName' | 'inactiveDays') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
   const chooseLang = (l: MsgLang) => {
     setLang(l);
@@ -235,8 +237,19 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
               <input value={form.name} onChange={set('name')} required />
             </label>
             <label>
+              {t('Country')}
+              <select value={form.country} onChange={set('country')}>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name} (+{c.dial})
+                  </option>
+                ))}
+              </select>
+              <span className="hint">{t('How customers’ numbers are typed at the counter and sent on WhatsApp.')}</span>
+            </label>
+            <label>
               {t('Your WhatsApp number')}
-              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="98765 43210" />
+              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder={example(country(form.country))} />
               <span className="hint">{t("Only for Regularhood support. Customers don't see it.")}</span>
             </label>
           </div>
@@ -278,7 +291,6 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
           <ProSettings merchant={merchant} onMerchant={onSaved} />
           <Poster merchant={merchant} />
           <ShareCard merchant={merchant} />
-          <ReferralCard merchant={merchant} />
           <YourData merchant={merchant} />
           <section className="card">
             <div className="card-head">

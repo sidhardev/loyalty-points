@@ -88,7 +88,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
                 <a className="row-item" href={`#/customers/${c.id}`}>
                   <span className="row-main">
                     <strong className="tabular">
-                      {phoneLabel(c.phone)}
+                      {phoneLabel(c.phone, merchant.country)}
                       {c.name ? <span className="muted"> · {c.name}</span> : null}
                     </strong>
                     <span>{seen(c)}</span>
@@ -100,7 +100,7 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          open(whatsapp(c.phone, reminderMessage(merchant, c, messageLang())), '_blank');
+                          open(whatsapp(c.phone, reminderMessage(merchant, c, messageLang()), merchant.country), '_blank');
                           setSent(new Set(sent).add(c.id));
                         }}
                         role="button"

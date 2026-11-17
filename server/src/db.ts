@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { COUNTRIES } from './countries';
 
 // One SQLite file (Node's built-in driver). Each shop only ever sees rows with its own merchant_id.
 // The schema is upgraded step by step (PRAGMA user_version), so existing data is kept.
@@ -33,6 +34,11 @@ const SEED_PAGES = (() => {
   ];
   return `INSERT OR IGNORE INTO seo_pages (slug, lang, topic, kind) VALUES\n  ${rows.join(',\n  ')};`;
 })();
+
+/** Migration 44: a shop whose owner's number starts with another country's code is in that country. */
+const COUNTRY_FROM_PHONE = COUNTRIES.filter((c) => c.code !== 'IN' && c.code !== 'CA') // +1 is the US unless the shop says Canada
+  .map((c) => `UPDATE merchants SET country = '${c.code}' WHERE phone LIKE '+${c.dial}%' AND length(phone) = ${1 + c.dial.length + c.nsn};`)
+  .join('\n  ');
 
 const MIGRATIONS: string[] = [
   // 1: first version
@@ -744,8 +750,8 @@ const MIGRATIONS: string[] = [
   ALTER TABLE payments ADD COLUMN inr_paise INTEGER;
   UPDATE payments SET inr_paise = amount_paise;
   `,
-  // 43: waitlists for countries Regularhood isn't open in yet (waitlist.ts), starting with the UAE (/uae). `would_pay`
-  // is the shop's own answer to the price question (yes / maybe / no); `source` is the utm_source it came from.
+  // 43: a waitlist for the UAE. No longer used: UAE shops now sign up directly (migration 44, /uae in uae.ts); the table
+  // is kept so the migrations stay in order.
   `
   CREATE TABLE IF NOT EXISTS waitlist (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -762,6 +768,12 @@ const MIGRATIONS: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (market, phone)
   );
+  `,
+  // 44: the shop's country (countries.ts): how its customers' numbers are read, where WhatsApp links go and what it pays
+  // in. Shops so far are Indian, except owners whose WhatsApp number has another country's code.
+  `
+  ALTER TABLE merchants ADD COLUMN country TEXT NOT NULL DEFAULT 'IN';
+  ${COUNTRY_FROM_PHONE}
   `,
 ];
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, Delete, Gift, MessageCircle, Star, Undo2 } from 'lucide-react';
 import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type Customer, type Merchant, type MsgLang, type VisitResult } from '../api';
+import { country, groupDigits } from '../country';
 import { LimitAfterVisit, LimitStrip, refreshBilling } from '../billing';
 import '../counter.css';
 import { t, useLang } from '../i18n';
@@ -97,13 +98,18 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   const [hold, setHold] = useState(false); // stop the countdown once they start doing something with the result
   const { busy, error, setError, run } = useAction();
   const tz = -new Date().getTimezoneOffset();
+  // How long a number is in the shop's country (10 in India, 9 in the UAE). A leading 0, as UAE and UK numbers are
+  // often typed, is allowed and isn't part of the number.
+  const place = country(merchant.country);
+  const local = (d: string) => d.replace(/^0/, '');
+  const isFull = (d: string) => local(d).length === place.nsn;
 
   const loadToday = useCallback(() => void api<{ visits: number; rewards: number }>(`today?tz=${tz}`).then(setToday).catch(() => {}), [tz]);
   useEffect(loadToday, [loadToday]);
 
   // Known numbers that start with what's typed.
   useEffect(() => {
-    if (digits.length < 4 || digits.length >= 10) return setSuggestions([]);
+    if (local(digits).length < 4 || isFull(digits)) return setSuggestions([]);
     const timer = setTimeout(() => void api<Customer[]>(`customers/suggest?digits=${digits}`).then(setSuggestions).catch(() => {}), 150);
     return () => clearTimeout(timer);
   }, [digits]);
@@ -117,7 +123,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   }, [loadToday, setError]);
 
   const submit = (phone = digits) => {
-    if (phone.length !== 10 || busy) return;
+    if (!isFull(phone) || busy) return;
     void run(async () => {
       const result = await api<VisitResult>('visits', 'POST', { phone, tz }).catch((err: Error & { code?: string }) => {
         if (err.code === 'customer_limit') void refreshBilling().catch(() => {}); // the strip above shows the plan is full
@@ -137,9 +143,9 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       setError('');
       if (key === 'back') setDigits((d) => d.slice(0, -1));
       else if (key === 'clear') setDigits('');
-      else setDigits((d) => (d.length < 10 ? d + key : d));
+      else setDigits((d) => (isFull(d) ? d : d + key));
     },
-    [setError],
+    [setError, place.nsn],
   );
 
   // A computer keyboard works too.
@@ -199,13 +205,13 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
     const n = merchant.visitsNeeded;
     // Every message opens WhatsApp on the shop's phone. After a reward, a Pro shop with a review link asks for a review.
     const send = given && merchant.pro && merchant.review ? (
-      <a className="btn btn-whatsapp btn-lg" href={whatsapp(c.phone, reviewMessage(merchant, messageLang()))} target="_blank" rel="noreferrer" onClick={() => setHold(true)}>
+      <a className="btn btn-whatsapp btn-lg" href={whatsapp(c.phone, reviewMessage(merchant, messageLang()), merchant.country)} target="_blank" rel="noreferrer" onClick={() => setHold(true)}>
         <Star size={20} /> {t('Ask for a Google review')}
       </a>
     ) : (
       <a
         className="btn btn-whatsapp btn-lg"
-        href={whatsapp(c.phone, cardMessage(merchant, c, messageLang(), given))}
+        href={whatsapp(c.phone, cardMessage(merchant, c, messageLang(), given), merchant.country)}
         target="_blank"
         rel="noreferrer"
         onClick={() => setHold(true)}
@@ -221,7 +227,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
             <span className="result-icon">
               <Gift size={44} />
             </span>
-            <p className="result-phone">{phoneLabel(c.phone)}</p>
+            <p className="result-phone">{phoneLabel(c.phone, merchant.country)}</p>
             <h1>{t('Give {reward} now', { reward: merchant.rewardName })}</h1>
             <p>
               {result.already ? t('Visit already counted today.') : t('This is visit {n}.', { n })} {t('Their card is full.')}
@@ -248,7 +254,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       <div className="counter">
         <section className={`result ${result.already && !given ? 'result-already' : ''}`}>
           <span className="result-icon">{given ? <Gift size={44} /> : <Check size={48} strokeWidth={3} />}</span>
-          <p className="result-phone">{phoneLabel(c.phone)}</p>
+          <p className="result-phone">{phoneLabel(c.phone, merchant.country)}</p>
           {given ? (
             <>
               <h1>{t('Reward given 🎉')}</h1>
@@ -288,7 +294,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
     );
   }
 
-  const ready = digits.length === 10;
+  const ready = isFull(digits);
   return (
     <div className="counter">
       <p className="counter-rule">
@@ -296,12 +302,12 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       </p>
       <LimitStrip near />
       <div className={`phone-display ${digits ? '' : 'empty'}`} aria-live="polite">
-        {digits ? phoneLabel(digits.padEnd(10, '·')).replace(/·/g, '_') : t('Customer’s phone number')}
+        {digits ? `${digits.startsWith('0') ? '0' : ''}${groupDigits(local(digits).padEnd(place.nsn, '_'), place)}` : t('Customer’s phone number')}
       </div>
       <div className="suggestions">
         {suggestions.map((c) => (
-          <button key={c.id} className="suggestion" onClick={() => submit(c.phone.replace(/\D/g, '').slice(-10))} disabled={busy}>
-            <strong>{phoneLabel(c.phone)}</strong>
+          <button key={c.id} className="suggestion" onClick={() => submit(c.phone.replace(/\D/g, '').slice(-place.nsn))} disabled={busy}>
+            <strong>{phoneLabel(c.phone, merchant.country)}</strong>
             <span>
               {c.rewardDue ? t('🎁 reward due') : `${Math.min(c.stamps, merchant.visitsNeeded)}/${merchant.visitsNeeded}`}
             </span>
