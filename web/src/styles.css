@@ -7278,3 +7278,90 @@ a.kpi:hover {
 .welcome-label {
   font-weight: 600;
 }
+
+/* ---- monthly report (report.tsx) ---- */
+.report {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.report-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+}
+.report-main > div {
+  display: grid;
+  gap: 2px;
+}
+.report-main span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.report-big {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--brand-ink);
+}
+.report-facts {
+  margin: 0;
+}
+.report-win {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.report-win > span {
+  flex: 1 1 200px;
+}
+.report-win svg {
+  flex: none;
+}
+.report-locked {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.report-bill {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+.report-bill-row {
+  display: flex;
+  gap: 8px;
+}
+.report-bill-row input {
+  flex: 1;
+  min-width: 0;
+}
+.report-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  text-align: center;
+}
+.report-line svg {
+  color: var(--brand-fill);
+}
+.counter .report-line {
+  margin-top: -8px;
+}
+.report-line b {
+  white-space: nowrap;
+}

@@ -775,6 +775,19 @@ const MIGRATIONS: string[] = [
   ALTER TABLE merchants ADD COLUMN country TEXT NOT NULL DEFAULT 'IN';
   ${COUNTRY_FROM_PHONE}
   `,
+  // 45: the monthly report (report.ts): what a customer spends on a visit, as the shop guesses it (0 = not told), and
+  // every "Remind" a shop tapped in the "Not seen" list, so a return soon after one can be counted as brought back.
+  `
+  ALTER TABLE merchants ADD COLUMN avg_bill INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX idx_reminders_merchant ON reminders (merchant_id, created_at);
+  CREATE INDEX idx_reminders_customer ON reminders (customer_id, created_at);
+  `,
 ];
 
 const INDEXES = `

@@ -6,6 +6,7 @@ import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
 import { messageLang } from './Counter';
+import { ReportCard } from '../report';
 
 type Filter = 'all' | 'reward' | 'inactive';
 
@@ -15,7 +16,7 @@ const seen = (c: Customer) => {
   return d === 0 ? t('came today') : d === 1 ? t('came yesterday') : t('came {n} days ago', { n: d });
 };
 
-export function Customers({ merchant, hash }: { merchant: Merchant; hash: string }) {
+export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; hash: string; onSaved: (m: Merchant) => void }) {
   useLang();
   const filter: Filter = (new URLSearchParams(hash.split('?')[1] ?? '').get('filter') as Filter) || 'all';
   const [q, setQ] = useState('');
@@ -52,6 +53,8 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
       </header>
 
       <LimitStrip meter />
+
+      {filter === 'all' && !q && <ReportCard merchant={merchant} onSaved={onSaved} />}
 
       <div className="chips" role="tablist">
         {chips.map(({ id, label, icon: Icon }) => (
@@ -101,6 +104,8 @@ export function Customers({ merchant, hash }: { merchant: Merchant; hash: string
                           e.preventDefault();
                           e.stopPropagation();
                           open(whatsapp(c.phone, reminderMessage(merchant, c, messageLang()), merchant.country), '_blank');
+                          // Counted so a return soon after shows as brought back in the monthly report.
+                          void api(`customers/${c.id}/reminded`, 'POST').catch(() => {});
                           setSent(new Set(sent).add(c.id));
                         }}
                         role="button"

@@ -13,6 +13,7 @@ export type Merchant = {
   visitsNeeded: number; // every this many visits…
   rewardName: string; // …the customer gets this ('' until the shop sets it up)
   welcomeStamps: number; // extra stamps on a new customer's first visit (0 = off)
+  avgBill: number; // what a customer spends on a visit, about (0 = not told): the monthly report shows it in money
   pro: boolean; // on Pro (plans.ts on the server lists what it adds; PRO_PERKS in billing.tsx shows it)
   review: boolean; // the shop saved its Google review link
   reviewUrl: string;

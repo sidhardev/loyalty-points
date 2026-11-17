@@ -18,6 +18,7 @@ import { LoyaltyController } from './loyalty.controller';
 import { LoyaltyService } from './loyalty.service';
 import { PartnersAdminController, PartnersController } from './partners';
 import { ProController } from './pro';
+import { ReportController } from './report';
 import { PublicController } from './public.controller';
 import { jwtSecret } from './secret';
 import { SeoAdminController, SeoPublicController, SeoService } from './seo';
@@ -36,7 +37,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, UaePageController],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, ReportController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, UaePageController],
   providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, DraftService, Storage, WhatsApp, WaBot],
 })
 class AppModule {}

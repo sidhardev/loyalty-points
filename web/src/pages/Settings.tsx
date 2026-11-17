@@ -155,11 +155,12 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
     rewardName: merchant.rewardName,
     welcomeStamps: merchant.welcomeStamps ?? 0,
     inactiveDays: String(merchant.inactiveDays),
+    avgBill: merchant.avgBill ? String(merchant.avgBill) : '',
   });
   const [lang, setLang] = useState(messageLang);
   const { busy, error, run } = useAction();
 
-  const set = (key: 'name' | 'phone' | 'country' | 'rewardName' | 'inactiveDays') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
+  const set = (key: 'name' | 'phone' | 'country' | 'rewardName' | 'inactiveDays' | 'avgBill') => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
   const chooseLang = (l: MsgLang) => {
     setLang(l);
@@ -173,7 +174,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
   const save = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      onSaved(await api<Merchant>('me', 'PATCH', { ...form, inactiveDays: Number(form.inactiveDays) }));
+      onSaved(await api<Merchant>('me', 'PATCH', { ...form, inactiveDays: Number(form.inactiveDays), avgBill: Math.round(Number(form.avgBill) || 0) }));
       toast(t('Settings saved'));
     });
   };
@@ -279,6 +280,11 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
             <label>
               {t('Days without a visit before a customer counts as “not seen”')}
               <input type="number" min="7" max="365" step="1" value={form.inactiveDays} onChange={set('inactiveDays')} required />
+            </label>
+            <label>
+              {t('What a customer spends on one visit, about')}
+              <input type="number" inputMode="numeric" min="0" max="1000000" step="1" value={form.avgBill} onChange={set('avgBill')} />
+              <span className="hint">{t('Your monthly report on the Customers page shows return visits in money with this.')}</span>
             </label>
           </div>
 

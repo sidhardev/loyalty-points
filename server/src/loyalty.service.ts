@@ -44,6 +44,7 @@ export type MerchantRow = {
   msg_lang: string;
   logo_at: string | null; // the shop has a logo (Pro), last changed then
   country: string; // countries.ts
+  avg_bill: number; // what a customer spends on a visit, as the shop guesses it (0 = not told), for the monthly report
 };
 
 export type Actor = 'shop' | 'customer' | 'admin';

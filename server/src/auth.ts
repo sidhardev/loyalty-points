@@ -58,6 +58,7 @@ export const publicMerchant = (m: MerchantRow) => ({
   visitsNeeded: m.visits_needed,
   rewardName: m.reward_name,
   welcomeStamps: m.welcome_stamps,
+  avgBill: m.avg_bill, // 0 = not told
   pro: isPro(m), // see plans.ts for what Pro adds
   review: Boolean(m.review_url), // has a Google review link
   reviewUrl: m.review_url,
@@ -72,6 +73,7 @@ type Settings = {
   rewardName?: string;
   welcomeStamps?: number;
   inactiveDays?: number;
+  avgBill?: number;
 };
 
 function wholeNumber(value: unknown, label: string, min: number, max: number) {
@@ -315,9 +317,10 @@ export class AuthController {
     const inactive = wholeNumber(b.inactiveDays ?? m.inactive_days, 'Inactive days', 7, 365);
     // Welcome stamps leave at least one real visit before the reward; fewer visits than that brings them down.
     const welcome = Math.min(wholeNumber(b.welcomeStamps ?? m.welcome_stamps, 'Welcome stamps', 0, 2), needed - 2);
+    const avgBill = wholeNumber(b.avgBill ?? m.avg_bill, 'Average bill', 0, 1_000_000);
     this.db.sql
-      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, welcome_stamps = ?, inactive_days = ?, phone = ?, country = ? WHERE id = ?')
-      .run(name, needed, reward, welcome, inactive, phone || null, country, m.id);
+      .prepare('UPDATE merchants SET name = ?, visits_needed = ?, reward_name = ?, welcome_stamps = ?, inactive_days = ?, phone = ?, country = ?, avg_bill = ? WHERE id = ?')
+      .run(name, needed, reward, welcome, inactive, phone || null, country, avgBill, m.id);
 
     const changed = (
       [
@@ -327,6 +330,7 @@ export class AuthController {
         ['reward', m.reward_name, reward],
         ['welcome stamps', m.welcome_stamps, welcome],
         ['inactive days', m.inactive_days, inactive],
+        ['average bill', m.avg_bill, avgBill],
       ] as const
     ).filter(([, before, after]) => before !== after);
     if (changed.length) {

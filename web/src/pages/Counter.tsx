@@ -3,6 +3,7 @@ import { Check, Delete, Gift, MessageCircle, Star, Undo2 } from 'lucide-react';
 import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type Customer, type Merchant, type MsgLang, type VisitResult } from '../api';
 import { country, groupDigits } from '../country';
 import { LimitAfterVisit, LimitStrip, refreshBilling } from '../billing';
+import { ReportLine } from '../report';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { ErrorText, confetti, toast, useAction } from '../ui';
@@ -341,6 +342,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
           </>
         ) : null}
       </p>
+      <ReportLine merchant={merchant} />
     </div>
   );
 }

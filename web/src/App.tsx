@@ -130,7 +130,7 @@ function ShopApp() {
   const customerId = hash.match(/^\/customers\/(\d+)$/)?.[1];
   let page: ReactNode;
   if (customerId) page = <CustomerPage key={customerId} id={Number(customerId)} merchant={merchant} />;
-  else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} />;
+  else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} onSaved={setMerchant} />;
   else if (hash.startsWith('/activity')) page = <ActivityLog />;
   else if (hash.startsWith('/plan')) page = <Plan merchant={merchant} onMerchant={setMerchant} />;
   else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} onLogout={logout} />;
