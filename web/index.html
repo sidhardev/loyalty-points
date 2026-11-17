@@ -40,6 +40,21 @@
         document.documentElement.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       } catch (e) {}
     </script>
+    <script>
+      // Google Analytics 4 (same id as server/src/ga.ts, which tags the server-rendered pages). Not on the admin or
+      // on links that carry a secret (customer card, old bill link, password reset, partner dashboard).
+      (function () {
+        if (/^\/(admin|w|c|reset|partner)(\/|$)/.test(location.pathname)) return;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-Y2FJ4XT99F');
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-Y2FJ4XT99F';
+        document.head.appendChild(s);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

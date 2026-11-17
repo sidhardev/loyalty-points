@@ -140,6 +140,19 @@ echo "GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com" >> deploy/.env
 cd deploy && docker compose up -d
 ```
 
+## Google Analytics (optional)
+
+GA4 runs on the public pages (homepage, `/app`, guides, tools, SEO and legal pages) next to the site's own visit
+tracker. It never loads on `/admin` or on links that carry a secret (`/w/…`, `/c/…`, `/reset/…`, `/partner/…`).
+The measurement id (`G-…`, GA → Admin → Data streams → Web) is in two places: `web/index.html` (homepage and app,
+served by Vercel) and `DEFAULT_MEASUREMENT_ID` in `server/src/ga.ts` (guides, tools, SEO and legal pages). The
+server's one can also be set in `deploy/.env` (`off` turns it off there):
+
+```
+echo "GA_MEASUREMENT_ID=G-XXXXXXXXXX" >> deploy/.env
+cd deploy && docker compose up -d
+```
+
 ## Lead finder (optional)
 
 Admin → **Leads** finds shops on Google Maps that could use Regularhood and writes a pitch for each with Gemini. It needs

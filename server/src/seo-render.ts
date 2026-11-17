@@ -6,6 +6,7 @@
 import type { Guide, GuideBlock } from './guides';
 import { LEGAL, type LegalDoc } from './legal';
 import type { ReviewQrCopy, StampMakerCopy } from './tools';
+import { gaSnippet } from './ga';
 
 export type SeoLang = 'en' | 'hi';
 export type SeoKind = 'shop' | 'city';
@@ -263,6 +264,7 @@ ${alt}
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;600;700${o.lang === 'hi' ? '&family=Noto+Sans+Devanagari:wght@400;600;700;800' : ''}&display=swap" rel="stylesheet">
 <style>${CSS}</style>
 ${o.jsonLd ? `<script type="application/ld+json">${JSON.stringify(o.jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
+${gaSnippet()}
 </head>
 <body class="${o.lang}">
 <header><div class="wrap">
