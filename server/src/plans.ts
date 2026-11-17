@@ -49,7 +49,7 @@ const DEFAULTS: PlanSettings = {
   monthlyPaise: Number(process.env.PRO_MONTHLY_PAISE) || 9_900,
   yearlyPaise: Number(process.env.PRO_YEARLY_PAISE) || 79_900,
   lifetimePaise: Number(process.env.FOUNDING_LIFETIME_PAISE) || 149_900,
-  freeCustomers: 50,
+  freeCustomers: 15,
 };
 
 export function planSettings(sql: DatabaseSync): PlanSettings {

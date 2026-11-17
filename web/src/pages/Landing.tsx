@@ -1519,7 +1519,7 @@ const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 
 /** Free and Pro: monthly, yearly, and the lifetime Founding offer while it has places (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
-  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { monthly: 9_900, yearly: 49_900, lifetime: 149_900 }, freeCustomers: 50 });
+  const [founding, setFounding] = useState<Founding>({ open: true, total: 100, left: -1, prices: { monthly: 9_900, yearly: 49_900, lifetime: 149_900 }, freeCustomers: 15 });
   useEffect(() => {
     fetch('/api/public/founding')
       .then((r) => (r.ok ? r.json() : null))

@@ -52,12 +52,12 @@ export type ProPerk = (typeof PRO_PERKS)[number]['id'];
 
 export const KINDS: PaidKind[] = ['monthly', 'yearly', 'lifetime'];
 
-/** How close the Free plan is to its limit: '' while there's room, then 'is-warn' from 40, 'is-full' at the limit. */
+/** How close the Free plan is to its limit: '' while there's room, then 'is-warn' from 80%, 'is-full' at the limit. */
 function level(b: Billing & { limit: number }) {
-  return b.customers >= b.limit ? 'is-full' : b.customers >= WARN_AT ? 'is-warn' : '';
+  return b.customers >= b.limit ? 'is-full' : b.customers >= warnAt(b.limit) ? 'is-warn' : '';
 }
-const WARN_AT = 40;
-const COUNTER_AT = 45; // the counter stays quiet until the last few places
+const warnAt = (limit: number) => Math.ceil(limit * 0.8); // 12 of 15
+const counterAt = (limit: number) => Math.ceil(limit * 0.9); // the counter stays quiet until the last few places
 const FEW_SEATS = 30; // "Only … left" once lifetime places are running out
 
 /** The Free plan's numbers, or null when the shop has no limit. */
@@ -300,7 +300,7 @@ export function ProLock({ perk, children }: { perk: ProPerk; children?: ReactNod
 
 // ---------------------------------------------------------------- where the limit shows
 
-/** Phone topbar: "23/50" with a thin meter, or a small crown for Pro shops. */
+/** Phone topbar: "9/15" with a thin meter, or a small crown for Pro shops. */
 export function LimitPill() {
   useLang();
   const b = useBilling();
@@ -352,7 +352,7 @@ export function LimitCard() {
 export function LimitStrip({ near, meter }: { near?: boolean; meter?: boolean }) {
   useLang();
   const u = freeUsage(useBilling());
-  if (!u || (near && u.customers < COUNTER_AT)) return null;
+  if (!u || (near && u.customers < counterAt(u.limit))) return null;
   const full = u.left === 0;
   return (
     <button type="button" className={`limit-strip ${level(u)}`} onClick={openPlan}>
@@ -380,7 +380,7 @@ export function LimitStrip({ near, meter }: { near?: boolean; meter?: boolean })
 export function LimitAfterVisit() {
   useLang();
   const u = freeUsage(useBilling());
-  if (!u || u.customers < WARN_AT) return null;
+  if (!u || u.customers < warnAt(u.limit)) return null;
   return (
     <button type="button" className="limit-after" onClick={openPlan}>
       {u.left === 0 ? t('That was your last free customer') : t('{n} free customers left', { n: num(u.left) })}

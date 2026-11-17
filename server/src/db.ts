@@ -505,7 +505,7 @@ const MIGRATIONS: string[] = [
   ALTER TABLE merchants_new RENAME TO merchants;
   `,
 
-  // 22: plans. Free shops keep up to 50 customers; Founding Shops (the first 100 that pay, lifetime or yearly) have no
+  // 22: plans. Free shops keep up to 15 customers (was 50); Founding Shops (the first 100 that pay, lifetime or yearly) have no
   // limit. Every shop that signed up before plans existed is 'grandfathered': no limit, as the terms promised.
   // `payments` keeps every Razorpay order, paid or not.
   `
@@ -730,6 +730,11 @@ const MIGRATIONS: string[] = [
   // finished more often than an empty one asking for the same visits.
   `
   ALTER TABLE merchants ADD COLUMN welcome_stamps INTEGER NOT NULL DEFAULT 0;
+  `,
+  // 41: the Free plan keeps 15 customers (it was 50). Settings saved from Admin → Plans carry the old number, so it's
+  // changed there too. Free shops already over 15 keep every customer; only new ones need Pro.
+  `
+  UPDATE app_settings SET value = json_set(value, '$.freeCustomers', 15) WHERE key = 'plans';
   `,
 ];
 

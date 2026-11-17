@@ -2066,7 +2066,7 @@ const hi: Guide[] = [
         h2: 'Regularhood pehle din se',
         p: [
           'Regularhood mein customer ka number likho aur Add visit dabao — number bhi save ho gaya, pehla stamp bhi lag gaya. Customer ko WhatsApp pe uska card milta hai, aur counter poster aur WhatsApp status ki photo ready milti hai.',
-          'Pehle 50 customer free hain, toh nayi dukaan ke liye bina kharche shuru ho jaata hai.',
+          'Pehle 15 customer free hain, toh nayi dukaan ke liye bina kharche shuru ho jaata hai.',
         ],
       },
     ],

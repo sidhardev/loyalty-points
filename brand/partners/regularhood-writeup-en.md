@@ -24,7 +24,7 @@ Good for
 Cafes, bakeries, restaurants, salons and beauty parlours, ladies' stores, kirana shops, and any shop where people come back again and again.
 
 Price
-- Free for your first 50 customers. No card needed to start.
+- Free for your first 15 customers. No card needed to start.
 - Founding Shop plan for the first 100 shops: ₹1,499 one time for life, or ₹499 a year. No customer limit, plus extra features.
 
 Start today: www.regularhood.in

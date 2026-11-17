@@ -218,7 +218,7 @@ What Regularhood does (use only these facts):
 - No app, no QR code, no points and no sign-up for customers. Works for customers without a smartphone, only their number is needed.
 - One tap sends the customer their card on WhatsApp (nothing is sent automatically): their stamps and how many visits are left, in Hindi and English.
 - A printable counter poster with the shop's rule.
-- Works on any phone. Free for up to 50 customers, set up in one minute.
+- Works on any phone. Free for up to 15 customers, set up in one minute.
 - Pro (₹99 a month, or cheaper by the year) adds unlimited customers, a list of customers who haven't come back with a ready "we miss you" WhatsApp message, Google review requests, the shop's logo on the card and an Excel download.
 
 Language:
