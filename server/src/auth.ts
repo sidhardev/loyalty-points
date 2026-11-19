@@ -7,12 +7,14 @@ import {
   ExecutionContext,
   ForbiddenException,
   Get,
+  HttpCode,
   Injectable,
   NotFoundException,
   Param,
   Patch,
   Post,
   Req,
+  ServiceUnavailableException,
   UnauthorizedException,
   UseGuards,
   createParamDecorator,
@@ -30,6 +32,8 @@ import { CARD_SOURCE, cleanCode, loginPhones, PARTNER_SOURCE, readAttribution, r
 const shopCountry = (b: { country?: unknown; tz?: unknown } | undefined) => knownCountry(b?.country) || countryFromTz(b?.tz) || 'IN';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 import { readReviewUrl } from './review-url';
+import { Mailer, resetEmail } from './mail';
+import { ResetCodes } from './reset-codes';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
 // every request. They log in with either one, or with "Continue with Google" (google.ts).
@@ -147,6 +151,8 @@ export class AuthController {
     private readonly db: Db,
     private readonly jwt: JwtService,
     private readonly loyalty: LoyaltyService,
+    private readonly codes: ResetCodes,
+    private readonly mailer: Mailer,
   ) {}
 
   @Post('auth/signup')
@@ -245,21 +251,77 @@ export class AuthController {
   @Post('auth/login')
   async login(@Body() body: { login?: string; email?: string; password?: string }) {
     // One box for either: anything with an @ is an email, the rest a WhatsApp number.
-    const id = String(body?.login ?? body?.email ?? '').trim();
-    let candidates: MerchantRow[] = [];
-    if (id.includes('@')) {
-      candidates = this.db.sql.prepare('SELECT * FROM merchants WHERE email = ?').all(id.toLowerCase()) as MerchantRow[];
-    } else if (id) {
-      // The login page doesn't know the shop's country, so the number is tried as written in each one.
-      const phones = loginPhones(id);
-      // Numbers given before sign-up by number weren't checked for repeats, so the password picks the account.
-      if (phones.length)
-        candidates = this.db.sql.prepare(`SELECT * FROM merchants WHERE phone IN (${phones.map(() => '?').join(',')}) ORDER BY id`).all(...phones) as MerchantRow[];
-    }
+    const candidates = this.accountsFor(String(body?.login ?? body?.email ?? ''));
     const merchant = candidates.find((m) => checkPassword(body?.password ?? '', m.password_hash));
     if (!merchant) throw new UnauthorizedException('Wrong WhatsApp number, email or password');
     if (merchant.suspended_at) throw new ForbiddenException(SUSPENDED);
     return this.session(merchant.id);
+  }
+
+  /** The shops a login box value can mean: an email, or a WhatsApp number written any way. */
+  private accountsFor(login: string): MerchantRow[] {
+    const id = login.trim();
+    if (id.includes('@')) return this.db.sql.prepare('SELECT * FROM merchants WHERE email = ?').all(id.toLowerCase()) as MerchantRow[];
+    // The login page doesn't know the shop's country, so the number is tried as written in each one.
+    const phones = id ? loginPhones(id) : [];
+    // Numbers given before sign-up by number weren't checked for repeats, so the password (or the code) picks the account.
+    if (!phones.length) return [];
+    return this.db.sql.prepare(`SELECT * FROM merchants WHERE phone IN (${phones.map(() => '?').join(',')}) ORDER BY id`).all(...phones) as MerchantRow[];
+  }
+
+  /**
+   * "Forgot password", step 1. An email gets a 6-digit code by mail (mail.ts). For a WhatsApp number the page gets a
+   * wa.me link: the owner sends RESET to our number and the reply has the code (whatsapp.ts). That proves the number is
+   * theirs and costs nothing, because they wrote first. Sign-up already tells whether an account exists, so these
+   * messages can too.
+   */
+  @Post('auth/forgot')
+  @HttpCode(200)
+  async forgot(@Body() body: { login?: string }) {
+    const login = String(body?.login ?? '').trim();
+    if (!login) throw new BadRequestException('Enter your WhatsApp number or email');
+    if (login.includes('@')) {
+      if (!this.mailer.ready) throw new ServiceUnavailableException('Reset by email isn’t on yet. Use your WhatsApp number instead.');
+      const m = this.accountsFor(login).find((a) => !a.suspended_at);
+      if (!m) throw new NotFoundException('No shop account uses this email. Try your WhatsApp number.');
+      const code = this.codes.create(m.id, 'email');
+      if (!code) throw new BadRequestException('We just sent a code. Check your inbox (and spam), or try again in a minute.');
+      const mail = resetEmail(m.name, code);
+      try {
+        await this.mailer.send(m.email ?? login, mail.subject, mail.text, mail.html);
+      } catch (e) {
+        console.error('Reset email failed:', (e as Error).message);
+        throw new ServiceUnavailableException('Could not send the email right now. Try your WhatsApp number instead.');
+      }
+      this.loyalty.log(m.id, 'shop', 'password', 'Asked for a password reset code by email');
+      return { channel: 'email' as const };
+    }
+    if (!loginPhones(login).length) throw new BadRequestException('Enter a valid WhatsApp number or email');
+    if (!this.accountsFor(login).length) throw new NotFoundException('No shop account uses this WhatsApp number. Check it, or try your email.');
+    const number = (await this.codes.whatsappNumber?.()) ?? '';
+    if (!number) throw new ServiceUnavailableException('Reset on WhatsApp isn’t available right now. Use your email, or contact support.');
+    return { channel: 'whatsapp' as const, link: `https://wa.me/${number}?text=RESET` };
+  }
+
+  /** "Forgot password", step 2: the code and a new password. Logs the shop in. */
+  @Post('auth/forgot/verify')
+  @HttpCode(200)
+  verifyReset(@Body() body: { login?: string; code?: string; password?: string }) {
+    const code = String(body?.code ?? '').replace(/\D/g, '');
+    const password = body?.password ?? '';
+    if (code.length !== 6) throw new BadRequestException('Enter the 6-digit code');
+    if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
+    const accounts = this.accountsFor(String(body?.login ?? '')).filter((a) => !a.suspended_at);
+    const r = this.codes.use(
+      accounts.map((a) => a.id),
+      code,
+    );
+    if (r === 'none') throw new BadRequestException('This code has expired or was used up. Ask for a new one.');
+    if (r === 'wrong') throw new BadRequestException('Wrong code. Check it and try again.');
+    this.db.sql.prepare('UPDATE merchants SET password_hash = ? WHERE id = ?').run(hashPassword(password), r);
+    this.db.sql.prepare("UPDATE password_resets SET used_at = datetime('now') WHERE merchant_id = ? AND used_at IS NULL").run(r);
+    this.loyalty.log(r, 'shop', 'password', 'Set a new password with a reset code');
+    return this.session(r);
   }
 
   /** A reset link made by the superadmin: which shop it's for, if it still works. */

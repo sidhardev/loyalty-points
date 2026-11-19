@@ -82,6 +82,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
   const { busy, error, setError, run } = useAction();
   // A new Google account: its token waits here while the shop name and WhatsApp number are asked for.
   const [google, setGoogle] = useState<{ credential: string; email: string } | null>(null);
+  const [forgot, setForgot] = useState(false);
 
   const withGoogle = (credential: string, details?: { name: string; phone: string; country: string }) =>
     run(async () => {
@@ -142,6 +143,9 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
       </section>
 
       <div className="auth-form-wrap">
+        {forgot ? (
+          <ForgotPassword login={form.login} onBack={() => setForgot(false)} onAuthed={onAuthed} />
+        ) : (
         <form className="card auth-card" onSubmit={submit}>
           {google ? (
             <>
@@ -237,6 +241,19 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
                   <input type="email" autoComplete="email" value={form.email} onChange={set('email')} />
                 </label>
               )}
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  className="link small"
+                  style={{ alignSelf: 'flex-end', marginTop: -6 }}
+                  onClick={() => {
+                    setError('');
+                    setForgot(true);
+                  }}
+                >
+                  Forgot password?
+                </button>
+              )}
               <ErrorText text={error} />
               <button className="btn btn-primary btn-lg" disabled={busy}>
                 {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
@@ -263,8 +280,121 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
             </>
           )}
         </form>
+        )}
       </div>
     </main>
+  );
+}
+
+/**
+ * "Forgot password": an email gets a 6-digit code by mail; a WhatsApp number sends RESET to our number and the reply
+ * has the code. Then the code and a new password log the shop in.
+ */
+function ForgotPassword({ login: start, onBack, onAuthed }: { login: string; onBack: () => void; onAuthed: (m: Merchant) => void }) {
+  const [login, setLogin] = useState(start);
+  const [sent, setSent] = useState<{ channel: 'email' } | { channel: 'whatsapp'; link: string } | null>(null);
+  const [form, setForm] = useState({ code: '', password: '', again: '' });
+  const { busy, error, setError, run } = useAction();
+
+  const ask = (e?: FormEvent) => {
+    e?.preventDefault();
+    void run(async () => {
+      setSent(await api<{ channel: 'email' } | { channel: 'whatsapp'; link: string }>('auth/forgot', 'POST', { login }));
+      trackEvent('click', 'Forgot password: asked for a code');
+    });
+  };
+  const verify = (e: FormEvent) => {
+    e.preventDefault();
+    if (form.password !== form.again) return setError("The passwords don't match");
+    void run(async () => {
+      const { token, merchant } = await api<{ token: string; merchant: Merchant }>('auth/forgot/verify', 'POST', { login, code: form.code, password: form.password });
+      setToken(token);
+      onAuthed(merchant);
+    });
+  };
+
+  return (
+    <form className="card auth-card" onSubmit={sent ? verify : ask}>
+      <div>
+        <h2 style={{ fontSize: 22 }}>Reset your password</h2>
+        <p className="muted small">
+          {!sent
+            ? 'Enter the WhatsApp number or email of your shop account.'
+            : sent.channel === 'email'
+              ? `We emailed a 6-digit code to ${login}. Check spam too.`
+              : 'Send RESET to our WhatsApp. The reply has your 6-digit code.'}
+        </p>
+      </div>
+      {!sent ? (
+        <label>
+          WhatsApp number or email
+          <input autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required autoFocus />
+        </label>
+      ) : (
+        <>
+          {sent.channel === 'whatsapp' && (
+            <a className="btn btn-soft" href={sent.link} target="_blank" rel="noopener">
+              <MessageCircle size={17} /> Send RESET on WhatsApp
+            </a>
+          )}
+          <label>
+            6-digit code
+            <input
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              minLength={6}
+            />
+          </label>
+          <label>
+            New password
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+            />
+          </label>
+          <label>
+            New password again
+            <input type="password" autoComplete="new-password" value={form.again} onChange={(e) => setForm({ ...form, again: e.target.value })} required />
+          </label>
+        </>
+      )}
+      <ErrorText text={error} />
+      <button className="btn btn-primary btn-lg" disabled={busy}>
+        {busy ? 'Please wait…' : sent ? 'Save and log in' : 'Get a code'}
+      </button>
+      <p className="muted small center">
+        {sent && (
+          <>
+            <button type="button" className="link" disabled={busy} onClick={() => (sent.channel === 'email' ? ask() : window.open(sent.link, '_blank', 'noopener'))}>
+              Send a new code
+            </button>
+            {' · '}
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                setSent(null);
+                setError('');
+              }}
+            >
+              Use another number or email
+            </button>
+            {' · '}
+          </>
+        )}
+        <button type="button" className="link" onClick={onBack}>
+          Back to log in
+        </button>
+      </p>
+    </form>
   );
 }
 

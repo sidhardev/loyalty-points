@@ -21,6 +21,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { LeadsService } from './leads';
+import { ResetCodes } from './reset-codes';
 import { seal, unseal } from './secret';
 import { SITE, SeoService } from './seo';
 import { MAX_FILE_BYTES, Storage } from './storage';
@@ -112,7 +113,10 @@ export class WhatsApp {
     private readonly db: Db,
     private readonly leads: LeadsService,
     private readonly storage: Storage,
-  ) {}
+    private readonly resetCodes: ResetCodes,
+  ) {
+    resetCodes.whatsappNumber = () => this.publicNumber();
+  }
 
   /** The reply bot (wabot.ts) registers itself here, since it sends through this service. */
   bot?: { reply(r: LeadReply): Promise<void>; goodbye(phone: string, leadId: number, said: string): Promise<void> };
@@ -278,6 +282,41 @@ export class WhatsApp {
     if (!s.phoneNumberId) throw new BadRequestException('Add the phone number ID first');
     if (!/^\d{6}$/.test(pin)) throw new BadRequestException('The PIN is 6 digits');
     return this.graph<{ success?: boolean }>(`${s.phoneNumberId}/register`, { method: 'POST', body: { messaging_product: 'whatsapp', pin } });
+  }
+
+  private shownNumber?: { digits: string; at: number };
+
+  /** Our number as digits for wa.me links: WHATSAPP_PUBLIC_NUMBER in .env, else asked from Meta (kept for 6 hours). */
+  async publicNumber() {
+    const fromEnv = waDigits(process.env.WHATSAPP_PUBLIC_NUMBER ?? '');
+    if (fromEnv) return fromEnv;
+    if (this.shownNumber && Date.now() - this.shownNumber.at < 6 * 3_600_000) return this.shownNumber.digits;
+    try {
+      const digits = waDigits((await this.phoneInfo()).display_phone_number ?? '');
+      if (digits) this.shownNumber = { digits, at: Date.now() };
+      return digits;
+    } catch {
+      return '';
+    }
+  }
+
+  /** A shop owner wrote RESET: reply with a password reset code (free, since they wrote first). See reset-codes.ts. */
+  private async resetReply(phone: string) {
+    const m = this.db.sql.prepare('SELECT id FROM merchants WHERE phone = ? AND suspended_at IS NULL ORDER BY id LIMIT 1').get(`+${phone}`) as
+      | { id: number }
+      | undefined;
+    const code = m ? this.resetCodes.create(m.id, 'whatsapp') : null;
+    const text = !m
+      ? 'Is WhatsApp number se koi Regularhood shop account nahi mila. Login wala number check karein, ya email se reset karein.'
+      : code
+        ? `Regularhood password reset code: *${code}*\n\n15 minute tak chalega. Website par yeh code aur naya password daalein. Yeh code kisi ko na batayein.`
+        : 'Code abhi bheja tha, wahi use karein. Naya code 1 minute baad milega.';
+    if (m && code)
+      this.db.sql
+        .prepare("INSERT INTO activity (merchant_id, actor, action, detail) VALUES (?, 'shop', 'password', 'Asked for a password reset code on WhatsApp')")
+        .run(m.id);
+    // Sent even to a number that wrote STOP earlier: they asked for this one.
+    await this.sendTextTo(phone, text, null, true);
   }
 
   async templates() {
@@ -945,6 +984,10 @@ export class WhatsApp {
           else if (/^start$/i.test(said)) {
             this.db.sql.prepare('DELETE FROM wa_optouts WHERE phone = ?').run(phone);
             if (lead) this.db.sql.prepare('UPDATE leads SET wa_opted_out = 0 WHERE id = ?').run(lead.id);
+          }
+          if (/^reset$/i.test(said)) {
+            await this.resetReply(phone).catch((e) => console.error(`WhatsApp reset reply to ${phone} failed:`, (e as Error).message));
+            continue; // not a lead conversation: the bot stays out of it
           }
           if (!lead) continue;
           this.db.sql.prepare("UPDATE leads SET last_inbound_at = datetime('now'), updated_at = datetime('now') WHERE id = ?").run(lead.id);

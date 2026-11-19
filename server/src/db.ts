@@ -788,6 +788,21 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_reminders_merchant ON reminders (merchant_id, created_at);
   CREATE INDEX idx_reminders_customer ON reminders (customer_id, created_at);
   `,
+  // 46: "Forgot password" codes (reset-codes.ts): 6 digits sent by email, or on WhatsApp when the owner writes RESET.
+  // Only a hash is kept; a code works for 15 minutes and 5 tries.
+  `
+  CREATE TABLE reset_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+    channel TEXT NOT NULL, -- email | whatsapp
+    code_hash TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT NOT NULL, -- ISO time
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX idx_reset_codes_merchant ON reset_codes (merchant_id, created_at);
+  `,
 ];
 
 const INDEXES = `

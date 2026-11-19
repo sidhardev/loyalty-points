@@ -179,6 +179,24 @@ sign-up link is sent by itself, and free messages are allowed for 24 hours; "not
 that number. The card has a daily cap (keep it low on a new number: blocks and reports lower its quality rating), the
 price per message from Meta's rate card, and a monthly budget.
 
+### Forgot password (WhatsApp and email)
+
+"Forgot password?" on the login page sends a 6-digit code (15 minutes, 5 tries, at most one a minute):
+
+- **WhatsApp number:** the page opens `wa.me/<our number>?text=RESET`; the reply carries the code. Free, because the
+  owner writes first, and it proves the number is theirs. Needs the WhatsApp API set up as above (token, app secret,
+  webhook). Our number is read from Meta; to pin it, `WHATSAPP_PUBLIC_NUMBER=91XXXXXXXXXX` in `deploy/.env`.
+- **Email:** sent through [Resend](https://resend.com) (free: 3,000 emails a month). Add the domain `regularhood.in`
+  in Resend → Domains, put the DNS records it shows into the domain's DNS, wait for "Verified", then create an API key
+  with "Sending access" and:
+
+```bash
+echo "RESEND_API_KEY=re_..." >> deploy/.env
+echo "MAIL_FROM=Regularhood <no-reply@regularhood.in>" >> deploy/.env
+```
+
+  Without a key, the email option says it's off and points to WhatsApp.
+
 **Photos, videos and documents in the chats** are kept in Supabase Storage, because Meta deletes a received file after
 about 30 days. In `deploy/.env` set `SUPABASE_URL=https://<project>.supabase.co` and `SUPABASE_SECRET_KEY=` the
 project's secret key (Project Settings → API Keys; the legacy `service_role` key works too, the publishable/anon one
