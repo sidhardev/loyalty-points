@@ -133,7 +133,7 @@ function ShopApp() {
   else if (hash.startsWith('/customers')) page = <Customers merchant={merchant} hash={hash} onSaved={setMerchant} />;
   else if (hash.startsWith('/activity')) page = <ActivityLog />;
   else if (hash.startsWith('/plan')) page = <Plan merchant={merchant} onMerchant={setMerchant} />;
-  else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} onSaved={setMerchant} onLogout={logout} />;
+  else if (hash.startsWith('/settings')) page = <Settings merchant={merchant} hash={hash} onSaved={setMerchant} onLogout={logout} />;
   else page = <Counter merchant={merchant} onSaved={setMerchant} />;
 
   return (
