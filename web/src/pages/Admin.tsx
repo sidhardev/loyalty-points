@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import QRCode from 'qrcode';
 import {
   Activity,
+  ArrowRight,
   BadgeIndianRupee,
+  Bot,
+  ChevronRight,
+  CornerDownLeft,
+  ExternalLink,
+  UserPlus,
+  Wallet,
   HeartPulse,
   Trophy,
   BellRing,
@@ -49,7 +56,8 @@ import {
 import { daysAgo, num, parseTime, rupees, when } from '../api';
 import { trackedLink } from '../attribution';
 import '../marketing.css';
-import { EmptyState, ErrorText, Logo, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
+import '../admin.css';
+import { EmptyState, ErrorText, Logo, LogoMark, Skeleton, SkeletonRows, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { PlansPage } from './AdminPlans';
 import { SeoPage } from './AdminSeo';
 import { StatusPage } from './AdminStatus';
@@ -272,7 +280,7 @@ function AdminLogin({ onIn }: { onIn: (email: string) => void }) {
     });
   };
   return (
-    <main className="public">
+    <main className="adm-login">
       <form className="card auth-card" onSubmit={submit}>
         <span className="brand">
           <Logo /> <span>Regularhood Admin</span>
@@ -359,7 +367,9 @@ function OverviewPage() {
   const [error, setError] = useState('');
   const [days, setDays] = useState<(typeof RANGES)[number]>(30);
   const [metric, setMetric] = useState<Metric>('visits');
+  const [unread, setUnread] = useState<number | null>(null);
   useEffect(() => void adminApi<Overview>('overview').then(setData, (e) => setError((e as Error).message)), []);
+  useEffect(() => void adminApi<{ unread: number }>('whatsapp/unread').then((r) => setUnread(r.unread), () => setUnread(0)), []);
   const t = data?.totals;
 
   // This period and the one before it, from the 90 daily rows (no "before" for 90 days).
@@ -375,9 +385,20 @@ function OverviewPage() {
   const h = data?.health;
   const pro = data ? data.plans.monthly + data.plans.yearly + data.plans.lifetime : 0;
 
+  // What needs the admin today, most urgent first. Each opens the page where it gets done.
+  const todos = data
+    ? [
+        { n: data.attention.length, label: 'need a call', href: '#/follow-up', icon: Phone, tone: 'bad' },
+        { n: unread ?? 0, label: 'unread chats', href: '#/chats', icon: MessagesSquare, tone: 'ok' },
+        { n: data.statuses.new ?? 0, label: 'new to welcome', href: '#/shops/new', icon: UserPlus, tone: 'blue' },
+        { n: data.totals.notSetUp, label: 'no reward set', href: '#/shops', icon: Gift, tone: 'gold' },
+        { n: data.money.abandoned30, label: 'unpaid checkouts', href: '#/plans/health', icon: Wallet, tone: 'violet' },
+      ]
+    : null;
+
   return (
     <>
-      <header className="page-head">
+      <header className="adm-hello">
         <div>
           <h1>{greeting()} 👋</h1>
           <p>
@@ -395,245 +416,262 @@ function OverviewPage() {
       </header>
       <ErrorText text={error} />
 
-      <section className="kpis">
+      <p className="adm-section-title">Needs you now</p>
+      <section className="adm-todo">
+        {todos
+          ? todos.map((x) => (
+              <a key={x.label} href={x.href} className={`todo is-${x.tone}${x.n ? '' : ' clear'}`}>
+                <i>{x.n ? <x.icon size={20} /> : <Check size={20} />}</i>
+                <strong>{num(x.n)}</strong>
+                <span>{x.label}</span>
+                <ArrowRight size={16} />
+              </a>
+            ))
+          : Array.from({ length: 5 }, (_, i) => <Skeleton key={i} h={74} />)}
+      </section>
+
+      <p className="adm-section-title">
+        Last {days} days <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 600 }}>compared with the {days} before</span>
+      </p>
+      <section className="kpis kpis-main">
         <KpiTile icon={<BadgeIndianRupee size={16} />} label="Revenue" {...kpi('revenue')} sub={data && `${rupees(data.money.allTime / 100)} all time`} href="#/plans" />
         <KpiTile icon={<Stamp size={16} />} label="Visits added" {...kpi('visits')} sub={t && `${num(t.visits24h)} in the last 24 hours`} />
         <KpiTile icon={<Store size={16} />} label="New shops" {...kpi('signups')} sub={t && `${num(t.shops)} shops in all`} href="#/growth" />
         <KpiTile icon={<Users size={16} />} label="New customers" {...kpi('customers')} sub={t && `${num(t.customers)} customers in all`} />
-        <KpiTile icon={<Gift size={16} />} label="Rewards given" {...kpi('rewards')} sub={h && `${num(h.rewardsAllTime)} all time`} />
-        <KpiTile icon={<Globe2 size={16} />} label="Website visitors" {...kpi('visitors')} sub="browsers per day, added up" href="#/visits" />
       </section>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>
-            <Activity size={18} /> Trend
-          </h2>
-          <span className="muted small">
-            {data && (m.money ? rupees(sum(now, metric)!) : num(sum(now, metric)!))} in {days} days
-          </span>
-        </div>
-        <div className="chip-row" role="tablist">
-          {METRICS.map((x) => (
-            <button key={x.key} role="tab" aria-selected={metric === x.key} className={`chip${metric === x.key ? ' on' : ''}`} onClick={() => setMetric(x.key)}>
-              {x.label}
-            </button>
-          ))}
-        </div>
-        {data ? (
-          <TrendBars label={m.label} data={now.map((r) => ({ day: r.day, value: r[metric] }))} format={(n) => (m.money ? rupees(n) : num(n))} />
-        ) : (
-          <Skeleton h={220} />
-        )}
-      </section>
-
-      <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Store size={18} /> Shops by status
-            </h2>
-            <span className="muted small">{t && `${t.shops ? Math.round((t.activeShops / t.shops) * 100) : 0}% active this week`}</span>
-          </div>
-          {data ? (
-            <ShareBar
-              parts={(['active', 'new', 'sleeping', 'never', 'paused'] as Status[]).map((s) => ({
-                key: s,
-                label: STATUS[s].label,
-                value: data.statuses[s] ?? 0,
-                cls: `sh-${s}`,
-                href: `#/shops/${s}`,
-              }))}
-            />
-          ) : (
-            <SkeletonRows count={3} />
-          )}
-        </section>
-
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <BadgeIndianRupee size={18} /> Plans & money
-            </h2>
-            <a href="#/plans" className="small">
-              Plans
-            </a>
-          </div>
-          {data ? (
-            <>
-              <div className="money-row">
-                <div>
-                  <span>This month</span>
-                  <strong>{rupees(data.money.thisMonth / 100)}</strong>
-                  <Delta now={data.money.thisMonth} before={data.money.lastMonth} />
-                </div>
-                <div>
-                  <span title="Monthly plans + yearly plans ÷ 12, at today's prices">Monthly run-rate</span>
-                  <strong>{rupees(Math.round(data.money.mrr))}</strong>
-                </div>
-                <div>
-                  <span>Pro shops</span>
-                  <strong>{num(pro)}</strong>
-                  <em>{t?.shops ? `${Math.round((pro / t.shops) * 100)}% of shops` : ''}</em>
-                </div>
-              </div>
-              <ShareBar
-                parts={[
-                  { key: 'lifetime', label: 'Pro · lifetime', value: data.plans.lifetime, cls: 'pl-lifetime' },
-                  { key: 'yearly', label: 'Pro · yearly', value: data.plans.yearly, cls: 'pl-yearly' },
-                  { key: 'monthly', label: 'Pro · monthly', value: data.plans.monthly, cls: 'pl-monthly' },
-                  { key: 'free', label: 'Free', value: data.plans.free, cls: 'pl-free' },
-                ]}
-              />
-              <p className="muted small" style={{ margin: 0 }}>
-                Founding places: {num(data.seats.total - data.seats.left)} of {num(data.seats.total)} taken · {num(data.money.paidCount)} payments
-                {data.money.abandoned30 ? ` · ${num(data.money.abandoned30)} checkouts not finished (30 days)` : ''}
-                {data.money.refunded ? ` · ${num(data.money.refunded)} refunded` : ''}
-              </p>
-            </>
-          ) : (
-            <SkeletonRows count={3} />
-          )}
-        </section>
-      </div>
-
-      <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <HeartPulse size={18} /> Platform health
-            </h2>
-          </div>
-          {h && t ? (
-            <div className="meters">
-              <Meter label="Shops that started (added a visit)" value={h.startedShops} of={t.shops} note={`${num(h.startedShops)} of ${num(t.shops)} shops`} />
-              <Meter label="Shops active this week" value={t.activeShops} of={t.shops} note={`${num(t.activeShops)} shops added a visit in 7 days`} />
-              <Meter label="Customers who came back" value={h.repeat} of={h.customers} note={`${num(h.repeat)} of ${num(h.customers)} have 2+ visits`} />
-              <Meter label="Card set up" value={t.shops - t.notSetUp} of={t.shops} note={t.notSetUp ? `${num(t.notSetUp)} shops still have no reward` : 'Every shop has a reward'} />
-              <dl className="facts">
-                <div>
-                  <dt>Customers per started shop</dt>
-                  <dd>{h.startedShops ? num(Math.round(h.customers / h.startedShops)) : '–'}</dd>
-                </div>
-                <div>
-                  <dt>Rewards per 100 visits</dt>
-                  <dd>{h.visitsAllTime ? num(Math.round((h.rewardsAllTime / h.visitsAllTime) * 100)) : '–'}</dd>
-                </div>
-                <div>
-                  <dt>Log in with Google</dt>
-                  <dd>{num(h.google)} shops</dd>
-                </div>
-                <div>
-                  <dt>Came via another shop</dt>
-                  <dd>{num(h.referred)} shops</dd>
-                </div>
-              </dl>
+      <div className="adm-cols">
+        <div>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Activity size={18} /> Trend
+              </h2>
+              <span className="muted small">
+                {data && (m.money ? rupees(sum(now, metric)!) : num(sum(now, metric)!))} {m.label.toLowerCase()} in {days} days
+              </span>
             </div>
-          ) : (
-            <SkeletonRows count={4} />
-          )}
-        </section>
-
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Trophy size={18} /> Top shops
-            </h2>
-            <span className="muted small">visits, last 30 days</span>
-          </div>
-          {!data ? (
-            <SkeletonRows count={5} />
-          ) : data.topShops.length ? (
-            <ol className="leader">
-              {data.topShops.map((s, i) => (
-                <li key={s.id}>
-                  <a href={`#/shops/${s.id}`}>
-                    <b>{i + 1}</b>
-                    <span className="leader-name">
-                      <strong>{s.name}</strong>
-                      <em>
-                        {num(s.customers)} customers · {num(s.rewards30)} rewards
-                        {['monthly', 'yearly', 'lifetime'].includes(s.activePlan) ? ' · Pro' : ''}
-                      </em>
-                    </span>
-                    <span className="leader-bar">
-                      <i style={{ width: `${(s.visits30 / data.topShops[0].visits30) * 100}%` }} />
-                    </span>
-                    <strong className="leader-n">{num(s.visits30)}</strong>
-                  </a>
-                </li>
+            <div className="chip-row" role="tablist">
+              {METRICS.map((x) => (
+                <button key={x.key} role="tab" aria-selected={metric === x.key} className={`chip${metric === x.key ? ' on' : ''}`} onClick={() => setMetric(x.key)}>
+                  {x.label}
+                </button>
               ))}
-            </ol>
-          ) : (
-            <EmptyState icon={Trophy} title="No visits yet" text="Shops show up here once they add visits." />
-          )}
-        </section>
-      </div>
+            </div>
+            {data ? (
+              <TrendBars label={m.label} data={now.map((r) => ({ day: r.day, value: r[metric] }))} format={(n) => (m.money ? rupees(n) : num(n))} />
+            ) : (
+              <Skeleton h={220} />
+            )}
+          </section>
 
-      <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <Phone size={18} /> Needs a call {data && data.attention.length > 0 && <span className="count-pill">{data.attention.length}</span>}
-            </h2>
-            <a href="#/follow-up" className="small">
-              Follow-up list
-            </a>
-          </div>
-          {!data ? (
-            <SkeletonRows count={3} />
-          ) : data.attention.length ? (
-            <ul className="rows">
-              {data.attention.slice(0, 8).map((s) => (
-                <li key={s.id}>
-                  <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
-                    <span className="row-main">
-                      <strong>
-                        {s.name} <StatusBadge status={s.status} />
-                      </strong>
-                      <span>{reason(s)}</span>
-                    </span>
-                    <span className="muted small">{s.last_contact ? `contacted ${ago(s.last_contact)}` : 'not contacted'}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState icon={ShieldCheck} title="Everyone's active" text="No shop has gone quiet. 🎉" />
-          )}
-        </section>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Store size={18} /> Shops by status
+              </h2>
+              <span className="muted small">{t && `${t.shops ? Math.round((t.activeShops / t.shops) * 100) : 0}% active this week`}</span>
+            </div>
+            {data ? (
+              <ShareBar
+                parts={(['active', 'new', 'sleeping', 'never', 'paused'] as Status[]).map((s) => ({
+                  key: s,
+                  label: STATUS[s].label,
+                  value: data.statuses[s] ?? 0,
+                  cls: `sh-${s}`,
+                  href: `#/shops/${s}`,
+                }))}
+              />
+            ) : (
+              <SkeletonRows count={3} />
+            )}
+          </section>
 
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <BellRing size={18} /> Latest activity
-            </h2>
-            <a href="#/log" className="small">
-              Admin log
-            </a>
-          </div>
-          {!data ? (
-            <SkeletonRows count={5} />
-          ) : data.activity.length ? (
-            <ul className="feed">
-              {data.activity.map((a, i) => {
-                const Icon = ACTIVITY_ICON[a.kind];
-                const text = a.kind === 'signup' ? `${a.text} signed up` : a.kind === 'payment' ? `Payment: ${a.text}` : a.text;
-                return (
-                  <li key={i} className={`feed-${a.kind}`}>
-                    <i>
-                      <Icon size={14} />
-                    </i>
-                    <span>{a.shopId ? <a href={`#/shops/${a.shopId}`}>{text}</a> : text}</span>
-                    <em>{ago(a.at)}</em>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <BadgeIndianRupee size={18} /> Plans & money
+              </h2>
+              <a href="#/plans" className="card-link">
+                Payments <ArrowRight size={14} />
+              </a>
+            </div>
+            {data ? (
+              <>
+                <div className="money-row">
+                  <div>
+                    <span>This month</span>
+                    <strong>{rupees(data.money.thisMonth / 100)}</strong>
+                    <Delta now={data.money.thisMonth} before={data.money.lastMonth} />
+                  </div>
+                  <div>
+                    <span title="Monthly plans + yearly plans ÷ 12, at today's prices">Monthly run-rate</span>
+                    <strong>{rupees(Math.round(data.money.mrr))}</strong>
+                  </div>
+                  <div>
+                    <span>Pro shops</span>
+                    <strong>{num(pro)}</strong>
+                    <em>{t?.shops ? `${Math.round((pro / t.shops) * 100)}% of shops` : ''}</em>
+                  </div>
+                </div>
+                <ShareBar
+                  parts={[
+                    { key: 'yearly', label: 'Pro · yearly', value: data.plans.yearly, cls: 'pl-yearly' },
+                    { key: 'monthly', label: 'Pro · monthly', value: data.plans.monthly, cls: 'pl-monthly' },
+                    ...(data.plans.lifetime ? [{ key: 'lifetime', label: 'Pro · lifetime', value: data.plans.lifetime, cls: 'pl-lifetime' }] : []),
+                    { key: 'free', label: 'Free', value: data.plans.free, cls: 'pl-free' },
+                  ]}
+                />
+                <p className="muted small" style={{ margin: 0 }}>
+                  {num(data.money.paidCount)} payments in all
+                  {data.money.abandoned30 ? ` · ${num(data.money.abandoned30)} checkouts not finished (30 days)` : ''}
+                  {data.money.refunded ? ` · ${num(data.money.refunded)} refunded` : ''}
+                </p>
+              </>
+            ) : (
+              <SkeletonRows count={3} />
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <HeartPulse size={18} /> Platform health
+              </h2>
+            </div>
+            {h && t ? (
+              <div className="meters">
+                <Meter label="Shops that started (added a visit)" value={h.startedShops} of={t.shops} note={`${num(h.startedShops)} of ${num(t.shops)} shops`} />
+                <Meter label="Shops active this week" value={t.activeShops} of={t.shops} note={`${num(t.activeShops)} shops added a visit in 7 days`} />
+                <Meter label="Customers who came back" value={h.repeat} of={h.customers} note={`${num(h.repeat)} of ${num(h.customers)} have 2+ visits`} />
+                <Meter label="Card set up" value={t.shops - t.notSetUp} of={t.shops} note={t.notSetUp ? `${num(t.notSetUp)} shops still have no reward` : 'Every shop has a reward'} />
+                <dl className="facts">
+                  <div>
+                    <dt>Customers per started shop</dt>
+                    <dd>{h.startedShops ? num(Math.round(h.customers / h.startedShops)) : '–'}</dd>
+                  </div>
+                  <div>
+                    <dt>Rewards per 100 visits</dt>
+                    <dd>{h.visitsAllTime ? num(Math.round((h.rewardsAllTime / h.visitsAllTime) * 100)) : '–'}</dd>
+                  </div>
+                  <div>
+                    <dt>Log in with Google</dt>
+                    <dd>{num(h.google)} shops</dd>
+                  </div>
+                  <div>
+                    <dt>Came via another shop</dt>
+                    <dd>{num(h.referred)} shops</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : (
+              <SkeletonRows count={4} />
+            )}
+          </section>
+        </div>
+
+        <div>
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Phone size={18} /> Needs a call {data && data.attention.length > 0 && <span className="count-pill">{data.attention.length}</span>}
+              </h2>
+              <a href="#/follow-up" className="card-link">
+                All <ArrowRight size={14} />
+              </a>
+            </div>
+            {!data ? (
+              <SkeletonRows count={3} />
+            ) : data.attention.length ? (
+              <ul className="rows">
+                {data.attention.slice(0, 6).map((s) => (
+                  <li key={s.id}>
+                    <a className="row-item" href={`#/shops/${s.id}`} style={{ color: 'inherit' }}>
+                      <i className="shop-ava">{initial(s.name)}</i>
+                      <span className="row-main">
+                        <strong>
+                          {s.name} <StatusBadge status={s.status} />
+                        </strong>
+                        <span>{reason(s)}</span>
+                        <span className="muted small">{s.last_contact ? `Contacted ${ago(s.last_contact)}` : 'Not contacted yet'}</span>
+                      </span>
+                    </a>
                   </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="muted small">Nothing yet.</p>
-          )}
-        </section>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState icon={ShieldCheck} title="Everyone's active" text="No shop has gone quiet. 🎉" />
+            )}
+          </section>
+
+
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <Trophy size={18} /> Top shops
+              </h2>
+              <span className="muted small">visits, 30 days</span>
+            </div>
+            {!data ? (
+              <SkeletonRows count={5} />
+            ) : data.topShops.length ? (
+              <ol className="leader">
+                {data.topShops.map((s, i) => (
+                  <li key={s.id}>
+                    <a href={`#/shops/${s.id}`}>
+                      <b>{i + 1}</b>
+                      <span className="leader-name">
+                        <strong>{s.name}</strong>
+                        <em>
+                          {num(s.customers)} customers · {num(s.rewards30)} rewards
+                          {['monthly', 'yearly', 'lifetime'].includes(s.activePlan) ? ' · Pro' : ''}
+                        </em>
+                      </span>
+                      <span className="leader-bar">
+                        <i style={{ width: `${(s.visits30 / (data.topShops[0].visits30 || 1)) * 100}%` }} />
+                      </span>
+                      <strong className="leader-n">{num(s.visits30)}</strong>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <EmptyState icon={Trophy} title="No visits yet" text="Shops show up here once they add visits." />
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>
+                <BellRing size={18} /> Latest activity
+              </h2>
+              <a href="#/log" className="card-link">
+                Admin log <ArrowRight size={14} />
+              </a>
+            </div>
+            {!data ? (
+              <SkeletonRows count={5} />
+            ) : data.activity.length ? (
+              <ul className="feed">
+                {data.activity.slice(0, 8).map((a, i) => {
+                  const Icon = ACTIVITY_ICON[a.kind];
+                  const text = a.kind === 'signup' ? `${a.text} signed up` : a.kind === 'payment' ? `Payment: ${a.text}` : a.text;
+                  return (
+                    <li key={i} className={`feed-${a.kind}`}>
+                      <i>
+                        <Icon size={14} />
+                      </i>
+                      <span>{a.shopId ? <a href={`#/shops/${a.shopId}`}>{text}</a> : text}</span>
+                      <em>{ago(a.at)}</em>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="muted small">Nothing yet.</p>
+            )}
+          </section>
+        </div>
       </div>
     </>
   );
@@ -758,33 +796,29 @@ function ShopsPage() {
     <>
       <header className="page-head">
         <div>
-          <h1>Shops</h1>
+          <h1>All shops</h1>
           <p>
             {shops
               ? `${num(shops.length)} shown · ${num(byPlan.filter(isPaid).length)} on Pro · ${num(shops.filter((s) => s.google).length)} log in with Google`
               : 'Loading…'}
+            {billing && ` · ${num(paid.length)} payments, ${rupees(paid.reduce((n, p) => n + (p.inr_paise ?? p.amount_paise), 0) / 100)}`}
           </p>
-          {billing && (
-            <p className="follow-meta">
-              <span>
-                Lifetime: {num(billing.seats.total - billing.seats.left)} of {num(billing.seats.total)} places taken
-              </span>
-              <span>
-                {num(paid.length)} payments · {rupees(paid.reduce((n, p) => n + (p.inr_paise ?? p.amount_paise), 0) / 100)}
-              </span>
-              {paid[0] && (
-                <span>
-                  Last: <a href={`#/shops/${paid[0].shopId}`}>{paid[0].name}</a> {ago(paid[0].paid_at)}
-                </span>
-              )}
-            </p>
-          )}
         </div>
         <button className="btn btn-soft" disabled={!shops?.length} onClick={() => shops && exportShops(shops)}>
           <Download size={16} /> Export CSV
         </button>
       </header>
       <section className="card">
+        <div className="adm-filters">
+          <div className="seg seg-scroll">
+            {FILTERS.map((f) => (
+              <button key={f.key} className={filter === f.key ? 'active' : ''} onClick={() => setFilter(f.key)}>
+                {f.label}
+                {all && <span className="seg-count">{num(count(f.key))}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="toolbar">
           <div className="input-icon">
             <Search size={18} />
@@ -804,14 +838,6 @@ function ShopsPage() {
               </option>
             ))}
           </select>
-        </div>
-        <div className="seg seg-scroll">
-          {FILTERS.map((f) => (
-            <button key={f.key} className={filter === f.key ? 'active' : ''} onClick={() => setFilter(f.key)}>
-              {f.label}
-              {all && <span className="seg-count">{num(count(f.key))}</span>}
-            </button>
-          ))}
         </div>
         {!shops ? (
           <SkeletonRows count={5} />
@@ -835,17 +861,25 @@ function ShopsPage() {
               <tbody>
                 {shops.map((s) => (
                   <tr key={s.id} onClick={() => (location.hash = `/shops/${s.id}`)}>
-                    <td>
-                      <a href={`#/shops/${s.id}`}>
-                        <strong>{s.name}</strong>
-                      </a>
-                      <span className="muted small">{s.email || s.phone}</span>
-                      {['monthly', 'yearly', 'lifetime'].includes(s.activePlan) && <span className="source-chip">{planLabel(s)}</span>}
-                      {!!s.google && (
-                        <span className="source-chip" title="Logs in with Google">
-                          Google
-                        </span>
-                      )}
+                    <td className="shop-td">
+                      <div className="shop-cell">
+                      <i className="shop-ava">{initial(s.name)}</i>
+                      <div>
+                        <a href={`#/shops/${s.id}`}>
+                          <strong>{s.name}</strong>
+                        </a>
+                        <span className="muted small">{s.email || s.phone}</span>
+                        {(isPaid(s) || !!s.google) && (
+                          <span className="chips">
+                            {isPaid(s) && <span className="pro-chip" title={planLabel(s)}>Pro</span>}
+                            {!!s.google && (
+                              <span className="source-chip" title="Logs in with Google">
+                                Google
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                       <button
                         className="btn btn-sm btn-soft shop-draft-btn"
                         onClick={(e) => {
@@ -854,8 +888,9 @@ function ShopsPage() {
                         }}
                         title={`Draft a message for ${s.name}`}
                       >
-                        <Sparkles size={14} /> Draft message
+                        <Sparkles size={14} /> Draft
                       </button>
+                      </div>
                     </td>
                     <td>
                       <StatusBadge status={s.status} />
@@ -1057,13 +1092,12 @@ function ShopPage({ id }: { id: number }) {
 
   return (
     <>
-      <a href="#/shops" className="back">
-        <ArrowLeft size={16} /> Shops
-      </a>
-      <header className="page-head">
-        <div>
+      <section className="card shop-hero">
+        <i className="shop-ava lg">{initial(shop.name)}</i>
+        <div className="shop-hero-main">
           <h1>
             {shop.name} <StatusBadge status={shop.status} />
+            {isPaid(shop) && <span className="pro-chip">Pro</span>}
           </h1>
           <p>
             {[shop.email, shop.phone].filter(Boolean).join(' · ')} · joined {when(shop.created_at)} · last seen {ago(shop.last_seen_at)}
@@ -1082,13 +1116,13 @@ function ShopPage({ id }: { id: number }) {
             {shop.last_contact && <span>Last contacted {ago(shop.last_contact)}</span>}
           </p>
         </div>
-      </header>
-      <div className="follow-actions">
-        <ContactButtons shop={shop} onDone={load} />
-        <button className="btn btn-primary" onClick={() => setDrafting(true)}>
-          <Sparkles size={16} /> Draft message
-        </button>
-      </div>
+        <div className="shop-hero-actions">
+          <button className="btn btn-primary" onClick={() => setDrafting(true)}>
+            <Sparkles size={16} /> Draft message
+          </button>
+          <ContactButtons shop={shop} onDone={load} />
+        </div>
+      </section>
       {drafting && <DraftSheet api={adminApi} shop={shop} onClose={() => setDrafting(false)} onSent={load} />}
 
       {shop.suspended_at && (
@@ -1131,6 +1165,8 @@ function ShopPage({ id }: { id: number }) {
         />
       </section>
 
+      <div className="adm-split">
+        <div>
       <section className="card">
         <div className="card-head">
           <h2>
@@ -1241,8 +1277,19 @@ function ShopPage({ id }: { id: number }) {
         </section>
       </div>
 
-      <div className="grid-2">
+      {data.log.length > 0 && (
         <section className="card">
+          <div className="card-head">
+            <h2>
+              <ScrollText size={18} /> Admin actions on this shop
+            </h2>
+          </div>
+          <AdminLogList items={data.log} />
+        </section>
+      )}
+        </div>
+        <aside>
+<section className="card">
           <div className="card-head">
             <h2>
               <ShieldCheck size={18} /> Support
@@ -1383,18 +1430,9 @@ function ShopPage({ id }: { id: number }) {
             </ul>
           )}
         </section>
+      
+        </aside>
       </div>
-
-      {data.log.length > 0 && (
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              <ScrollText size={18} /> Admin actions on this shop
-            </h2>
-          </div>
-          <AdminLogList items={data.log} />
-        </section>
-      )}
     </>
   );
 }
@@ -1921,14 +1959,20 @@ const fetchViews = (from: string, to: string) => adminApi<{ views: PageView[]; e
 
 type NavItem = { path: string; label: string; icon: typeof Store; subs?: [id: string, label: string][] };
 
-// Sidebar groups. A page's subs split its cards into subtabs (#/plans/health); the first is the default.
+// Sidebar groups: the main pages only. A page's subs split its cards into tabs (#/plans/health); the first is the default.
 const NAV: { group: string; items: NavItem[] }[] = [
-  { group: '', items: [{ path: '/', label: 'Overview', icon: LayoutDashboard }] },
+  {
+    group: '',
+    items: [
+      { path: '/', label: 'Today', icon: LayoutDashboard },
+      { path: '/chats', label: 'Chats', icon: MessagesSquare },
+      { path: '/follow-up', label: 'Follow up', icon: Phone },
+    ],
+  },
   {
     group: 'Shops',
     items: [
-      { path: '/shops', label: 'Shops', icon: Store },
-      { path: '/follow-up', label: 'Follow up', icon: Phone },
+      { path: '/shops', label: 'All shops', icon: Store },
       { path: '/log', label: 'Admin log', icon: ScrollText },
     ],
   },
@@ -1937,13 +1981,22 @@ const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       {
         path: '/plans',
-        label: 'Plans',
+        label: 'Plans & payments',
         icon: BadgeIndianRupee,
         subs: [
           ['payments', 'Payments'],
           ['health', 'Payment health'],
           ['shops', 'Paying shops'],
           ['offer', 'Offer'],
+        ],
+      },
+      {
+        path: '/partners',
+        label: 'Partners',
+        icon: Handshake,
+        subs: [
+          ['payouts', 'Payouts'],
+          ['partners', 'Partners'],
         ],
       },
     ],
@@ -1962,17 +2015,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
         ],
       },
       {
-        path: '/partners',
-        label: 'Partners',
-        icon: Handshake,
-        subs: [
-          ['payouts', 'Payouts'],
-          ['partners', 'Partners'],
-        ],
-      },
-      {
         path: '/visits',
-        label: 'Visits',
+        label: 'Website visits',
         icon: Globe2,
         subs: [
           ['traffic', 'Traffic'],
@@ -1988,36 +2032,6 @@ const NAV: { group: string; items: NavItem[] }[] = [
         subs: [
           ['leads', 'Find & pitch'],
           ['costs', 'Cost log'],
-        ],
-      },
-    ],
-  },
-  {
-    group: 'Email',
-    items: [
-      {
-        path: '/emails',
-        label: 'Emails',
-        icon: Mail,
-        subs: [
-          ['sent', 'Sent emails'],
-          ['resets', 'Password resets'],
-          ['auto', 'Automatic & tracking'],
-        ],
-      },
-    ],
-  },
-  {
-    group: 'WhatsApp',
-    items: [
-      { path: '/chats', label: 'Chats', icon: MessagesSquare },
-      {
-        path: '/status',
-        label: 'WhatsApp status',
-        icon: MessageCircle,
-        subs: [
-          ['ideas', 'Ideas'],
-          ['brand', 'Logos & posts'],
         ],
       },
     ],
@@ -2045,19 +2059,38 @@ const NAV: { group: string; items: NavItem[] }[] = [
         ],
       },
       {
-        path: '/phusro',
-        label: 'Phusro',
-        icon: Store,
+        path: '/status',
+        label: 'WhatsApp status',
+        icon: MessageCircle,
         subs: [
-          ['settings', 'Limit & login'],
-          ['usage', 'AI calls'],
+          ['ideas', 'Ideas'],
+          ['brand', 'Logos & posts'],
         ],
       },
     ],
   },
   {
-    group: 'Setup',
+    group: 'System',
     items: [
+      {
+        path: '/emails',
+        label: 'Emails',
+        icon: Mail,
+        subs: [
+          ['sent', 'Sent emails'],
+          ['resets', 'Password resets'],
+          ['auto', 'Automatic & tracking'],
+        ],
+      },
+      {
+        path: '/phusro',
+        label: 'Phusro',
+        icon: Bot,
+        subs: [
+          ['settings', 'Limit & login'],
+          ['usage', 'AI calls'],
+        ],
+      },
       {
         path: '/settings',
         label: 'Settings',
@@ -2073,6 +2106,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
 ];
 
 const NAV_ITEMS = NAV.flatMap((g) => g.items);
+const groupOf = (item: NavItem) => NAV.find((g) => g.items.includes(item))!.group;
 const RAIL = 'lp_admin_rail';
 
 /** The sidebar item a hash belongs to, and its open subtab (null when the page has none). */
@@ -2081,6 +2115,94 @@ function navAt(hash: string) {
   const want = hash.slice(item.path.length + 1).split('/')[0];
   const sub = item.subs ? (item.subs.find(([id]) => id === want) ?? item.subs[0])[0] : null;
   return { item, sub };
+}
+
+const initial = (s: string) => (s.trim()[0] ?? '?').toUpperCase();
+
+type Hit = { key: string; group: string; label: string; hint?: string; href: string; icon?: typeof Store; ava?: string };
+
+/** Ctrl K: jump to any page, tab or shop by typing. */
+function SearchPalette({ onClose }: { onClose: () => void }) {
+  const [q, setQ] = useState('');
+  const [at, setAt] = useState(0);
+  const [shops, setShops] = useState<Shop[] | null>(null);
+  useEffect(() => void adminApi<Shop[]>('shops').then(setShops, () => setShops([])), []);
+
+  const needle = q.trim().toLowerCase();
+  const has = (...parts: (string | null | undefined)[]) => !needle || parts.join(' ').toLowerCase().includes(needle);
+  const pages: Hit[] = NAV_ITEMS.flatMap((i): Hit[] => [
+    { key: i.path, group: 'Pages', label: i.label, hint: groupOf(i) || 'Regularhood', href: `#${i.path}`, icon: i.icon },
+    ...(i.subs ?? []).map(([id, label]) => ({ key: `${i.path}/${id}`, group: 'Pages', label: `${i.label} › ${label}`, href: `#${i.path}/${id}`, icon: i.icon })),
+  ]).filter((h) => has(h.label, h.hint));
+  const shopHits: Hit[] = (shops ?? [])
+    .filter((s) => needle && has(s.name, s.email, s.phone))
+    .slice(0, 8)
+    .map((s) => ({ key: `shop-${s.id}`, group: 'Shops', label: s.name, hint: [STATUS[s.status].label, s.email || s.phone].filter(Boolean).join(' · '), href: `#/shops/${s.id}`, ava: initial(s.name) }));
+  const hits = [...shopHits, ...(needle ? pages : pages.filter((p) => !p.key.includes('/', 1)))].slice(0, 40);
+  useEffect(() => {
+    setAt(0);
+  }, [q]);
+
+  const go = (h: Hit | undefined) => {
+    if (!h) return;
+    location.hash = h.href.slice(1);
+    onClose();
+  };
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') (e.preventDefault(), setAt((a) => Math.min(hits.length - 1, a + 1)));
+    else if (e.key === 'ArrowUp') (e.preventDefault(), setAt((a) => Math.max(0, a - 1)));
+    else if (e.key === 'Enter') (e.preventDefault(), go(hits[at]));
+    else if (e.key === 'Escape') onClose();
+  };
+  // Braces matter: newer browsers return a promise from scrollIntoView, and an effect may only return a clean-up.
+  useEffect(() => {
+    document.querySelector('.cmdk-item.on')?.scrollIntoView({ block: 'nearest' });
+  }, [at]);
+
+  let lastGroup = '';
+  return (
+    <div className="cmdk" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="cmdk-panel" role="dialog" aria-label="Search" onKeyDown={onKey}>
+        <label className="cmdk-input">
+          <Search size={19} />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a shop, or a page like “payments”" aria-label="Search" />
+          <kbd>Esc</kbd>
+        </label>
+        <div className="cmdk-list">
+          {hits.length ? (
+            hits.map((h, i) => {
+              const head = h.group !== lastGroup ? h.group : '';
+              lastGroup = h.group;
+              const Icon = h.icon;
+              return (
+                <div key={h.key}>
+                  {head && <p className="cmdk-group">{head}</p>}
+                  <button type="button" className={`cmdk-item${i === at ? ' on' : ''}`} onMouseMove={() => setAt(i)} onClick={() => go(h)}>
+                    {h.ava ? <i className="shop-ava">{h.ava}</i> : Icon && <Icon size={18} />}
+                    <span>
+                      <strong>{h.label}</strong>
+                      {h.hint && <em>{h.hint}</em>}
+                    </span>
+                    {i === at && <CornerDownLeft size={15} />}
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="cmdk-empty">{shops ? `Nothing called “${q}”.` : 'Looking…'}</p>
+          )}
+        </div>
+        <div className="cmdk-foot">
+          <span>
+            <kbd>↑</kbd> <kbd>↓</kbd> to move
+          </span>
+          <span>
+            <kbd>Enter</kbd> to open
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AdminShell({ email, onLogout, children }: { email: string; onLogout: () => void; children: ReactNode }) {
@@ -2102,9 +2224,31 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
       // Remembered for this visit only.
     }
   };
-  // On phones the sidebar is a drawer; picking a page closes it.
+  // On phones the sidebar is a drawer; picking a page closes it. So does the account menu.
   const [drawer, setDrawer] = useState(false);
-  useEffect(() => setDrawer(false), [hash]);
+  const [menu, setMenu] = useState(false);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    setDrawer(false);
+    setMenu(false);
+  }, [hash]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]');
+      if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typing)) {
+        e.preventDefault();
+        setSearching(true);
+      }
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, []);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => !(e.target as HTMLElement).closest('.adm-account') && setMenu(false);
+    addEventListener('mousedown', close);
+    return () => removeEventListener('mousedown', close);
+  }, [menu]);
   // WhatsApp replies not opened yet, on the Chats menu item.
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -2116,66 +2260,108 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
     return () => (clearInterval(timer), removeEventListener(WA_UNREAD, onChats));
   }, [hash]);
   // A shop's own page is a new page; a subtab of the same page keeps it (and its loaded data).
-  const pageKey = /^\/shops\/\d+/.test(hash) ? hash : current.path;
+  const shopPage = /^\/shops\/\d+/.test(hash);
+  const pageKey = shopPage ? hash : current.path;
+  const group = groupOf(current);
+  const subLabel = current.subs?.find(([id]) => id === sub)?.[1];
 
   return (
-    <div className={`admin${rail ? ' admin-rail' : ''}${drawer ? ' admin-drawer' : ''}`}>
-      <aside className="admin-side">
-        <a href="#/" className="brand">
-          <Logo /> <span>Regularhood Admin</span>
+    <div className={`adm${rail ? ' adm-rail' : ''}${drawer ? ' adm-drawer' : ''}`}>
+      <aside className="adm-side">
+        <a href="#/" className="adm-brand">
+          <LogoMark size={30} />
+          <span>
+            Regularhood
+            <small>Admin</small>
+          </span>
         </a>
-        <nav>
-          {NAV.map(({ group, items }) => (
-            <div key={group} className="side-group">
-              {group && <p className="side-label">{group}</p>}
-              {items.map(({ path, label, icon: Icon, subs }) => (
-                <div key={path} className={`side-item${path === current.path ? ' active' : ''}`}>
-                  <a href={`#${path}`} title={rail ? label : undefined}>
-                    <Icon size={18} /> <span>{label}</span>
-                    {path === '/chats' && unread > 0 && <em className="nav-badge">{unread}</em>}
-                  </a>
-                  {subs && (
-                    <div className="side-subs">
-                      <b>{label}</b>
-                      {subs.map(([id, subLabel]) => (
-                        <a key={id} href={`#${path}/${id}`} className={path === current.path && id === sub ? 'active' : ''}>
-                          {subLabel}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
+        <nav className="adm-nav" aria-label="Admin pages">
+          {NAV.map(({ group: label, items }) => (
+            <div key={label} className="adm-group">
+              {label && <p className="adm-group-label">{label}</p>}
+              {items.map(({ path, label: name, icon: Icon }) => (
+                <a key={path} href={`#${path}`} className={`adm-link${path === current.path ? ' active' : ''}`} title={rail ? name : undefined} aria-current={path === current.path ? 'page' : undefined}>
+                  <Icon size={18} /> <span>{name}</span>
+                  {path === '/chats' && unread > 0 && <em className="adm-badge">{unread}</em>}
+                </a>
               ))}
             </div>
           ))}
         </nav>
-        <div className="side-foot">
-          <span className="admin-email muted small">{email}</span>
-          <button className="icon-btn" onClick={theme.toggle} aria-label="Toggle dark mode">
-            <theme.Icon size={18} />
-          </button>
-          <button className="icon-btn side-rail-btn" onClick={toggleRail} aria-label={rail ? 'Expand the sidebar' : 'Collapse the sidebar'}>
-            {rail ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          </button>
-          <button className="icon-btn" onClick={onLogout} aria-label="Log out">
-            <LogOut size={18} />
+        <div className="adm-side-foot">
+          <button className="adm-rail-btn" onClick={toggleRail} title={rail ? 'Expand the sidebar' : 'Collapse the sidebar'}>
+            {rail ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />} <span>Collapse</span>
           </button>
         </div>
       </aside>
-      <button className="side-scrim" onClick={() => setDrawer(false)} aria-label="Close the menu" />
-      <div className="admin-main">
-        <header className="admin-top">
-          <button className="icon-btn" onClick={() => setDrawer(true)} aria-label="Open the menu">
+      <button className="adm-scrim" onClick={() => setDrawer(false)} aria-label="Close the menu" />
+      <div className="adm-main">
+        <header className="adm-top">
+          <button className="adm-icon adm-menu-btn" onClick={() => setDrawer(true)} aria-label="Open the menu">
             <Menu size={20} />
-            {unread > 0 && <i className="side-dot" />}
+            {unread > 0 && <i className="dot" />}
           </button>
-          <a href="#/" className="brand">
-            <Logo /> <span>Regularhood Admin</span>
-          </a>
+          <nav className="adm-crumbs" aria-label="You are here">
+            {group && (
+              <>
+                <span>{group}</span>
+                <ChevronRight size={14} />
+              </>
+            )}
+            {shopPage ? (
+              <>
+                <a href="#/shops" style={{ color: 'inherit' }}>
+                  All shops
+                </a>
+                <ChevronRight size={14} />
+                <strong>Shop details</strong>
+              </>
+            ) : subLabel ? (
+              <>
+                <span>{current.label}</span>
+                <ChevronRight size={14} />
+                <strong>{subLabel}</strong>
+              </>
+            ) : (
+              <strong>{current.label}</strong>
+            )}
+          </nav>
+          <span className="adm-top-gap" />
+          <button className="adm-search" onClick={() => setSearching(true)} aria-label="Search shops and pages">
+            <Search size={17} />
+            <span>Search shops, pages…</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+          <button className="adm-icon" onClick={() => (location.hash = '/chats')} title="WhatsApp chats" aria-label={`WhatsApp chats${unread ? `, ${unread} unread` : ''}`}>
+            <MessagesSquare size={19} />
+            {unread > 0 && <i className="dot" />}
+          </button>
+          <div className="adm-account">
+            <button onClick={() => setMenu(!menu)} aria-label="Account" aria-expanded={menu}>
+              <i className="adm-avatar">{initial(email)}</i>
+            </button>
+            {menu && (
+              <div className="adm-menu" role="menu">
+                <div className="adm-menu-head">
+                  <span>{email}</span>
+                  <em>Superadmin</em>
+                </div>
+                <button role="menuitem" onClick={theme.toggle}>
+                  <theme.Icon size={17} /> {theme.theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </button>
+                <a role="menuitem" href="/app" target="_blank" rel="noreferrer">
+                  <ExternalLink size={17} /> Open the shop app
+                </a>
+                <button role="menuitem" className="danger" onClick={onLogout}>
+                  <LogOut size={17} /> Log out
+                </button>
+              </div>
+            )}
+          </div>
         </header>
-        <main className="admin-page" key={pageKey}>
-          {current.subs && (
-            <nav className="admin-tabs">
+        <main className="adm-page" key={pageKey}>
+          {current.subs && !shopPage && (
+            <nav className="adm-tabs" aria-label={`${current.label} sections`}>
               {current.subs.map(([id, label]) => (
                 <a key={id} href={`#${current.path}/${id}`} className={id === sub ? 'active' : ''}>
                   {label}
@@ -2186,6 +2372,7 @@ function AdminShell({ email, onLogout, children }: { email: string; onLogout: ()
           <SubtabContext.Provider value={sub}>{children}</SubtabContext.Provider>
         </main>
       </div>
+      {searching && <SearchPalette onClose={() => setSearching(false)} />}
     </div>
   );
 }
