@@ -200,7 +200,7 @@ const FILTERS: { id: Filter; label: string; test: (j: Journey) => boolean }[] = 
   { id: 'shops', label: 'Shop owners', test: (j) => !!j.shop },
 ];
 
-const PLAN: Record<string, string> = { free: 'Free', grandfathered: 'Early shop', lifetime: 'Founding · lifetime', yearly: 'Founding · yearly' };
+const PLAN: Record<string, string> = { free: 'Free', lifetime: 'Founding · lifetime', yearly: 'Founding · yearly' };
 /** A date from the database (SQLite "YYYY-MM-DD HH:MM:SS", UTC). */
 const dbDay = (t: string) =>
   new Date(t.includes('T') ? t : `${t.replace(' ', 'T')}Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });

@@ -128,7 +128,7 @@ export class DraftService {
         `Customers: ${s.customers}; ${c.cameBack} came back at least once; ${c.notSeen} not seen for ${m.inactive_days}+ days`,
         `Visits: ${s.visits30} in the last 30 days, ${c.visits} all time; last visit ${ago(s.last_visit)}`,
         `Rewards given: ${s.rewards30} in the last 30 days, ${c.rewards} all time; ${c.waiting} customers have a reward waiting`,
-        `Plan: ${paid ? `Pro (${s.activePlan})` : s.activePlan === 'grandfathered' ? 'free with no customer limit (joined before plans existed; no Pro features)' : `free (up to ${plans.freeCustomers} customers)`}`,
+        `Plan: ${paid ? `Pro (${s.activePlan})` : `free (up to ${plans.freeCustomers} customers)`}`,
         !paid &&
           `Pro price: ₹${plans.monthlyPaise / 100} a month or ₹${plans.yearlyPaise / 100} a year`,
         s.referrals > 0 && `Brought ${s.referrals} other shops to Regularhood`,

@@ -136,7 +136,7 @@ type Shop = {
   on_landing: number; // 1 = listed on the homepage
   last_contact: string | null;
   last_contact_detail: string | null;
-  plan: string; // stored plan: free | grandfathered | monthly | yearly | lifetime
+  plan: string; // stored plan: free | monthly | yearly | lifetime
   activePlan: string; // in force now (a yearly plan that ran out is free)
   plan_expires_at: string | null;
   founding_no: number | null;
@@ -316,7 +316,7 @@ type Overview = {
   attention: Shop[];
   series: { day: string; visits: number; rewards: number; signups: number; customers: number; activeShops: number; revenue: number; visitors: number }[];
   money: { allTime: number; thisMonth: number; lastMonth: number; paidCount: number; refunded: number; abandoned30: number; mrr: number };
-  plans: Record<'free' | 'grandfathered' | 'monthly' | 'yearly' | 'lifetime', number>;
+  plans: Record<'free' | 'monthly' | 'yearly' | 'lifetime', number>;
   statuses: Record<Status, number>;
   health: { customers: number; repeat: number; startedShops: number; visitsAllTime: number; rewardsAllTime: number; google: number; onLanding: number; referred: number };
   topShops: { id: number; name: string; status: Status; visits30: number; customers: number; rewards30: number; activePlan: string }[];
@@ -482,7 +482,6 @@ function OverviewPage() {
                   { key: 'lifetime', label: 'Pro · lifetime', value: data.plans.lifetime, cls: 'pl-lifetime' },
                   { key: 'yearly', label: 'Pro · yearly', value: data.plans.yearly, cls: 'pl-yearly' },
                   { key: 'monthly', label: 'Pro · monthly', value: data.plans.monthly, cls: 'pl-monthly' },
-                  { key: 'grandfathered', label: 'Early shop', value: data.plans.grandfathered, cls: 'pl-early' },
                   { key: 'free', label: 'Free', value: data.plans.free, cls: 'pl-free' },
                 ]}
               />
@@ -642,11 +641,10 @@ function OverviewPage() {
 
 // ---------------------------------------------------------------- shops
 
-/** "Pro · lifetime (Founding #3)", "Pro · monthly to …", "Free", "Early shop" — a shop's plan in a few words. */
+/** "Pro · lifetime (Founding #3)", "Pro · monthly to …", "Free" — a shop's plan in a few words. */
 const planLabel = (s: Pick<Shop, 'plan' | 'activePlan' | 'founding_no' | 'plan_expires_at'>) => {
   if (s.activePlan === 'lifetime') return `Pro · lifetime (Founding #${s.founding_no})`;
   if (s.activePlan === 'yearly' || s.activePlan === 'monthly') return `Pro · ${s.activePlan} to ${when(s.plan_expires_at!)}`;
-  if (s.activePlan === 'grandfathered') return 'Early shop (no limit)';
   return s.plan === 'yearly' || s.plan === 'monthly' ? `Free (${s.plan} ran out)` : 'Free';
 };
 
@@ -674,7 +672,6 @@ const PLAN_FILTERS: { key: string; label: string }[] = [
   { key: '', label: 'Any plan' },
   { key: 'pro', label: 'Pro (paid)' },
   { key: 'free', label: 'Free' },
-  { key: 'grandfathered', label: 'Early shop' },
 ];
 const isPaid = (s: Pick<Shop, 'activePlan'>) => ['monthly', 'yearly', 'lifetime'].includes(s.activePlan);
 
@@ -1328,7 +1325,6 @@ function ShopPage({ id }: { id: number }) {
                 Plan
                 <select value={planForm.plan} onChange={(e) => setPlanForm({ ...planForm, plan: e.target.value })}>
                   <option value="free">Free (customer limit)</option>
-                  <option value="grandfathered">Early shop (no limit, no Pro features)</option>
                   <option value="monthly">Pro · 1 month from today</option>
                   <option value="yearly">Pro · 1 year from today</option>
                   <option value="lifetime">Pro · lifetime (takes a Founding place)</option>
@@ -1692,96 +1688,12 @@ function GrowthPage() {
             )}
           </section>
         </div>
-
-        <ReferralRewardsCard />
       </Sub>
 
       <Sub id="links">
         <LinkBuilder />
       </Sub>
     </>
-  );
-}
-
-type RewardDue = { shopId: number; name: string; phone: string | null; kind: 'standee' | 'upi'; n: number; active: number; selfActive: boolean };
-type RewardSent = { shopId: number; name: string; kind: 'standee' | 'upi'; n: number; sent_at: string };
-
-/** Shops that earned a referral reward (server/src/referrals.ts): message them for an address or UPI ID, send it, mark it sent. */
-function ReferralRewardsCard() {
-  const [data, setData] = useState<{ due: RewardDue[]; sent: RewardSent[]; upiAmount: number } | null>(null);
-  const [error, setError] = useState('');
-  const { busy, run } = useAction();
-  const load = useCallback(() => void adminApi<typeof data>('referral-rewards').then(setData, (e) => setError((e as Error).message)), []);
-  useEffect(load, [load]);
-
-  const what = (kind: RewardDue['kind']) => (kind === 'standee' ? 'Counter standee' : `₹${data?.upiAmount ?? 100} on UPI`);
-  const why = (d: RewardDue) =>
-    d.kind === 'upi' ? `${d.n * 3} shops brought` : d.active > 0 ? 'brought their first shop' : 'joined from a shop’s link and started';
-  const ask = (d: RewardDue) =>
-    d.kind === 'standee'
-      ? `Namaste! ${d.active > 0 ? `${d.name} ne Regularhood pe ek nayi dukaan jodi hai` : `${d.name} ne Regularhood pe 20 visits poori kar li hain`}, isliye aapko ek free counter standee milega 🎉 Kripya apna poora address (pincode ke saath) bhejiye.`
-      : `Namaste! ${d.name} se aayi dukaanon ke liye aapko ₹${data?.upiAmount ?? 100} milenge 🎉 Kripya apna UPI ID bhejiye.`;
-  const markSent = (d: RewardDue) =>
-    run(async () => {
-      if (!(await confirmDialog({ title: `Mark ${what(d.kind).toLowerCase()} sent to ${d.name}?`, confirm: 'Mark sent' }))) return;
-      await adminApi('referral-rewards', 'POST', { shopId: d.shopId, kind: d.kind, n: d.n });
-      toast('Marked sent');
-      load();
-    });
-
-  return (
-    <section className="card">
-      <div className="card-head">
-        <h2>
-          <Gift size={18} /> Referral rewards to send
-        </h2>
-        <span className="muted small">standee for the first shop · ₹{data?.upiAmount ?? 100} per 3 shops</span>
-      </div>
-      <p className="muted small" style={{ margin: 0 }}>
-        A brought shop counts once it adds 20 visits on 3 different days. Message the shop for an address or UPI ID, send the reward, then mark it sent.
-      </p>
-      <ErrorText text={error} />
-      {!data ? (
-        <SkeletonRows count={2} />
-      ) : data.due.length ? (
-        <ul className="rows">
-          {data.due.map((d) => (
-            <li key={`${d.shopId}-${d.kind}-${d.n}`}>
-              <div className="row-item">
-                <span className="row-main">
-                  <strong>
-                    <a href={`#/shops/${d.shopId}`}>{d.name}</a> · {what(d.kind)}
-                  </strong>
-                  <span>{why(d)}</span>
-                </span>
-                {d.phone && (
-                  <button className="btn btn-sm btn-whatsapp" onClick={() => openWaChat(d.phone!, d.name)} title={ask(d)}>
-                    <MessageCircle size={15} /> Ask
-                  </button>
-                )}
-                <button className="btn btn-sm btn-soft" disabled={busy} onClick={() => void markSent(d)}>
-                  <Check size={15} /> Sent
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="muted small">Nothing to send right now.</p>
-      )}
-      {data && data.sent.length > 0 && (
-        <details>
-          <summary className="small muted">Sent before ({data.sent.length})</summary>
-          <ul className="rows">
-            {data.sent.map((r) => (
-              <li key={`${r.shopId}-${r.kind}-${r.n}`} className="small">
-                <a href={`#/shops/${r.shopId}`}>{r.name}</a> · {what(r.kind)} · {ago(r.sent_at)}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-    </section>
   );
 }
 

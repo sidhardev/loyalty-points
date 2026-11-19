@@ -8,6 +8,8 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   Param,
@@ -34,6 +36,15 @@ import { LoyaltyService, type MerchantRow } from './loyalty.service';
 import { readReviewUrl } from './review-url';
 import { emailSettings, MailError, Mailer, resetEmail, welcomeEmail } from './mail';
 import { ResetCodes } from './reset-codes';
+import { Limiter } from './limits';
+
+// Guessing passwords and codes is slowed down: failed logins per account and per IP, and every reset or sign-up per IP.
+const failedByAccount = new Limiter(8, 15 * 60_000);
+const failedByIp = new Limiter(30, 15 * 60_000);
+const resetsByIp = new Limiter(10, 15 * 60_000);
+const verifiesByIp = new Limiter(20, 15 * 60_000);
+const signupsByIp = new Limiter(10, 60 * 60_000);
+const ipOf = (req: Request) => req.ip ?? 'unknown';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
 // every request. They log in with either one, or with "Continue with Google" (google.ts).
@@ -119,17 +130,19 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { merchantId?: number }>();
     const token = req.headers.authorization?.replace(/^Bearer /, '');
     if (!token) throw new UnauthorizedException('Please log in');
-    let payload: { sub: number; role?: string };
+    let payload: { sub: number; role?: string; v?: number };
     try {
-      payload = await this.jwt.verifyAsync<{ sub: number; role?: string }>(token);
+      payload = await this.jwt.verifyAsync<{ sub: number; role?: string; v?: number }>(token);
     } catch {
       throw new UnauthorizedException('Session expired, please log in again');
     }
     if (payload.role) throw new UnauthorizedException('Please log in');
-    const m = this.db.sql.prepare('SELECT suspended_at, last_seen_at FROM merchants WHERE id = ?').get(payload.sub) as
-      | { suspended_at: string | null; last_seen_at: string | null }
+    const m = this.db.sql.prepare('SELECT suspended_at, last_seen_at, token_version FROM merchants WHERE id = ?').get(payload.sub) as
+      | { suspended_at: string | null; last_seen_at: string | null; token_version: number }
       | undefined;
     if (!m) throw new UnauthorizedException('Account not found');
+    // A password reset moves token_version on, so sessions made before it stop working (tokens from before versions are 0).
+    if ((payload.v ?? 0) !== m.token_version) throw new UnauthorizedException('Session expired, please log in again');
     if (m.suspended_at) throw new ForbiddenException(SUSPENDED);
     // "Last seen" for the superadmin, written at most every 5 minutes.
     if (!m.last_seen_at || Date.parse(`${m.last_seen_at.replace(' ', 'T')}Z`) < Date.now() - 5 * 60_000) {
@@ -156,7 +169,8 @@ export class AuthController {
   ) {}
 
   @Post('auth/signup')
-  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; country?: string; tz?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }) {
+  async signup(@Body() body: { name?: string; email?: string; password?: string; phone?: string; country?: string; tz?: string; attribution?: unknown; rule?: unknown; reviewUrl?: unknown }, @Req() req: Request) {
+    signupsByIp.take(ipOf(req));
     const name = body?.name?.trim();
     const email = body?.email?.trim().toLowerCase() ?? '';
     const password = body?.password ?? '';
@@ -224,15 +238,18 @@ export class AuthController {
     // A partner's link makes the shop theirs (partners.ts); an unknown or stopped code counts for nobody.
     const partner =
       from.source === PARTNER_SOURCE && from.campaign
-        ? (this.db.sql.prepare('SELECT id FROM partners WHERE code = ? AND disabled_at IS NULL').get(cleanCode(from.campaign)) as { id: number } | undefined)
+        ? (this.db.sql.prepare('SELECT id, phone FROM partners WHERE code = ? AND disabled_at IS NULL').get(cleanCode(from.campaign)) as { id: number; phone: string } | undefined)
         : undefined;
+    // A partner's own shop isn't theirs to earn on: the same WhatsApp number counts for nobody.
+    const last9 = (p: string | null | undefined) => String(p ?? '').replace(/\D/g, '').slice(-9);
+    const ownShop = Boolean(partner && s.phone && last9(partner.phone) === last9(s.phone));
 
     const { lastInsertRowid } = this.db.sql
       .prepare(
         `INSERT INTO merchants (name, email, password_hash, join_code, phone, signup_source, signup_medium, signup_campaign,
            signup_ref, signup_landing, referred_by, partner_id, google_sub, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, partner?.id ?? null, s.googleSub ?? null, s.country);
+      .run(s.name, s.email || null, s.passwordHash, randomToken(6), s.phone || null, from.source, from.medium, from.campaign, from.ref, from.landing, referrer?.id ?? null, ownShop ? null : (partner?.id ?? null), s.googleSub ?? null, s.country);
     const id = Number(lastInsertRowid);
     // The card they made in the stamp card maker becomes the shop's rule, so the app opens on their own card.
     const rule = readRule(s.rule);
@@ -259,11 +276,23 @@ export class AuthController {
   }
 
   @Post('auth/login')
-  async login(@Body() body: { login?: string; email?: string; password?: string }) {
+  async login(@Body() body: { login?: string; email?: string; password?: string }, @Req() req: Request) {
     // One box for either: anything with an @ is an email, the rest a WhatsApp number.
-    const candidates = this.accountsFor(String(body?.login ?? body?.email ?? ''));
+    const login = String(body?.login ?? body?.email ?? '');
+    const candidates = this.accountsFor(login);
+    // Counted per account (however the number is written) and per IP; only failures count.
+    const account = candidates.length ? `id:${candidates.map((m) => m.id).join(',')}` : `login:${login.trim().toLowerCase()}`;
+    const ip = ipOf(req);
+    if (failedByAccount.full(account) || failedByIp.full(ip)) {
+      throw new HttpException('Too many wrong tries. Wait 15 minutes, or use Forgot password.', HttpStatus.TOO_MANY_REQUESTS);
+    }
     const merchant = candidates.find((m) => checkPassword(body?.password ?? '', m.password_hash));
-    if (!merchant) throw new UnauthorizedException('Wrong WhatsApp number, email or password');
+    if (!merchant) {
+      failedByAccount.allow(account);
+      failedByIp.allow(ip);
+      throw new UnauthorizedException('Wrong WhatsApp number, email or password');
+    }
+    failedByAccount.clear(account);
     if (merchant.suspended_at) throw new ForbiddenException(SUSPENDED);
     return this.session(merchant.id);
   }
@@ -293,7 +322,8 @@ export class AuthController {
 
   @Post('auth/forgot')
   @HttpCode(200)
-  async forgot(@Body() body: { login?: string }) {
+  async forgot(@Body() body: { login?: string }, @Req() req: Request) {
+    resetsByIp.take(ipOf(req));
     const login = String(body?.login ?? '').trim();
     const wa = this.codes.whatsappOn;
     const orWa = wa ? ' Try your WhatsApp number.' : ' Contact support if you can’t get in.';
@@ -325,7 +355,8 @@ export class AuthController {
   /** "Forgot password", step 2: the code and a new password. Logs the shop in. */
   @Post('auth/forgot/verify')
   @HttpCode(200)
-  verifyReset(@Body() body: { login?: string; code?: string; password?: string }) {
+  verifyReset(@Body() body: { login?: string; code?: string; password?: string }, @Req() req: Request) {
+    verifiesByIp.take(ipOf(req));
     const code = String(body?.code ?? '').replace(/\D/g, '');
     const password = body?.password ?? '';
     if (code.length !== 6) throw new BadRequestException('Enter the 6-digit code');
@@ -337,7 +368,7 @@ export class AuthController {
     );
     if (r === 'none') throw new BadRequestException('This code has expired or was used up. Ask for a new one.');
     if (r === 'wrong') throw new BadRequestException('Wrong code. Check it and try again.');
-    this.db.sql.prepare('UPDATE merchants SET password_hash = ? WHERE id = ?').run(hashPassword(password), r);
+    this.db.sql.prepare('UPDATE merchants SET password_hash = ?, token_version = token_version + 1 WHERE id = ?').run(hashPassword(password), r);
     this.db.sql.prepare("UPDATE password_resets SET used_at = datetime('now') WHERE merchant_id = ? AND used_at IS NULL").run(r);
     this.loyalty.log(r, 'shop', 'password', 'Set a new password with a reset code');
     return this.session(r);
@@ -352,12 +383,13 @@ export class AuthController {
 
   /** Sets a new password from a one-time reset link and logs the shop in. */
   @Post('auth/reset/:token')
-  async reset(@Param('token') token: string, @Body() body: { password?: string }) {
+  async reset(@Param('token') token: string, @Body() body: { password?: string }, @Req() req: Request) {
+    verifiesByIp.take(ipOf(req));
     const m = this.resetTarget(token);
     const password = body?.password ?? '';
     if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
     this.db.transaction(() => {
-      this.db.sql.prepare('UPDATE merchants SET password_hash = ? WHERE id = ?').run(hashPassword(password), m.id);
+      this.db.sql.prepare('UPDATE merchants SET password_hash = ?, token_version = token_version + 1 WHERE id = ?').run(hashPassword(password), m.id);
       this.db.sql.prepare("UPDATE password_resets SET used_at = datetime('now') WHERE merchant_id = ? AND used_at IS NULL").run(m.id);
       this.loyalty.log(m.id, 'shop', 'password', 'Set a new password with a reset link');
     });
@@ -431,6 +463,7 @@ export class AuthController {
   }
 
   private async session(id: number) {
-    return { token: await this.jwt.signAsync({ sub: id }), merchant: publicMerchant(this.find(id)) };
+    const m = this.find(id);
+    return { token: await this.jwt.signAsync({ sub: id, v: m.token_version ?? 0 }), merchant: publicMerchant(m) };
   }
 }

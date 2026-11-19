@@ -16,7 +16,7 @@ import { AuthGuard, MerchantId } from './auth';
 import { Db } from './db';
 import { requirePro } from './plans';
 import { LoyaltyService, tzShift, type CustomerRow } from './loyalty.service';
-import { ACTIVE_DAYS, ACTIVE_VISITS, rewardsFor, UPI_AMOUNT, UPI_EVERY } from './referrals';
+import { invitedShops } from './referrals';
 
 /** One CSV cell; text that looks like a formula is prefixed so spreadsheets don't run it. */
 const cell = (v: unknown) => {
@@ -71,21 +71,15 @@ export class LoyaltyController {
 
   // ---- share ----
 
-  /** How many customers the shop has, the shops it brought, and the rewards that earned it (referrals.ts). */
+  /** How many customers the shop has, and the shops it brought (referrals.ts). */
   @Get('share')
   share(@MerchantId() merchantId: number) {
-    const count = (sql: string) => (this.db.sql.prepare(sql).get(merchantId) as { n: number }).n;
-    const r = rewardsFor(this.db, merchantId);
+    const invited = invitedShops(this.db, merchantId);
     return {
-      customers: count('SELECT COUNT(*) AS n FROM customers WHERE merchant_id = ?'),
-      referrals: r.invited.length,
-      invited: r.invited.map(({ name, visits, days, active }) => ({ name, visits, days, active })),
-      active: r.active,
-      referred: r.referred,
-      own: r.own,
-      standee: r.standee,
-      upi: r.upi,
-      rules: { visits: ACTIVE_VISITS, days: ACTIVE_DAYS, upiEvery: UPI_EVERY, upiAmount: UPI_AMOUNT },
+      customers: this.loyalty.customerCount(merchantId),
+      referrals: invited.length,
+      invited: invited.map(({ name, visits, days, active }) => ({ name, visits, days, active })),
+      active: invited.filter((s) => s.active).length,
     };
   }
 

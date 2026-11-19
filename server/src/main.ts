@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { raw, type NextFunction, type Request, type Response } from 'express';
 import { existsSync, readFileSync } from 'node:fs';
@@ -54,11 +54,22 @@ async function bootstrap() {
   const trust = process.env.TRUST_PROXY ?? 'loopback';
   app.set('trust proxy', /^\d+$/.test(trust) ? Number(trust) : trust);
 
-  // Files sent from Admin → WhatsApp chats arrive as the raw body (whatsapp.ts, chatMedia); the admin check runs after.
+  // Files sent from Admin → WhatsApp chats arrive as the raw body (whatsapp.ts, chatMedia). Up to 50 MB is read into
+  // memory, so the admin's token is checked first: otherwise anyone could fill the server's memory with big uploads.
+  // (AdminGuard checks again on the route itself.)
   const fileUpload = raw({ type: () => true, limit: '50mb' });
-  app.use((req: Request, res: Response, next: NextFunction) =>
-    req.method === 'POST' && /^\/api\/admin\/whatsapp\/chats\/\d+\/media$/.test(req.path) ? fileUpload(req, res, next) : next(),
-  );
+  const jwt = app.get(JwtService);
+  const db = app.get(Db);
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== 'POST' || !/^\/api\/admin\/whatsapp\/chats\/\d+\/media$/.test(req.path)) return next();
+    const token = req.headers.authorization?.replace(/^Bearer /, '') ?? '';
+    const payload = await jwt.verifyAsync<{ sub: number; role?: string }>(token).catch(() => null);
+    if (payload?.role !== 'admin' || !db.sql.prepare('SELECT 1 FROM admins WHERE id = ?').get(payload.sub)) {
+      res.set('connection', 'close').status(401).json({ statusCode: 401, message: 'Please log in' });
+      return;
+    }
+    fileUpload(req, res, next);
+  });
   // A Pro shop's logo arrives the same way (pro.ts), already made small by the page.
   const logoUpload = raw({ type: () => true, limit: '400kb' });
   app.use((req: Request, res: Response, next: NextFunction) => (req.method === 'PUT' && req.path === '/api/pro/logo' ? logoUpload(req, res, next) : next()));

@@ -28,7 +28,6 @@ import { Db } from './db';
 import { effectivePlan, planSettings, prices, seatsLeft } from './plans';
 import { CARD_SOURCE, sourceLabel } from './growth';
 import { LoyaltyService } from './loyalty.service';
-import { rewardsDue, UPI_AMOUNT } from './referrals';
 
 // Superadmin: the platform owner's view of every shop — how the business is doing, which shops need a call,
 // and support actions (reset links, pausing a shop, notes). Admins are created only from the server's terminal
@@ -245,7 +244,7 @@ export class AdminController {
       )
       .get() as Record<string, number>;
     const p = prices(sql);
-    const plans: Record<string, number> = { free: 0, grandfathered: 0, monthly: 0, yearly: 0, lifetime: 0 };
+    const plans: Record<string, number> = { free: 0, monthly: 0, yearly: 0, lifetime: 0 };
     const statuses: Record<string, number> = { active: 0, sleeping: 0, new: 0, never: 0, paused: 0 };
     for (const s of shops) {
       plans[s.activePlan] = (plans[s.activePlan] ?? 0) + 1;
@@ -403,7 +402,7 @@ export class AdminController {
   setPlan(@AdminId() adminId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { plan?: string; reason?: string }) {
     const m = this.loyalty.merchant(id);
     const plan = body?.plan;
-    if (plan !== 'free' && plan !== 'grandfathered' && plan !== 'monthly' && plan !== 'yearly' && plan !== 'lifetime') throw new BadRequestException('Pick a plan');
+    if (plan !== 'free' && plan !== 'monthly' && plan !== 'yearly' && plan !== 'lifetime') throw new BadRequestException('Pick a plan');
     const reason = String(body?.reason ?? '').trim().slice(0, 200);
     if (!reason) throw new BadRequestException('Add a reason — it is kept in the admin log');
     // Founding numbers belong to lifetime shops only.
@@ -588,30 +587,6 @@ export class AdminController {
       daily,
       signups: shops.slice(0, 50),
     };
-  }
-
-  /** Referral rewards earned but not sent yet, and the last ones sent (referrals.ts). */
-  @Get('referral-rewards')
-  @UseGuards(AdminGuard)
-  referralRewards() {
-    const sent = this.db.sql
-      .prepare(
-        `SELECT r.merchant_id AS shopId, m.name, r.kind, r.n, r.sent_at FROM referral_rewards r
-         JOIN merchants m ON m.id = r.merchant_id ORDER BY r.id DESC LIMIT 30`,
-      )
-      .all();
-    return { due: rewardsDue(this.db), sent, upiAmount: UPI_AMOUNT };
-  }
-
-  @Post('referral-rewards')
-  @UseGuards(AdminGuard)
-  markRewardSent(@AdminId() adminId: number, @Body() body: { shopId?: number; kind?: string; n?: number }) {
-    const due = rewardsDue(this.db).find((d) => d.shopId === Number(body?.shopId) && d.kind === body?.kind && d.n === Number(body?.n));
-    if (!due) throw new BadRequestException('This reward is not due, or was already marked sent');
-    this.db.sql.prepare('INSERT INTO referral_rewards (merchant_id, kind, n, admin_id) VALUES (?, ?, ?, ?)').run(due.shopId, due.kind, due.n, adminId);
-    const what = due.kind === 'standee' ? 'a counter standee' : `₹${UPI_AMOUNT} on UPI`;
-    this.audit(adminId, due.shopId, 'referral_reward', `Sent ${due.name} ${what} for bringing shops`);
-    return { ok: true };
   }
 
   /** Every admin action across all shops. */

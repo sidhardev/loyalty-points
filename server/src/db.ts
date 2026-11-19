@@ -830,6 +830,12 @@ const MIGRATIONS: string[] = [
   ALTER TABLE merchants ADD COLUMN email_opt_out INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE merchants ADD COLUMN email_token TEXT;
   `,
+  // 48: the 'grandfathered' plan is gone (every shop is Free, or Pro); and a shop's sessions carry a version, so a
+  // password reset logs out every other device (auth.ts).
+  `
+  UPDATE merchants SET plan = 'free' WHERE plan = 'grandfathered';
+  ALTER TABLE merchants ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 const INDEXES = `

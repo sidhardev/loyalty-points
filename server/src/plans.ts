@@ -14,8 +14,6 @@ import type { DatabaseSync } from 'node:sqlite';
 // Pro is paid through Razorpay (billing.ts) as one-time payments, so nothing is debited automatically:
 //  - monthly / yearly: a month or a year from the payment (added to what is left). Once it ends the shop is Free again.
 //  - lifetime: no longer sold. Shops that bought it earlier keep Pro with no end; nobody can buy it now.
-//  - grandfathered: shops from before plans existed keep unlimited customers (the terms promised nothing free would
-//    start costing), but not the Pro features.
 // Every WhatsApp message to a shop's customers is sent by the shop from its own phone; Regularhood's number never
 // messages customers. Prices and numbers are set in Admin → Plans (app_settings 'plans'); .env gives the defaults.
 //
@@ -23,7 +21,7 @@ import type { DatabaseSync } from 'node:sqlite';
 // (Razorpay's international payments). currencyFor() decides which; amounts are always in the smallest unit (paise
 // or cents).
 
-export type Plan = 'free' | 'grandfathered' | 'monthly' | 'yearly' | 'lifetime';
+export type Plan = 'free' | 'monthly' | 'yearly' | 'lifetime';
 export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
 export type PlanFields = { plan: string; plan_expires_at: string | null };
 export type Currency = 'INR' | 'USD';
@@ -137,7 +135,7 @@ const at = (sqlTime: string) => Date.parse(`${sqlTime.replace(' ', 'T')}Z`);
 /** The plan in force now: a monthly or yearly plan past its end is Free. */
 export function effectivePlan(m: PlanFields): Plan {
   if (m.plan === 'monthly' || m.plan === 'yearly') return m.plan_expires_at && at(m.plan_expires_at) > Date.now() ? m.plan : 'free';
-  return m.plan === 'lifetime' || m.plan === 'grandfathered' ? m.plan : 'free';
+  return m.plan === 'lifetime' ? 'lifetime' : 'free';
 }
 
 export const isPro = (m: PlanFields) => ['monthly', 'yearly', 'lifetime'].includes(effectivePlan(m));

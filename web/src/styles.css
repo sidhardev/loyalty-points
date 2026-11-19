@@ -6667,9 +6667,6 @@ a.kpi:hover {
 .pl-monthly {
   background: #d97706;
 }
-.pl-early {
-  background: var(--violet);
-}
 .pl-free {
   background: var(--line-strong);
 }

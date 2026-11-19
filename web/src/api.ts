@@ -49,7 +49,7 @@ export const timeZone = () => {
 
 /** The shop's plan (Plan page). `limit`: most customers allowed, null = no limit. Prices in paise, or cents for USD. */
 export type Billing = {
-  plan: 'free' | 'grandfathered' | PaidKind; // the plan in force now: an ended month or year is 'free'
+  plan: 'free' | PaidKind; // the plan in force now: an ended month or year is 'free'
   paidPlan: string; // what was last bought, even after it ended
   expiresAt: string | null;
   foundingNo: number | null; // lifetime shops

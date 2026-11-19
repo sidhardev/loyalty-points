@@ -14,17 +14,11 @@ import { LogoMark, Sheet, toast } from './ui';
 export type ShareLang = 'hi' | 'en';
 export type ShareFormat = 'status' | 'post';
 
-type Earned = { earned: number; sent: number };
 export type ShareData = {
   customers: number;
   referrals: number;
   invited: { name: string; visits: number; days: number; active: boolean }[];
   active: number;
-  referred: boolean;
-  own: { visits: number; days: number };
-  standee: Earned;
-  upi: Earned;
-  rules: { visits: number; days: number; upiEvery: number; upiAmount: number };
 };
 
 export const shareUrl = (code: string) => `${location.origin}/r/${code}`;
@@ -332,11 +326,6 @@ const NO_DATA: ShareData = {
   referrals: 0,
   invited: [],
   active: 0,
-  referred: false,
-  own: { visits: 0, days: 0 },
-  standee: { earned: 0, sent: 0 },
-  upi: { earned: 0, sent: 0 },
-  rules: { visits: 20, days: 3, upiEvery: 3, upiAmount: 100 },
 };
 
 /** Settings' invitation to share, with the shops that joined from this shop's links. */

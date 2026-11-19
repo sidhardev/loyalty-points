@@ -6,8 +6,8 @@ import { arrival } from '../attribution';
 import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, Logo, useAction } from '../ui';
 
-// /r/<join code>: a shop's share link. Says which shop invited them, what Regularhood does in three lines, and the
-// standee they get too, with the sign-up form right there. main.tsx tags the visit as this shop's referral
+// /r/<join code>: a shop's share link. Says which shop invited them and what Regularhood does in three lines, with the
+// sign-up form right there. main.tsx tags the visit as this shop's referral
 // (utm_source=shop), so the sign-up counts for the shop that shared it (server/src/referrals.ts).
 
 type Inviter = { shop: string; visitsNeeded: number; rewardName: string };

@@ -1,4 +1,9 @@
-import { Body, Controller, Headers, HttpCode, Injectable, OnModuleDestroy, Post } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Injectable, OnModuleDestroy, Post, Req } from '@nestjs/common';
+import type { Request } from 'express';
+import { Limiter } from './limits';
+
+/** /api/collect takes anyone's posts, so each IP gets a budget; past it, hits are dropped (a real visitor never gets near it). */
+const collectsByIp = new Limiter(600, 10 * 60_000);
 import { JwtService } from '@nestjs/jwt';
 import { Db } from './db';
 
@@ -373,8 +378,10 @@ export class AnalyticsController {
     @Headers('user-agent') ua = '',
     @Headers('x-vercel-ip-country') vercelCountry?: string,
     @Headers('cloudfront-viewer-country') cfCountry?: string,
+    @Req() req?: Request,
   ) {
     if (!body || BOT.test(ua) || !ID.test(String(body.id ?? ''))) return;
+    if (!collectsByIp.allow(req?.ip ?? 'unknown')) return;
 
     if (body.t === 'shop') {
       const shop = await this.shopOf(body.auth);

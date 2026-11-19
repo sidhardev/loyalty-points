@@ -42,7 +42,7 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
   const lapsed = (b.paidPlan === 'monthly' || b.paidPlan === 'yearly') && !pro;
   const pick = kind;
   const buy = () => void run(() => payPro(pick, () => void api<Merchant>('me').then(onMerchant)));
-  const current = b.plan === 'lifetime' ? t('Pro · Founding Shop #{n}', { n: b.foundingNo ?? '' }) : pro ? t('Pro') : b.plan === 'grandfathered' ? t('Early shop') : t('Free');
+  const current = b.plan === 'lifetime' ? t('Pro · Founding Shop #{n}', { n: b.foundingNo ?? '' }) : pro ? t('Pro') : t('Free');
 
   return (
     <div className="plan-page">
@@ -80,7 +80,6 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
           </div>
         )}
         {lapsed && <p className="alert alert-error small">{t('Your Pro plan has ended. Renew to add new customers again.')}</p>}
-        {b.plan === 'grandfathered' && <p className="muted small plan-now-line">{t('You joined before plans existed, so you keep unlimited customers. Pro adds the features below.')}</p>}
         {pro && (
           <a className="btn btn-soft plan-now-cta" href="#/settings">
             <SettingsIcon size={17} /> {t('Add your logo and Google review link')}
