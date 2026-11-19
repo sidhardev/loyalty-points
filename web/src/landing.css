@@ -3028,6 +3028,7 @@ button.lp-phone-btn:not(.orange) {
   border-radius: 6px;
   background: var(--sheet);
   box-shadow: 0 1px 0 rgba(28, 25, 21, 0.08), 0 16px 30px -22px rgba(28, 25, 21, 0.5);
+  align-content: start;
   rotate: var(--t, 0deg);
   transition: rotate 0.3s var(--ease), translate 0.3s var(--ease);
 }
@@ -3051,7 +3052,7 @@ button.lp-phone-btn:not(.orange) {
   font: 600 19px/1.2 var(--display);
 }
 
-.lp-using-dots {
+.lp-using-list li > .lp-using-dots {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
