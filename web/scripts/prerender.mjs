@@ -72,7 +72,7 @@ const data = {
 // - The app's stylesheet and the homepage's own are written into the page, in the order the app would load them.
 // - The homepage's stylesheet link stays, disabled (browsers don't download it), so loading the homepage's code
 //   sees it's there and doesn't fetch it again.
-// - The homepage is set in Archivo only: its font stylesheet loads without blocking (the text shows in a fallback
+// - The homepage is set in Fraunces and Manrope: their font stylesheet loads without blocking (the text shows in a fallback
 //   font until it arrives, as with font-display: swap), and the app's Inter isn't loaded at all.
 const appCss = shell.match(/<link rel="stylesheet" crossorigin href="\/(assets\/[^"]+\.css)">/);
 const inter = shell.match(/<link href="https:\/\/fonts\.googleapis\.com\/css2\?family=Inter[^"]*" rel="stylesheet" \/>/);

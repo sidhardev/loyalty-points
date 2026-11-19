@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from 'react';
 import { AnimatePresence, domAnimation, LazyMotion, m, type MotionValue, useInView, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import {
   ArrowRight,
@@ -30,12 +30,15 @@ import '../landing.css';
 
 // regularhood.in — the homepage for shop owners. The shop app itself lives at /app.
 // One idea: a stamp card on the customer's phone number ("every 5th visit, a free cappuccino"). The page is told with
-// one example shop at a time — a kirana to start — and the visitor can switch to a salon, café, bakery, gym or sweet
-// shop; every section follows the pick, which shows the same two taps work for any shop.
+// one example shop at a time — a grocery to start — and the visitor can switch to a salon, café, bakery, gym or dessert
+// bar; every section follows the pick, which shows the same two taps work for any shop. English is written for shops
+// anywhere (no rupees or Indian names; prices in dollars outside India); Hindi and Malayalam keep Indian examples.
+// The look: receipt paper and a rubber stamp (landing.css), set in Fraunces and Manrope.
 // English and Hindi; prerendered in English (scripts/prerender.mjs). Everything is readable without JavaScript and at
 // rest; animations replay what the product does, and stop for reduced motion.
 
-export const FONTS = 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap';
+export const FONTS =
+  'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..800;1,9..144,500..800&family=Manrope:wght@400..800&display=swap';
 const SIGNUP = '/app#signup';
 
 function useFonts() {
@@ -97,15 +100,17 @@ function useReveals() {
 
 type ExKey = 'cafe' | 'salon' | 'kirana' | 'bakery' | 'gym' | 'sweets';
 type ExText = { type: string; reward: string; short: string; line: string };
-type Example = { key: ExKey; icon: typeof Coffee; shop: string; needed: number; en: ExText; hi: ExText; ml: ExText };
+/** `shop` is the English name; `local` the Indian one shown in Hindi and Malayalam. */
+type Example = { key: ExKey; icon: typeof Coffee; shop: string; local?: string; needed: number; en: ExText; hi: ExText; ml: ExText };
 
 const EXAMPLES: Example[] = [
   {
     key: 'kirana',
     icon: ShoppingBasket,
-    shop: 'Gupta Kirana Store',
+    shop: 'Corner Market',
+    local: 'Gupta Kirana Store',
     needed: 10,
-    en: { type: 'Kirana', reward: '₹50 off the bill.', short: '₹50 off', line: 'Families who shop with you every week' },
+    en: { type: 'Grocery', reward: '10% off the basket.', short: '10% off', line: 'Families who stock up with you every week' },
     hi: { type: 'किराना', reward: 'बिल पर ₹50 की छूट।', short: '₹50 की छूट', line: 'हर हफ़्ते सामान लेने वाले परिवार' },
     ml: { type: 'പലചരക്ക് കട', reward: 'ബില്ലിൽ ₹50 കിഴിവ്.', short: '₹50 കിഴിവ്', line: 'എല്ലാ ആഴ്ചയും സാധനം വാങ്ങുന്ന കുടുംബങ്ങൾ' },
   },
@@ -148,9 +153,10 @@ const EXAMPLES: Example[] = [
   {
     key: 'sweets',
     icon: Candy,
-    shop: 'Sharma Sweets',
+    shop: 'Scoops Dessert Bar',
+    local: 'Sharma Sweets',
     needed: 8,
-    en: { type: 'Sweet shop', reward: '250g kaju katli, free.', short: 'Free kaju katli', line: 'Festival rush and the daily regulars' },
+    en: { type: 'Dessert bar', reward: 'a free scoop.', short: 'Free scoop', line: 'The after-dinner crowd and the weekend regulars' },
     hi: { type: 'मिठाई', reward: '250g काजू कतली मुफ़्त।', short: 'मुफ़्त काजू कतली', line: 'त्योहार की भीड़ और रोज़ के ग्राहक' },
     ml: { type: 'സ്വീറ്റ്സ് കട', reward: '250g കാജു കട്‌ലി ഫ്രീ.', short: 'ഫ്രീ കാജു കട്‌ലി', line: 'ഉത്സവത്തിരക്കും ദിവസേനയുള്ള സ്ഥിരക്കാരും' },
   },
@@ -160,6 +166,12 @@ type ExampleState = { ex: Example; pick: (key: ExKey) => void; picked: boolean }
 const ExampleContext = createContext<ExampleState>({ ex: EXAMPLES[0], pick: () => {}, picked: false });
 const useExample = () => useContext(ExampleContext);
 
+/** The examples with their Indian names, for Hindi and Malayalam. */
+const LOCAL_EXAMPLES: Example[] = EXAMPLES.map((e) => (e.local ? { ...e, shop: e.local } : e));
+
+/** The customer's number in the demos: a made-up one, written the local way. */
+const DEMO_NUMBER: Record<Lang, string> = { en: '555 012 3456', hi: '98765 43210', ml: '98765 43210' };
+
 const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 
 // ---------------------------------------------------------------- copy
@@ -168,13 +180,16 @@ const COPY = {
   en: {
     login: 'Log in',
     start: 'Start free',
+    heroCta: 'Make my stamp card',
     open: 'Open your shop',
-    eyebrow: 'The loyalty card for every local shop',
-    h1: 'Turn every customer',
-    h1b: 'into a regular.',
-    sub: 'Customers get a stamp on every visit and a reward when the card is full — so they come back to you, not the shop next door. All they need is their phone number.',
-    watch: 'Watch it work',
-    note: 'Free · No payment needed · Ready in 1 minute',
+    eyebrow: 'Digital stamp cards for local businesses',
+    h1: 'The stamp card your customers',
+    h1b: 'can’t lose.',
+    sub: 'Type a customer’s phone number at the counter. They collect a stamp on every visit and a reward when the card is full, so they come back to you instead of the place next door. No app, no plastic, no QR codes.',
+    watch: 'See it at the counter',
+    note: 'Free to start · No payment details · Ready in a minute',
+    ring: 'No app · No plastic · No QR codes · ',
+    paperCard: 'Loyalty card',
     pickLabel: 'Pick a shop like yours',
     demoHint: 'Try it — tap “Add visit”',
     demoAdd: 'Add visit',
@@ -191,7 +206,7 @@ const COPY = {
     scenes: [
       ['The customer says their number', 'No app to open, no QR to scan. Regulars pop up after 4 digits.'],
       ['You tap “Add visit”', 'One big button. A stamp lands on their card.'],
-      ['Their card arrives on WhatsApp', 'They see how many visits are left — in Hindi or English.'],
+      ['Their card arrives on WhatsApp', 'They see how many visits are left, in their own language.'],
       ['On the last visit, the app tells you', '“Give the reward now.” Tap Given, the card starts again.'],
     ],
     filmPlay: 'Play',
@@ -274,7 +289,7 @@ const COPY = {
     priceSub: (free: number) =>
       `Start free with up to ${free} customers. Go Pro for no limit, win-back reminders, Google reviews and your logo. Pay for a month, a year or once for life. Nothing is auto-debited.`,
     priceFree: { name: 'Free', per: 'forever', limit: (n: number) => `Up to ${n} customers` },
-    priceList: ['Customer cards in Hindi and English', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Daily backups'],
+    priceList: ['Customer cards in English, Hindi and Malayalam', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Daily backups'],
     pro: {
       name: 'Pro',
       monthly: 'a month',
@@ -295,7 +310,7 @@ const COPY = {
     faqKicker: 'Questions',
     faqTitle: 'Asked at the counter.',
     finalTitle: 'Your next regular walks in today.',
-    finalSub: 'Set up takes one minute. Their first stamp can land today.',
+    finalSub: 'Set up takes a minute. Their first stamp can land before lunch.',
     worth: {
       kicker: 'Do the maths',
       title: 'What is one more visit worth?',
@@ -311,6 +326,7 @@ const COPY = {
   hi: {
     login: 'लॉग इन',
     start: 'मुफ़्त शुरू करें',
+    heroCta: 'मेरा स्टैम्प कार्ड बनाएँ',
     open: 'अपनी दुकान खोलें',
     eyebrow: 'हर लोकल दुकान के लिए लॉयल्टी कार्ड',
     h1: 'हर ग्राहक को बनाइए',
@@ -318,6 +334,8 @@ const COPY = {
     sub: 'हर विज़िट पर ग्राहक को स्टैम्प, कार्ड भरते ही इनाम — तो वो बगल वाली दुकान नहीं, आपके पास लौटता है। ग्राहक को बस अपना फ़ोन नंबर बताना है।',
     watch: 'देखें कैसे चलता है',
     note: 'मुफ़्त · कोई पेमेंट नहीं · 1 मिनट में तैयार',
+    ring: 'कोई ऐप नहीं · कोई कार्ड नहीं · कोई QR नहीं · ',
+    paperCard: 'लॉयल्टी कार्ड',
     pickLabel: 'अपनी जैसी दुकान चुनें',
     demoHint: 'आज़माएँ — “विज़िट जोड़ें” दबाएँ',
     demoAdd: 'विज़िट जोड़ें',
@@ -452,6 +470,7 @@ const COPY = {
   ml: {
     login: 'ലോഗ് ഇൻ',
     start: 'സൗജന്യമായി തുടങ്ങൂ',
+    heroCta: 'എന്റെ സ്റ്റാമ്പ് കാർഡ് ഉണ്ടാക്കൂ',
     open: 'നിങ്ങളുടെ കട തുറക്കൂ',
     eyebrow: 'ഓരോ ലോക്കൽ കടയ്ക്കും ഒരു ലോയൽറ്റി കാർഡ്',
     h1: 'ഓരോ കസ്റ്റമറെയും',
@@ -459,6 +478,8 @@ const COPY = {
     sub: 'ഓരോ സന്ദർശനത്തിലും ഒരു സ്റ്റാമ്പ്, കാർഡ് നിറയുമ്പോൾ ഒരു സമ്മാനം — അതുകൊണ്ട് അവർ തൊട്ടടുത്ത കടയിലേക്കല്ല, നിങ്ങളുടെ അടുത്തേക്ക് തിരികെ വരും. അവരുടെ ഫോൺ നമ്പർ മാത്രം മതി.',
     watch: 'എങ്ങനെയെന്ന് കാണൂ',
     note: 'സൗജന്യം · പണം വേണ്ട · 1 മിനിറ്റിൽ റെഡി',
+    ring: 'ആപ്പ് വേണ്ട · കാർഡ് വേണ്ട · QR വേണ്ട · ',
+    paperCard: 'ലോയൽറ്റി കാർഡ്',
     pickLabel: 'നിങ്ങളുടേത് പോലെയുള്ള ഒരു കട തിരഞ്ഞെടുക്കൂ',
     demoHint: 'പരീക്ഷിച്ചു നോക്കൂ — “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ',
     demoAdd: 'സന്ദർശനം ചേർക്കൂ',
@@ -596,13 +617,13 @@ type Copy = (typeof COPY)['en'] | (typeof COPY)['hi'] | (typeof COPY)['ml'];
 
 // Also published (in English) as FAQPage structured data by scripts/prerender.mjs.
 export const FAQ = [
-  ['Does it work for my kind of shop?', 'If the same people come back to you — a café, salon, kirana, bakery, gym, sweet shop, pharmacy or tiffin service — yes. You choose the number of visits and the reward.'],
+  ['Does it work for my kind of shop?', 'If the same people come back to you — a café, salon, barber, grocery, bakery, gym, dessert bar, pharmacy or car wash — yes. You choose the number of visits and the reward.'],
   ['Do my customers need an app?', 'No. You add their visit with their phone number. Their card opens from a WhatsApp link in any browser — nothing to install.'],
   ['What if a customer doesn’t have a smartphone?', 'It still works. Visits are counted on their phone number, and the app tells you at the counter when their reward is due.'],
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
-  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. Pro (prices above) removes the limit and adds a list of customers who stopped coming with one-tap WhatsApp reminders, Google reviews, your logo on the card and spreadsheet downloads. Pay for a month, a year or once for life; nothing is auto-debited. Pay by UPI; full refund within 7 days.'],
+  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. Pro (prices above) removes the limit and adds a list of customers who stopped coming with one-tap WhatsApp reminders, Google reviews, your logo on the card and spreadsheet downloads. Pay for a month, a year or once for life; nothing renews by itself. Full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -861,7 +882,7 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
               </m.div>
             ) : (
               <m.div key="keypad" className="lp-phone-keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="lp-phone-number">98765 43210</div>
+                <div className="lp-phone-number">{DEMO_NUMBER[lang]}</div>
                 <div className="lp-phone-keys" aria-hidden="true">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''].map((k, i) => (
                     <span key={i}>{k || (i === 11 ? <Delete size={15} /> : '')}</span>
@@ -899,14 +920,47 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
   );
 }
 
+/** The old way, tucked behind the phone: a paper stamp card, inked a few times, for the picked shop. */
+function PaperCard({ c, lang }: { c: Copy; lang: Lang }) {
+  const { ex } = useExample();
+  const inked = Math.max(1, ex.needed - 4);
+  return (
+    <div className="lp-paper" aria-hidden="true">
+      <span className="lp-paper-kicker">{c.paperCard}</span>
+      <strong>{ex.shop}</strong>
+      <span className="lp-paper-rule">{c.rule(ex.needed, ex[lang].short)}</span>
+      <span className="lp-paper-boxes">
+        {Array.from({ length: Math.min(ex.needed, 10) }, (_, i) => (
+          <i key={i} className={i < inked ? 'inked' : ''} style={{ '--r': `${((i * 53) % 30) - 15}deg` } as CSSProperties} />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** A round rubber stamp that slowly turns: what Regularhood doesn't need. */
+function StampRing({ text }: { text: string }) {
+  const id = 'lp-ring-path';
+  return (
+    <svg className="lp-ring" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <path id={id} d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0" />
+      </defs>
+      <circle cx="100" cy="100" r="96" />
+      <circle cx="100" cy="100" r="60" />
+      <text>
+        <textPath href={`#${id}`} textLength="488">
+          {text.repeat(2)}
+        </textPath>
+      </text>
+      <path className="lp-ring-check" d="M80 101 l14 14 l27 -30" />
+    </svg>
+  );
+}
+
 function Hero({ c, lang }: { c: Copy; lang: Lang }) {
   return (
     <section className="lp-hero" data-section="hero">
-      <div className="lp-aurora" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
       <div className="lp-grain" aria-hidden="true" />
       <div className="lp-wrap lp-hero-grid">
         <div className="lp-hero-text">
@@ -922,7 +976,7 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
           <p className="lp-sub">{c.sub}</p>
           <div className="lp-cta">
             <a className="lp-btn lp-btn-glow" href={SIGNUP} data-track="hero: Start free">
-              {c.start} <ArrowRight size={18} />
+              {c.heroCta} <ArrowRight size={18} />
             </a>
             <a className="lp-btn lp-btn-ghost" href="#film" data-track="hero: Watch it work">
               <Play size={16} fill="currentColor" /> {c.watch}
@@ -934,7 +988,11 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
             <ShopPicker lang={lang} className="hero" />
           </div>
         </div>
-        <DemoPhone c={c} lang={lang} />
+        <div className="lp-hero-art">
+          <PaperCard c={c} lang={lang} />
+          <StampRing text={c.ring} />
+          <DemoPhone c={c} lang={lang} />
+        </div>
         {/* phones: the picker sits under the phone it changes */}
         <div className="lp-pick-wrap lp-pick-narrow">
           <span className="lp-pick-label">{c.pickLabel}</span>
@@ -947,8 +1005,8 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
 
 /** More kinds of shop for the scrolling strip, after the examples. */
 const MORE_SHOPS: Record<Lang, string[]> = {
-  en: ['Pharmacy', 'Tiffin', 'Juice bar', 'Chai stall', 'Laundry'],
-  hi: ['मेडिकल', 'टिफ़िन', 'जूस बार', 'चाय की दुकान', 'लॉन्ड्री'],
+  en: ['Barber', 'Pharmacy', 'Pet groomer', 'Juice bar', 'Laundry', 'Car wash', 'Florist'],
+  hi: ['मेडिकल', 'टिफ़िन', 'जूस बार', 'लॉन्ड्री', 'कार वॉश'],
   ml: ['ഫാർമസി', 'ടിഫിൻ', 'ജ്യൂസ് ബാർ', 'ബ്യൂട്ടി പാർലർ', 'ലോൺട്രി'],
 };
 
@@ -1064,7 +1122,7 @@ function Film({ c, lang }: { c: Copy; lang: Lang }) {
               {scene === 0 && (
                 <div className="lp-film-say">
                   <span className="lp-film-bubble-say">
-                    {c.customerSays} <b>98765 43210</b>
+                    {c.customerSays} <b>{DEMO_NUMBER[lang]}</b>
                   </span>
                 </div>
               )}
@@ -1253,7 +1311,7 @@ function HowArt({ step, c, lang }: { step: number; c: Copy; lang: Lang }) {
           <Phone size={15} />
           <span>
             <small>{c.howPhone}</small>
-            <b className="lp-how-typed">98765 43210</b>
+            <b className="lp-how-typed">{DEMO_NUMBER[lang]}</b>
           </span>
         </div>
         <span className="lp-how-btn">{c.demoAdd}</span>
@@ -1456,13 +1514,13 @@ function ShopsUsing({ c }: { c: Copy }) {
       <h2 className="lp-h2">{c.shopsTitle}</h2>
       <ul className="lp-using-list">
         {shops.map((s, i) => (
-          <li key={`${s.name}-${i}`} style={{ '--i': i } as CSSProperties}>
-            <span className="lp-using-mark" aria-hidden="true">
-              {[...s.name.trim()][0]?.toUpperCase() ?? '•'}
-            </span>
-            <span>
-              <strong>{s.name}</strong>
-              {s.rewardName && <small>{c.rule(s.visitsNeeded, s.rewardName)}</small>}
+          <li key={`${s.name}-${i}`} style={{ '--i': i, '--t': `${((i * 37) % 7) - 3}deg` } as CSSProperties}>
+            <strong>{s.name}</strong>
+            {s.rewardName && <small>{c.rule(s.visitsNeeded, s.rewardName)}</small>}
+            <span className="lp-using-dots" aria-hidden="true">
+              {Array.from({ length: Math.min(Math.max(s.visitsNeeded, 3), 10) }, (_, k) => (
+                <i key={k} className={k < Math.ceil(Math.min(s.visitsNeeded, 10) / 2) ? 'on' : ''} />
+              ))}
             </span>
           </li>
         ))}
@@ -1474,10 +1532,15 @@ function ShopsUsing({ c }: { c: Copy }) {
 /** "Do the maths": the shop's own numbers turned into rupees. Only what the visitor sets, so no claim of ours. */
 function Worth({ c }: { c: Copy }) {
   const w = c.worth;
+  const abroad = useAbroad();
   const [bill, setBill] = useState(250);
   const [back, setBack] = useState(20);
+  // Outside India the bill is in dollars: a smaller scale, set once the visitor's time zone is known.
+  useEffect(() => {
+    if (abroad) setBill(15);
+  }, [abroad]);
   const month = bill * back;
-  const rs = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const rs = (n: number) => (abroad ? `$${n.toLocaleString('en-US')}` : `₹${n.toLocaleString('en-IN')}`);
   return (
     <section className="lp-section lp-wrap" id="worth" data-section="worth">
       <p className="lp-kicker rv">{w.kicker}</p>
@@ -1489,7 +1552,15 @@ function Worth({ c }: { c: Copy }) {
             <span>
               {w.bill} <strong>{rs(bill)}</strong>
             </span>
-            <input type="range" min={50} max={2000} step={50} value={bill} onChange={(e) => setBill(+e.target.value)} data-track="worth: bill" />
+            <input
+              type="range"
+              min={abroad ? 5 : 50}
+              max={abroad ? 200 : 2000}
+              step={abroad ? 5 : 50}
+              value={bill}
+              onChange={(e) => setBill(+e.target.value)}
+              data-track="worth: bill"
+            />
           </label>
           <label>
             <span>
@@ -1665,7 +1736,11 @@ export function Landing() {
   useEffect(() => watchSections(), []);
   const lang = usePageLang();
   const c = COPY[lang];
-  const example = useExampleTour();
+  const tour = useExampleTour();
+  // Hindi and Malayalam show the Indian shop names; English the international ones. The example objects stay the same
+  // between renders (the demo phone starts over when its example changes).
+  const ex = lang === 'en' ? tour.ex : LOCAL_EXAMPLES.find((e) => e.key === tour.ex.key)!;
+  const example = useMemo(() => ({ ex, pick: tour.pick, picked: tour.picked }), [ex, tour.pick, tour.picked]);
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -1692,15 +1767,11 @@ export function Landing() {
             <Pricing c={c} />
             <Faq c={c} lang={lang} />
             <section className="lp-final" data-section="final">
-              <div className="lp-aurora" aria-hidden="true">
-                <span />
-                <span />
-              </div>
               <div className="lp-wrap">
                 <h2 className="rv">{c.finalTitle}</h2>
                 <p className="rv">{c.finalSub}</p>
                 <a className="lp-btn lp-btn-glow rv" href={SIGNUP} data-track="final: Start free">
-                  {c.start} <ArrowRight size={18} />
+                  {c.heroCta} <ArrowRight size={18} />
                 </a>
               </div>
             </section>
