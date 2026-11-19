@@ -52,9 +52,8 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
         </div>
       </header>
 
-      <LimitStrip meter />
-
-      {filter === 'all' && !q && <ReportCard merchant={merchant} onSaved={onSaved} />}
+      {/* The list comes first: a shop opens this page to find someone. The plan only shows here once it's nearly full. */}
+      <LimitStrip near />
 
       <div className="chips" role="tablist">
         {chips.map(({ id, label, icon: Icon }) => (
@@ -148,6 +147,8 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
         )}
       </section>
       )}
+
+      {filter === 'all' && !q && <ReportCard merchant={merchant} onSaved={onSaved} />}
     </>
   );
 }

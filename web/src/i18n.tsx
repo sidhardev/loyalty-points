@@ -451,6 +451,12 @@ const HI: Record<string, string> = {
   "Show in money": "पैसों में दिखाएँ",
   "What a customer spends on one visit, about": "एक ग्राहक एक बार में लगभग कितना खर्च करता है",
   "Your monthly report on the Customers page shows return visits in money with this.": "इससे ग्राहक पेज की मासिक रिपोर्ट दोबारा आने वालों को पैसों में दिखाती है।",
+  // settings jump links, unsaved bar, setup and counter hints
+  'Changes not saved': 'बदलाव सेव नहीं हुए',
+  'e.g. Free coffee': 'जैसे: मुफ़्त कॉफ़ी',
+  'Write the reward first, for example: Free coffee': 'पहले इनाम लिखें, जैसे: मुफ़्त कॉफ़ी',
+  'Back to the keypad in {n}s': '{n} सेकंड में कीपैड पर वापस',
+  '{n}/{limit} free': '{n}/{limit} फ़्री',
 };
 
 // Malayalam for the customer's card pages and the shop's own screens (for shops in Kerala).
@@ -857,6 +863,12 @@ const ML: Record<string, string> = {
   "Show in money": "പണമായി കാണിക്കൂ",
   "What a customer spends on one visit, about": "ഒരു കസ്റ്റമർ ഒരു സന്ദർശനത്തിൽ ഏകദേശം ചെലവാക്കുന്നത്",
   "Your monthly report on the Customers page shows return visits in money with this.": "ഇതുവെച്ച് കസ്റ്റമർ പേജിലെ മാസ റിപ്പോർട്ട് വീണ്ടും വന്നതിനെ പണമായി കാണിക്കും.",
+  // settings jump links, unsaved bar, setup and counter hints
+  'Changes not saved': 'മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല',
+  'e.g. Free coffee': 'ഉദാ: ഫ്രീ കോഫി',
+  'Write the reward first, for example: Free coffee': 'ആദ്യം സമ്മാനം എഴുതൂ, ഉദാ: ഫ്രീ കോഫി',
+  'Back to the keypad in {n}s': '{n} സെക്കൻഡിൽ കീപാഡിലേക്ക് മടങ്ങും',
+  '{n}/{limit} free': '{n}/{limit} ഫ്രീ',
 };
 
 const DICT: Record<Lang, Record<string, string> | null> = { en: null, hi: HI, ml: ML };

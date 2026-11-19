@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { country, COUNTRIES, example } from '../country';
 import { Bell, ChevronRight, Crown, Database, Download, FileSpreadsheet, Gift, LogOut, MessageCircle, Printer, ScrollText, Store, UserCog } from 'lucide-react';
-import { api, download, type Merchant, type MsgLang } from '../api';
+import { api, download, phoneLabel, type Merchant, type MsgLang } from '../api';
 import '../counter.css';
 import { downloadPoster, PosterPrint, PosterSvg, type PosterTheme } from '../poster';
 import '../poster.css';
 import { ShareCard } from '../share';
 import { LangToggle, t, useLang } from '../i18n';
-import { ErrorText, confirmDialog, toast, useAction, useTheme } from '../ui';
+import { ErrorText, InstallButton, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { openPlan } from '../billing';
 import { ProSettings } from './ProSettings';
 import { Stamps, messageLang } from './Counter';
@@ -144,19 +144,32 @@ function YourData({ merchant }: { merchant: Merchant }) {
 
 const VISITS = [3, 4, 5, 6, 8, 10];
 
+// The long settings page in a few parts, so a shop can jump to the one it came for.
+const PARTS = [
+  { id: 'set-card', label: 'Your card' },
+  { id: 'set-shop', label: 'Shop' },
+  { id: 'set-poster', label: 'Counter poster' },
+  { id: 'set-plan', label: 'Your plan' },
+  { id: 'set-account', label: 'Account' },
+];
+
+const formOf = (merchant: Merchant) => ({
+  name: merchant.name,
+  phone: merchant.phone,
+  country: merchant.country || 'IN',
+  visitsNeeded: merchant.visitsNeeded,
+  rewardName: merchant.rewardName,
+  welcomeStamps: merchant.welcomeStamps ?? 0,
+  inactiveDays: String(merchant.inactiveDays),
+  avgBill: merchant.avgBill ? String(merchant.avgBill) : '',
+});
+
 export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; onSaved: (m: Merchant) => void; onLogout: () => void }) {
   useLang();
   const theme = useTheme();
-  const [form, setForm] = useState({
-    name: merchant.name,
-    phone: merchant.phone,
-    country: merchant.country || 'IN',
-    visitsNeeded: merchant.visitsNeeded,
-    rewardName: merchant.rewardName,
-    welcomeStamps: merchant.welcomeStamps ?? 0,
-    inactiveDays: String(merchant.inactiveDays),
-    avgBill: merchant.avgBill ? String(merchant.avgBill) : '',
-  });
+  const [form, setForm] = useState(() => formOf(merchant));
+  // Something changed and isn't saved yet: a bar at the bottom says so, wherever the shop has scrolled to.
+  const dirty = JSON.stringify(form) !== JSON.stringify(formOf(merchant));
   const [lang, setLang] = useState(messageLang);
   const { busy, error, run } = useAction();
 
@@ -184,12 +197,19 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
       <header className="page-head">
         <div>
           <h1>{t('Settings')}</h1>
-          <p>{merchant.email || merchant.phone}</p>
+          <p>{merchant.email || phoneLabel(merchant.phone, merchant.country)}</p>
         </div>
       </header>
+      <nav className="chips settings-jump" aria-label={t('Settings')}>
+        {PARTS.map((p) => (
+          <button key={p.id} type="button" className="chip" onClick={() => document.getElementById(p.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            {t(p.label)}
+          </button>
+        ))}
+      </nav>
       <div className="grid-2">
-        <form className="card" onSubmit={save}>
-          <div className="settings-section">
+        <form className="card" onSubmit={save} id="settings-form">
+          <div className="settings-section jump-target" id="set-card">
             <h3>
               <Gift size={17} /> {t('Your card')}
             </h3>
@@ -204,7 +224,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
               </div>
               <span>{t('visits, the customer gets')}</span>
             </div>
-            <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('Free coffee')} maxLength={60} required aria-label="Reward" />
+            <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('e.g. Free coffee')} maxLength={60} required aria-label="Reward" />
             <Stamps stamps={form.visitsNeeded - 1} needed={form.visitsNeeded} />
             <span className="hint">{t("Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.")}</span>
             <div className="welcome-stamps">
@@ -229,7 +249,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
             </div>
           </div>
 
-          <div className="settings-section">
+          <div className="settings-section jump-target" id="set-shop">
             <h3>
               <Store size={17} /> {t('Shop')}
             </h3>
@@ -294,11 +314,16 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
           </button>
         </form>
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
-          <ProSettings merchant={merchant} onMerchant={onSaved} />
-          <Poster merchant={merchant} />
+          {/* What a shop does here most (poster, sharing) first; plan and data after. */}
+          <div className="jump-target" id="set-poster">
+            <Poster merchant={merchant} />
+          </div>
           <ShareCard merchant={merchant} />
-          <YourData merchant={merchant} />
-          <section className="card">
+          <div className="jump-target" id="set-plan" style={{ display: 'grid', gap: 16 }}>
+            <ProSettings merchant={merchant} onMerchant={onSaved} />
+            <YourData merchant={merchant} />
+          </div>
+          <section className="card jump-target" id="set-account">
             <div className="card-head">
               <h2>
                 <UserCog size={18} /> {t('Account')}
@@ -308,6 +333,9 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
               <span>{t('App language')}</span>
               <LangToggle />
             </div>
+            <InstallButton className="btn btn-soft">
+              <Download size={17} /> {t('Install app')}
+            </InstallButton>
             <div className="account-row">
               <span>{t('Dark mode')}</span>
               <button type="button" className="btn btn-soft btn-sm" onClick={theme.toggle}>
@@ -326,6 +354,14 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
           </section>
         </div>
       </div>
+      {dirty && (
+        <div className="unsaved-bar" role="status">
+          <span>{t('Changes not saved')}</span>
+          <button type="submit" form="settings-form" className="btn btn-primary btn-sm" disabled={busy}>
+            {busy ? t('Saving…') : t('Save')}
+          </button>
+        </div>
+      )}
     </>
   );
 }

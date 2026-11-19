@@ -327,7 +327,7 @@ export function LimitPill() {
       onClick={openPlan}
       aria-label={t('{n} of {limit} free customers. See plans', { n: num(u.customers), limit: num(u.limit) })}
     >
-      {num(u.customers)}/{num(u.limit)}
+      {t('{n}/{limit} free', { n: num(u.customers), limit: num(u.limit) })}
       <Meter b={u} />
     </button>
   );

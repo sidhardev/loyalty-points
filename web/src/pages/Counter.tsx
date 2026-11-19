@@ -41,9 +41,11 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
   useLang();
   const [needed, setNeeded] = useState(merchant.visitsNeeded || 5);
   const [reward, setReward] = useState(merchant.rewardName);
-  const { busy, error, run } = useAction();
+  const { busy, error, setError, run } = useAction();
   const save = (e: FormEvent) => {
     e.preventDefault();
+    // Say what's missing instead of a button that silently does nothing.
+    if (!reward.trim()) return setError(t('Write the reward first, for example: Free coffee'));
     void run(async () => {
       onSaved(await api<Merchant>('me', 'PATCH', { visitsNeeded: needed, rewardName: reward }));
       toast(t('Saved'));
@@ -71,15 +73,17 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
       <input
         className="setup-reward"
         value={reward}
-        onChange={(e) => setReward(e.target.value)}
-        placeholder={t('Free coffee')}
+        onChange={(e) => {
+          setReward(e.target.value);
+          setError('');
+        }}
+        placeholder={t('e.g. Free coffee')}
         maxLength={60}
-        required
         aria-label="Reward"
       />
       <Stamps stamps={needed - 1} needed={needed} />
       <ErrorText text={error} />
-      <button className="btn btn-primary btn-lg" disabled={busy || !reward.trim()}>
+      <button className="btn btn-primary btn-lg" disabled={busy}>
         {busy ? t('Saving…') : compact ? t('Save') : t('Start')}
       </button>
     </form>
@@ -319,8 +323,9 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
           <ErrorText text={error} />
           {send}
           <button className="btn btn-primary btn-xl" onClick={reset}>
-            {t('Next customer')} {!hold && <span className="countdown">{left}</span>}
+            {t('Next customer')}
           </button>
+          {!hold && <p className="countdown-note">{t('Back to the keypad in {n}s', { n: left })}</p>}
           {result.visitId && !given && (
             <button className="link" onClick={() => undo(result.visitId!)} disabled={busy}>
               <Undo2 size={14} /> {t('Wrong number? Undo')}
