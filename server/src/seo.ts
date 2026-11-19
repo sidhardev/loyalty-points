@@ -21,7 +21,7 @@ import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { AiBudgetError, Gemini, type AiSettings } from './gemini';
 import { CITY_PAGES } from './city-pages';
-import { GUIDES, guide } from './guides';
+import { COMMON_SHOPS, GUIDES, guide, guidesForPage } from './guides';
 import { LEGAL } from './legal';
 import { REVIEW_QR, REVIEW_QR_SLUG, STAMP_MAKER, STAMP_MAKER_SLUG } from './tools';
 import { render404, renderGuide, renderGuideHub, renderHub, renderLegal, renderPage, renderReviewQr, renderSitemap, renderStampMaker, type SeoContent, type SeoKind, type SeoLang } from './seo-render';
@@ -365,7 +365,8 @@ export class SeoService implements OnModuleInit, OnModuleDestroy {
     const twin = this.db.sql
       .prepare("SELECT * FROM seo_pages WHERE slug = ? AND kind = ? AND lang != ? AND status = 'published'")
       .get(row.slug, row.kind, row.lang) as SeoPageRow | undefined;
-    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others, cross });
+    const guides = guidesForPage(row.lang, row.kind, row.slug);
+    return renderPage(row, JSON.parse(row.content) as SeoContent, { site: SITE, twin, others, cross, guides });
   }
 }
 
@@ -650,7 +651,11 @@ export class SeoPublicController {
     const g = guide(lang, slug);
     if (!g) return this.send(res, render404(SITE, lang), 404);
     const twin = guide(lang === 'en' ? 'hi' : 'en', slug);
-    this.send(res, renderGuide(SITE, lang, g, { twin, others: GUIDES[lang].filter((x) => x.slug !== slug) }));
+    const sibling = g.sibling ? guide(lang, g.sibling) : undefined;
+    const want = g.shops ?? COMMON_SHOPS;
+    const published = this.seo.published(lang, 'shop');
+    const shops = want.map((s) => published.find((p) => p.slug === s)).filter((p): p is SeoPageRow => !!p);
+    this.send(res, renderGuide(SITE, lang, g, { twin, sibling, others: GUIDES[lang].filter((x) => x.slug !== slug), shops }));
   }
 
   @Get('tools/stamp-card-maker')

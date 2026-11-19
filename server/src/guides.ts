@@ -25,6 +25,10 @@ export type Guide = {
   updated: string;
   blocks: GuideBlock[];
   faqs: { q: string; a: string }[];
+  /** Shop pages (/for/<slug>) this guide links to; without it the guide links to the most common shops. */
+  shops?: string[];
+  /** The same guide in the other script: a Devanagari guide's Roman-Hindi version, or the other way round. */
+  sibling?: string;
 };
 
 const UPDATED = '2026-10-19';
@@ -33,6 +37,7 @@ const ADDED_OCT26 = '2026-10-26';
 const ADDED_NOV10 = '2026-11-10';
 const ADDED_NOV12 = '2026-11-12';
 const ADDED_NOV16 = '2026-11-16';
+const ADDED_NOV19 = '2026-11-19';
 
 const en: Guide[] = [
   {
@@ -169,13 +174,13 @@ const en: Guide[] = [
   {
     slug: 'how-to-get-repeat-customers',
     name: 'How to get repeat customers',
-    title: 'How to Get Repeat Customers for Your Shop: 10 Practical Ways',
-    description: 'Ten practical ways for a small shop to get repeat customers: remember names, reward visits, follow up on WhatsApp and win back the ones who stopped coming.',
+    title: 'How to Get Repeat Customers: 10 Simple Ways for Small Shops in India',
+    description: 'Get customers to come back again: remember names, give a reward every few visits, follow up on WhatsApp and see who stopped coming. 10 steps any shop can start today.',
     eyebrow: 'Repeat customers',
     h1: 'How to get repeat customers: 10 things that work for small shops',
     intro:
       'Getting a new customer through the door is hard. Getting the same customer to come back is easier, cheaper and what keeps a neighbourhood shop going. Here’s what actually works.',
-    updated: UPDATED,
+    updated: ADDED_NOV19,
     blocks: [
       {
         h2: 'Make the first visit count',
@@ -216,6 +221,7 @@ const en: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'What is the fastest way to get repeat customers?', a: 'Give every customer a clear reason to come back on their very first visit: tell them the rule (for example, every 5 visits a free gift) and add their first stamp right away. A reward they can already see works better than a discount they forget.' },
       { q: 'What is the fastest way to get repeat customers?', a: 'Start a simple visit reward today and tell every customer about it at the counter. “Every 5 visits, one free” is easy to explain and gives people a reason to choose you next time.' },
       { q: 'How do I bring back customers who stopped coming?', a: 'First find out who they are — keep a record of visits by phone number. Then send a short, friendly WhatsApp message. Mention their reward if they’re close to it.' },
       { q: 'Do discounts bring customers back?', a: 'Discounts bring people in once, but they often wait for the next discount. A reward for coming back again and again builds the habit of visiting your shop.' },
@@ -914,6 +920,209 @@ const en: Guide[] = [
       { q: 'How much does a restaurant loyalty program cost?', a: 'Regularhood is free to start. The real cost is the reward itself, so pick something with a low food cost like a dessert or a drink.' },
     ],
   },
+  {
+    slug: 'visit-our-store-messages',
+    name: 'Visit our store messages',
+    title: 'Visit Our Store Message: 15 Short Invites for Shops (Copy & Send)',
+    description: 'Short, friendly “visit our store” messages for WhatsApp and SMS: new shop, new stock, festival, weekend and “we miss you” invites. Copy, add your shop name and send.',
+    eyebrow: 'Message templates',
+    h1: '“Visit our store” messages that people actually read',
+    intro:
+      'A good invite is short, comes from a shop the customer knows and gives one clear reason to drop by. Here are ready messages for the moments that matter, plus a few rules so they never feel like spam. Change the words in [brackets] and send.',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'What makes a “visit our store” message work',
+        list: [
+          'It comes from your shop’s own number, with the customer’s name. A message from an unknown number reads like an ad.',
+          'One reason to visit: new stock, a festival, a reward that’s close. Not five offers at once.',
+          'Two or three lines. If it needs scrolling, it won’t be read.',
+          'It ends with your shop name, so nobody has to guess who wrote it.',
+        ],
+      },
+      {
+        h2: 'New shop or opening',
+        list: [
+          'Namaste [Name], we’ve just opened [Shop name] at [landmark]. Come say hello this week, your first visit gets a small welcome gift. — [Shop name]',
+          'Hi [Name], [Shop name] is now open near [landmark], [timings]. Drop by when you’re passing, we’d love to meet you.',
+          'Namaste [Name], thank you for coming on our first day. Do visit again, every 5th visit at [Shop name] gets a free gift.',
+        ],
+      },
+      {
+        h2: 'New stock or a new service',
+        list: [
+          'Hi [Name], the [item] you asked about has arrived at [Shop name]. Shall we keep one aside for you?',
+          'Namaste [Name], fresh [winter / summer / festive] stock is in at [Shop name]. Come and have a look this week.',
+          'Hi [Name], we’ve started [new service] at [Shop name]. Visit us and try it, your regular card still counts.',
+        ],
+      },
+      {
+        h2: 'Festival and weekend invites',
+        list: [
+          'Namaste [Name], [festival] is coming. Visit [Shop name] this week for your [festival] shopping, we’ve got everything ready.',
+          'Hi [Name], weekend plans? [Shop name] is open till [time] on Saturday and Sunday. See you there.',
+          'Wishing you and your family a happy [festival], [Name]. Do visit [Shop name] soon. — [Shop name]',
+        ],
+      },
+      {
+        h2: 'When a reward is close',
+        list: [
+          'Hi [Name], you’re just 1 visit away from your free [reward] at [Shop name]. See you soon.',
+          'Namaste [Name], your card at [Shop name] has 4 of 5 stamps. One more visit and the [reward] is yours.',
+          'Hi [Name], your free [reward] is ready at [Shop name]. Collect it on your next visit.',
+        ],
+      },
+      {
+        h2: 'For customers who haven’t come in a while',
+        list: [
+          'Namaste [Name], it’s been a while since we saw you at [Shop name]. Hope all is well. Do visit when you can.',
+          'Hi [Name], we missed you at [Shop name]. Your stamps are still safe, come by and pick up where you left off.',
+          'Namaste [Name], is everything okay? If something wasn’t right last time, tell us. We’d love to see you again. — [Shop name]',
+        ],
+      },
+      {
+        h2: 'How often to send',
+        p: [
+          'One personal message per customer is plenty for most months. A festival, a reward that’s close, or a long gap are good reasons. A daily forward is not: people mute or block shops that message too often.',
+          'For everyone at once, use your WhatsApp status instead. Customers who saved your number see it without getting a message, so it never feels pushy.',
+        ],
+      },
+      {
+        h2: 'Doing it with Regularhood',
+        p: [
+          'Regularhood keeps a stamp card on each customer’s phone number. One tap sends a customer their card on WhatsApp, with their stamps and how many visits are left, in Hindi or English.',
+          'It also lists customers who haven’t come back for a while, with a ready “we miss you” message, and gives you a WhatsApp status image with your reward rule. Free to start.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How do I write a “visit our store” message?', a: 'Greet the customer by name, give one reason to visit (new stock, a festival or a reward that’s close), keep it to two or three lines and end with your shop name. Send it from your shop’s own number.' },
+      { q: 'Should I send these messages to everyone?', a: 'Personal invites work best for people who have already visited and gave you their number. For everyone at once, post a WhatsApp status instead of messaging each person.' },
+      { q: 'What can I offer to bring customers in?', a: 'A small, regular reward works better than a big one-time discount: for example, every 5 visits a free gift. Customers remember a simple rule and come back for it.' },
+      { q: 'Can I send these messages in Hindi?', a: 'Yes. Write the way you talk to customers at the counter. Regularhood sends the customer’s card in Hindi or English.' },
+    ],
+  },
+  {
+    slug: 'identify-returning-customers-without-app',
+    name: 'Know returning customers without an app',
+    title: 'How to Identify Returning Customers Without an App',
+    description: 'How a small shop can recognise repeat customers without asking them to install an app: use their phone number. Compare a register, paper cards and a digital stamp card.',
+    eyebrow: 'Repeat customers',
+    h1: 'How to know a customer is coming back, without asking them to install an app',
+    intro:
+      'Big chains know their regulars through apps and membership cards. A neighbourhood shop doesn’t need any of that. Almost every customer already carries one thing that identifies them: their phone number.',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'Why apps don’t work at a small shop',
+        p: [
+          'Asking a customer to download an app, sign up and open it at the counter takes a minute they don’t want to give. Most say “next time” and never do. QR codes have the same problem: camera, scan, wait for a page, sometimes a sign-up.',
+          'Anything that needs the customer to do work will only ever reach a few of them. To know all your regulars, the shop has to do the remembering.',
+        ],
+      },
+      {
+        h2: 'The phone number is the customer’s ID',
+        p: [
+          'Nearly everyone knows their own number by heart, and is used to giving it at shops. It is unique, it doesn’t get lost, and it works for customers without a smartphone too.',
+          'Once visits are saved against a number, you can see who came, how often, and who has stopped coming. That’s all most shops need.',
+        ],
+      },
+      {
+        h2: 'Three ways to keep track',
+        table: {
+          head: ['', 'Register or notebook', 'Paper stamp card', 'Digital card on the phone number'],
+          rows: [
+            ['Customer needs to carry something', 'No', 'Yes, the card', 'No'],
+            ['Finding a regular quickly', 'Slow, flipping pages', 'Only if they bring it', 'Type a few digits'],
+            ['Knowing who stopped coming', 'Hard', 'Impossible', 'A ready list'],
+            ['Fake or extra stamps', 'Possible', 'Easy with a pen', 'One visit per number per day'],
+            ['Messaging the customer', 'Copy the number by hand', 'No number saved', 'One tap on WhatsApp'],
+          ],
+        },
+      },
+      {
+        h2: 'How it works at the counter with Regularhood',
+        steps: [
+          { title: 'Type the number', text: 'At billing, type the customer’s phone number. Regulars’ numbers are suggested after 4 digits, so it’s quick even at a busy counter.' },
+          { title: 'Tap Add visit', text: 'The visit is saved. A new number becomes a customer on the spot, with no sign-up for them.' },
+          { title: 'See their card', text: 'You see how many visits they have and when their reward is due. On the Nth visit the app says “Give the reward now”.' },
+        ],
+      },
+      {
+        h2: 'What you learn from it',
+        list: [
+          'Who your real regulars are, by number of visits.',
+          'Who used to come and hasn’t been back for a while, so you can send a friendly message in time.',
+          'How many new customers came this week, and how many returned.',
+          'A spreadsheet of customers and visits whenever you want to export it.',
+        ],
+      },
+      {
+        h2: 'Asking for the number politely',
+        p: [
+          'Say why: “Shall I add your visit? Every 5 visits you get a free gift.” Most people are happy to give their number when there’s something in it for them and they know it won’t be misused.',
+          'Never share the numbers or send bulk messages. A shop that respects its customers’ numbers keeps getting them.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'How do shops recognise returning customers without an app?', a: 'By saving each visit against the customer’s phone number. The next time, typing the number shows how many times they have come and whether a reward is due.' },
+      { q: 'Does the customer need a smartphone?', a: 'No. Only their phone number is needed. Customers with WhatsApp can also get their card as a link that opens in the browser.' },
+      { q: 'Is a register enough?', a: 'A register works for a few customers, but it’s slow to search and can’t tell you who stopped coming. A digital card on the phone number does both in seconds.' },
+      { q: 'Is it free?', a: 'Regularhood is free to start. You can set up your card and add visits without paying.' },
+    ],
+  },
+  {
+    slug: 'customer-retention',
+    name: 'Customer retention for shops',
+    title: 'Customer Retention for Small Shops: Meaning and 6 Simple Ways',
+    description: 'What customer retention means for a neighbourhood shop, why keeping regulars is cheaper than finding new ones, and 6 simple ways to keep customers coming back.',
+    eyebrow: 'Customer retention',
+    h1: 'Customer retention for small shops, in plain words',
+    intro:
+      'Customer retention just means your customers keep coming back. For a neighbourhood shop it is the difference between a quiet month and a steady one, and it costs far less than finding new people.',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'What customer retention means',
+        p: [
+          'Out of the people who bought from you once, how many come back, and how often? That is retention. A shop where most customers return every week has high retention. A shop where people come once and never again has low retention, however busy the opening week was.',
+        ],
+      },
+      {
+        h2: 'Why it matters more than new customers',
+        list: [
+          'A regular already trusts you. They don’t need an ad, a discount or a reason to try you.',
+          'Regulars spend more over a year than a crowd of one-time visitors.',
+          'Happy regulars bring their family and neighbours, for free.',
+          'If 100 regulars visit just once more each month, that is 100 extra visits without any advertising.',
+        ],
+      },
+      {
+        h2: 'Six simple ways to keep customers',
+        steps: [
+          { title: 'Remember them', text: 'Greet regulars by name and remember their usual. It is the oldest retention trick and still the strongest.' },
+          { title: 'Reward visits', text: 'A simple rule like every 5 visits a free gift gives people a reason to choose you over the shop next door.' },
+          { title: 'Show how close the reward is', text: '“One more visit and your gift is ready” brings people back sooner.' },
+          { title: 'Never run out of the usual', text: 'A regular who doesn’t find their daily item tries another shop, and may stay there.' },
+          { title: 'Notice who stopped coming', text: 'Customers rarely complain. They just stop coming. Find out early.' },
+          { title: 'Send one friendly message', text: 'A short “we miss you” on WhatsApp, from the shop they know, brings many back.' },
+        ],
+      },
+      {
+        h2: 'How to measure it without spreadsheets',
+        p: [
+          'Two numbers are enough: how many customers came back at least twice this month, and how many regulars haven’t been seen for a few weeks. If the first number grows and the second shrinks, your retention is improving.',
+          'Regularhood shows both from the visits you add at the counter: every customer’s visit count, and a list of customers who haven’t come back for a while, with a ready “we miss you” message.',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'What is customer retention in simple words?', a: 'It means customers who bought from you once keep coming back. The more of them return, and the more often, the higher your retention.' },
+      { q: 'How can a small shop improve customer retention?', a: 'Remember regulars, reward visits with a simple rule, keep the usual items in stock, and send a friendly message to customers who stopped coming.' },
+      { q: 'Is a loyalty program the same as customer retention?', a: 'No. Retention is the goal; a loyalty program is one way to reach it. A simple stamp card gives customers a clear reason to come back.' },
+    ],
+  },
 ];
 
 const hi: Guide[] = [
@@ -1051,13 +1260,13 @@ const hi: Guide[] = [
   {
     slug: 'how-to-get-repeat-customers',
     name: 'ग्राहक को बार-बार कैसे बुलाएँ',
-    title: 'ग्राहक बार-बार कैसे आए? पक्का ग्राहक बनाने के 10 तरीके',
-    description: 'ग्राहक कैसे बनाये और उसे पक्का कैसे करें: नाम से पहचानें, हर विज़िट पर छोटा इनाम दें, WhatsApp पर संपर्क रखें। छोटी दुकानों के लिए 10 आसान तरीके।',
+    title: 'ग्राहक कैसे बनाये और पक्का कैसे करें? 10 आसान तरीके',
+    description: 'नया ग्राहक कैसे बनाये और उसे बार-बार कैसे बुलाएँ: नाम से पहचानें, हर कुछ विज़िट पर छोटा इनाम दें, WhatsApp पर संपर्क रखें। छोटी दुकानों के लिए 10 तरीके, आज से।',
     eyebrow: 'पक्के ग्राहक',
     h1: 'ग्राहक बार-बार कैसे आएँ: छोटी दुकानों के लिए 10 तरीके',
     intro:
       'नया ग्राहक लाना मुश्किल है। उसी ग्राहक को दोबारा बुलाना आसान है, सस्ता है, और मोहल्ले की दुकान इसी से चलती है। ये तरीके सच में काम करते हैं।',
-    updated: UPDATED,
+    updated: ADDED_NOV19,
     blocks: [
       {
         h2: 'पहली विज़िट को यादगार बनाएँ',
@@ -1098,6 +1307,7 @@ const hi: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'अपने ग्राहक को कैसे जानें?', a: 'हर ग्राहक का नाम और फ़ोन नंबर लिखें, और याद रखें कि वह अक्सर क्या लेता है और कितने दिन में आता है। जब पता हो कि कौन हर हफ़्ते आता था और अब नहीं आया, तो उसे समय रहते याद किया जा सकता है।' },
       { q: 'पक्के ग्राहक बनाने का सबसे तेज़ तरीका क्या है?', a: 'आज ही विज़िट पर इनाम शुरू करें और काउंटर पर हर ग्राहक को बताएँ। “हर 5 विज़िट पर एक मुफ़्त” समझाना आसान है और अगली बार आपको चुनने की वजह देता है।' },
       { q: 'जो ग्राहक आना बंद कर दें, उन्हें कैसे वापस बुलाएँ?', a: 'पहले पता करें कि वे कौन हैं — फ़ोन नंबर पर विज़िट का हिसाब रखें। फिर एक छोटा, दोस्ताना WhatsApp मैसेज भेजें। अगर इनाम पास है, तो उसका ज़िक्र करें।' },
       { q: 'क्या डिस्काउंट से ग्राहक वापस आते हैं?', a: 'डिस्काउंट एक बार तो लोगों को लाता है, पर अक्सर वे अगले डिस्काउंट का इंतज़ार करते हैं। बार-बार आने पर इनाम आपकी दुकान पर आने की आदत बनाता है।' },
@@ -1230,13 +1440,14 @@ const hi: Guide[] = [
   {
     slug: 'how-to-increase-shop-sales',
     name: 'दुकान की बिक्री कैसे बढ़ाएँ',
-    title: 'दुकान में बिक्री कैसे बढ़ाए? 8 आसान तरीके, बिना ऐड, बिना छूट',
-    description: 'दुकान की बिक्री बढ़ाने का सबसे सस्ता तरीका: जो ग्राहक पहले से आते हैं, वो बार-बार आएँ। इनाम, WhatsApp स्टेटस और काउंटर के 8 आसान उपाय, आज से।',
+    title: 'दुकान में बिक्री कैसे बढ़ाए? 8 तरीके, बिना विज्ञापन और बिना छूट',
+    description: 'दुकान की बिक्री बढ़ाने का सबसे सस्ता तरीका: जो ग्राहक पहले से आते हैं, वे महीने में एक बार और आएँ। इनाम, WhatsApp स्टेटस और काउंटर के 8 उपाय, आज से शुरू करें।',
     eyebrow: 'दुकान की बिक्री',
     h1: 'दुकान में बिक्री कैसे बढ़ाए: बिना विज्ञापन के 8 आसान तरीके',
     intro:
       'ज़्यादातर छोटी दुकानें नए ग्राहक ढूँढकर बढ़ना चाहती हैं। पर सबसे जल्दी बढ़ी बिक्री अक्सर उन्हीं लोगों से आती है जो आपको पहले से जानते हैं: महीने में एक बार ज़्यादा आने वाला पक्का ग्राहक किसी भी पर्चे से ज़्यादा बिक्री लाता है।',
-    updated: ADDED,
+    updated: ADDED_NOV19,
+    sibling: 'dukan-ki-sale-kaise-badhaye',
     blocks: [
       {
         h2: 'दुकान की बिक्री कहाँ से आती है',
@@ -1276,6 +1487,7 @@ const hi: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'दुकान की बिक्री जल्दी कैसे बढ़ाएँ?', a: 'सबसे जल्दी असर पुराने ग्राहकों पर होता है: उन्हें इनाम का नियम बताएँ, जो इनाम के पास हैं उन्हें याद दिलाएँ, और जो कुछ हफ़्तों से नहीं आए उन्हें एक निजी मैसेज भेजें। नए ग्राहक लाने में ज़्यादा समय और पैसा लगता है।' },
       { q: 'छोटी दुकान की बिक्री बढ़ाने का सबसे सस्ता तरीका क्या है?', a: 'अपने पक्के ग्राहकों को थोड़ा और बार बुलाइए। विज़िट पर आसान इनाम और काउंटर पोस्टर में लगभग कोई ख़र्च नहीं, और यह उन लोगों पर काम करता है जिन्हें आपकी दुकान पहले से पसंद है।' },
       { q: 'क्या बिक्री बढ़ाने के लिए डिस्काउंट देना चाहिए?', a: 'सोच-समझकर। डिस्काउंट से लोग एक बार आते हैं, पर बार-बार आने पर छोटा इनाम आपकी दुकान चुनने की आदत बनाता है।' },
       { q: 'कैसे पता चले कि पक्के ग्राहक कम आ रहे हैं?', a: 'फ़ोन नंबर के हिसाब से विज़िट का रिकॉर्ड रखें। Regularhood उन ग्राहकों की लिस्ट दिखाता है जो काफ़ी दिनों से नहीं आए, ताकि देर होने से पहले पता चल जाए।' },
@@ -1285,13 +1497,14 @@ const hi: Guide[] = [
   {
     slug: 'win-back-old-customers',
     name: 'पुराने ग्राहक वापस लाएँ',
-    title: 'पुराने ग्राहक वापस कैसे लाए? 3 कदम + कॉपी करने वाले मैसेज',
-    description: 'जो ग्राहक आना बंद कर गए, उन्हें एक WhatsApp मैसेज से वापस बुलाएँ: कौन गया कैसे पता करें, कब भेजें, और कॉपी करने लायक तैयार मैसेज।',
+    title: 'पुराने ग्राहक वापस कैसे लाए? 3 कदम और कॉपी-पेस्ट WhatsApp मैसेज',
+    description: 'जो ग्राहक आना बंद कर गए, उन्हें वापस बुलाएँ: कौन 30 दिन से नहीं आया यह पता करें, एक निजी WhatsApp मैसेज भेजें। तैयार मैसेज कॉपी करें, मुफ़्त।',
     eyebrow: 'ग्राहक वापस लाएँ',
     h1: 'आना बंद कर चुके ग्राहकों को वापस कैसे लाएँ',
     intro:
       'हर दुकान में ऐसे ग्राहक होते हैं: जो हर हफ़्ते आते थे और चुपचाप आना बंद कर दिया। अक्सर कुछ ग़लत नहीं हुआ — बस उनकी आदत बदल गई। एक छोटी, प्यार भरी याद दिलाना ही अक्सर काफ़ी होता है।',
-    updated: ADDED,
+    updated: ADDED_NOV19,
+    sibling: 'purane-customer-wapas-kaise-laye',
     blocks: [
       {
         h2: 'ग्राहक दूर क्यों हो जाते हैं',
@@ -1333,6 +1546,7 @@ const hi: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'पुराना ग्राहक कितने दिन बाद दूर माना जाए?', a: 'अपनी दुकान के हिसाब से देखें। जो ग्राहक हर हफ़्ते आता था और तीन-चार हफ़्ते से नहीं आया, उसे अभी मैसेज भेजें। जितनी जल्दी याद करेंगे, वह उतनी आसानी से लौटेगा।' },
       { q: 'कितने दिन न आने पर ग्राहक को खोया हुआ मानें?', a: 'यह इस पर निर्भर है कि वे कितनी बार आते थे। रोज़ आने वाला दो हफ़्ते न आए तो संकेत है; महीने में एक बार आने वाला सैलून ग्राहक दो महीने न आए, तो भी।' },
       { q: 'क्या वापस बुलाने के लिए डिस्काउंट देना चाहिए?', a: 'अक्सर ज़रूरत नहीं। यह याद दिलाना कि उनका इनाम पास है, अक्सर काफ़ी होता है, और इसमें कोई अलग ख़र्च नहीं।' },
       { q: 'क्या ग्राहकों को WhatsApp पर मैसेज करना ठीक है?', a: 'हाँ, अगर वे आपके ग्राहक हैं, मैसेज निजी है और आप बार-बार नहीं भेजते। जानी-पहचानी दुकान का छोटा मैसेज अच्छा लगता है; रोज़ के प्रमोशन नहीं।' },
@@ -1465,13 +1679,14 @@ const hi: Guide[] = [
   {
     slug: 'get-customers-for-new-shop',
     name: 'नई दुकान के लिए ग्राहक',
-    title: 'दुकान पर ग्राहक कैसे आए? पहले 30 दिन का आसान प्लान',
-    description: 'दुकान पर ग्राहक कैसे बढ़ाए: बोर्ड, Google, WhatsApp ग्रुप से पहले ग्राहक लाएँ और इनाम से उन्हें दोबारा बुलाएँ। हफ़्ते-दर-हफ़्ते प्लान, नई दुकान के लिए खास।',
+    title: 'दुकान पर ग्राहक कैसे आए? 4 हफ़्ते का प्लान, बिना विज्ञापन',
+    description: 'नई या पुरानी दुकान पर ग्राहक कैसे बनाये: बोर्ड, Google और WhatsApp से पहला ग्राहक, फिर इनाम से पक्का ग्राहक। हफ़्ते-दर-हफ़्ते आसान प्लान, आज से शुरू करें।',
     eyebrow: 'नई दुकान',
     h1: 'दुकान पर ग्राहक कैसे आए और बार-बार कैसे आएँ: पहले 30 दिन का प्लान',
     intro:
       'खुलने के बाद के पहले कुछ हफ़्ते बहुत कुछ तय करते हैं। इलाके के लोग जिज्ञासा में एक बार आ ही जाएँगे। वे दूसरी और तीसरी बार आते हैं या नहीं, इसी से दुकान बनती है।',
-    updated: ADDED,
+    updated: ADDED_NOV19,
+    sibling: 'nayi-dukan-me-customer-kaise-laye',
     blocks: [
       {
         h2: 'पहली विज़िट लाएँ',
@@ -1508,6 +1723,7 @@ const hi: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'शॉप पर ग्राहक कैसे बनाएँ?', a: 'पहली विज़िट पर ही ग्राहक का नंबर लें, उसे इनाम का नियम बताएँ और पहला स्टैम्प लगाएँ। फिर WhatsApp पर उसका कार्ड भेजें, ताकि उसे दिखे कि इनाम कितना पास है। दो-तीन बार लौटने वाला ग्राहक पक्का ग्राहक बन जाता है।' },
       { q: 'नई दुकान पर ग्राहक कैसे लाएँ?', a: 'दुकान को दिखने लायक बनाएँ, आस-पास सबको बताएँ, Google Maps पर आएँ और WhatsApp स्टेटस इस्तेमाल करें। फिर पहली बार आए ग्राहकों को लौटने की वजह दें।' },
       { q: 'क्या नई दुकान को तुरंत लॉयल्टी कार्ड शुरू करना चाहिए?', a: 'हाँ। पहले कुछ हफ़्तों में ही लोग तय करते हैं कि आपके पास आएँ या नहीं। पहली विज़िट पर स्टैम्प उन्हें लौटने की वजह देता है।' },
       { q: 'क्या खुलने का ऑफ़र अच्छा है?', a: 'छोटा हो तो हाँ। इसे खुलने के हफ़्ते तक रखें, ताकि ग्राहक दुकान के लिए आएँ, सिर्फ़ ऑफ़र के लिए नहीं।' },
@@ -1676,6 +1892,7 @@ const hi: Guide[] = [
     intro:
       'Zyada tar dukaandaar sale badhane ke liye naye customer dhoondhte hain — pamphlet, ad, bhaari discount. Par sabse jaldi sale un logon se badhti hai jo aapko pehle se jaante hain. Agar aapke 100 pakke customer mahine mein bas ek baar zyada aayein, toh woh 100 nayi visit hain — bina kisi kharche ke.',
     updated: ADDED_NOV12,
+    sibling: 'how-to-increase-shop-sales',
     blocks: [
       {
         h2: 'Sale teen cheezon se banti hai',
@@ -1732,7 +1949,8 @@ const hi: Guide[] = [
     h1: 'दुकान में ग्राहक बुलाने का असली मंत्र: 9 आसान उपाय',
     intro:
       'हर दुकानदार चाहता है कि उसकी दुकान पर भीड़ रहे। कोई पूजा-पाठ करता है, कोई नींबू-मिर्च लटकाता है — आस्था अपनी जगह है। पर जो दुकानें सालों तक चलती हैं, उनका असली मंत्र एक ही है: जो ग्राहक एक बार आया, वह बार-बार आए। यहाँ 9 उपाय हैं जो कोई भी दुकान आज से कर सकती है।',
-    updated: ADDED_NOV10,
+    updated: ADDED_NOV19,
+    sibling: 'grahak-bulane-ka-mantra',
     blocks: [
       {
         h2: 'ग्राहक बुलाने के 9 उपाय',
@@ -1747,6 +1965,20 @@ const hi: Guide[] = [
           { title: 'देखें कौन आना बंद कर गया', text: 'पुराना ग्राहक चुपचाप चला जाता है। समय रहते पता चले तो उसे वापस बुलाना आसान है।' },
           { title: 'एक प्यारा-सा मैसेज भेजें', text: '“नमस्ते सुरेश जी, काफ़ी दिनों से आप नहीं आए — सब ठीक है? आपका इंतज़ार रहेगा।” बस इतना काफ़ी है।' },
         ],
+      },
+      {
+        h2: 'रोज़ के 10 मिनट: ग्राहक बुलाने का मंत्र',
+        p: ['मंत्र एक दिन का काम नहीं, रोज़ की आदत है। यह छोटी-सी दिनचर्या किसी भी दुकान में चलती है और इसमें कोई ख़र्च नहीं।'],
+        table: {
+          head: ['कब', 'क्या करें', 'कितना समय'],
+          rows: [
+            ['सुबह दुकान खोलते ही', 'WhatsApp स्टेटस: आज का नया माल या स्पेशल, और इनाम का नियम', '2 मिनट'],
+            ['हर बिल पर', 'ग्राहक का नंबर लिखकर विज़िट जोड़ें और बताएँ कि इनाम कितनी विज़िट दूर है', '10 सेकंड'],
+            ['दोपहर, जब भीड़ कम हो', 'देखें कौन-सा माल ख़त्म होने वाला है, ताकि रोज़ का ग्राहक ख़ाली हाथ न लौटे', '3 मिनट'],
+            ['शाम को', 'दो-तीन ऐसे ग्राहकों को निजी मैसेज जो काफ़ी दिनों से नहीं आए', '5 मिनट'],
+            ['हफ़्ते में एक बार', 'दो ख़ुश ग्राहकों से Google रिव्यू माँगें', '2 मिनट'],
+          ],
+        },
       },
       {
         h2: 'नया ग्राहक लाना महँगा, पुराने को बुलाना सस्ता',
@@ -1773,6 +2005,7 @@ const hi: Guide[] = [
       },
     ],
     faqs: [
+      { q: 'दुकान में ग्राहक बुलाने के लिए रोज़ क्या करें?', a: 'सुबह WhatsApp स्टेटस लगाएँ, दिन भर हर ग्राहक का नंबर लिखकर विज़िट जोड़ें और इनाम का नियम बताएँ, और शाम को दो-तीन ऐसे ग्राहकों को मैसेज करें जो काफ़ी दिनों से नहीं आए। रोज़ के ये 10 मिनट ही असली मंत्र हैं।' },
       { q: 'दुकान में ग्राहक बुलाने का सबसे अच्छा मंत्र क्या है?', a: 'जो ग्राहक एक बार आया, उसे बार-बार आने की वजह दें: नाम से पहचानें, हर कुछ विज़िट पर छोटा इनाम दें, और जो आना बंद कर दे उसे प्यार से याद दिलाएँ।' },
       { q: 'दुकान पर ग्राहक कैसे बढ़ाएँ बिना पैसे खर्च किए?', a: 'WhatsApp स्टेटस, Google Business Profile, काउंटर पोस्टर और पुराने ग्राहकों को एक निजी मैसेज — ये सब मुफ़्त हैं और पक्के ग्राहकों पर सबसे जल्दी असर करते हैं।' },
       { q: 'नई दुकान पर ग्राहक कैसे आएँ?', a: 'पहले हफ़्ते से हर ग्राहक का नंबर लें, उसे इनाम का नियम बताएँ और Google पर दुकान डालें। जो दो-तीन बार लौटे, उन्हें पक्का ग्राहक बनाएँ।' },
@@ -1894,6 +2127,7 @@ const hi: Guide[] = [
     intro:
       'Puja-paath aur shubh muhurat apni jagah — har dukaandaar ki apni aastha hoti hai. Par counter pe roz jo mantra kaam aata hai, woh seedha hai: jo grahak ek baar aaya, use dobara aane ki wajah do. Naya grahak dhoondhne se kahin aasan hai purane grahak ko baar-baar bulana.',
     updated: ADDED_NOV16,
+    sibling: 'customer-bulane-ke-upay',
     blocks: [
       {
         h2: 'Asli mantra: ek baar aaya, toh baar-baar aaye',
@@ -1995,6 +2229,7 @@ const hi: Guide[] = [
     intro:
       'Pakka customer chupchaap chala jaata hai — na shikayat karta hai, na batata hai. Zyada tar baar koi badi wajah nahi hoti: bas aadat toot gayi. Aur toot-ti aadat ko ek pyaare se message se phir joda ja sakta hai, agar time pe pata chal jaaye.',
     updated: ADDED_NOV16,
+    sibling: 'win-back-old-customers',
     blocks: [
       {
         h2: '5 step',
@@ -2042,6 +2277,7 @@ const hi: Guide[] = [
     intro:
       'Nayi dukan mein sabse bada sawaal hota hai — log aayenge kaise? Par asli kaam pehli visit ke baad shuru hota hai. Jo log pehle mahine aate hain, unme se kitne dobara aate hain, wahi tay karta hai ki dukaan chalegi ya nahi.',
     updated: ADDED_NOV16,
+    sibling: 'get-customers-for-new-shop',
     blocks: [
       {
         h2: '4 hafte ka plan',
@@ -2076,8 +2312,243 @@ const hi: Guide[] = [
       { q: 'Kya opening pe discount dena chahiye?', a: 'Chhota sa opening gift theek hai, par bhaari discount se sasta dhoondhne wale aate hain. Baar-baar aane pe reward se pakke customer bante hain.' },
     ],
   },
+  {
+    slug: 'visit-our-store-messages',
+    name: 'दुकान पर बुलाने के मैसेज',
+    title: 'दुकान पर आने का न्योता: 15 छोटे मैसेज (कॉपी करके भेजें)',
+    description: 'ग्राहक को दुकान पर बुलाने के छोटे, अपनेपन वाले WhatsApp मैसेज: नई दुकान, नया माल, त्योहार, वीकेंड और “काफ़ी दिनों से नहीं आए” वाले मैसेज। कॉपी करें और भेजें।',
+    eyebrow: 'मैसेज टेम्पलेट',
+    h1: 'ग्राहक को दुकान पर बुलाने के मैसेज, जो लोग सच में पढ़ें',
+    intro:
+      'अच्छा न्योता छोटा होता है, जानी-पहचानी दुकान से आता है और आने की एक साफ़ वजह देता है। यहाँ हर मौके के लिए तैयार मैसेज हैं, और कुछ नियम ताकि वे कभी स्पैम न लगें। [ब्रैकेट] वाले शब्द बदलें और भेजें।',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'अच्छा मैसेज कैसा होता है',
+        list: [
+          'दुकान के अपने नंबर से, ग्राहक के नाम के साथ। अनजान नंबर का मैसेज विज्ञापन लगता है।',
+          'आने की एक वजह: नया माल, त्योहार, या पास आता इनाम। एक साथ पाँच ऑफ़र नहीं।',
+          'दो-तीन लाइन। जिसे स्क्रॉल करना पड़े, वह पढ़ा नहीं जाता।',
+          'आख़िर में दुकान का नाम, ताकि किसी को अंदाज़ा न लगाना पड़े कि किसने भेजा।',
+        ],
+      },
+      {
+        h2: 'नई दुकान या ओपनिंग',
+        list: [
+          'नमस्ते [नाम] जी, हमने [जगह] के पास [दुकान का नाम] खोली है। इस हफ़्ते ज़रूर आइए, पहली विज़िट पर एक छोटा-सा तोहफ़ा। — [दुकान का नाम]',
+          'नमस्ते [नाम] जी, [दुकान का नाम] अब [जगह] के पास खुल गई है, समय [समय]। आते-जाते ज़रूर मिलिए।',
+          'नमस्ते [नाम] जी, पहले दिन आने के लिए धन्यवाद। फिर आइए, [दुकान का नाम] पर हर 5वीं विज़िट पर एक मुफ़्त तोहफ़ा मिलता है।',
+        ],
+      },
+      {
+        h2: 'नया माल या नई सर्विस',
+        list: [
+          'नमस्ते [नाम] जी, आपने जो [चीज़] पूछी थी, वह [दुकान का नाम] पर आ गई है। आपके लिए एक अलग रख दें?',
+          'नमस्ते [नाम] जी, [दुकान का नाम] पर [सर्दी / गर्मी / त्योहार] का नया माल आया है। इस हफ़्ते देखने ज़रूर आइए।',
+          'नमस्ते [नाम] जी, [दुकान का नाम] पर अब [नई सर्विस] भी शुरू हो गई है। आकर आज़माइए, आपका कार्ड चालू है।',
+        ],
+      },
+      {
+        h2: 'त्योहार और वीकेंड',
+        list: [
+          'नमस्ते [नाम] जी, [त्योहार] आ रहा है। अपनी [त्योहार] की ख़रीदारी के लिए इस हफ़्ते [दुकान का नाम] ज़रूर आइए।',
+          'नमस्ते [नाम] जी, शनिवार और रविवार को [दुकान का नाम] [समय] तक खुली है। मिलते हैं।',
+          '[नाम] जी, आपको और आपके परिवार को [त्योहार] की शुभकामनाएँ। जल्दी मिलिए। — [दुकान का नाम]',
+        ],
+      },
+      {
+        h2: 'जब इनाम पास हो',
+        list: [
+          'नमस्ते [नाम] जी, [दुकान का नाम] पर आपका मुफ़्त [इनाम] बस 1 विज़िट दूर है। जल्दी मिलते हैं।',
+          'नमस्ते [नाम] जी, [दुकान का नाम] पर आपके कार्ड में 5 में से 4 स्टैम्प हो गए हैं। एक विज़िट और, [इनाम] आपका।',
+          'नमस्ते [नाम] जी, आपका मुफ़्त [इनाम] [दुकान का नाम] पर तैयार है। अगली बार आएँ तो ले जाइए।',
+        ],
+      },
+      {
+        h2: 'जो काफ़ी दिनों से नहीं आए',
+        list: [
+          'नमस्ते [नाम] जी, काफ़ी दिनों से आप [दुकान का नाम] पर नहीं आए। सब ठीक है? जब समय मिले, ज़रूर आइए।',
+          'नमस्ते [नाम] जी, आपकी कमी खली। आपके स्टैम्प अब भी सुरक्षित हैं, आइए और वहीं से आगे बढ़िए।',
+          'नमस्ते [नाम] जी, पिछली बार कुछ ठीक नहीं लगा हो तो बताइए। आपका फिर से इंतज़ार रहेगा। — [दुकान का नाम]',
+        ],
+      },
+      {
+        h2: 'कितनी बार भेजें',
+        p: [
+          'ज़्यादातर महीनों में एक ग्राहक को एक निजी मैसेज काफ़ी है। त्योहार, पास आता इनाम या लंबा गैप अच्छी वजहें हैं। रोज़ का फ़ॉरवर्ड नहीं: बहुत मैसेज भेजने वाली दुकान को लोग म्यूट या ब्लॉक कर देते हैं।',
+          'सबको एक साथ बताना हो तो WhatsApp स्टेटस लगाएँ। जिन्होंने आपका नंबर सेव किया है, वे बिना मैसेज के देख लेते हैं, इसलिए यह कभी ज़बरदस्ती नहीं लगता।',
+        ],
+      },
+      {
+        h2: 'Regularhood के साथ',
+        p: [
+          'Regularhood हर ग्राहक के फ़ोन नंबर पर स्टैम्प कार्ड रखता है। एक टैप में ग्राहक को WhatsApp पर उसका कार्ड जाता है, उसके स्टैम्प और बची विज़िट के साथ, हिंदी या English में।',
+          'उन ग्राहकों की लिस्ट भी मिलती है जो काफ़ी दिनों से नहीं आए, तैयार “हम आपको मिस कर रहे हैं” मैसेज के साथ, और आपके इनाम के नियम वाली WhatsApp स्टेटस की फ़ोटो। शुरू करना मुफ़्त।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'ग्राहक को दुकान पर बुलाने का मैसेज कैसे लिखें?', a: 'ग्राहक को नाम से नमस्ते करें, आने की एक वजह दें (नया माल, त्योहार या पास आता इनाम), दो-तीन लाइन में बात ख़त्म करें और आख़िर में दुकान का नाम लिखें। मैसेज दुकान के अपने नंबर से भेजें।' },
+      { q: 'क्या यह मैसेज सबको भेजें?', a: 'निजी मैसेज उन्हीं को भेजें जो पहले आ चुके हैं और जिन्होंने अपना नंबर दिया है। सबको एक साथ बताने के लिए WhatsApp स्टेटस बेहतर है।' },
+      { q: 'ग्राहक बुलाने के लिए क्या ऑफ़र दें?', a: 'एक बार की बड़ी छूट से बेहतर है एक छोटा, नियमित इनाम: जैसे हर 5 विज़िट पर एक मुफ़्त तोहफ़ा। आसान नियम ग्राहक को याद रहता है और वह उसके लिए लौटता है।' },
+    ],
+  },
+  {
+    slug: 'identify-returning-customers-without-app',
+    name: 'बिना ऐप पुराने ग्राहक पहचानें',
+    title: 'बिना ऐप के पुराने ग्राहक कैसे पहचानें? फ़ोन नंबर से आसान तरीका',
+    description: 'छोटी दुकान बिना ऐप डाउनलोड करवाए बार-बार आने वाले ग्राहक कैसे पहचाने: फ़ोन नंबर से। रजिस्टर, काग़ज़ के कार्ड और डिजिटल स्टैम्प कार्ड की तुलना।',
+    eyebrow: 'पक्के ग्राहक',
+    h1: 'ग्राहक दोबारा आया है, यह बिना ऐप के कैसे पता करें',
+    intro:
+      'बड़ी कंपनियाँ ऐप और मेंबरशिप कार्ड से अपने ग्राहक पहचानती हैं। मोहल्ले की दुकान को इसकी ज़रूरत नहीं। लगभग हर ग्राहक के पास एक चीज़ पहले से है जो उसकी पहचान है: उसका फ़ोन नंबर।',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'छोटी दुकान पर ऐप क्यों नहीं चलते',
+        p: [
+          'ग्राहक से ऐप डाउनलोड करवाना, साइन-अप करवाना और काउंटर पर खुलवाना एक मिनट माँगता है, जो वह देना नहीं चाहता। ज़्यादातर कहते हैं “अगली बार”, और वह अगली बार कभी नहीं आती। QR कोड में भी यही दिक़्क़त है: कैमरा, स्कैन, पेज का इंतज़ार, कभी साइन-अप।',
+          'जिस तरीके में ग्राहक को मेहनत करनी पड़े, वह कुछ ही लोगों तक पहुँचता है। सब पक्के ग्राहकों को जानना है तो याद रखने का काम दुकान को करना होगा।',
+        ],
+      },
+      {
+        h2: 'फ़ोन नंबर ही ग्राहक की पहचान',
+        p: [
+          'लगभग हर किसी को अपना नंबर याद होता है, और दुकान पर नंबर बताने की आदत भी है। नंबर हर ग्राहक का अलग होता है, खोता नहीं, और बिना स्मार्टफ़ोन वाले ग्राहकों के लिए भी चलता है।',
+          'जब विज़िट नंबर पर सेव होती हैं, तो पता चलता है कौन आया, कितनी बार आया, और कौन आना बंद कर गया। ज़्यादातर दुकानों को बस इतना ही चाहिए।',
+        ],
+      },
+      {
+        h2: 'हिसाब रखने के तीन तरीके',
+        table: {
+          head: ['', 'रजिस्टर या कॉपी', 'काग़ज़ का स्टैम्प कार्ड', 'फ़ोन नंबर पर डिजिटल कार्ड'],
+          rows: [
+            ['ग्राहक को कुछ साथ रखना पड़े', 'नहीं', 'हाँ, कार्ड', 'नहीं'],
+            ['पक्का ग्राहक जल्दी ढूँढना', 'धीमा, पन्ने पलटें', 'तभी जब कार्ड लाए', 'कुछ अंक लिखें'],
+            ['कौन आना बंद कर गया', 'मुश्किल', 'नामुमकिन', 'तैयार लिस्ट'],
+            ['नकली या ज़्यादा स्टैम्प', 'मुमकिन', 'पेन से आसान', 'एक नंबर पर दिन में एक विज़िट'],
+            ['ग्राहक को मैसेज', 'नंबर हाथ से लिखें', 'नंबर सेव ही नहीं', 'WhatsApp पर एक टैप'],
+          ],
+        },
+      },
+      {
+        h2: 'Regularhood के साथ काउंटर पर',
+        steps: [
+          { title: 'नंबर लिखें', text: 'बिल बनाते समय ग्राहक का फ़ोन नंबर लिखें। पक्के ग्राहकों का नंबर 4 अंक लिखते ही दिख जाता है, भीड़ में भी जल्दी।' },
+          { title: 'Add visit दबाएँ', text: 'विज़िट सेव हो जाती है। नया नंबर उसी समय ग्राहक बन जाता है, ग्राहक को कोई साइन-अप नहीं करना।' },
+          { title: 'उनका कार्ड देखें', text: 'दिखता है कि कितनी विज़िट हुईं और इनाम कब है। आख़िरी विज़िट पर ऐप कहता है “अभी इनाम दें”।' },
+        ],
+      },
+      {
+        h2: 'इससे आपको क्या पता चलता है',
+        list: [
+          'आपके असली पक्के ग्राहक कौन हैं, विज़िट के हिसाब से।',
+          'कौन पहले आता था और काफ़ी दिनों से नहीं आया, ताकि समय रहते प्यार से याद किया जा सके।',
+          'इस हफ़्ते कितने नए ग्राहक आए और कितने लौटे।',
+          'जब चाहें, ग्राहकों और विज़िट की स्प्रेडशीट।',
+        ],
+      },
+      {
+        h2: 'नंबर इज़्ज़त से माँगें',
+        p: [
+          'वजह बताएँ: “आपकी विज़िट जोड़ दूँ? हर 5 विज़िट पर एक मुफ़्त तोहफ़ा मिलता है।” जब ग्राहक को फ़ायदा दिखे और भरोसा हो कि नंबर का ग़लत इस्तेमाल नहीं होगा, तो ज़्यादातर लोग ख़ुशी से नंबर देते हैं।',
+          'नंबर किसी को न दें और बल्क मैसेज न भेजें। जो दुकान ग्राहक के नंबर की इज़्ज़त करती है, उसे नंबर मिलते रहते हैं।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'बिना ऐप के दोबारा आने वाले ग्राहक कैसे पहचानें?', a: 'हर विज़िट ग्राहक के फ़ोन नंबर पर सेव करें। अगली बार नंबर लिखते ही दिख जाता है कि वह कितनी बार आया और इनाम बाक़ी है या नहीं।' },
+      { q: 'क्या ग्राहक के पास स्मार्टफ़ोन होना ज़रूरी है?', a: 'नहीं। सिर्फ़ फ़ोन नंबर चाहिए। जिनके पास WhatsApp है, उन्हें उनका कार्ड लिंक के रूप में भी मिल सकता है जो ब्राउज़र में खुलता है।' },
+      { q: 'क्या रजिस्टर काफ़ी नहीं है?', a: 'कुछ ग्राहकों के लिए रजिस्टर चलता है, पर उसमें ढूँढना धीमा है और यह नहीं बताता कि कौन आना बंद कर गया। फ़ोन नंबर वाला डिजिटल कार्ड दोनों काम सेकंडों में करता है।' },
+    ],
+  },
+  {
+    slug: 'customer-retention',
+    name: 'ग्राहक प्रतिधारण',
+    title: 'ग्राहक प्रतिधारण क्या है? दुकान के लिए मतलब और 6 आसान तरीके',
+    description: 'ग्राहक प्रतिधारण (customer retention) का आसान मतलब: ग्राहक बार-बार लौटे। छोटी दुकान के लिए यह क्यों ज़रूरी है, कैसे नापें, और 6 आसान तरीके।',
+    eyebrow: 'ग्राहक प्रतिधारण',
+    h1: 'ग्राहक प्रतिधारण क्या है: छोटी दुकान के लिए आसान भाषा में',
+    intro:
+      'ग्राहक प्रतिधारण (customer retention) का मतलब बस इतना है कि आपके ग्राहक बार-बार लौटें। मोहल्ले की दुकान के लिए यही सुस्त महीने और भरे महीने का फ़र्क़ है, और यह नए ग्राहक ढूँढने से कहीं सस्ता है।',
+    updated: ADDED_NOV19,
+    blocks: [
+      {
+        h2: 'ग्राहक प्रतिधारण का मतलब',
+        p: [
+          'जिन लोगों ने आपसे एक बार ख़रीदा, उनमें से कितने लौटे, और कितनी बार? यही प्रतिधारण है। जिस दुकान पर ज़्यादातर ग्राहक हर हफ़्ते लौटते हैं, वहाँ प्रतिधारण अच्छा है। जहाँ लोग एक बार आकर फिर नहीं आते, वहाँ कमज़ोर, चाहे ओपनिंग वाले हफ़्ते कितनी भी भीड़ रही हो।',
+        ],
+      },
+      {
+        h2: 'नए ग्राहकों से ज़्यादा ज़रूरी क्यों',
+        list: [
+          'पक्का ग्राहक आप पर पहले से भरोसा करता है। उसे विज्ञापन या छूट की ज़रूरत नहीं।',
+          'साल भर में पक्का ग्राहक एक बार आने वाले कई लोगों से ज़्यादा ख़र्च करता है।',
+          'ख़ुश पक्का ग्राहक अपने परिवार और पड़ोसियों को मुफ़्त में लाता है।',
+          'अगर 100 पक्के ग्राहक महीने में बस एक बार और आएँ, तो वह 100 नई विज़िट हैं, बिना किसी विज्ञापन के।',
+        ],
+      },
+      {
+        h2: 'अपने ग्राहक को जानें',
+        p: [
+          'प्रतिधारण की शुरुआत ग्राहक को जानने से होती है: उसका नाम, वह अक्सर क्या लेता है, और कितने दिन में आता है। जब पता हो कि कौन हर हफ़्ते आता था, तभी पता चलेगा कि वह तीन हफ़्ते से क्यों नहीं आया।',
+        ],
+      },
+      {
+        h2: 'ग्राहक रोकने के 6 आसान तरीके',
+        steps: [
+          { title: 'उन्हें याद रखें', text: 'पक्के ग्राहक को नाम से बुलाएँ और उसकी रोज़ की चीज़ याद रखें। यह सबसे पुराना और सबसे पक्का तरीका है।' },
+          { title: 'विज़िट पर इनाम दें', text: 'हर 5 विज़िट पर एक मुफ़्त तोहफ़ा जैसा आसान नियम ग्राहक को बगल वाली दुकान छोड़कर आपके पास आने की वजह देता है।' },
+          { title: 'बताएँ इनाम कितना पास है', text: '“बस एक विज़िट और, आपका तोहफ़ा तैयार है” सुनकर लोग जल्दी लौटते हैं।' },
+          { title: 'रोज़ की चीज़ कभी ख़त्म न हो', text: 'पक्का ग्राहक अपनी रोज़ की चीज़ न पाए तो दूसरी दुकान आज़माता है, और वहीं रह सकता है।' },
+          { title: 'देखें कौन आना बंद कर गया', text: 'ग्राहक शिकायत कम करते हैं, बस आना बंद कर देते हैं। जल्दी पता करें।' },
+          { title: 'एक प्यारा-सा मैसेज भेजें', text: 'जानी-पहचानी दुकान से WhatsApp पर छोटा-सा “हम आपको मिस कर रहे हैं” कई ग्राहकों को वापस ले आता है।' },
+        ],
+      },
+      {
+        h2: 'बिना हिसाब-किताब के कैसे नापें',
+        p: [
+          'दो गिनती काफ़ी हैं: इस महीने कितने ग्राहक कम से कम दो बार लौटे, और कितने पक्के ग्राहक कुछ हफ़्तों से नहीं दिखे। पहली गिनती बढ़े और दूसरी घटे, तो आपका प्रतिधारण सुधर रहा है।',
+          'Regularhood काउंटर पर जोड़ी गई विज़िट से दोनों दिखाता है: हर ग्राहक की विज़िट गिनती, और काफ़ी दिनों से न लौटे ग्राहकों की लिस्ट, तैयार “हम आपको मिस कर रहे हैं” मैसेज के साथ।',
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'ग्राहक प्रतिधारण क्या है?', a: 'जो ग्राहक एक बार आपसे ख़रीद चुके हैं, उनका बार-बार लौटना। जितने ज़्यादा लौटें और जितनी जल्दी लौटें, प्रतिधारण उतना अच्छा।' },
+      { q: 'छोटी दुकान ग्राहक प्रतिधारण कैसे बढ़ाए?', a: 'पक्के ग्राहकों को याद रखें, आसान नियम से विज़िट पर इनाम दें, रोज़ की चीज़ें स्टॉक में रखें, और जो आना बंद कर दें उन्हें प्यार से मैसेज भेजें।' },
+      { q: 'क्या लॉयल्टी प्रोग्राम और ग्राहक प्रतिधारण एक ही हैं?', a: 'नहीं। प्रतिधारण लक्ष्य है, लॉयल्टी प्रोग्राम उस तक पहुँचने का एक तरीका। आसान स्टैम्प कार्ड ग्राहक को लौटने की साफ़ वजह देता है।' },
+    ],
+  },
 ];
 
 export const GUIDES: Record<SeoLang, Guide[]> = { en, hi };
 
 export const guide = (lang: SeoLang, slug: string) => GUIDES[lang].find((g) => g.slug === slug);
+
+/** Shop pages a guide links to when it doesn't name its own. */
+export const COMMON_SHOPS = ['kirana-store', 'salon', 'restaurant', 'cafe', 'sweet-shop-and-bakery', 'pharmacy', 'gym', 'boutique', 'tailor', 'mobile-repair-shop'];
+
+/** Guides every shop and city page links to, after the one written for that kind of shop (if any). */
+const CORE_GUIDES = ['how-to-get-repeat-customers', 'loyalty-reward-ideas', 'messages-to-bring-customers-back', 'win-back-old-customers'];
+
+/** The guide written for a kind of shop, by shop slug. */
+const SHOP_GUIDE: Record<string, string> = {
+  salon: 'salon-loyalty-program',
+  'barber-shop': 'salon-loyalty-program',
+  'beauty-parlour': 'salon-loyalty-program',
+  spa: 'salon-loyalty-program',
+  restaurant: 'restaurant-loyalty-program',
+  cafe: 'restaurant-loyalty-program',
+  dhaba: 'restaurant-loyalty-program',
+  'tiffin-service': 'restaurant-loyalty-program',
+  'juice-bar': 'restaurant-loyalty-program',
+  'ice-cream-parlour': 'restaurant-loyalty-program',
+};
+
+/** Guides for a shop or city page: the one written for that kind of shop first (`main`), then the core guides. */
+export function guidesForPage(lang: SeoLang, kind: 'shop' | 'city', slug: string) {
+  const mainSlug = kind === 'shop' ? SHOP_GUIDE[slug] : undefined;
+  const main = mainSlug ? guide(lang, mainSlug) : undefined;
+  const core = CORE_GUIDES.map((s) => guide(lang, s)).filter((g): g is Guide => !!g);
+  return { main, list: [...(main ? [main] : []), ...core] };
+}

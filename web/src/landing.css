@@ -2524,6 +2524,14 @@ button.lp-phone-btn:not(.orange) {
   gap: 8px 22px;
 }
 
+.lp-foot nav.lp-foot-guides {
+  font-size: 14px;
+}
+
+.lp-foot-guides span {
+  color: var(--soft);
+}
+
 .lp-foot small {
   color: var(--soft);
 }

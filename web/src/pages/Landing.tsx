@@ -51,6 +51,28 @@ function useFonts() {
 /** The homepage's languages: the app's three (i18n.tsx). A ?lang=ml link opens it in Malayalam. */
 type Lang = 'en' | 'hi' | 'ml';
 
+/** Guides and tools linked from the footer, so search engines see them as the site's main pages (server/src/guides.ts). */
+const FOOT_GUIDES: Record<'en' | 'hi', [string, string][]> = {
+  en: [
+    ['/guide/how-to-get-repeat-customers', 'How to get repeat customers'],
+    ['/guide/messages-to-bring-customers-back', 'Messages to bring customers back'],
+    ['/guide/win-back-old-customers', 'Win back old customers'],
+    ['/guide/loyalty-reward-ideas', 'Loyalty reward ideas'],
+    ['/guide/digital-stamp-card', 'Digital stamp card'],
+    ['/tools/stamp-card-maker', 'Free stamp card maker'],
+    ['/tools/google-review-qr-code', 'Google review QR code'],
+  ],
+  hi: [
+    ['/hi/guide/how-to-increase-shop-sales', 'दुकान में बिक्री कैसे बढ़ाए'],
+    ['/hi/guide/get-customers-for-new-shop', 'दुकान पर ग्राहक कैसे आए'],
+    ['/hi/guide/win-back-old-customers', 'पुराने ग्राहक वापस कैसे लाए'],
+    ['/hi/guide/how-to-get-repeat-customers', 'पक्का ग्राहक कैसे बनाएँ'],
+    ['/hi/guide/messages-to-bring-customers-back', 'ग्राहक को दोबारा बुलाने के मैसेज'],
+    ['/hi/tools/stamp-card-maker', 'फ़्री स्टैम्प कार्ड मेकर'],
+    ['/hi/tools/google-review-qr-code', 'Google रिव्यू QR कोड'],
+  ],
+};
+
 /** The visitor's language, shared with the customer pages (i18n.tsx). English until hydrated, like the prerendered page. */
 function usePageLang(): Lang {
   const stored = useLang();
@@ -317,7 +339,7 @@ const COPY = {
       year: (y: string) => `That’s ${y} a year.`,
       foot: 'And Regularhood is free to start.',
     },
-    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', cities: 'Shops by city', guides: 'Guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', shipping: 'Delivery', contact: 'Contact', tag: 'From first visit to “the usual”.' },
+    footer: { how: 'How it works', price: 'Price', shops: 'For your kind of shop', cities: 'Shops by city', guides: 'Guides', popular: 'Popular guides', login: 'Shop log in', privacy: 'Privacy', terms: 'Terms', refunds: 'Refunds', shipping: 'Delivery', contact: 'Contact', tag: 'From first visit to “the usual”.' },
   },
   hi: {
     login: 'लॉग इन',
@@ -457,7 +479,7 @@ const COPY = {
       year: (y: string) => `यानी साल में ${y}।`,
       foot: 'और Regularhood शुरू करना मुफ़्त है।',
     },
-    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', shipping: 'डिलीवरी', contact: 'संपर्क', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
+    footer: { how: 'कैसे काम करता है', price: 'कीमत', shops: 'आपकी तरह की दुकान के लिए', cities: 'शहर के हिसाब से', guides: 'गाइड', popular: 'लोकप्रिय गाइड', login: 'दुकान लॉग इन', privacy: 'प्राइवेसी', terms: 'शर्तें', refunds: 'रिफ़ंड', shipping: 'डिलीवरी', contact: 'संपर्क', tag: 'पहली विज़िट से “वही रोज़ वाला” तक।' },
   },
   ml: {
     login: 'ലോഗ് ഇൻ',
@@ -597,7 +619,7 @@ const COPY = {
       year: (y: string) => `അതായത് വർഷം ${y}.`,
       foot: 'Regularhood തുടങ്ങാൻ സൗജന്യമാണ്.',
     },
-    footer: { how: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു', price: 'വില', shops: 'നിങ്ങളുടെ തരം കടയ്ക്ക്', cities: 'നഗരം അനുസരിച്ച്', guides: 'ഗൈഡുകൾ', login: 'കട ലോഗ് ഇൻ', privacy: 'പ്രൈവസി', terms: 'നിബന്ധനകൾ', refunds: 'റീഫണ്ട്', shipping: 'ഡെലിവറി', contact: 'ബന്ധപ്പെടുക', tag: 'ആദ്യ സന്ദർശനം മുതൽ “എന്നും വരുന്നയാൾ” വരെ.' },
+    footer: { how: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു', price: 'വില', shops: 'നിങ്ങളുടെ തരം കടയ്ക്ക്', cities: 'നഗരം അനുസരിച്ച്', guides: 'ഗൈഡുകൾ', popular: 'Popular guides', login: 'കട ലോഗ് ഇൻ', privacy: 'പ്രൈവസി', terms: 'നിബന്ധനകൾ', refunds: 'റീഫണ്ട്', shipping: 'ഡെലിവറി', contact: 'ബന്ധപ്പെടുക', tag: 'ആദ്യ സന്ദർശനം മുതൽ “എന്നും വരുന്നയാൾ” വരെ.' },
   },
 };
 
@@ -1725,6 +1747,14 @@ export function Landing() {
                 <a href="/contact" data-track="footer: Contact">
                   {c.footer.contact}
                 </a>
+              </nav>
+              <nav aria-label={c.footer.popular} className="lp-foot-guides">
+                <span>{c.footer.popular}:</span>
+                {(lang === 'hi' ? FOOT_GUIDES.hi : FOOT_GUIDES.en).map(([href, label]) => (
+                  <a key={href} href={href} data-track={`footer guide: ${href}`}>
+                    {label}
+                  </a>
+                ))}
               </nav>
               <small>{c.footer.tag}</small>
             </div>

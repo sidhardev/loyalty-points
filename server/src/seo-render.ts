@@ -85,6 +85,8 @@ const T = {
     footContact: 'Contact',
     tool: 'Free stamp card maker',
     reviewTool: 'Google review QR code',
+    shopGuides: 'Guides to bring customers back',
+    fullGuide: 'Read the full guide',
   },
   hi: {
     home: 'होम',
@@ -133,6 +135,8 @@ const T = {
     footContact: 'संपर्क',
     tool: 'फ़्री स्टैम्प कार्ड मेकर',
     reviewTool: 'Google रिव्यू QR कोड',
+    shopGuides: 'ग्राहक वापस बुलाने की गाइड',
+    fullGuide: 'पूरी गाइड पढ़ें',
   },
 };
 
@@ -293,7 +297,11 @@ ${BEACON}
 }
 
 /** One shop-type or city page. `others` are pages of the same kind, `cross` of the other kind (cities on a shop page). */
-export function renderPage(row: PageRef, c: SeoContent, o: { site: string; twin?: PageRef; others: PageRef[]; cross?: PageRef[] }) {
+export function renderPage(
+  row: PageRef,
+  c: SeoContent,
+  o: { site: string; twin?: PageRef; others: PageRef[]; cross?: PageRef[]; guides?: { main?: Guide; list: Guide[] } },
+) {
   const lang = row.lang;
   const kind = row.kind ?? 'shop';
   const t = T[lang];
@@ -389,6 +397,11 @@ ${
 </div></section>`
     : ''
 }
+${
+  o.guides?.main
+    ? `<section style="padding-top:0"><div class="wrap"><p><a href="${guidePath(lang, o.guides.main.slug)}"><b>${t.fullGuide}: ${esc(o.guides.main.name)} →</b></a></p></div></section>`
+    : ''
+}
 
 <section><div class="wrap">
   <h2>${t.faq}</h2>
@@ -403,6 +416,14 @@ ${
   kind === 'city'
     ? linkRow(t.forShops, cross, 'shop') + linkRow(t.otherCities, others, 'city')
     : linkRow(t.others, others, 'shop') + linkRow(t.inYourCity, cross, 'city')
+}
+${
+  o.guides?.list.length
+    ? `<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${t.shopGuides}</h2>
+  <div class="links">${o.guides.list.map((g) => `<a href="${guidePath(lang, g.slug)}">${esc(g.name)}</a>`).join('')}</div>
+</div></section>`
+    : ''
 }
 </main>`;
 
@@ -500,7 +521,7 @@ function block(b: GuideBlock) {
 }
 
 /** One hand-written guide (/guide/<slug>, /hi/guide/<slug>). */
-export function renderGuide(site: string, lang: SeoLang, g: Guide, o: { twin?: Guide; others: Guide[] }) {
+export function renderGuide(site: string, lang: SeoLang, g: Guide, o: { twin?: Guide; sibling?: Guide; others: Guide[]; shops?: PageRef[] }) {
   const t = T[lang];
   const here = guidePath(lang, g.slug);
   const other: SeoLang = lang === 'en' ? 'hi' : 'en';
@@ -538,7 +559,7 @@ export function renderGuide(site: string, lang: SeoLang, g: Guide, o: { twin?: G
   <div class="article">
     <p class="eyebrow">${esc(g.eyebrow)}</p>
     <h1>${esc(g.h1)}</h1>
-    <p class="meta">${t.updated}: <time datetime="${g.updated}">${g.updated}</time>${o.twin ? ` · <a href="${guidePath(other, g.slug)}" hreflang="${other}">${t.twin}</a>` : ''}</p>
+    <p class="meta">${t.updated}: <time datetime="${g.updated}">${g.updated}</time>${o.twin ? ` · <a href="${guidePath(other, g.slug)}" hreflang="${other}">${t.twin}</a>` : ''}${o.sibling ? ` · <a href="${guidePath(lang, o.sibling.slug)}">${/[ऀ-ॿ]/.test(o.sibling.title) ? 'Yahi guide हिंदी (Devanagari) mein' : 'यही गाइड Roman Hindi में'}</a>` : ''}</p>
     <p class="intro">${esc(g.intro)}</p>
     <div class="cta"><a class="btn" href="${signup(here)}">${t.start} →</a><a class="btn line" href="/#how">${t.how}</a></div>
   </div>
@@ -551,6 +572,14 @@ ${g.blocks.map(block).join('\n')}
 <section><div class="wrap">
   <div class="final"><div><h2>${t.ctaTitle}</h2><p>${t.ctaText}</p></div><a class="btn" href="${signup(here)}">${t.start} →</a></div>
 </div></section>
+${
+  o.shops?.length
+    ? `<section style="padding-top:0"><div class="wrap">
+  <h2 style="font-size:24px">${t.forShops}</h2>
+  <div class="links">${o.shops.map((p) => `<a href="${path(lang, p.slug)}">${esc(label(p))}</a>`).join('')}</div>
+</div></section>`
+    : ''
+}
 <section style="padding-top:0"><div class="wrap">
   <h2 style="font-size:24px">${t.moreGuides}</h2>
   <div class="links">${o.others.map((x) => `<a href="${guidePath(lang, x.slug)}">${esc(x.name)}</a>`).join('')}<a href="${toolPath(lang, 'stamp-card-maker')}">${t.tool} →</a><a href="${toolPath(lang, 'google-review-qr-code')}">${t.reviewTool} →</a><a href="${path(lang)}">${t.forShops} →</a><a href="${path(lang, '', 'city')}">${t.inYourCity} →</a></div>
