@@ -143,7 +143,7 @@ export function EmailsPage({ api }: { api: AdminApi }) {
             </h2>
           </div>
           <div className="actions" style={{ flexWrap: 'wrap' }}>
-            <select value={filter.kind} onChange={(e) => setFilter({ ...filter, kind: e.target.value })} aria-label="Type">
+            <select value={filter.kind} onChange={(e) => setFilter({ ...filter, kind: e.target.value })} aria-label="Type" style={{ width: 'auto' }}>
               <option value="">All types</option>
               {Object.entries(KIND).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -151,7 +151,7 @@ export function EmailsPage({ api }: { api: AdminApi }) {
                 </option>
               ))}
             </select>
-            <select value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })} aria-label="Status">
+            <select value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })} aria-label="Status" style={{ width: 'auto' }}>
               <option value="">Any status</option>
               {['sent', 'delivered', 'opened', 'failed', 'bounced', 'complained', 'delayed'].map((s) => (
                 <option key={s} value={s}>
@@ -159,7 +159,7 @@ export function EmailsPage({ api }: { api: AdminApi }) {
                 </option>
               ))}
             </select>
-            <label className="search-box" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <label className="search-box" style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 180px' }}>
               <Search size={15} />
               <input placeholder="Shop or email" defaultValue={filter.q} onKeyDown={(e) => e.key === 'Enter' && setFilter({ ...filter, q: e.currentTarget.value })} />
             </label>
