@@ -32,7 +32,7 @@ import { CARD_SOURCE, cleanCode, loginPhones, PARTNER_SOURCE, readAttribution, r
 const shopCountry = (b: { country?: unknown; tz?: unknown } | undefined) => knownCountry(b?.country) || countryFromTz(b?.tz) || 'IN';
 import { LoyaltyService, type MerchantRow } from './loyalty.service';
 import { readReviewUrl } from './review-url';
-import { Mailer, resetEmail } from './mail';
+import { emailSettings, MailError, Mailer, resetEmail, welcomeEmail } from './mail';
 import { ResetCodes } from './reset-codes';
 
 // Shop owners sign up with a WhatsApp number (or an email, or both) + password and get a token the website sends with
@@ -245,7 +245,17 @@ export class AuthController {
       // Not a Google review link: not kept.
     }
     if (review) this.db.sql.prepare('UPDATE merchants SET review_url = ? WHERE id = ?').run(review, id);
+    this.welcome(id);
     return id;
+  }
+
+  /** The welcome email, when the new shop gave an email and it's switched on in Admin → Emails. Never holds up sign-up. */
+  private welcome(id: number) {
+    const m = this.find(id);
+    if (!m.email || !this.mailer.ready || !emailSettings(this.db).welcome) return;
+    void this.mailer
+      .send(m.email, welcomeEmail(m.name, m.visits_needed, m.reward_name), { kind: 'welcome', merchantId: id, automatic: true })
+      .catch((e) => console.error('Welcome email failed:', (e as Error).message));
   }
 
   @Post('auth/login')
@@ -286,10 +296,10 @@ export class AuthController {
       if (!m) throw new NotFoundException('No shop account uses this email. Try your WhatsApp number.');
       const code = this.codes.create(m.id, 'email');
       if (!code) throw new BadRequestException('We just sent a code. Check your inbox (and spam), or try again in a minute.');
-      const mail = resetEmail(m.name, code);
       try {
-        await this.mailer.send(m.email ?? login, mail.subject, mail.text, mail.html);
+        this.codes.attachEmail(m.id, await this.mailer.send(m.email ?? login, resetEmail(m.name, code), { kind: 'reset', merchantId: m.id }));
       } catch (e) {
+        if (e instanceof MailError) this.codes.attachEmail(m.id, e.emailId);
         console.error('Reset email failed:', (e as Error).message);
         throw new ServiceUnavailableException('Could not send the email right now. Try your WhatsApp number instead.');
       }

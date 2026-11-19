@@ -197,6 +197,12 @@ echo "MAIL_FROM=Regularhood <no-reply@regularhood.in>" >> deploy/.env
 
   Without a key, the email option says it's off and points to WhatsApp.
 
+**Admin → Emails** lists every email and what Resend says became of it, every "Forgot password" request, and the
+automatic emails: a welcome at sign-up (on), a win-back when a shop stops adding visits and a nudge when it never added
+one (both off until switched on there; 10 AM–7 PM India time, under a daily cap). Delivered / bounced / opened needs
+Resend → Webhooks → Add webhook with `https://www.regularhood.in/api/resend/webhook` and its signing secret pasted on
+that page (or `RESEND_WEBHOOK_SECRET` in `deploy/.env`).
+
 **Photos, videos and documents in the chats** are kept in Supabase Storage, because Meta deletes a received file after
 about 30 days. In `deploy/.env` set `SUPABASE_URL=https://<project>.supabase.co` and `SUPABASE_SECRET_KEY=` the
 project's secret key (Project Settings → API Keys; the legacy `service_role` key works too, the publishable/anon one

@@ -28,7 +28,7 @@ export class ResetCodes {
       .get(merchantId) as { minute: number | null; hour: number };
     if ((recent.minute ?? 0) > 0 || recent.hour >= 5) return null;
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-    this.db.sql.prepare("UPDATE reset_codes SET used_at = datetime('now') WHERE merchant_id = ? AND used_at IS NULL").run(merchantId);
+    this.db.sql.prepare("UPDATE reset_codes SET used_at = datetime('now'), result = 'replaced' WHERE merchant_id = ? AND used_at IS NULL").run(merchantId);
     this.db.sql
       .prepare('INSERT INTO reset_codes (merchant_id, channel, code_hash, expires_at) VALUES (?, ?, ?, ?)')
       .run(merchantId, channel, hash(merchantId, code), new Date(Date.now() + MINUTES * 60_000).toISOString());
@@ -53,7 +53,14 @@ export class ResetCodes {
       this.db.sql.prepare('UPDATE reset_codes SET attempts = attempts + 1 WHERE id = ?').run(row.id);
       return 'wrong';
     }
-    this.db.sql.prepare("UPDATE reset_codes SET used_at = datetime('now') WHERE id = ?").run(row.id);
+    this.db.sql.prepare("UPDATE reset_codes SET used_at = datetime('now'), result = 'used' WHERE id = ?").run(row.id);
     return row.merchant_id;
+  }
+
+  /** Links the shop's newest code to the email that carried it, so Admin → Emails can show whether it arrived. */
+  attachEmail(merchantId: number, emailId: number) {
+    this.db.sql
+      .prepare('UPDATE reset_codes SET email_id = ? WHERE id = (SELECT MAX(id) FROM reset_codes WHERE merchant_id = ?)')
+      .run(emailId, merchantId);
   }
 }

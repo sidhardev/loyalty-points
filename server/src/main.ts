@@ -31,6 +31,7 @@ import { WaBot } from './wabot';
 import { WhatsApp, WhatsAppAdminController, WhatsAppWebhookController } from './whatsapp';
 import { ResetCodes } from './reset-codes';
 import { Mailer } from './mail';
+import { EmailJobs, EmailsAdminController, ResendWebhookController, UnsubscribeController } from './emails';
 import { UaePageController } from './uae';
 
 // Local settings and secrets (e.g. GEMINI_API_KEY) from server/.env, if there is one. Git and Docker ignore the file;
@@ -39,8 +40,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 
 @Module({
   imports: [JwtModule.register({ global: true, secret: jwtSecret(), signOptions: { expiresIn: '7d' } })],
-  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, ReportController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, UaePageController],
-  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, DraftService, Storage, WhatsApp, WaBot, ResetCodes, Mailer],
+  controllers: [AuthController, BillingController, BillingAdminController, PartnersController, PartnersAdminController, ProController, ReportController, LoyaltyController, PublicController, AdminController, AnalyticsController, SeoAdminController, SeoPublicController, StatusAdminController, LeadsAdminController, PlaybookAdminController, PhusroController, PhusroAdminController, DraftsAdminController, SettingsAdminController, WhatsAppAdminController, WhatsAppWebhookController, UaePageController, EmailsAdminController, ResendWebhookController, UnsubscribeController],
+  providers: [Db, AuthGuard, AdminGuard, LoyaltyService, Billing, AnalyticsStore, Gemini, SeoService, LeadsService, PlaybookService, PhusroService, PhusroGuard, DraftService, Storage, WhatsApp, WaBot, ResetCodes, Mailer, EmailJobs],
 })
 class AppModule {}
 

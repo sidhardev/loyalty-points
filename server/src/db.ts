@@ -803,6 +803,33 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_reset_codes_merchant ON reset_codes (merchant_id, created_at);
   `,
+  // 47: every email we send (mail.ts), with what Resend later reports about it (delivered, bounced, opened…), shown in
+  // Admin → Emails. Reset codes remember how they ended and which email carried them. Shops can stop the automatic
+  // emails (welcome, win-back) with the link in them; reset codes still go out.
+  `
+  CREATE TABLE email_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER REFERENCES merchants(id) ON DELETE SET NULL,
+    to_email TEXT NOT NULL,
+    kind TEXT NOT NULL, -- reset | welcome | winback | nudge | test
+    subject TEXT NOT NULL,
+    status TEXT NOT NULL, -- sent (accepted by Resend) | failed | delivered | delayed | bounced | complained | opened | clicked
+    error TEXT,
+    resend_id TEXT,
+    opened_at TEXT,
+    clicked_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX idx_email_log_created ON email_log (created_at);
+  CREATE INDEX idx_email_log_merchant ON email_log (merchant_id, kind, created_at);
+  CREATE UNIQUE INDEX idx_email_log_resend ON email_log (resend_id) WHERE resend_id IS NOT NULL;
+  ALTER TABLE reset_codes ADD COLUMN result TEXT; -- used | replaced; NULL = still open or expired
+  ALTER TABLE reset_codes ADD COLUMN email_id INTEGER;
+  UPDATE reset_codes SET result = 'replaced' WHERE used_at IS NOT NULL;
+  ALTER TABLE merchants ADD COLUMN email_opt_out INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE merchants ADD COLUMN email_token TEXT;
+  `,
 ];
 
 const INDEXES = `

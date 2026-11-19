@@ -57,6 +57,7 @@ import { LeadsPage } from './AdminLeads';
 import { PartnersPage } from './AdminPartners';
 import { PlaybooksPage } from './AdminPlaybooks';
 import { DraftSheet, SettingsPage } from './AdminDrafts';
+import { EmailsPage } from './AdminEmails';
 import { PhusroPage } from './AdminPhusro';
 import { ChatsPage, WA_UNREAD } from './AdminChats';
 import { VisitsPage, type PageDraft, type PageEvent, type PageView, type VisitShop } from './Visits';
@@ -2080,6 +2081,21 @@ const NAV: { group: string; items: NavItem[] }[] = [
     ],
   },
   {
+    group: 'Email',
+    items: [
+      {
+        path: '/emails',
+        label: 'Emails',
+        icon: Mail,
+        subs: [
+          ['sent', 'Sent emails'],
+          ['resets', 'Password resets'],
+          ['auto', 'Automatic & tracking'],
+        ],
+      },
+    ],
+  },
+  {
     group: 'WhatsApp',
     items: [
       { path: '/chats', label: 'Chats', icon: MessagesSquare },
@@ -2310,6 +2326,8 @@ export function AdminApp() {
     <StatusPage api={adminApi} />
   ) : hash.startsWith('/visits') ? (
     <VisitsPage fetchViews={fetchViews} />
+  ) : hash.startsWith('/emails') ? (
+    <EmailsPage api={adminApi} />
   ) : hash.startsWith('/settings') ? (
     <SettingsPage api={adminApi} />
   ) : hash.startsWith('/log') ? (
