@@ -3052,7 +3052,7 @@ button.lp-phone-btn:not(.orange) {
   font: 600 19px/1.2 var(--display);
 }
 
-.lp-using-list li > .lp-using-dots {
+.lp-using-list li > span.lp-using-dots:last-child {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
