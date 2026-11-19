@@ -55,16 +55,19 @@ export type BuyKind = Exclude<PaidKind, 'lifetime'>;
 export const KINDS: BuyKind[] = ['monthly', 'yearly'];
 
 /** How close the Free plan is to its limit: '' while there's room, then 'is-warn' from 80%, 'is-full' at the limit. */
-function level(b: Billing & { limit: number }) {
+export function level(b: Billing & { limit: number }) {
   return b.customers >= b.limit ? 'is-full' : b.customers >= warnAt(b.limit) ? 'is-warn' : '';
 }
 const warnAt = (limit: number) => Math.ceil(limit * 0.8); // 12 of 15
-const counterAt = (limit: number) => Math.ceil(limit * 0.9); // the counter stays quiet until the last few places
+export const counterAt = (limit: number) => Math.ceil(limit * 0.9); // the counter stays quiet until the last few places
+/** The limit stays out of sight until the shop has seen the card work (10 of 15): early on it only reads as a countdown. */
+export const showAt = (limit: number) => Math.ceil(limit * 0.66);
 
 /** The Free plan's numbers, or null when the shop has no limit. */
-function freeUsage(b: Billing | null) {
+export function freeUsage(b: Billing | null) {
   if (!b || b.limit === null) return null;
-  return { ...b, limit: b.limit, left: Math.max(0, b.limit - b.customers) };
+  // graceLeft: new customers the counter still lets in past the limit (server/src/plans.ts FREE_GRACE).
+  return { ...b, limit: b.limit, left: Math.max(0, b.limit - b.customers), graceLeft: Math.max(0, b.limit + (b.grace ?? 0) - b.customers) };
 }
 
 function Meter({ b }: { b: Billing & { limit: number } }) {
@@ -338,7 +341,7 @@ export function ProLock({ perk, children }: { perk: ProPerk; children?: ReactNod
 
 // ---------------------------------------------------------------- where the limit shows
 
-/** Phone topbar: "9/15" with a thin meter, or a small crown for Pro shops. */
+/** Phone topbar: "12/15 free" with a thin meter once 10 are used, or a small crown for Pro shops. */
 export function LimitPill() {
   useLang();
   const b = useBilling();
@@ -350,7 +353,7 @@ export function LimitPill() {
     );
   }
   const u = freeUsage(b);
-  if (!u) return null;
+  if (!u || u.customers < showAt(u.limit)) return null;
   return (
     <button
       type="button"
@@ -358,7 +361,7 @@ export function LimitPill() {
       onClick={openPlan}
       aria-label={t('{n} of {limit} free customers. See plans', { n: num(u.customers), limit: num(u.limit) })}
     >
-      {t('{n}/{limit} free', { n: num(u.customers), limit: num(u.limit) })}
+      {u.left === 0 ? t('Free · full') : t('{n}/{limit} free', { n: num(u.customers), limit: num(u.limit) })}
       <Meter b={u} />
     </button>
   );
@@ -368,7 +371,7 @@ export function LimitPill() {
 export function LimitCard() {
   useLang();
   const u = freeUsage(useBilling());
-  if (!u) return null;
+  if (!u || u.customers < showAt(u.limit)) return null;
   return (
     <button type="button" className={`limit-card ${level(u)}`} onClick={openPlan}>
       <span className="limit-card-top">
@@ -414,10 +417,28 @@ export function LimitStrip({ near, meter }: { near?: boolean; meter?: boolean })
   );
 }
 
-/** After a new customer's first visit: one quiet line, only once the Free plan is nearly used up. */
-export function LimitAfterVisit() {
+/**
+ * After a new customer's first visit: one quiet line once the Free plan is nearly used up. Past the limit (`over`: a
+ * grace place was used) the customer is on the card anyway, and this is the moment to ask for Pro.
+ */
+export function LimitAfterVisit({ over }: { over?: boolean }) {
   useLang();
   const u = freeUsage(useBilling());
+  if (over && u) {
+    return (
+      <div className="limit-over">
+        <strong>{t('This customer is on your card. Your Free plan is for {limit} customers.', { limit: num(u.limit) })}</strong>
+        <span>
+          {u.graceLeft > 0
+            ? t('{n} more new customers can still join, then new ones can’t get a card.', { n: num(u.graceLeft) })
+            : t('That was the last one. Get Pro so the next new customer gets a card too.')}
+        </span>
+        <button type="button" className="btn btn-primary" onClick={openPlan}>
+          <Crown size={17} /> {t('Get unlimited customers')}
+        </button>
+      </div>
+    );
+  }
   if (!u || u.customers < warnAt(u.limit)) return null;
   return (
     <button type="button" className="limit-after" onClick={openPlan}>

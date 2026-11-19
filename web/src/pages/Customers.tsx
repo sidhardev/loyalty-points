@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Crown, Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
 import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Customer, type Merchant } from '../api';
-import { LimitStrip, ProLock, refreshBilling, useBilling, WhyPro } from '../billing';
+import { ProLock, refreshBilling, useBilling, WhyPro } from '../billing';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
 import { messageLang } from './Counter';
-import { ReportCard } from '../report';
+import { LimitValue, ReportCard } from '../report';
 
 type Filter = 'all' | 'reward' | 'inactive';
 
@@ -53,8 +53,8 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
         </div>
       </header>
 
-      {/* The list comes first: a shop opens this page to find someone. The plan only shows here once it's nearly full. */}
-      <LimitStrip near />
+      {/* The list comes first: a shop opens this page to find someone. The plan only shows once 10 of 15 are used. */}
+      <LimitValue merchant={merchant} />
 
       <div className="chips" role="tablist">
         {chips.map(({ id, label, icon: Icon }) => (

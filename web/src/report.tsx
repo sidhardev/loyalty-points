@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Crown, MessageCircle, TrendingUp } from 'lucide-react';
+import { ChevronRight, Crown, Lock, MessageCircle, TrendingUp } from 'lucide-react';
 import { api, num, type Merchant } from './api';
-import { isPro, openPlan, price, useBilling } from './billing';
+import { counterAt, freeUsage, isPro, level, openPlan, price, showAt, useBilling } from './billing';
 import { t, useLang } from './i18n';
 import { useDataVersion } from './ui';
 
@@ -41,12 +41,63 @@ export function useReport() {
 export function ReportLine({ merchant }: { merchant: Merchant }) {
   useLang();
   const [r] = useReport();
-  if (!r || !r.current.regularVisits) return null;
+  if (!r || !r.current.visits) return null;
+  // Before anyone comes back: say what this line will show, so the first return visit is something to look for.
+  if (!r.current.regularVisits) {
+    return (
+      <a className="report-line" href="#/customers">
+        <TrendingUp size={15} />{' '}
+        {r.current.newCustomers === 1
+          ? t('This month: 1 new customer on your card. When they come back, it shows here.')
+          : t('This month: {n} new customers on your card. When they come back, it shows here.', { n: num(r.current.newCustomers) })}
+      </a>
+    );
+  }
   return (
     <a className="report-line" href="#/customers">
-      <TrendingUp size={15} /> {t('This month: regulars came back {n} times', { n: num(r.current.regularVisits) })}
+      <TrendingUp size={15} />{' '}
+      {r.current.regularVisits === 1 ? t('This month: a regular came back once') : t('This month: regulars came back {n} times', { n: num(r.current.regularVisits) })}
       {r.avgBill > 0 && <> · <b>{t('about {money}', { money: money(r.current.regularVisits * r.avgBill, merchant.country) })}</b></>}
     </a>
+  );
+}
+
+/**
+ * The Free plan's places, once 10 of 15 are used (`near`: only the last few, on the counter), told as what the card
+ * has already brought in rather than as a countdown. Tap for plans.
+ */
+export function LimitValue({ merchant, near }: { merchant: Merchant; near?: boolean }) {
+  useLang();
+  const u = freeUsage(useBilling());
+  const [r] = useReport();
+  if (!u || u.customers < (near ? counterAt(u.limit) : showAt(u.limit))) return null;
+  const back = r?.current.regularVisits ?? 0;
+  const avgBill = r?.avgBill ?? 0;
+  const full = u.left === 0;
+  const earned =
+    back > 0 && avgBill > 0
+      ? t('Regulars came back {n} times this month, about {money}.', { n: num(back), money: money(back * avgBill, merchant.country) })
+      : back > 0
+        ? t('Regulars came back {n} times this month.', { n: num(back) })
+        : '';
+  const places = !full
+    ? t('{n} of {limit} free places left.', { n: num(u.left), limit: num(u.limit) })
+    : u.graceLeft > 0
+      ? t('Free plan full. {n} more new customers can still join.', { n: num(u.graceLeft) })
+      : t('Free plan full: new customers can’t get a card.');
+  return (
+    <button type="button" className={`limit-strip ${level(u)}`} onClick={openPlan}>
+      <span className="limit-strip-line">
+        {full ? <Lock size={18} /> : <TrendingUp size={18} />}
+        <span className="limit-strip-text">
+          {earned && <b>{earned} </b>}
+          {places}
+        </span>
+        <span className="limit-go">
+          {t('Get unlimited')} <ChevronRight size={16} />
+        </span>
+      </span>
+    </button>
   );
 }
 

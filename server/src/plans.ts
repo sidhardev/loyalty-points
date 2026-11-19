@@ -147,6 +147,12 @@ export function requirePro(m: PlanFields, feature: ProFeature) {
   if (!isPro(m)) throw new ForbiddenException(LOCKED[feature]);
 }
 
+/**
+ * New customers a Free shop may still add after its limit, so the customer standing at the counter is never turned
+ * away: the visit goes in and the counter asks the shop to get Pro. Only after these does the counter refuse.
+ */
+export const FREE_GRACE = 3;
+
 /** How many customers this shop may have; null = no limit. */
 export const customerLimit = (sql: DatabaseSync, m: PlanFields) => {
   const p = effectivePlan(m);

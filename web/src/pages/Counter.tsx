@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Check, Delete, Gift, MessageCircle, Star, Undo2 } from 'lucide-react';
+import { Check, Crown, Delete, Gift, MessageCircle, Star, Undo2, X } from 'lucide-react';
 import { api, cardMessage, num, phoneLabel, reviewMessage, whatsapp, type Customer, type Merchant, type MsgLang, type VisitResult } from '../api';
 import { country, groupDigits } from '../country';
-import { LimitAfterVisit, LimitStrip, refreshBilling } from '../billing';
-import { ReportLine } from '../report';
+import { LimitAfterVisit, openPlan, refreshBilling, useBilling } from '../billing';
+import { LimitValue, ReportLine, money } from '../report';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { ErrorText, confetti, toast, useAction } from '../ui';
@@ -36,18 +36,83 @@ export function Stamps({ stamps, needed, size = 'md' }: { stamps: number; needed
   );
 }
 
+const remember = (key: string) => {
+  try {
+    localStorage.setItem(key, '1');
+  } catch {
+    // Just not remembered.
+  }
+};
+const remembered = (key: string) => {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/** The poster was printed, saved or the card shared: the last of the first steps. */
+export const markPosterDone = () => remember('lp_poster_done');
+
+/**
+ * The first steps, as one slim line above the keypad until they're done: the card is set (already ticked, so the
+ * list starts part done), the first customer, then the poster so customers know to say their number.
+ */
+function FirstSteps() {
+  useLang();
+  const b = useBilling();
+  const [hidden, setHidden] = useState(() => remembered('lp_first_steps_hidden'));
+  if (hidden || !b) return null;
+  const steps = [
+    { done: true, label: t('Set your card') },
+    { done: b.customers > 0, label: t('Add your first customer: type their number below') },
+    { done: remembered('lp_poster_done'), label: t('Put up the counter poster'), href: '#/settings/poster' },
+  ];
+  const done = steps.filter((s) => s.done).length;
+  const next = steps.find((s) => !s.done);
+  if (!next) return null;
+  return (
+    <section className="first-steps" aria-label={t('Get started')}>
+      <span className="first-steps-dots" aria-label={t('{n} of {total} done', { n: done, total: steps.length })}>
+        {steps.map((s) => (
+          <span key={s.label} className={s.done ? 'on' : ''}>
+            {s.done && <Check size={11} strokeWidth={3.5} />}
+          </span>
+        ))}
+      </span>
+      <span className="first-steps-next">
+        <small>{t('Next step')}</small>
+        {next.href ? <a href={next.href}>{next.label} →</a> : <b>{next.label}</b>}
+      </span>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label={t('Hide')}
+        onClick={() => {
+          remember('lp_first_steps_hidden');
+          setHidden(true);
+        }}
+      >
+        <X size={16} />
+      </button>
+    </section>
+  );
+}
+
 /** First run: the shop's whole program in one sentence. */
 export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; onSaved: (m: Merchant) => void; compact?: boolean }) {
   useLang();
   const [needed, setNeeded] = useState(merchant.visitsNeeded || 5);
   const [reward, setReward] = useState(merchant.rewardName);
+  // What one visit is worth, so returning customers show in money from the first week. A guess is enough.
+  const [bill, setBill] = useState(merchant.avgBill ? String(merchant.avgBill) : !merchant.country || merchant.country === 'IN' ? '100' : '');
   const { busy, error, setError, run } = useAction();
   const save = (e: FormEvent) => {
     e.preventDefault();
     // Say what's missing instead of a button that silently does nothing.
     if (!reward.trim()) return setError(t('Write the reward first, for example: Free coffee'));
     void run(async () => {
-      onSaved(await api<Merchant>('me', 'PATCH', { visitsNeeded: needed, rewardName: reward }));
+      onSaved(await api<Merchant>('me', 'PATCH', compact ? { visitsNeeded: needed, rewardName: reward } : { visitsNeeded: needed, rewardName: reward, avgBill: Math.round(Number(bill) || 0) }));
       toast(t('Saved'));
     });
   };
@@ -82,6 +147,13 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
         aria-label="Reward"
       />
       <Stamps stamps={needed - 1} needed={needed} />
+      {!compact && (
+        <label className="setup-bill">
+          <span>{t('A customer spends about this on one visit')}</span>
+          <input type="number" inputMode="numeric" min="0" max="1000000" step="1" value={bill} onChange={(e) => setBill(e.target.value)} placeholder={money(100, merchant.country)} />
+          <span className="hint">{t('Then the app shows what returning customers bring you, in money. A guess is fine.')}</span>
+        </label>
+      )}
       <ErrorText text={error} />
       <button className="btn btn-primary btn-lg" disabled={busy}>
         {busy ? t('Saving…') : compact ? t('Save') : t('Start')}
@@ -90,8 +162,8 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
   );
 }
 
-// `given`: the reward was just handed over.
-type Shown = { result: VisitResult; given?: boolean };
+// `given`: the reward was just handed over. `first`: the shop's very first customer.
+type Shown = { result: VisitResult; given?: boolean; first?: boolean };
 
 /** Optional: the customer's name, asked right after a visit while it's still unknown. Skipping it is fine. */
 function NameField({ customer, onSaved, onFocus }: { customer: Customer; onSaved: (c: Customer) => void; onFocus: () => void }) {
@@ -132,6 +204,8 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   const [today, setToday] = useState<{ visits: number; rewards: number } | null>(null);
   const [left, setLeft] = useState(BACK_AFTER);
   const [hold, setHold] = useState(false); // stop the countdown once they start doing something with the result
+  const [blocked, setBlocked] = useState(false); // the Free plan (and its grace places) is full for new numbers
+  const billing = useBilling();
   const { busy, error, setError, run } = useAction();
   const tz = -new Date().getTimezoneOffset();
   // How long a number is in the shop's country (10 in India, 9 in the UAE). A leading 0, as UAE and UK numbers are
@@ -160,15 +234,21 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
 
   const submit = (phone = digits) => {
     if (!isFull(phone) || busy) return;
+    const firstEver = billing?.customers === 0;
     void run(async () => {
       const result = await api<VisitResult>('visits', 'POST', { phone, tz }).catch((err: Error & { code?: string }) => {
-        if (err.code === 'customer_limit') void refreshBilling().catch(() => {}); // the strip above shows the plan is full
-        throw err;
+        if (err.code !== 'customer_limit') throw err;
+        void refreshBilling().catch(() => {});
+        setBlocked(true); // said plainly above the keypad, with the way to Pro
+        return null;
       });
+      if (!result) return;
       if (result.isNew) void refreshBilling().catch(() => {}); // one more place used on the Free plan
-      setShown({ result });
+      const first = firstEver && result.isNew;
+      if (first) confetti();
+      setShown({ result, first });
       setLeft(BACK_AFTER);
-      setHold(false);
+      setHold(!!result.overLimit); // past the Free limit the screen waits, so the shop can read about Pro
       navigator.vibrate?.(result.customer.rewardDue ? [60, 60, 120] : 40); // a buzz on phones that can
       if (result.customer.rewardDue) confetti();
     });
@@ -177,6 +257,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
   const type = useCallback(
     (key: string) => {
       setError('');
+      setBlocked(false);
       if (key === 'back') setDigits((d) => d.slice(0, -1));
       else if (key === 'clear') setDigits('');
       else setDigits((d) => (isFull(d) ? d : d + key));
@@ -239,7 +320,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
     });
 
   if (shown) {
-    const { result, given } = shown;
+    const { result, given, first } = shown;
     const c = result.customer;
     const n = merchant.visitsNeeded;
     // Every message opens WhatsApp on the shop's phone. After a reward, a Pro shop with a review link asks for a review.
@@ -307,6 +388,11 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
                 {t('One visit a day.')} {t('{n} more for {reward}.', { n: Math.max(0, n - c.stamps), reward: merchant.rewardName })}
               </p>
             </>
+          ) : first ? (
+            <>
+              <h1>{t('Your first regular! 🎉')}</h1>
+              <p>{t('{n} more visits for {reward}. Every time they come back, it shows on Customers.', { n: n - c.stamps, reward: merchant.rewardName })}</p>
+            </>
           ) : (
             <>
               <h1>{t('Visit {x} of {n}', { x: num(c.stamps), n: num(n) })}</h1>
@@ -318,7 +404,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
             </>
           )}
           <Stamps stamps={c.stamps} needed={n} size="lg" />
-          {result.isNew && !given && <LimitAfterVisit />}
+          {result.isNew && !given && <LimitAfterVisit over={result.overLimit} />}
           {nameField(c)}
           <ErrorText text={error} />
           {send}
@@ -342,7 +428,18 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       <p className="counter-rule">
         {t('Every {n} visits →', { n: merchant.visitsNeeded })} <b>{merchant.rewardName}</b>
       </p>
-      <LimitStrip near />
+      <FirstSteps />
+      {blocked ? (
+        <div className="limit-over" role="alert">
+          <strong>{t('Free plan full: this new number can’t be added')}</strong>
+          <span>{t('Customers already on your card still get their stamps. Get Pro to add new ones.')}</span>
+          <button type="button" className="btn btn-primary" onClick={openPlan}>
+            <Crown size={17} /> {t('Get unlimited customers')}
+          </button>
+        </div>
+      ) : (
+        <LimitValue merchant={merchant} near />
+      )}
       <div className={`phone-display ${digits ? '' : 'empty'}`} aria-live="polite">
         {digits ? `${digits.startsWith('0') ? '0' : ''}${groupDigits(local(digits).padEnd(place.nsn, '_'), place)}` : t('Customer’s phone number')}
       </div>

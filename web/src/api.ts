@@ -33,7 +33,7 @@ export type Customer = {
 };
 
 /** What adding a visit at the counter did. `already`: this number was counted today, so nothing was added. */
-export type VisitResult = { already: boolean; isNew: boolean; welcome?: number; visitId: number | null; customer: Customer };
+export type VisitResult = { already: boolean; isNew: boolean; overLimit?: boolean; welcome?: number; visitId: number | null; customer: Customer };
 
 export type PaidKind = 'monthly' | 'yearly' | 'lifetime';
 export type Currency = 'INR' | 'USD';
@@ -55,6 +55,7 @@ export type Billing = {
   foundingNo: number | null; // lifetime shops
   customers: number;
   limit: number | null;
+  grace?: number; // Free: new customers still let in past the limit, so nobody is turned away at the counter
   seats: { total: number; left: number }; // lifetime places
   currency: Currency; // INR for shops in India (UPI), USD everywhere else (card or PayPal)
   prices: Record<PaidKind, number>;

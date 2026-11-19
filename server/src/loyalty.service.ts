@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Db, randomToken } from './db';
 import { country, nationalDigits } from './countries';
-import { customerLimit } from './plans';
+import { FREE_GRACE, customerLimit } from './plans';
 
 // The stamp card: every visit is one stamp, and every `visits_needed` stamps the customer gets the shop's one reward.
 // A customer is just a phone number. customers.points holds their stamps (visits since their last reward).
@@ -153,11 +153,13 @@ export class LoyaltyService {
     const phone = this.customerPhone(merchantId, phoneInput);
     const shift = tzShift(tz);
 
-    // A new number on the Free plan needs room under its customer limit (checked outside the transaction, so the
-    // activity log keeps the refusal).
+    // A new number on the Free plan needs room under its customer limit plus a few grace places, so the first ones
+    // past the limit still go in (the counter then asks for Pro). Checked outside the transaction, so the activity log
+    // keeps the refusal.
     const limit = customerLimit(this.db.sql, this.merchant(merchantId));
-    if (limit !== null && !this.byNumber(merchantId, phone) && this.customerCount(merchantId) >= limit) {
-      this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers`);
+    const count = this.customerCount(merchantId);
+    if (limit !== null && !this.byNumber(merchantId, phone) && count >= limit + FREE_GRACE) {
+      this.log(merchantId, 'shop', 'limit_blocked', `New customer not added: the Free plan keeps up to ${limit} customers (+${FREE_GRACE} grace)`);
       throw new ForbiddenException({ statusCode: 403, code: 'customer_limit', limit, message: 'The Free plan’s customer limit is reached. Get Pro to add more.' });
     }
 
@@ -186,7 +188,9 @@ export class LoyaltyService {
       const welcome = isNew ? Math.max(0, Math.min(m.welcome_stamps, m.visits_needed - 2)) : 0;
       if (welcome) this.add(merchantId, c.id, 'bonus', welcome, 'Welcome stamp');
       this.db.sql.prepare("UPDATE customers SET last_visit = datetime('now') WHERE id = ?").run(c.id);
-      return { already: false, isNew, welcome, visitId, customer: this.view(m, this.customer(merchantId, c.id)) };
+      // A grace place was just used: the counter says so and offers Pro.
+      const overLimit = isNew && limit !== null && count >= limit;
+      return { already: false, isNew, overLimit, welcome, visitId, customer: this.view(m, this.customer(merchantId, c.id)) };
     });
   }
 

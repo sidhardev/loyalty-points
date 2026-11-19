@@ -10,7 +10,7 @@ import { LangToggle, t, useLang } from '../i18n';
 import { ErrorText, InstallButton, confirmDialog, toast, useAction, useTheme } from '../ui';
 import { openPlan } from '../billing';
 import { ProSettings } from './ProSettings';
-import { Stamps, messageLang } from './Counter';
+import { Stamps, markPosterDone, messageLang } from './Counter';
 
 /** The counter poster: tells customers the rule and that they only need to say their number. Prints on A4 or saves as a PNG. */
 function Poster({ merchant }: { merchant: Merchant }) {
@@ -65,10 +65,23 @@ function Poster({ merchant }: { merchant: Merchant }) {
       </div>
       <PosterPrint {...poster} />
       <div className="actions">
-        <button className="btn btn-primary" onClick={() => print()}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            markPosterDone();
+            print();
+          }}
+        >
           <Printer size={17} /> {t('Print (A4)')}
         </button>
-        <button className="btn btn-soft" onClick={() => void save()} disabled={saving}>
+        <button
+          className="btn btn-soft"
+          onClick={() => {
+            markPosterDone();
+            void save();
+          }}
+          disabled={saving}
+        >
           <Download size={17} /> {saving ? t('Saving…') : t('Download PNG')}
         </button>
       </div>
@@ -377,7 +390,12 @@ export function Settings({ merchant, hash, onSaved, onLogout }: { merchant: Merc
 
         <MenuGroup title={t('Get more customers')}>
           <MenuRow href="#/settings/poster" icon={Printer} title={t('Counter poster')} sub={t('Print it or save it as a picture')} />
-          <MenuRow onClick={() => setSharing(true)} icon={Share2} title={t('Share on WhatsApp status')} sub={t('A ready image, in Hindi or English')} />
+          <MenuRow
+            onClick={() => {
+              markPosterDone();
+              setSharing(true);
+            }}
+            icon={Share2} title={t('Share on WhatsApp status')} sub={t('A ready image, in Hindi or English')} />
           <MenuRow href="#/settings/pro" icon={ImageIcon} title={t('Logo & Google review')} sub={t('Your logo and a review button on every card')} badge={pro} />
         </MenuGroup>
 

@@ -25,6 +25,7 @@ import { LoyaltyService, type MerchantRow } from './loyalty.service';
 import {
   currencyFor,
   customerLimit,
+  FREE_GRACE,
   effectivePlan,
   money,
   planSettings,
@@ -135,6 +136,7 @@ export class Billing {
       foundingNo: m.founding_no, // lifetime shops only
       customers: this.loyalty.customerCount(merchantId),
       limit: customerLimit(this.db.sql, m),
+      grace: customerLimit(this.db.sql, m) === null ? 0 : FREE_GRACE, // new customers still let in past the limit
       seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) }, // lifetime places
       currency,
       prices: prices(this.db.sql, currency),
