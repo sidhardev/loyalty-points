@@ -145,7 +145,15 @@ export class MailError extends Error {
 }
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
-const wrap = (body: string) => `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;max-width:480px">${body}</div>`;
+// The logo is linked, not attached, from the website (web/public/icon-192.png); the name next to it reads fine when a
+// mail app holds images back.
+const header = () =>
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px"><tr>
+<td style="padding-right:10px;vertical-align:middle"><img src="${SITE_URL}/icon-192.png" width="36" height="36" alt="Regularhood" style="display:block;border-radius:8px"></td>
+<td style="vertical-align:middle;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;color:#0f7a55">Regularhood</td>
+</tr></table>`;
+const wrap = (body: string) =>
+  `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;max-width:480px">${header()}${body}</div>`;
 const button = (href: string, label: string) =>
   `<p style="margin:22px 0"><a href="${href}" style="background:#0f7a55;color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:bold">${label}</a></p>`;
 const APP = () => `${SITE_URL}/app`;
