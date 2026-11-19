@@ -47,6 +47,11 @@ fi
 log "$short: deploying (was ${old:0:7})"
 if build && healthy; then
   log "$short: live"
+  # Every build leaves the previous image behind and grows the build cache; on the 10-20 GB disk that filled it up
+  # (2026-11, the API went down). A rollback rebuilds from git, so old images aren't needed; recent cache keeps
+  # builds fast.
+  docker image prune -f >/dev/null 2>&1
+  docker builder prune -f --filter until=72h >/dev/null 2>&1
   exit 0
 fi
 
