@@ -188,7 +188,7 @@ price per message from Meta's rate card, and a monthly budget.
   webhook). Our number is read from Meta; to pin it, `WHATSAPP_PUBLIC_NUMBER=91XXXXXXXXXX` in `deploy/.env`.
 - **Email:** sent through [Resend](https://resend.com) (free: 3,000 emails a month). Add the domain `regularhood.in`
   in Resend → Domains, put the DNS records it shows into the domain's DNS, wait for "Verified", then create an API key
-  with "Sending access" and:
+  with "Sending access" and paste it in **Admin → Settings → Email key** (works at once, no restart). Or, on the server:
 
 ```bash
 echo "RESEND_API_KEY=re_..." >> deploy/.env

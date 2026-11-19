@@ -1,11 +1,12 @@
 import { BadRequestException, Body, Controller, Delete, Get, Put, UseGuards } from '@nestjs/common';
 import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
+import { Mailer } from './mail';
 import { PlaybookService } from './playbook';
 
 // Admin → Settings: the Anthropic API key every Claude feature uses (shop message drafts, playbooks, Phusro), and what
 // those features have cost. The key is the same one Playbooks → API key sets; it's kept encrypted (secret.ts) and only
-// its last 4 characters ever come back.
+// its last 4 characters ever come back. The Resend key that sends email (mail.ts: password reset codes) is kept the same way.
 
 const PURPOSES: Record<string, string> = { 'shop-draft': 'Shop message drafts', playbook: 'Playbooks' };
 
@@ -15,6 +16,7 @@ export class SettingsAdminController {
   constructor(
     private readonly playbooks: PlaybookService,
     private readonly db: Db,
+    private readonly mailer: Mailer,
   ) {}
 
   @Get()
@@ -28,7 +30,7 @@ export class SettingsAdminController {
         )
         .all() as { purpose: string; calls: number; usd: number; usd30: number }[]
     ).map((u) => ({ ...u, label: PURPOSES[u.purpose] ?? (u.purpose.startsWith('phusro') ? `Phusro (${u.purpose.slice(7) || 'studio'})` : u.purpose) }));
-    return { key: this.playbooks.keyInfo(), usage };
+    return { key: this.playbooks.keyInfo(), mail: this.mailer.keyInfo(), usage };
   }
 
   @Put('key')
@@ -38,18 +40,37 @@ export class SettingsAdminController {
     const problem = await this.playbooks.check(key);
     if (problem) throw new BadRequestException(`Key not saved. ${problem}`);
     this.playbooks.setKey(key);
-    this.audit(adminId, `Set a new Anthropic API key (…${key.slice(-4)})`);
+    this.audit(adminId, 'anthropic_key', `Set a new Anthropic API key (…${key.slice(-4)})`);
     return this.playbooks.keyInfo();
   }
 
   @Delete('key')
   removeKey(@AdminId() adminId: number) {
     this.playbooks.setKey(null);
-    this.audit(adminId, 'Removed the Anthropic API key set in the admin panel');
+    this.audit(adminId, 'anthropic_key', 'Removed the Anthropic API key set in the admin panel');
     return this.playbooks.keyInfo();
   }
 
-  private audit(adminId: number, detail: string) {
-    this.db.sql.prepare('INSERT INTO admin_log (admin_id, merchant_id, action, detail) VALUES (?, NULL, ?, ?)').run(adminId, 'anthropic_key', detail);
+  /** The Resend key for email. Checked with Resend first (nothing is sent), kept encrypted, used without a restart. */
+  @Put('mail-key')
+  async setMailKey(@AdminId() adminId: number, @Body() body: { key?: string }) {
+    const key = String(body?.key ?? '').trim();
+    if (!/^re_[\w-]{20,200}$/.test(key)) throw new BadRequestException('That doesn’t look like a Resend API key (it starts with re_)');
+    const problem = await this.mailer.check(key);
+    if (problem) throw new BadRequestException(`Key not saved. ${problem}`);
+    this.mailer.setKey(key);
+    this.audit(adminId, 'resend_key', `Set a new Resend API key (…${key.slice(-4)})`);
+    return this.mailer.keyInfo();
+  }
+
+  @Delete('mail-key')
+  removeMailKey(@AdminId() adminId: number) {
+    this.mailer.setKey(null);
+    this.audit(adminId, 'resend_key', 'Removed the Resend API key set in the admin panel');
+    return this.mailer.keyInfo();
+  }
+
+  private audit(adminId: number, action: string, detail: string) {
+    this.db.sql.prepare('INSERT INTO admin_log (admin_id, merchant_id, action, detail) VALUES (?, NULL, ?, ?)').run(adminId, action, detail);
   }
 }

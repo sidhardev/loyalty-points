@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Copy, KeyRound, MessageCircle, RefreshCw, Sparkles, Trash2, WandSparkles } from 'lucide-react';
+import { Copy, KeyRound, Mail, MessageCircle, RefreshCw, Sparkles, Trash2, WandSparkles } from 'lucide-react';
 import { whatsapp } from '../api';
 import { EmptyState, ErrorText, Sheet, SkeletonRows, confirmDialog, toast, useAction } from '../ui';
 import type { AdminApi } from './AdminSeo';
@@ -142,6 +142,7 @@ export function DraftSheet({
 
 type SettingsData = {
   key: { source: 'panel' | 'env' | null; last4: string };
+  mail: { source: 'panel' | 'env' | null; last4: string; from: string };
   usage: { purpose: string; label: string; calls: number; usd: number; usd30: number }[];
 };
 
@@ -158,7 +159,7 @@ export function SettingsPage({ api }: { api: AdminApi }) {
       <header className="page-head">
         <div>
           <h1>Settings</h1>
-          <p>The Claude API key and the message types for shop drafts.</p>
+          <p>The Claude API key, the email (Resend) key and the message types for shop drafts.</p>
         </div>
       </header>
       <Sub id="ai">
@@ -197,10 +198,68 @@ export function SettingsPage({ api }: { api: AdminApi }) {
           )}
         </section>
       </Sub>
+      <Sub id="email">
+        <MailKeyCard api={api} info={data.mail} onChange={load} />
+      </Sub>
       <Sub id="templates">
         <TemplatesCard api={api} />
       </Sub>
     </>
+  );
+}
+
+/** The Resend key that sends email ("Forgot password" codes). Takes effect at once: no SSH, no restart. */
+function MailKeyCard({ api, info, onChange }: { api: AdminApi; info: SettingsData['mail']; onChange: () => void }) {
+  const [key, setKey] = useState('');
+  const { busy, error, run } = useAction();
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      await api('settings/mail-key', 'PUT', { key });
+      setKey('');
+      toast('Resend key saved: email is on');
+      onChange();
+    });
+  };
+  const removeKey = () =>
+    void run(async () => {
+      if (!(await confirmDialog({ title: 'Remove the Resend key?', body: 'Password reset by email stops until a key is set again. WhatsApp reset keeps working.', confirm: 'Remove' }))) return;
+      await api('settings/mail-key', 'DELETE');
+      onChange();
+    });
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <Mail size={18} /> Email (Resend) key
+        </h2>
+      </div>
+      <p className="muted small" style={{ margin: 0 }}>
+        {info.source === 'panel'
+          ? `Email is on, using the key set here (…${info.last4}).`
+          : info.source === 'env'
+            ? `Email is on, using RESEND_API_KEY from the server (…${info.last4}). A key set here takes its place.`
+            : 'Email is off. Paste a key from resend.com → API keys ("Sending access" is enough).'}{' '}
+        Sends “Forgot password” codes from {info.from}. It’s checked with Resend (nothing is sent), kept encrypted and never shown again.
+      </p>
+      <form className="plans-form" onSubmit={save}>
+        <label>
+          New key
+          <input type="password" value={key} onChange={(e) => setKey(e.target.value)} placeholder="re_…" autoComplete="off" required />
+        </label>
+        <div className="plans-form-save">
+          <button className="btn btn-primary" disabled={busy || !key}>
+            Check and save
+          </button>
+          {info.source === 'panel' && (
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={removeKey}>
+              Remove
+            </button>
+          )}
+        </div>
+      </form>
+      {error && <ErrorText text={error} />}
+    </section>
   );
 }
 

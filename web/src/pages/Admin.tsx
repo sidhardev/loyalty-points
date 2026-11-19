@@ -2136,6 +2136,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
         icon: Settings,
         subs: [
           ['ai', 'Claude API key'],
+          ['email', 'Email key'],
           ['templates', 'Message types'],
         ],
       },
