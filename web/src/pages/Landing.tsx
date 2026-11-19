@@ -286,14 +286,13 @@ const COPY = {
     // The numbers come from Admin → Plans (/api/public/founding); the prerendered page shows the defaults.
     priceTitle: 'Free to start. Pro when your regulars grow.',
     priceSub: (free: number) =>
-      `Start free with up to ${free} customers. Go Pro for no limit, win-back reminders, Google reviews and your logo. Pay for a month, a year or once for life. Nothing is auto-debited.`,
+      `Start free with up to ${free} customers. Go Pro for no limit, win-back reminders, Google reviews and your logo. Pay for a month or a year. Nothing is auto-debited.`,
     priceFree: { name: 'Free', per: 'forever', limit: (n: number) => `Up to ${n} customers` },
     priceList: ['Customer cards in English, Hindi and Malayalam', 'Send their card on WhatsApp in one tap', 'Counter poster and WhatsApp status image', 'Daily backups'],
     pro: {
       name: 'Pro',
       monthly: 'a month',
       yearly: (price: string, month: string, save: number) => `or ${price} a year${save > 0 ? ` (${month}/month, save ${save}%)` : ''}`,
-      lifetime: (price: string) => `or ${price} once, for life`,
       list: [
         'Unlimited customers',
         '“Not seen” list with one-tap WhatsApp reminders',
@@ -301,8 +300,6 @@ const COPY = {
         'Your logo on every customer card',
         'Download customers and visits (CSV)',
       ],
-      only: (seats: number) => `Lifetime: Founding offer, only ${seats} places`,
-      left: (left: number, total: number) => (left ? `${left} of ${total} left` : 'all taken'),
       cta: 'Start free, upgrade anytime',
     },
     create: 'Create your shop',
@@ -429,14 +426,13 @@ const COPY = {
     priceKicker: 'कीमत',
     priceTitle: 'शुरू करना मुफ़्त है। ग्राहक बढ़ें तो Pro।',
     priceSub: (free: number) =>
-      `${free} ग्राहकों तक मुफ़्त शुरू करें। Pro में कोई लिमिट नहीं, रुके ग्राहकों को रिमाइंडर, Google रिव्यू और आपका लोगो। एक महीने, एक साल या हमेशा के लिए एक बार पेमेंट करें। कोई ऑटो-डेबिट नहीं।`,
+      `${free} ग्राहकों तक मुफ़्त शुरू करें। Pro में कोई लिमिट नहीं, रुके ग्राहकों को रिमाइंडर, Google रिव्यू और आपका लोगो। एक महीने या एक साल के लिए पेमेंट करें। कोई ऑटो-डेबिट नहीं।`,
     priceFree: { name: 'फ़्री', per: 'हमेशा', limit: (n: number) => `${n} ग्राहकों तक` },
     priceList: ['हिंदी और English में ग्राहक कार्ड', 'एक टैप में WhatsApp पर कार्ड भेजें', 'काउंटर पोस्टर और WhatsApp स्टेटस इमेज', 'रोज़ बैकअप'],
     pro: {
       name: 'Pro',
       monthly: 'महीने का',
       yearly: (price: string, month: string, save: number) => `या ${price} साल का${save > 0 ? ` (${month}/महीना, ${save}% बचत)` : ''}`,
-      lifetime: (price: string) => `या ${price} एक बार, हमेशा के लिए`,
       list: [
         'जितने चाहें ग्राहक',
         '“नहीं आए” लिस्ट, एक टैप में WhatsApp रिमाइंडर',
@@ -444,8 +440,6 @@ const COPY = {
         'हर ग्राहक कार्ड पर आपका लोगो',
         'ग्राहक और विज़िट डाउनलोड करें (CSV)',
       ],
-      only: (seats: number) => `लाइफ़टाइम: फ़ाउंडिंग ऑफ़र, सिर्फ़ ${seats} जगह`,
-      left: (left: number, total: number) => (left ? `${total} में से ${left} बाकी` : 'सब भर गईं'),
       cta: 'मुफ़्त शुरू करें, कभी भी अपग्रेड करें',
     },
     create: 'अपनी दुकान बनाएँ',
@@ -572,14 +566,13 @@ const COPY = {
     priceKicker: 'വില',
     priceTitle: 'തുടങ്ങാൻ സൗജന്യം. സ്ഥിരക്കാർ കൂടുമ്പോൾ Pro.',
     priceSub: (free: number) =>
-      `${free} കസ്റ്റമർമാർ വരെ സൗജന്യമായി തുടങ്ങൂ. Pro-യിൽ പരിധിയില്ല, വരാത്തവർക്ക് റിമൈൻഡർ, Google റിവ്യൂ, നിങ്ങളുടെ ലോഗോ. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ എന്നേക്കുമായി ഒരിക്കലോ പണമടയ്ക്കാം. ഓട്ടോ-ഡെബിറ്റ് ഇല്ല.`,
+      `${free} കസ്റ്റമർമാർ വരെ സൗജന്യമായി തുടങ്ങൂ. Pro-യിൽ പരിധിയില്ല, വരാത്തവർക്ക് റിമൈൻഡർ, Google റിവ്യൂ, നിങ്ങളുടെ ലോഗോ. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ പണമടയ്ക്കാം. ഓട്ടോ-ഡെബിറ്റ് ഇല്ല.`,
     priceFree: { name: 'ഫ്രീ', per: 'എന്നും', limit: (n: number) => `${n} കസ്റ്റമർമാർ വരെ` },
     priceList: ['മലയാളം, ഹിന്ദി, ഇംഗ്ലീഷ് ഭാഷകളിൽ കസ്റ്റമർ കാർഡ്', 'ഒറ്റ ടാപ്പിൽ കാർഡ് WhatsApp-ൽ അയക്കൂ', 'കൗണ്ടർ പോസ്റ്ററും WhatsApp സ്റ്റാറ്റസ് ഇമേജും', 'ദിവസേന ബാക്കപ്പ്'],
     pro: {
       name: 'Pro',
       monthly: 'മാസം',
       yearly: (price: string, month: string, save: number) => `അല്ലെങ്കിൽ വർഷം ${price}${save > 0 ? ` (മാസം ${month}, ${save}% ലാഭം)` : ''}`,
-      lifetime: (price: string) => `അല്ലെങ്കിൽ ഒരിക്കൽ ${price}, എന്നേക്കും`,
       list: [
         'എത്ര കസ്റ്റമർമാർ വേണമെങ്കിലും',
         '“വരാത്തവർ” ലിസ്റ്റ്, ഒറ്റ ടാപ്പിൽ WhatsApp റിമൈൻഡർ',
@@ -587,8 +580,6 @@ const COPY = {
         'ഓരോ കസ്റ്റമർ കാർഡിലും നിങ്ങളുടെ ലോഗോ',
         'കസ്റ്റമർമാരെയും സന്ദർശനങ്ങളും ഡൗൺലോഡ് ചെയ്യാം (CSV)',
       ],
-      only: (seats: number) => `ലൈഫ്‌ടൈം: ഫൗണ്ടിങ് ഓഫർ, ${seats} സ്ഥാനം മാത്രം`,
-      left: (left: number, total: number) => (left ? `${total}-ൽ ${left} ബാക്കി` : 'എല്ലാം നിറഞ്ഞു'),
       cta: 'സൗജന്യമായി തുടങ്ങൂ, എപ്പോൾ വേണമെങ്കിലും അപ്ഗ്രേഡ് ചെയ്യാം',
     },
     create: 'നിങ്ങളുടെ കട ഉണ്ടാക്കൂ',
@@ -620,7 +611,7 @@ export const FAQ = [
   ['What do I need at the counter?', 'Any phone, tablet or computer with internet. Open Regularhood in the browser or add it to your home screen.'],
   ['Can someone get two stamps in one day?', 'No. A phone number counts once a day, so a stamp can’t be added twice by mistake. Any visit or reward can be undone.'],
   ['Can I change the rule later?', 'Yes. Change the number of visits or the reward anytime in Settings. Everyone keeps the visits they already have.'],
-  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. Pro (prices above) removes the limit and adds a list of customers who stopped coming with one-tap WhatsApp reminders, Google reviews, your logo on the card and spreadsheet downloads. Pay for a month, a year or once for life; nothing renews by itself. Full refund within 7 days.'],
+  ['What does it cost?', 'Free to start, up to the Free plan’s customer limit. Pro (prices above) removes the limit and adds a list of customers who stopped coming with one-tap WhatsApp reminders, Google reviews, your logo on the card and spreadsheet downloads. Pay for a month or a year; nothing renews by itself. Full refund within 7 days.'],
 ] as const;
 
 const FAQ_HI = [
@@ -630,7 +621,7 @@ const FAQ_HI = [
   ['काउंटर पर क्या चाहिए?', 'इंटरनेट वाला कोई भी फ़ोन, टैबलेट या कंप्यूटर। ब्राउज़र में Regularhood खोलें या होम स्क्रीन पर लगाएँ।'],
   ['क्या एक दिन में दो स्टैम्प लग सकते हैं?', 'नहीं। एक नंबर दिन में एक बार ही गिना जाता है, तो गलती से दो बार नहीं जुड़ता। कोई भी विज़िट या इनाम वापस लिया जा सकता है।'],
   ['क्या नियम बाद में बदल सकते हैं?', 'हाँ। सेटिंग्स में कभी भी विज़िट की संख्या या इनाम बदलें। सबकी पुरानी विज़िट बनी रहती हैं।'],
-  ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। Pro (कीमत ऊपर देखें) में कोई लिमिट नहीं, साथ में आना बंद कर चुके ग्राहकों की लिस्ट और एक टैप में WhatsApp रिमाइंडर, Google रिव्यू, कार्ड पर आपका लोगो और स्प्रेडशीट डाउनलोड। एक महीने, एक साल या हमेशा के लिए एक बार पेमेंट करें; कोई ऑटो-डेबिट नहीं। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
+  ['इसकी कीमत क्या है?', 'फ़्री प्लान की ग्राहक लिमिट तक मुफ़्त। Pro (कीमत ऊपर देखें) में कोई लिमिट नहीं, साथ में आना बंद कर चुके ग्राहकों की लिस्ट और एक टैप में WhatsApp रिमाइंडर, Google रिव्यू, कार्ड पर आपका लोगो और स्प्रेडशीट डाउनलोड। एक महीने या एक साल के लिए पेमेंट करें; कोई ऑटो-डेबिट नहीं। UPI से पेमेंट; 7 दिन में पूरा रिफ़ंड।'],
 ] as const;
 
 const FAQ_ML = [
@@ -640,7 +631,7 @@ const FAQ_ML = [
   ['കൗണ്ടറിൽ എന്താണ് വേണ്ടത്?', 'ഇന്റർനെറ്റ് ഉള്ള ഏത് ഫോണോ ടാബ്‌ലെറ്റോ കമ്പ്യൂട്ടറോ. ബ്രൗസറിൽ Regularhood തുറക്കൂ, അല്ലെങ്കിൽ ഹോം സ്ക്രീനിൽ ചേർക്കൂ.'],
   ['ഒരു ദിവസം രണ്ട് സ്റ്റാമ്പ് കിട്ടുമോ?', 'ഇല്ല. ഒരു ഫോൺ നമ്പർ ദിവസം ഒരിക്കൽ മാത്രമേ കണക്കാക്കൂ, അതുകൊണ്ട് അബദ്ധത്തിൽ രണ്ട് തവണ ചേരില്ല. ഏത് സന്ദർശനവും സമ്മാനവും തിരിച്ചെടുക്കാം.'],
   ['നിയമം പിന്നീട് മാറ്റാമോ?', 'മാറ്റാം. സെറ്റിംഗ്സിൽ എപ്പോൾ വേണമെങ്കിലും സന്ദർശനങ്ങളുടെ എണ്ണമോ സമ്മാനമോ മാറ്റൂ. എല്ലാവരുടെയും പഴയ സന്ദർശനങ്ങൾ അതുപോലെ നിൽക്കും.'],
-  ['ഇതിന് എത്ര ചെലവാകും?', 'ഫ്രീ പ്ലാനിന്റെ കസ്റ്റമർ പരിധി വരെ സൗജന്യം. Pro-യിൽ (വില മുകളിൽ കാണാം) പരിധിയില്ല, കൂടാതെ വരാതായ കസ്റ്റമർമാരുടെ ലിസ്റ്റും ഒറ്റ ടാപ്പിൽ WhatsApp റിമൈൻഡറും, Google റിവ്യൂ, കാർഡിൽ നിങ്ങളുടെ ലോഗോ, സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡ്. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ എന്നേക്കുമായി ഒരിക്കലോ പണമടയ്ക്കാം; ഓട്ടോ-ഡെബിറ്റ് ഇല്ല. UPI വഴി പണമടയ്ക്കാം; 7 ദിവസത്തിനകം മുഴുവൻ റീഫണ്ട്.'],
+  ['ഇതിന് എത്ര ചെലവാകും?', 'ഫ്രീ പ്ലാനിന്റെ കസ്റ്റമർ പരിധി വരെ സൗജന്യം. Pro-യിൽ (വില മുകളിൽ കാണാം) പരിധിയില്ല, കൂടാതെ വരാതായ കസ്റ്റമർമാരുടെ ലിസ്റ്റും ഒറ്റ ടാപ്പിൽ WhatsApp റിമൈൻഡറും, Google റിവ്യൂ, കാർഡിൽ നിങ്ങളുടെ ലോഗോ, സ്പ്രെഡ്ഷീറ്റ് ഡൗൺലോഡ്. ഒരു മാസത്തേക്കോ ഒരു വർഷത്തേക്കോ പണമടയ്ക്കാം; ഓട്ടോ-ഡെബിറ്റ് ഇല്ല. UPI വഴി പണമടയ്ക്കാം; 7 ദിവസത്തിനകം മുഴുവൻ റീഫണ്ട്.'],
 ] as const;
 
 // ---------------------------------------------------------------- small pieces
@@ -1531,12 +1522,12 @@ function useAbroad() {
   return abroad;
 }
 
-/** Free and Pro: monthly, yearly, and the lifetime Founding offer while it has places (live; the prerendered page shows the default prices). */
+/** Free and Pro: monthly or yearly (live; the prerendered page shows the default prices). */
 function Pricing({ c }: { c: Copy }) {
   const [founding, setFounding] = useState<Founding>({
-    open: true,
-    total: 100,
-    left: -1,
+    open: false,
+    total: 0,
+    left: 0,
     prices: { monthly: 9_900, yearly: 79_900, lifetime: 149_900 },
     usdPrices: { monthly: 500, yearly: 3_900, lifetime: 7_900 },
     freeCustomers: 15,
@@ -1549,8 +1540,6 @@ function Pricing({ c }: { c: Copy }) {
       .catch(() => {});
   }, []);
   const f = c.pro;
-  // Lifetime is shown only while it is on sale and has places (left is -1 until the live numbers arrive).
-  const lifetime = founding.open && founding.left !== 0;
   const fmt = abroad ? usd : inr;
   const pr = abroad && founding.usdPrices ? founding.usdPrices : founding.prices;
   return (
@@ -1576,12 +1565,6 @@ function Pricing({ c }: { c: Copy }) {
           </a>
         </div>
         <div className="lp-price-card rv">
-          {lifetime && (
-            <span className="lp-price-badge">
-              {f.only(founding.total)}
-              {founding.left > 0 && founding.left < founding.total && ` · ${f.left(founding.left, founding.total)}`}
-            </span>
-          )}
           <p className="lp-price-name">{f.name}</p>
           <div>
             <strong className="lp-price-tag">{fmt(pr.monthly)}</strong> <span className="lp-price-per">{f.monthly}</span>
@@ -1592,7 +1575,6 @@ function Pricing({ c }: { c: Copy }) {
                 Math.round((1 - pr.yearly / (pr.monthly * 12)) * 100),
               )}
             </p>
-            {lifetime && <p className="lp-price-alt">{f.lifetime(fmt(pr.lifetime))}</p>}
           </div>
           <ul>
             {f.list.map((item) => (

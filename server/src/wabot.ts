@@ -9,7 +9,7 @@ import { WhatsApp, type LeadReply } from './whatsapp';
 //
 //   how it works → [Video dikhao] [Kitna kharcha?] [Free shuru karo]
 //   video        → the demo video (Admin → WhatsApp API → demo video link; the button is hidden without one)
-//   price        → the Free plan and Pro (monthly, yearly, and lifetime while places are left), read from Admin → Plans
+//   price        → the Free plan and Pro (monthly or yearly), read from Admin → Plans
 //   sign-up      → a link button with the lead's own sign-up link (a sign-up marks the lead joined)
 //   questions    → a list of common questions; "Aapse baat karni hai" hands the chat to the admin
 //
@@ -37,7 +37,6 @@ const TEXT = {
     price: (o: ReturnType<typeof offer>) =>
       `Shuru karna free hai: ${o.freeCustomers} customers tak, hamesha ke liye.` +
       `\n\nZyada customers chahiye to Pro: ${rupees(o.prices.monthly)}/mahina ya ${rupees(o.prices.yearly)}/saal` +
-      (o.open && o.left > 0 ? `, ya ${rupees(o.prices.lifetime)} ek baar (lifetime, sirf ${o.total} shops ke liye, abhi ${o.left} jagah baaki)` : '') +
       '.\nPro mein: unlimited customers, jo customers aana band kar chuke unki list (ek tap mein WhatsApp reminder), Google reviews, card pe aapka logo, aur Excel/CSV download.\nKoi auto-debit nahi.',
     signup: 'Bas 2 minute lagenge: shop ka naam aur mobile number daaliye, phir pehle customer ka visit add kijiye. Koi payment nahi chahiye.',
     signupButton: 'Free account banao',
@@ -69,7 +68,6 @@ const TEXT = {
     price: (o: ReturnType<typeof offer>) =>
       `शुरू करना फ्री है: ${o.freeCustomers} ग्राहकों तक, हमेशा के लिए।` +
       `\n\nज़्यादा ग्राहक चाहिए तो Pro: ${rupees(o.prices.monthly)}/महीना या ${rupees(o.prices.yearly)}/साल` +
-      (o.open && o.left > 0 ? `, या ${rupees(o.prices.lifetime)} एक बार (lifetime, सिर्फ़ ${o.total} दुकानों के लिए, अभी ${o.left} जगह बाकी)` : '') +
       '।\nPro में: अनलिमिटेड ग्राहक, जो ग्राहक आना बंद कर गए उनकी लिस्ट (एक टैप में WhatsApp रिमाइंडर), Google रिव्यू, कार्ड पर आपका लोगो, और Excel/CSV डाउनलोड।\nकोई ऑटो-डेबिट नहीं।',
     signup: 'बस 2 मिनट लगेंगे: दुकान का नाम और मोबाइल नंबर डालिए, फिर पहले ग्राहक की विज़िट जोड़िए। कोई पेमेंट नहीं चाहिए।',
     signupButton: 'फ्री अकाउंट बनाएँ',

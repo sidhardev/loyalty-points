@@ -214,7 +214,7 @@ const terms: LegalDoc = {
       p: [
         'Regularhood is free to start. The Free plan keeps a limited number of customers, shown on the price section of our website and in the app; customers already added always keep getting visits and rewards.',
         'Pro removes the customer limit and adds a list of customers who stopped coming (with one-tap WhatsApp reminders sent from your phone), Google review requests, downloading your customers and visits as a spreadsheet, and your logo on every customer card.',
-        'Pro can be paid for a month, for a year, or once for as long as Regularhood runs (lifetime). Lifetime is our Founding offer, open to a limited number of shops only. Every payment is a one-time payment: nothing is charged automatically, and a monthly or yearly plan is renewed by paying again. The price, including any taxes, is shown before you pay.',
+        'Pro can be paid for a month or for a year. Every payment is a one-time payment: nothing is charged automatically, and a monthly or yearly plan is renewed by paying again. The price, including any taxes, is shown before you pay.',
         'When a monthly or yearly plan ends, the shop goes back to the Free plan and nothing is deleted. Customers already added keep getting visits and rewards; only new customers over the Free limit can’t be added.',
         'Shops that signed up before plans were introduced keep using Regularhood with no customer limit, as promised when they joined.',
         'Payments are taken by Razorpay. Refunds are explained in our refund policy (/refunds).',
@@ -282,7 +282,7 @@ const refunds: LegalDoc = {
   description: 'Refunds and cancellations for the Regularhood Pro plan: a full refund within 7 days, how to ask, and how long it takes.',
   h1: 'Refund and cancellation policy',
   intro:
-    'This page covers payments for the Pro plan (paid for a month, for a year, or once for lifetime). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
+    'This page covers payments for the Pro plan (paid for a month or for a year). Regularhood is a software service delivered online; nothing is shipped. Using the Free plan costs nothing.',
   updated: UPDATED,
   blocks: [
     {
@@ -295,7 +295,7 @@ const refunds: LegalDoc = {
       h2: 'After 7 days',
       p: [
         'After 7 days payments are not refunded, except where the law requires it or we charged you by mistake (for example twice for the same plan), which we always refund in full.',
-        'If we ever shut Regularhood down within the first year after a lifetime payment, we refund the lifetime payment in proportion to the months left in that year, and give every shop time to download its data.',
+        'Lifetime is no longer sold. For shops that bought it earlier: if we ever shut Regularhood down within the first year after a lifetime payment, we refund the lifetime payment in proportion to the months left in that year, and give every shop time to download its data.',
       ],
     },
     {
@@ -331,7 +331,7 @@ const shipping: LegalDoc = {
       h2: 'How the Pro plan is delivered',
       list: [
         'The plan switches on in your shop account as soon as Razorpay confirms the payment, usually within a few seconds. The Plan page then shows Pro and, for a monthly or yearly plan, the day it ends.',
-        'A lifetime plan has no end date. A monthly plan runs for one month and a yearly plan for one year from the day you pay (or from the end of your current plan, if you renew early).',
+        'A monthly plan runs for one month and a yearly plan for one year from the day you pay (or from the end of your current plan, if you renew early).',
         'There is nothing to download or install: you keep using Regularhood at regularhood.in on the same phone or computer.',
       ],
     },

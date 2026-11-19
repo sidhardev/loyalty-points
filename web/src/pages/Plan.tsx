@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Check, Crown, RotateCcw, Settings as SettingsIcon, ShieldCheck, Users, X } from 'lucide-react';
-import { api, num, parseTime, type Merchant, type PaidKind } from '../api';
-import { isPro, lifetimeOpen, payLabel, payPro, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
+import { api, num, parseTime, type Merchant } from '../api';
+import { isPro, payLabel, type BuyKind, payPro, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
 import { t, useLang } from '../i18n';
 import { ErrorText, Skeleton, useAction } from '../ui';
 
-// The shop's plan: Free (a customer limit) or Pro, bought for a month, a year or for life through Razorpay's
+// The shop's plan: Free (a customer limit) or Pro, bought for a month or a year through Razorpay's
 // checkout. What Pro adds is PRO_PERKS (billing.tsx); the server checks the same list (plans.ts).
 
 const date = (sqlTime: string) => parseTime(sqlTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -24,7 +24,7 @@ const COMPARE: [string, boolean | string, boolean | string][] = [
 export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant: (m: Merchant) => void }) {
   useLang();
   const b = useBilling();
-  const [kind, setKind] = useState<PaidKind>('yearly');
+  const [kind, setKind] = useState<BuyKind>('yearly');
   const { busy, error, setError, run } = useAction();
   useEffect(() => void refreshBilling().catch((e: Error) => setError(e.message)), [setError]);
 
@@ -40,7 +40,7 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
 
   const pro = isPro(b);
   const lapsed = (b.paidPlan === 'monthly' || b.paidPlan === 'yearly') && !pro;
-  const pick = kind === 'lifetime' && !lifetimeOpen(b) ? 'yearly' : kind;
+  const pick = kind;
   const buy = () => void run(() => payPro(pick, () => void api<Merchant>('me').then(onMerchant)));
   const current = b.plan === 'lifetime' ? t('Pro · Founding Shop #{n}', { n: b.foundingNo ?? '' }) : pro ? t('Pro') : b.plan === 'grandfathered' ? t('Early shop') : t('Free');
 
@@ -95,7 +95,7 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
               <Crown size={20} />
             </span>
             <div>
-              <h2>{pro ? t('Add more time, or go lifetime') : t('Get Regularhood Pro')}</h2>
+              <h2>{pro ? t('Add more time') : t('Get Regularhood Pro')}</h2>
               <p className="muted small">{t('For shops that want regulars to come back without chasing them.')}</p>
             </div>
           </div>

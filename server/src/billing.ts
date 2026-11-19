@@ -50,7 +50,7 @@ import {
 // Settings (server/.env, deploy/.env): RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 
 type Kind = PaidKind;
-const KINDS: readonly string[] = ['monthly', 'yearly', 'lifetime'];
+const KINDS: readonly string[] = ['monthly', 'yearly']; // what can be bought; lifetime is no longer sold
 const LABEL: Record<Kind, string> = { monthly: '1 month', yearly: '1 year', lifetime: 'lifetime' };
 /**
  * order: the shop opened the checkout · closed: it closed the checkout without paying · failed: a payment attempt failed
@@ -134,20 +134,18 @@ export class Billing {
       seats: { total: planSettings(this.db.sql).seats, left: seatsLeft(this.db.sql) }, // lifetime places
       currency,
       prices: prices(this.db.sql, currency),
-      open: planSettings(this.db.sql).salesOpen, // false: lifetime isn't on sale (monthly and yearly always are)
+      open: false, // lifetime is no longer sold (monthly and yearly always are)
       keyId: keyId(),
     };
   }
 
-  /** A Razorpay order for this shop. Lifetime needs sales open and a place left; a month or a year can always be bought. */
+  /** A Razorpay order for this shop: a month or a year (lifetime is no longer sold). */
   async order(merchantId: number, kindInput: unknown, tz?: string) {
     const kind = KINDS.includes(String(kindInput)) ? (kindInput as Kind) : null;
-    if (!kind) throw new BadRequestException('Pick monthly, yearly or lifetime');
+    if (!kind) throw new BadRequestException('Pick monthly or yearly');
     if (!keyId() || !keySecret()) throw new ServiceUnavailableException('Payments are not set up yet. Please try again later.');
     const m = this.loyalty.merchant(merchantId);
     if (m.plan === 'lifetime') throw new ConflictException('You already have Pro for life');
-    if (kind === 'lifetime' && !planSettings(this.db.sql).salesOpen) throw new ConflictException('Lifetime is not on sale right now');
-    if (kind === 'lifetime' && seatsLeft(this.db.sql) === 0) throw new ConflictException('All lifetime places are taken');
     const renewing = effectivePlan(m) === 'monthly' || effectivePlan(m) === 'yearly';
 
     const currency = currencyFor(m, tz);

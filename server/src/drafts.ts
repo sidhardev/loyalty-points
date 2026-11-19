@@ -43,7 +43,7 @@ export const BUILT_IN_TEMPLATES = [
   {
     id: 'pro',
     title: 'Offer Pro',
-    instruction: 'Offer the Pro plan: no customer limit, a list of customers who stopped coming with one-tap WhatsApp reminders sent from their own phone, Google review requests, their logo on the card, and downloading their customers. Mention the prices (monthly, yearly, and lifetime if it is open, with limited places). Fit it to their numbers (e.g. customers not seen lately, or close to the free limit). Friendly, not salesy, easy to say no.',
+    instruction: 'Offer the Pro plan: no customer limit, a list of customers who stopped coming with one-tap WhatsApp reminders sent from their own phone, Google review requests, their logo on the card, and downloading their customers. Mention the prices (monthly or yearly). Fit it to their numbers (e.g. customers not seen lately, or close to the free limit). Friendly, not salesy, easy to say no.',
   },
   {
     id: 'referral',
@@ -130,8 +130,7 @@ export class DraftService {
         `Rewards given: ${s.rewards30} in the last 30 days, ${c.rewards} all time; ${c.waiting} customers have a reward waiting`,
         `Plan: ${paid ? `Pro (${s.activePlan})` : s.activePlan === 'grandfathered' ? 'free with no customer limit (joined before plans existed; no Pro features)' : `free (up to ${plans.freeCustomers} customers)`}`,
         !paid &&
-          `Pro price: ₹${plans.monthlyPaise / 100} a month or ₹${plans.yearlyPaise / 100} a year` +
-            (plans.salesOpen ? `, or ₹${plans.lifetimePaise / 100} once for life (Founding offer, limited places)` : ''),
+          `Pro price: ₹${plans.monthlyPaise / 100} a month or ₹${plans.yearlyPaise / 100} a year`,
         s.referrals > 0 && `Brought ${s.referrals} other shops to Regularhood`,
         s.last_contact && `We last contacted them ${ago(s.last_contact)}${s.last_contact_detail ? `: ${s.last_contact_detail}` : ''}`,
         notes.length && `Our notes about them (newest first):\n${notes.map((n) => `- ${n}`).join('\n')}`,

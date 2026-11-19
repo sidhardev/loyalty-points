@@ -9,7 +9,7 @@ import { ErrorText, Sheet, confetti, toast, useAction } from './ui';
 // feature shows to a shop on Free.
 //
 // Free: up to the limit of customers. Pro adds what PRO_PERKS lists (server/src/plans.ts says the same); it is paid by
-// the month, the year, or once for life (the limited Founding offer), always as one payment, never auto-debit.
+// the month or the year, always as one payment, never auto-debit. Lifetime is no longer sold (shops that bought it keep it).
 
 // ---------------------------------------------------------------- shared billing
 
@@ -51,7 +51,8 @@ export const PRO_PERKS = [
 ] as const;
 export type ProPerk = (typeof PRO_PERKS)[number]['id'];
 
-export const KINDS: PaidKind[] = ['monthly', 'yearly', 'lifetime'];
+export type BuyKind = Exclude<PaidKind, 'lifetime'>;
+export const KINDS: BuyKind[] = ['monthly', 'yearly'];
 
 /** How close the Free plan is to its limit: '' while there's room, then 'is-warn' from 80%, 'is-full' at the limit. */
 function level(b: Billing & { limit: number }) {
@@ -59,7 +60,6 @@ function level(b: Billing & { limit: number }) {
 }
 const warnAt = (limit: number) => Math.ceil(limit * 0.8); // 12 of 15
 const counterAt = (limit: number) => Math.ceil(limit * 0.9); // the counter stays quiet until the last few places
-const FEW_SEATS = 30; // "Only … left" once lifetime places are running out
 
 /** The Free plan's numbers, or null when the shop has no limit. */
 function freeUsage(b: Billing | null) {
@@ -159,21 +159,17 @@ export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
   });
 }
 
-/** Whether lifetime can be bought now: on sale, a place left, and not already lifetime. */
-export const lifetimeOpen = (b: Billing) => b.plan !== 'lifetime' && b.open && b.seats.left > 0;
-
-/** The ways to pay, as radio buttons. Lifetime drops out when it isn't on sale or the places are gone. */
-export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; kind: PaidKind; setKind: (k: PaidKind) => void; busy: boolean; notes?: boolean }) {
+/** The ways to pay, as radio buttons: monthly or yearly. */
+export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; kind: BuyKind; setKind: (k: BuyKind) => void; busy: boolean; notes?: boolean }) {
   useLang();
   const perMonth = b.currency === 'USD' ? Math.round(b.prices.yearly / 12) : Math.round(b.prices.yearly / 12 / 100) * 100;
   const saving = Math.round((1 - b.prices.yearly / (b.prices.monthly * 12)) * 100);
-  const kinds = KINDS.filter((k) => k !== 'lifetime' || lifetimeOpen(b));
-  const name: Record<PaidKind, string> = { monthly: t('Monthly'), yearly: t('Yearly'), lifetime: t('Lifetime') };
-  const per: Record<PaidKind, string> = { monthly: t('/ month'), yearly: t('/ year'), lifetime: t('once') };
-  const note: Record<PaidKind, string> = {
+  const kinds = KINDS;
+  const name: Record<BuyKind, string> = { monthly: t('Monthly'), yearly: t('Yearly') };
+  const per: Record<BuyKind, string> = { monthly: t('/ month'), yearly: t('/ year') };
+  const note: Record<BuyKind, string> = {
     monthly: t('Try it for a month. Renew when you want.'),
     yearly: t('About {price} a month.', { price: price(perMonth, b.currency) }),
-    lifetime: t('Pay once, Pro for good. Only {left} of {total} places.', { left: num(b.seats.left), total: num(b.seats.total) }),
   };
   return (
     <div className="plan-options" role="radiogroup" aria-label={t('Choose how to pay')}>
@@ -215,13 +211,13 @@ export function PlanHost({ onMerchant }: { onMerchant: (m: Merchant) => void }) 
 function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void; onClose: () => void }) {
   useLang();
   const b = useBilling();
-  const [kind, setKind] = useState<PaidKind>('yearly');
+  const [kind, setKind] = useState<BuyKind>('yearly');
   const { busy, error, run } = useAction();
   if (!b) return null;
 
   const lapsed = (b.paidPlan === 'monthly' || b.paidPlan === 'yearly') && !isPro(b);
   const usage = freeUsage(b);
-  const pick = kind === 'lifetime' && !lifetimeOpen(b) ? 'yearly' : kind;
+  const pick = kind;
 
   const buy = () =>
     void run(() =>
@@ -259,9 +255,6 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
 
       <PriceOptions b={b} kind={pick} setKind={setKind} busy={busy} />
 
-      {pick === 'lifetime' && b.seats.left <= FEW_SEATS && (
-        <p className="plan-sheet-seats">{t('Only {left} of {total} lifetime places left', { left: num(b.seats.left), total: num(b.seats.total) })}</p>
-      )}
       <ErrorText text={error} />
       <button className="btn btn-primary btn-xl" disabled={busy} onClick={buy}>
         {busy ? t('Opening payment…') : payLabel(b, pick)}

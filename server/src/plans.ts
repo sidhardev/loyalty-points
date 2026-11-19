@@ -13,7 +13,7 @@ import type { DatabaseSync } from 'node:sqlite';
 //
 // Pro is paid through Razorpay (billing.ts) as one-time payments, so nothing is debited automatically:
 //  - monthly / yearly: a month or a year from the payment (added to what is left). Once it ends the shop is Free again.
-//  - lifetime: the Founding offer, only `seats` shops ever, while sales are open.
+//  - lifetime: no longer sold. Shops that bought it earlier keep Pro with no end; nobody can buy it now.
 //  - grandfathered: shops from before plans existed keep unlimited customers (the terms promised nothing free would
 //    start costing), but not the Pro features.
 // Every WhatsApp message to a shop's customers is sent by the shop from its own phone; Regularhood's number never
@@ -163,5 +163,6 @@ export const seatsLeft = (sql: DatabaseSync) => Math.max(0, planSettings(sql).se
 /** The homepage, the Plan page and the reply bot all read the offer from here. */
 export function offer(sql: DatabaseSync) {
   const s = planSettings(sql);
-  return { open: s.salesOpen, total: s.seats, left: seatsLeft(sql), prices: prices(sql), usdPrices: prices(sql, 'USD'), freeCustomers: s.freeCustomers };
+  // Lifetime is no longer sold: `open` stays false whatever Admin's old switch says.
+  return { open: false, total: s.seats, left: 0, prices: prices(sql), usdPrices: prices(sql, 'USD'), freeCustomers: s.freeCustomers };
 }

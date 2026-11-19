@@ -23,8 +23,8 @@ import type { AdminApi } from './AdminSeo';
 import { Sub } from './AdminSub';
 import { MonthlyRevenue } from './AdminCharts';
 
-// Admin → Plans: everything about Free and Pro in one place. The offer (prices by the month, year and lifetime, whether
-// lifetime is on sale and its places, the Free plan's customer limit), the money, every Pro shop with its state, every payment with a refund
+// Admin → Plans: everything about Free and Pro in one place. The offer (prices by the month and year, the Free plan's
+// customer limit; lifetime is no longer sold), the money, every Pro shop with its state, every payment with a refund
 // button (through Razorpay), and Free shops close to their limit with a WhatsApp nudge. Below that, watching the payments:
 // whether Razorpay is live and its webhooks arrive, how checkouts end, yearly plans due for renewal, each payment's story
 // and a "check with Razorpay" for one that didn't switch the plan on.
@@ -153,23 +153,6 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
           <Settings2 size={18} /> Offer
         </h2>
       </div>
-      <div className="cw-live-row">
-        <div>
-          <strong>{s.salesOpen ? 'Lifetime is on sale' : 'Lifetime is not on sale'}</strong>
-          <span className="muted small">
-            {s.salesOpen ? 'Shops can pay once for Pro for life, until the places run out.' : 'Lifetime is hidden. Monthly and yearly can always be bought.'}
-          </span>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={s.salesOpen}
-          aria-label="Lifetime on sale"
-          className={`switch ${s.salesOpen ? 'on' : ''}`}
-          disabled={busy}
-          onClick={() => onSave({ salesOpen: !s.salesOpen })}
-        />
-      </div>
       <form className="plans-form" onSubmit={save}>
         <label>
           Monthly price (₹)
@@ -180,24 +163,12 @@ function OfferSettings({ s, onSave, busy }: { s: Settings; onSave: (patch: Parti
           <input type="number" min="1" step="1" value={f.yearly} onChange={set('yearly')} required />
         </label>
         <label>
-          Lifetime price (₹)
-          <input type="number" min="1" step="1" value={f.lifetime} onChange={set('lifetime')} required />
-        </label>
-        <label>
           Monthly price ($, outside India)
           <input type="number" min="1" step="0.01" value={f.usdMonthly} onChange={set('usdMonthly')} required />
         </label>
         <label>
           Yearly price ($, outside India)
           <input type="number" min="1" step="0.01" value={f.usdYearly} onChange={set('usdYearly')} required />
-        </label>
-        <label>
-          Lifetime price ($, outside India)
-          <input type="number" min="1" step="0.01" value={f.usdLifetime} onChange={set('usdLifetime')} required />
-        </label>
-        <label>
-          Lifetime places
-          <input type="number" min="0" step="1" value={f.seats} onChange={set('seats')} required />
         </label>
         <label>
           Free plan: customers
@@ -340,12 +311,10 @@ export function PlansPage({ api }: { api: AdminApi }) {
       <section className="stats">
         <div className="stat">
           <span className="stat-label">
-            <Crown size={16} /> Lifetime places
+            <Crown size={16} /> Lifetime shops
           </span>
-          <strong>
-            {num(data.seats.taken)} / {num(data.seats.total)}
-          </strong>
-          <em>{data.settings.salesOpen ? `${num(data.seats.left)} left` : 'not on sale'}</em>
+          <strong>{num(data.seats.taken)}</strong>
+          <em>no longer sold</em>
         </div>
         <div className="stat">
           <span className="stat-label">
