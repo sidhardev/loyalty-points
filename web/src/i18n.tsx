@@ -40,7 +40,7 @@ const HI: Record<string, string> = {
   'One rule for every customer. You can change it later in Settings.': 'हर ग्राहक के लिए एक नियम। बाद में सेटिंग्स में बदल सकते हैं।',
   Every: 'हर',
   'visits, the customer gets': 'विज़िट पर ग्राहक को मिलेगा',
-  'Free chai': 'मुफ़्त चाय',
+  'Free coffee': 'मुफ़्त कॉफ़ी',
   Start: 'शुरू करें',
   Save: 'सेव करें',
   'Saving…': 'सेव हो रहा है…',
@@ -408,7 +408,7 @@ const HI: Record<string, string> = {
   'Enter the 10-digit phone number': '10 अंकों का फ़ोन नंबर लिखें',
   'Another customer already has this phone number': 'यह नंबर पहले से किसी और ग्राहक का है',
   'The reward for this visit was already given — undo the reward first': 'इस विज़िट का इनाम दिया जा चुका है — पहले इनाम वापस लें',
-  'Write what the customer gets, e.g. Free chai': 'लिखें कि ग्राहक को क्या मिलेगा, जैसे मुफ़्त चाय',
+  'Write what the customer gets, e.g. Free coffee': 'लिखें कि ग्राहक को क्या मिलेगा, जैसे मुफ़्त कॉफ़ी',
 
   // footer
   'Rewards by Regularhood': 'Regularhood के इनाम',
@@ -491,7 +491,7 @@ const ML: Record<string, string> = {
   'One rule for every customer. You can change it later in Settings.': 'എല്ലാ കസ്റ്റമർക്കും ഒരേ നിയമം. പിന്നീട് സെറ്റിങ്സിൽ മാറ്റാം.',
   Every: 'ഓരോ',
   'visits, the customer gets': 'സന്ദർശനത്തിനും കസ്റ്റമർക്ക് കിട്ടുന്നത്',
-  'Free chai': 'ഫ്രീ കോഫി',
+  'Free coffee': 'ഫ്രീ കോഫി',
   Start: 'തുടങ്ങൂ',
   Save: 'സേവ് ചെയ്യൂ',
   'Saving…': 'സേവ് ചെയ്യുന്നു…',
@@ -814,7 +814,7 @@ const ML: Record<string, string> = {
   'Enter the 10-digit phone number': '10 അക്ക ഫോൺ നമ്പർ നൽകൂ',
   'Another customer already has this phone number': 'ഈ നമ്പർ ഇതിനകം മറ്റൊരു കസ്റ്റമറുടേതാണ്',
   'The reward for this visit was already given — undo the reward first': 'ഈ സന്ദർശനത്തിന്റെ സമ്മാനം നേരത്തേ നൽകി — ആദ്യം സമ്മാനം തിരിച്ചെടുക്കൂ',
-  'Write what the customer gets, e.g. Free chai': 'കസ്റ്റമർക്ക് എന്ത് കിട്ടും എന്ന് എഴുതൂ, ഉദാ: ഫ്രീ കോഫി',
+  'Write what the customer gets, e.g. Free coffee': 'കസ്റ്റമർക്ക് എന്ത് കിട്ടും എന്ന് എഴുതൂ, ഉദാ: ഫ്രീ കോഫി',
 
   // footer
   'Rewards by Regularhood': 'Regularhood വഴി സമ്മാനങ്ങൾ',

@@ -72,7 +72,7 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
         className="setup-reward"
         value={reward}
         onChange={(e) => setReward(e.target.value)}
-        placeholder={t('Free chai')}
+        placeholder={t('Free coffee')}
         maxLength={60}
         required
         aria-label="Reward"

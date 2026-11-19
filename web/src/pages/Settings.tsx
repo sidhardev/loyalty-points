@@ -204,7 +204,7 @@ export function Settings({ merchant, onSaved, onLogout }: { merchant: Merchant; 
               </div>
               <span>{t('visits, the customer gets')}</span>
             </div>
-            <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('Free chai')} maxLength={60} required aria-label="Reward" />
+            <input className="setup-reward" style={{ textAlign: 'left' }} value={form.rewardName} onChange={set('rewardName')} placeholder={t('Free coffee')} maxLength={60} required aria-label="Reward" />
             <Stamps stamps={form.visitsNeeded - 1} needed={form.visitsNeeded} />
             <span className="hint">{t("Changing the number keeps everyone's visits. Customers who already have enough get the reward on their next visit.")}</span>
             <div className="welcome-stamps">

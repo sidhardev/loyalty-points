@@ -37,8 +37,8 @@ const INSTA_POSTS = [
     file: 'post-1',
     title: 'Intro',
     caption: `Meet Regularhood 🏪
-A stamp card for local shops: chai stalls, cafés, salons, bakeries, kirana stores and more.
-Every 5th visit, a free chai (or whatever reward you choose). Turn first-time customers into regulars, all from the phone you already have.
+A stamp card for local shops: cafés, salons, bakeries, grocery stores and more.
+Every 5th visit, a free gift (or whatever reward you choose). Turn first-time customers into regulars, all from the phone you already have.
 Free to start → link in bio.`,
   },
   {
@@ -57,7 +57,7 @@ With Regularhood the card is just your customer's phone number, so it can't be l
     file: 'post-4',
     title: 'How it works',
     caption: `Three steps, one button:
-1️⃣ Set your one rule, e.g. every 5 visits → free chai
+1️⃣ Set your one rule, e.g. every 5 visits → a free gift
 2️⃣ Type the customer's number and tap Add visit
 3️⃣ On the 5th visit the screen turns orange: give the reward, and the card starts again
 Setup takes about a minute.`,
@@ -205,7 +205,7 @@ function GenerateCard({ api, disabled, onDone }: { api: AdminApi; disabled: bool
       </div>
       <label>
         Kind of shop (optional)
-        <input value={shopType} onChange={(e) => setShopType(e.target.value)} placeholder="e.g. Kirana store, Salon, Chai stall" />
+        <input value={shopType} onChange={(e) => setShopType(e.target.value)} placeholder="e.g. Kirana store, Salon, Café" />
       </label>
       <div className="status-row">
         <label>

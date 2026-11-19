@@ -203,7 +203,7 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
               {mode === 'signup' && (
                 <label>
                   Shop name
-                  <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required autoFocus />
+                  <input value={form.name} onChange={set('name')} placeholder="Corner Café, Main Street" required autoFocus />
                 </label>
               )}
               {mode === 'login' ? (

@@ -100,7 +100,7 @@ export function Referral({ code }: { code: string }) {
             </div>
             <label>
               {t('Shop name')}
-              <input value={form.name} onChange={set('name')} placeholder="Chai Point, MG Road" required />
+              <input value={form.name} onChange={set('name')} placeholder="Corner Café, Main Street" required />
             </label>
             <label>
               {t('WhatsApp number')}
