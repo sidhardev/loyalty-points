@@ -124,6 +124,10 @@ export class Billing {
   status(merchantId: number, tz?: string) {
     const m = this.loyalty.merchant(merchantId);
     const currency = currencyFor(m, tz);
+    // How many customers stopped coming: a Free shop sees the number (not who) as a reason to get Pro.
+    const { notSeen } = this.db.sql
+      .prepare(`SELECT COUNT(*) AS notSeen FROM customers WHERE merchant_id = ? AND COALESCE(last_visit, created_at) < datetime('now', ?)`)
+      .get(m.id, `-${m.inactive_days} days`) as { notSeen: number };
     return {
       plan: effectivePlan(m),
       paidPlan: m.plan, // 'monthly' or 'yearly' even after it ran out, so the page can offer a renewal
@@ -136,6 +140,9 @@ export class Billing {
       prices: prices(this.db.sql, currency),
       open: false, // lifetime is no longer sold (monthly and yearly always are)
       keyId: keyId(),
+      notSeen,
+      inactiveDays: m.inactive_days,
+      avgBill: m.avg_bill, // what a visit is worth, as the shop guessed it (0 = not told)
     };
   }
 

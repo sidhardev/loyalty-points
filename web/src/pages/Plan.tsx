@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Crown, RotateCcw, Settings as SettingsIcon, ShieldCheck, Users, X } from 'lucide-react';
 import { api, num, parseTime, type Merchant } from '../api';
-import { isPro, payLabel, type BuyKind, payPro, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
+import { isPro, payLabel, WhyPro, type BuyKind, payPro, PriceOptions, PRO_PERKS, refreshBilling, useBilling } from '../billing';
 import { t, useLang } from '../i18n';
 import { ErrorText, Skeleton, useAction } from '../ui';
 
@@ -114,6 +114,7 @@ export function Plan({ merchant, onMerchant }: { merchant: Merchant; onMerchant:
             ))}
           </ul>
 
+          <WhyPro b={b} />
           <PriceOptions b={b} kind={pick} setKind={setKind} busy={busy} notes />
           {pro && <p className="muted small">{t('Time you buy now is added after your current plan ends.')}</p>}
 

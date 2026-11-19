@@ -7412,3 +7412,38 @@ a.kpi:hover {
   font-size: 13px;
   text-align: center;
 }
+
+/* Why Pro, in the shop's own numbers (WhyPro in billing.tsx): customers who stopped coming, and what they're worth */
+.why-pro {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.why-pro p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.why-pro-main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.why-pro-main svg {
+  margin-top: 2px;
+}
+
+.why-pro-money {
+  font-weight: 700;
+}
+
+.why-pro-main + .why-pro-money {
+  padding-left: 28px;
+}

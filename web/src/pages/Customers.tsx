@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Crown, Gift, MessageCircle, Search, Users, UserX } from 'lucide-react';
 import { api, daysAgo, num, phoneLabel, reminderMessage, whatsapp, type Customer, type Merchant } from '../api';
-import { LimitStrip, ProLock, refreshBilling } from '../billing';
+import { LimitStrip, ProLock, refreshBilling, useBilling, WhyPro } from '../billing';
 import '../counter.css';
 import { t, useLang } from '../i18n';
 import { EmptyState, SkeletonRows, useDataVersion } from '../ui';
@@ -23,6 +23,7 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
   const [list, setList] = useState<Customer[] | null>(null);
   const [sent, setSent] = useState<Set<number>>(new Set());
   const version = useDataVersion();
+  const billing = useBilling();
   useEffect(() => void refreshBilling().catch(() => {}), [version]);
   // The "not seen" list is Pro; on Free the page shows what it would do instead.
   const locked = filter === 'inactive' && !merchant.pro;
@@ -66,6 +67,7 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
 
       {locked ? (
         <ProLock perk="winback">
+          {billing && <WhyPro b={billing} />}
           <p className="small" style={{ margin: 0 }}>
             {t('Customers who haven’t come for {n} days show up here. Tap Remind and WhatsApp opens on your phone with a message about their stamps.', {
               n: merchant.inactiveDays,

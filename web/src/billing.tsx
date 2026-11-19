@@ -159,6 +159,40 @@ export async function payPro(kind: PaidKind, onPaid: (b: Billing) => void) {
   });
 }
 
+/**
+ * Why Pro is worth it, in the shop's own numbers: how many customers stopped coming (the count only; who they are is
+ * Pro), and what bringing them back is worth at the shop's average bill. Nothing for Pro shops; only true numbers.
+ */
+export function WhyPro({ b }: { b: Billing }) {
+  useLang();
+  if (isPro(b)) return null;
+  const visit = b.avgBill * 100; // the average bill, in paise or cents like the prices
+  const visitsForAMonth = visit > 0 ? Math.max(1, Math.ceil(b.prices.monthly / visit)) : 0;
+  if (!b.notSeen && !visitsForAMonth) return null;
+  return (
+    <div className="why-pro">
+      {b.notSeen > 0 && (
+        <p className="why-pro-main">
+          <UserX size={18} />
+          <span>
+            <strong>{t('{n} of your customers haven’t come in {d} days.', { n: num(b.notSeen), d: num(b.inactiveDays) })}</strong>{' '}
+            {t('Pro shows who they are, and one tap sends each a WhatsApp reminder.')}
+          </span>
+        </p>
+      )}
+      {visitsForAMonth > 0 && (
+        <p className="why-pro-money">
+          {b.notSeen > 0
+            ? t('If they each come back once, that’s about {money} for your shop.', { money: price(b.notSeen * visit, b.currency) })
+            : visitsForAMonth === 1
+              ? t('One visit from one customer pays for a month of Pro.')
+              : t('{n} visits from returning customers pay for a month of Pro.', { n: num(visitsForAMonth) })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** The ways to pay, as radio buttons: monthly or yearly. */
 export function PriceOptions({ b, kind, setKind, busy, notes }: { b: Billing; kind: BuyKind; setKind: (k: BuyKind) => void; busy: boolean; notes?: boolean }) {
   useLang();
@@ -239,11 +273,15 @@ function PlanSheet({ onMerchant, onClose }: { onMerchant: (m: Merchant) => void;
             ? t('Your Pro plan has ended. Renew to add new customers again.')
             : usage && usage.left === 0
               ? t('Your {limit} free spots are full. Get unlimited to add new customers.', { limit: num(usage.limit) })
-              : usage
+              : usage && usage.customers >= warnAt(usage.limit)
+                ? t('Only {n} free spots left. After that, new customers can’t get a card.', { n: num(usage.left) })
+                : usage
                 ? t('You’ve used {n} of {limit} free customers.', { n: num(usage.customers), limit: num(usage.limit) })
                 : t('For shops that want regulars to come back without chasing them.')}
         </p>
       </div>
+
+      <WhyPro b={b} />
 
       <ul className="plan-sheet-perks">
         {PRO_PERKS.map(({ id, icon: Icon, title }) => (
@@ -364,8 +402,8 @@ export function LimitStrip({ near, meter }: { near?: boolean; meter?: boolean })
               ? t('{n}/{limit} free customers · full', { n: num(u.customers), limit: num(u.limit) })
               : t('{n}/{limit} free customers · {left} left', { n: num(u.customers), limit: num(u.limit), left: num(u.left) })
             : full
-              ? t('Free plan full: no new customers')
-              : t('Only {n} new customers left', { n: num(u.left) })}
+              ? t('Free plan full: new customers can’t get a card')
+              : t('Only {n} free spots left, then new customers can’t join', { n: num(u.left) })}
         </span>
         <span className="limit-go">
           {t('Get unlimited')} <ChevronRight size={16} />
@@ -383,7 +421,9 @@ export function LimitAfterVisit() {
   if (!u || u.customers < warnAt(u.limit)) return null;
   return (
     <button type="button" className="limit-after" onClick={openPlan}>
-      {u.left === 0 ? t('That was your last free customer') : t('{n} free customers left', { n: num(u.left) })}
+      {u.left === 0
+        ? t('That was your last free customer. Get Pro to keep adding new ones')
+        : t('{n} free spots left. After that, new customers can’t join', { n: num(u.left) })}
     </button>
   );
 }

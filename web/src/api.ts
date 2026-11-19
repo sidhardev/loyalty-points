@@ -60,6 +60,9 @@ export type Billing = {
   prices: Record<PaidKind, number>;
   open: boolean; // false: lifetime isn't on sale (monthly and yearly always are)
   keyId: string;
+  notSeen: number; // customers not seen for `inactiveDays` (a count only; the list itself is Pro)
+  inactiveDays: number;
+  avgBill: number; // what a visit is worth, as the shop guessed it (0 = not told)
 };
 
 /** The server's answer when a Free shop tries a Pro feature. */
