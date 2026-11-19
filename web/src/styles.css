@@ -3,15 +3,16 @@
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f4f8f6;
-  --surface: #ffffff;
-  --surface-2: #ecf3f0;
-  --surface-3: #dfe9e5;
+  /* warm paper, like the homepage (landing.css); green stays the brand */
+  --bg: #f6f1e7;
+  --surface: #fffdf8;
+  --surface-2: #f0e9dc;
+  --surface-3: #e6dccb;
   --ink: #0d1f19;
   --ink-2: #2b3d36;
-  --muted: #5b6b65;
-  --line: #e0e9e5;
-  --line-strong: #c9d6d1;
+  --muted: #5f675e;
+  --line: #e8dfcf;
+  --line-strong: #d5c9b4;
   --brand: #047857; /* buttons and brand text: 5.5:1 with white */
   --brand-ink: #047857;
   --brand-hover: #065f46;

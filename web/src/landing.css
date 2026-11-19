@@ -1,5 +1,5 @@
-/* Regularhood homepage: "receipt paper and a rubber stamp". Warm till-roll paper, ink that is nearly black, the
-   logo's green for what you tap, and stamp-pad red for stamps and rewards. Fraunces (a soft, inky serif) for
+/* Regularhood homepage: "receipt paper and a rubber stamp". Warm till-roll paper (the app's light background too),
+   dark green ink, the logo's green for stamps and what you tap, and its marigold for rewards, as in the app. Fraunces (a soft, inky serif) for
    headings, Manrope for reading. Light throughout, with dark ink only for the price card and the last call.
    One committed light look (it ignores the app's dark mode on purpose); every color is set here. */
 
@@ -7,12 +7,12 @@
   --paper: #f4eee2; /* till-roll paper */
   --paper-2: #ebe2d0;
   --sheet: #fffdf7; /* card stock */
-  --ink: #1c1915;
-  --ink-2: #4b443a;
-  --soft: #6b6255;
+  --ink: #13261f;
+  --ink-2: #3e4f47;
+  --soft: #646b62;
   --line: #ddd2bd;
-  --stamp: #c33b26; /* stamp-pad red */
-  --stamp-soft: #f5d9cf;
+  --stamp: #0b6e4a; /* the stamp pad: the logo's green */
+  --stamp-soft: #d7ece1;
   --green: #0b6e4a;
   --green-deep: #08553a;
   --green-2: #10b981;
@@ -25,8 +25,8 @@
   --wa: #e7f7dd;
   --accent: #0b7a52;
   /* dark ink panels (price card, last call) */
-  --night: #1c1915;
-  --night-2: #2a251f;
+  --night: #13261f;
+  --night-2: #1d342b;
   --night-line: rgba(255, 255, 255, 0.11);
 
   --display: 'Fraunces', Georgia, 'Noto Serif Devanagari', serif;
@@ -125,7 +125,7 @@
 .lp-btn-glow {
   background: var(--ink);
   color: var(--paper);
-  box-shadow: 0 10px 24px -14px rgba(28, 25, 21, 0.8);
+  box-shadow: 0 10px 24px -14px rgba(19, 38, 31, 0.8);
 }
 
 .lp-btn-glow:hover {
@@ -594,7 +594,7 @@
   padding: 12px;
   border-radius: 46px;
   background: linear-gradient(160deg, #2b3b35, #0c1714 40%, #1c2a25);
-  box-shadow: 0 50px 80px -40px rgba(28, 25, 21, 0.45);
+  box-shadow: 0 50px 80px -40px rgba(19, 38, 31, 0.45);
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -810,7 +810,7 @@ button.lp-phone-btn:not(.orange) {
   color: var(--ink);
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 16px 34px -18px rgba(28, 25, 21, 0.45);
+  box-shadow: 0 16px 34px -18px rgba(19, 38, 31, 0.45);
 }
 
 .lp-float-wa {
@@ -991,7 +991,7 @@ button.lp-phone-btn:not(.orange) {
   border: 1px solid var(--line);
   border-radius: 28px;
   background: radial-gradient(70% 100% at 85% 0%, rgba(215, 236, 225, 0.9), transparent 60%), radial-gradient(50% 70% at 0% 100%, rgba(240, 162, 2, 0.08), transparent 60%), var(--sheet);
-  box-shadow: 0 40px 80px -50px rgba(28, 25, 21, 0.45);
+  box-shadow: 0 40px 80px -50px rgba(19, 38, 31, 0.45);
 }
 
 .lp-film-top {
@@ -1078,7 +1078,7 @@ button.lp-phone-btn:not(.orange) {
   background: #fff;
   color: var(--ink);
   font-size: 14px;
-  box-shadow: 0 14px 30px -16px rgba(28, 25, 21, 0.4);
+  box-shadow: 0 14px 30px -16px rgba(19, 38, 31, 0.4);
   animation: lp-rise 0.5s var(--ease);
 }
 
@@ -1296,7 +1296,7 @@ button.lp-phone-btn:not(.orange) {
 
 .lp-film-segs button::before {
   content: '';
-  background: rgba(28, 25, 21, 0.12);
+  background: rgba(19, 38, 31, 0.12);
 }
 
 .lp-film-segs span {
@@ -2014,7 +2014,7 @@ button.lp-phone-btn:not(.orange) {
   border: 1px solid #e2d8ca;
   border-radius: 28px;
   background:
-    radial-gradient(circle at 1px 1px, rgba(28, 25, 21, 0.07) 1px, transparent 0) 0 0 / 18px 18px,
+    radial-gradient(circle at 1px 1px, rgba(19, 38, 31, 0.07) 1px, transparent 0) 0 0 / 18px 18px,
     var(--chat);
   list-style: none;
   counter-reset: step;
@@ -2035,7 +2035,7 @@ button.lp-phone-btn:not(.orange) {
     right: 48px;
     left: 48px;
     height: 2px;
-    background: repeating-linear-gradient(90deg, rgba(28, 25, 21, 0.25) 0 6px, transparent 6px 12px);
+    background: repeating-linear-gradient(90deg, rgba(19, 38, 31, 0.25) 0 6px, transparent 6px 12px);
   }
 }
 
@@ -2059,7 +2059,7 @@ button.lp-phone-btn:not(.orange) {
     bottom: -28px;
     left: 7px;
     width: 2px;
-    background: repeating-linear-gradient(180deg, rgba(28, 25, 21, 0.25) 0 6px, transparent 6px 12px);
+    background: repeating-linear-gradient(180deg, rgba(19, 38, 31, 0.25) 0 6px, transparent 6px 12px);
   }
 
   .lp-auto li:last-child::before {
@@ -2083,7 +2083,7 @@ button.lp-phone-btn:not(.orange) {
   border: 4px solid var(--chat);
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 0 1px rgba(28, 25, 21, 0.2);
+  box-shadow: 0 0 0 1px rgba(19, 38, 31, 0.2);
 }
 
 @media (min-width: 900px) {
@@ -2118,7 +2118,7 @@ button.lp-phone-btn:not(.orange) {
   max-width: 340px;
   border-radius: 4px 14px 14px 14px;
   background: var(--sheet);
-  box-shadow: 0 1px 1px rgba(28, 25, 21, 0.12), 0 12px 24px -18px rgba(28, 25, 21, 0.45);
+  box-shadow: 0 1px 1px rgba(19, 38, 31, 0.12), 0 12px 24px -18px rgba(19, 38, 31, 0.45);
   color: #111b21;
 }
 
@@ -2258,7 +2258,7 @@ button.lp-phone-btn:not(.orange) {
   border-radius: 28px;
   background: radial-gradient(100% 80% at 100% 0%, rgba(11, 110, 74, 0.35), transparent 60%), var(--night);
   color: var(--paper);
-  box-shadow: 0 40px 80px -40px rgba(28, 25, 21, 0.8);
+  box-shadow: 0 40px 80px -40px rgba(19, 38, 31, 0.8);
 }
 
 /* ---------------------------------------------------------------- do the maths */
@@ -2782,7 +2782,7 @@ button.lp-phone-btn:not(.orange) {
 
 .lp-h1-reward {
   padding-right: 0.08em;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 18' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 60 3, 140 4, 200 9 S 280 14, 297 6' fill='none' stroke='%23c33b26' stroke-width='5' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E")
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 18' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 60 3, 140 4, 200 9 S 280 14, 297 6' fill='none' stroke='%23f0a202' stroke-width='6' stroke-linecap='round' opacity='.75'/%3E%3C/svg%3E")
     no-repeat 0 94% / 100% 0.22em;
   color: var(--stamp);
   font-style: italic;
@@ -2791,7 +2791,7 @@ button.lp-phone-btn:not(.orange) {
 
 .lp-hero {
   background:
-    radial-gradient(1200px 520px at 85% -10%, rgba(195, 59, 38, 0.07), transparent 60%),
+    radial-gradient(1200px 520px at 85% -10%, rgba(240, 162, 2, 0.08), transparent 60%),
     radial-gradient(900px 500px at -10% 110%, rgba(11, 110, 74, 0.07), transparent 60%),
     var(--paper);
 }
@@ -2826,7 +2826,7 @@ button.lp-phone-btn:not(.orange) {
 }
 
 .lp-btn-glow {
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 14px 26px -16px rgba(28, 25, 21, 0.9);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 14px 26px -16px rgba(19, 38, 31, 0.9);
 }
 
 .lp-btn-glow:hover {
@@ -2846,174 +2846,257 @@ button.lp-phone-btn:not(.orange) {
   background: var(--ink);
 }
 
-/* ---------------------------------------------------------------- hero art: paper card, ring, phone */
+/* ---------------------------------------------------------------- hero: the customer's stamp card, as a paper ticket */
 
-.lp-hero-art {
-  position: relative;
-  display: grid;
+.lp-stampdemo {
   justify-items: center;
+  perspective: none;
+  gap: 40px;
 }
 
-.lp-hero-art .lp-demo {
+.lp-ticket {
   position: relative;
-  z-index: 1;
+  width: min(520px, 100%);
+  rotate: -2.5deg;
+  filter: drop-shadow(0 1px 0 rgba(19, 38, 31, 0.1)) drop-shadow(0 34px 40px rgba(19, 38, 31, 0.18));
+  transition: rotate 0.5s var(--ease);
 }
 
-.lp-paper {
-  position: absolute;
-  top: 250px;
-  left: 50%;
-  z-index: 0;
-  display: grid;
-  gap: 6px;
-  width: 270px;
-  padding: 18px 24px 20px;
-  border-radius: 6px;
-  background: repeating-linear-gradient(0deg, transparent 0 23px, rgba(28, 25, 21, 0.05) 23px 24px), var(--sheet);
-  box-shadow: 0 1px 0 rgba(28, 25, 21, 0.08), 0 30px 50px -30px rgba(28, 25, 21, 0.55);
-  color: var(--ink);
-  /* peeking out on the right of the phone, so it never covers the text */
-  transform: translateX(14%) rotate(7deg);
-  /* ticket notches on both sides */
-  -webkit-mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px) left / 51% 100% no-repeat,
-    radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px) right / 51% 100% no-repeat;
-  mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px) left / 51% 100% no-repeat,
-    radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px) right / 51% 100% no-repeat;
-  animation: lp-rise-in 0.9s 0.45s var(--ease) backwards;
+.lp-ticket:hover {
+  rotate: -1deg;
 }
 
-.lp-paper-kicker {
-  color: var(--stamp);
-  font: 600 10.5px var(--mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.lp-paper strong {
-  font: 600 21px/1.15 var(--display);
-  letter-spacing: -0.01em;
-}
-
-.lp-paper-rule {
-  color: var(--ink-2);
-  font-size: 13px;
-}
-
-.lp-paper-boxes {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.lp-paper-boxes i {
-  aspect-ratio: 1;
-  border: 1.5px dashed rgba(28, 25, 21, 0.28);
-  border-radius: 50%;
-}
-
-/* an inked stamp: a red ring with a tick, a little crooked, a little patchy */
-.lp-paper-boxes i.inked {
-  border: 2.5px solid var(--stamp);
-  background: radial-gradient(circle at 35% 35%, rgba(195, 59, 38, 0.18), transparent 60%);
-  opacity: 0.86;
-  transform: rotate(var(--r));
-  -webkit-mask: radial-gradient(circle at 70% 30%, transparent 2px, #000 3px);
-  mask: radial-gradient(circle at 70% 30%, transparent 2px, #000 3px);
-}
-
-.lp-paper-boxes i.inked::after {
+/* a stack of other customers' cards behind this one */
+.lp-ticket::before,
+.lp-ticket::after {
   content: '';
-  display: block;
-  width: 45%;
-  height: 24%;
-  margin: 28% auto 0;
-  border-bottom: 2.5px solid var(--stamp);
-  border-left: 2.5px solid var(--stamp);
-  transform: rotate(-45deg);
-}
-
-/* the rubber stamp: "No app · No plastic · No QR codes", stamped over the corner, its words slowly turning */
-.lp-ring {
   position: absolute;
-  top: -30px;
-  left: 50%;
-  z-index: 2;
-  width: 138px;
-  height: 138px;
-  color: var(--stamp);
-  opacity: 0.9;
-  transform: translateX(-165%) rotate(-12deg);
-  mix-blend-mode: multiply;
-  pointer-events: none;
-  animation: lp-stamp-in 0.55s 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+  inset: 0;
+  z-index: -1;
+  border-radius: 14px;
+  background: var(--sheet);
+  box-shadow: 0 1px 0 rgba(19, 38, 31, 0.08);
 }
 
-.lp-ring circle,
-.lp-ring .lp-ring-check {
-  fill: none;
-  stroke: currentColor;
+.lp-ticket::before {
+  translate: 16px 14px;
+  rotate: 5deg;
+  background: #f8f1e3;
 }
 
-.lp-ring circle:first-of-type {
-  stroke-width: 4;
+.lp-ticket::after {
+  translate: -12px 22px;
+  rotate: -4deg;
+  background: #efe6d4;
 }
 
-.lp-ring circle:last-of-type {
-  stroke-width: 2;
+/* the card: card stock with faint ruled lines and a notch on each side where the counter strip tears off */
+.lp-ticket-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 30px 34px 34px;
+  border-radius: 14px 14px 0 0;
+  background: repeating-linear-gradient(0deg, transparent 0 27px, rgba(19, 38, 31, 0.045) 27px 28px), var(--sheet);
+  -webkit-mask: radial-gradient(circle at 0 100%, transparent 12px, #000 12.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent 12px, #000 12.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 100%, transparent 12px, #000 12.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent 12px, #000 12.5px) right / 51% 100% no-repeat;
 }
 
-.lp-ring .lp-ring-check {
-  stroke-width: 9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.lp-ring text {
-  fill: currentColor;
-  font: 700 15.5px var(--mono);
-  letter-spacing: 0.08em;
+.lp-ticket-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font: 600 11px var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  transform-origin: 100px 100px;
-  animation: lp-spin 40s linear infinite;
 }
 
-@keyframes lp-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.lp-ticket-kicker {
+  color: var(--stamp);
 }
 
-@keyframes lp-stamp-in {
-  from {
+.lp-ticket-count {
+  color: var(--soft);
+}
+
+.lp-ticket-shop {
+  font: 600 clamp(26px, 3.2vw, 34px) / 1.05 var(--display);
+  letter-spacing: -0.02em;
+}
+
+.lp-ticket-rule {
+  color: var(--ink-2);
+  font-size: 15px;
+}
+
+.lp-ticket-boxes {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.lp-ticket-boxes span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 2px dashed rgba(19, 38, 31, 0.22);
+  border-radius: 50%;
+  color: var(--soft);
+}
+
+.lp-ticket-boxes span.last {
+  border-color: var(--marigold);
+  background: var(--orange-soft);
+  color: var(--marigold-ink);
+}
+
+/* an inked stamp: red ring, a tick, a little crooked, the ink a little patchy */
+.lp-ticket-boxes span.inked {
+  border: 3px solid var(--stamp);
+  background: radial-gradient(circle at 32% 30%, rgba(11, 110, 74, 0.16), rgba(11, 110, 74, 0.05) 62%);
+  color: var(--stamp);
+  rotate: var(--r);
+  -webkit-mask: radial-gradient(circle at 74% 26%, transparent 2px, #000 3px);
+  mask: radial-gradient(circle at 74% 26%, transparent 2px, #000 3px);
+}
+
+/* the newest stamp thumps down */
+.lp-ticket-boxes span.fresh {
+  animation: lp-thump 0.42s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+@keyframes lp-thump {
+  0% {
     opacity: 0;
-    scale: 1.6;
+    scale: 1.9;
+  }
+  60% {
+    opacity: 1;
+    scale: 0.92;
+  }
+  100% {
+    scale: 1;
   }
 }
 
-@media (max-width: 959px) {
-  .lp-paper {
-    top: 150px;
-    width: 230px;
-  }
+/* the full card: a big red "Give it now" stamp across it */
+.lp-ticket-reward {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
 
-  .lp-ring {
-    top: -18px;
-    width: 104px;
-    height: 104px;
-    transform: translateX(-175%) rotate(-12deg);
-  }
+.lp-ticket-reward span {
+  padding: 10px 20px;
+  border: 4px double var(--orange);
+  border-radius: 10px;
+  background: rgba(255, 253, 247, 0.86);
+  color: var(--orange);
+  font: 700 clamp(20px, 2.6vw, 26px) / 1.1 var(--display);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* the counter strip: the number typed at the till, and the one button */
+.lp-ticket-counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 18px;
+  border-top: 2px dashed rgba(19, 38, 31, 0.25);
+  border-radius: 0 0 14px 14px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lp-ticket-number {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 clamp(17px, 2.2vw, 21px) var(--mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lp-ticket-number::before {
+  content: '☎ ';
+  opacity: 0.55;
+}
+
+.lp-ticket-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--green);
+  color: #fff;
+  font: 700 16px var(--body);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), background 0.2s ease;
+}
+
+.lp-ticket-btn:hover {
+  background: var(--green-deep);
+}
+
+.lp-ticket-btn:active {
+  transform: scale(0.96);
+}
+
+.lp-ticket-btn.orange {
+  background: var(--orange);
+}
+
+/* "Card sent on WhatsApp", pinned to the corner for a moment after each visit */
+.lp-ticket-sent {
+  position: absolute;
+  top: -16px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--wa);
+  box-shadow: 0 10px 22px -14px rgba(19, 38, 31, 0.6);
+  color: #155d36;
+  font: 700 13.5px var(--body);
+  rotate: 2.5deg;
 }
 
 @media (max-width: 560px) {
-  .lp-paper {
-    display: none;
+  .lp-ticket-card {
+    padding: 22px 20px 24px;
   }
 
-  .lp-ring {
-    width: 84px;
-    height: 84px;
-    transform: translateX(-165%) rotate(-12deg);
+  .lp-ticket-boxes {
+    gap: 9px;
+  }
+
+  .lp-ticket-counter {
+    padding: 14px;
+  }
+
+  .lp-ticket-btn {
+    padding: 0 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-ticket-boxes span.fresh {
+    animation: none;
   }
 }
 
@@ -3027,7 +3110,7 @@ button.lp-phone-btn:not(.orange) {
   border: 0;
   border-radius: 6px;
   background: var(--sheet);
-  box-shadow: 0 1px 0 rgba(28, 25, 21, 0.08), 0 16px 30px -22px rgba(28, 25, 21, 0.5);
+  box-shadow: 0 1px 0 rgba(19, 38, 31, 0.08), 0 16px 30px -22px rgba(19, 38, 31, 0.5);
   align-content: start;
   rotate: var(--t, 0deg);
   transition: rotate 0.3s var(--ease), translate 0.3s var(--ease);
@@ -3062,7 +3145,7 @@ button.lp-phone-btn:not(.orange) {
 .lp-using-dots i {
   width: 16px;
   height: 16px;
-  border: 1.5px dashed rgba(28, 25, 21, 0.3);
+  border: 1.5px dashed rgba(19, 38, 31, 0.3);
   border-radius: 50%;
 }
 
@@ -3074,7 +3157,7 @@ button.lp-phone-btn:not(.orange) {
 /* ---------------------------------------------------------------- the last call */
 
 .lp-final {
-  background: radial-gradient(700px 300px at 50% 0%, rgba(195, 59, 38, 0.22), transparent 70%), var(--night);
+  background: radial-gradient(700px 300px at 50% 0%, rgba(240, 162, 2, 0.16), transparent 70%), var(--night);
 }
 
 .lp-final h2 {
@@ -3087,17 +3170,10 @@ button.lp-phone-btn:not(.orange) {
   width: 120px;
   height: 10px;
   margin: 18px auto 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 18' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 60 3, 140 4, 200 9 S 280 14, 297 6' fill='none' stroke='%23e0745f' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E")
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 18' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 60 3, 140 4, 200 9 S 280 14, 297 6' fill='none' stroke='%23f0a202' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E")
     no-repeat center / 100% 100%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lp-ring,
-  .lp-ring text,
-  .lp-paper {
-    animation: none !important;
-  }
-}
 
 /* Hindi and Malayalam: no slanted or spaced-out letters (they break the joined script) */
 .lp[lang='hi'] .lp-h1-reward,
@@ -3107,8 +3183,8 @@ button.lp-phone-btn:not(.orange) {
   font-style: normal;
 }
 
-.lp[lang='hi'] :is(.lp-kicker, .lp-eyebrow, .lp-pick-label, .lp-paper-kicker),
-.lp[lang='ml'] :is(.lp-kicker, .lp-eyebrow, .lp-pick-label, .lp-paper-kicker) {
+.lp[lang='hi'] :is(.lp-kicker, .lp-eyebrow, .lp-pick-label, .lp-ticket-head),
+.lp[lang='ml'] :is(.lp-kicker, .lp-eyebrow, .lp-pick-label, .lp-ticket-head) {
   font-family: var(--body);
   letter-spacing: 0;
 }

@@ -188,7 +188,6 @@ const COPY = {
     sub: 'Type a customer’s phone number at the counter. They collect a stamp on every visit and a reward when the card is full, so they come back to you instead of the place next door. No app, no plastic, no QR codes.',
     watch: 'See it at the counter',
     note: 'Free to start · No payment details · Ready in a minute',
-    ring: 'No app · No plastic · No QR codes · ',
     paperCard: 'Loyalty card',
     pickLabel: 'Pick a shop like yours',
     demoHint: 'Try it — tap “Add visit”',
@@ -334,7 +333,6 @@ const COPY = {
     sub: 'हर विज़िट पर ग्राहक को स्टैम्प, कार्ड भरते ही इनाम — तो वो बगल वाली दुकान नहीं, आपके पास लौटता है। ग्राहक को बस अपना फ़ोन नंबर बताना है।',
     watch: 'देखें कैसे चलता है',
     note: 'मुफ़्त · कोई पेमेंट नहीं · 1 मिनट में तैयार',
-    ring: 'कोई ऐप नहीं · कोई कार्ड नहीं · कोई QR नहीं · ',
     paperCard: 'लॉयल्टी कार्ड',
     pickLabel: 'अपनी जैसी दुकान चुनें',
     demoHint: 'आज़माएँ — “विज़िट जोड़ें” दबाएँ',
@@ -478,7 +476,6 @@ const COPY = {
     sub: 'ഓരോ സന്ദർശനത്തിലും ഒരു സ്റ്റാമ്പ്, കാർഡ് നിറയുമ്പോൾ ഒരു സമ്മാനം — അതുകൊണ്ട് അവർ തൊട്ടടുത്ത കടയിലേക്കല്ല, നിങ്ങളുടെ അടുത്തേക്ക് തിരികെ വരും. അവരുടെ ഫോൺ നമ്പർ മാത്രം മതി.',
     watch: 'എങ്ങനെയെന്ന് കാണൂ',
     note: 'സൗജന്യം · പണം വേണ്ട · 1 മിനിറ്റിൽ റെഡി',
-    ring: 'ആപ്പ് വേണ്ട · കാർഡ് വേണ്ട · QR വേണ്ട · ',
     paperCard: 'ലോയൽറ്റി കാർഡ്',
     pickLabel: 'നിങ്ങളുടേത് പോലെയുള്ള ഒരു കട തിരഞ്ഞെടുക്കൂ',
     demoHint: 'പരീക്ഷിച്ചു നോക്കൂ — “സന്ദർശനം ചേർക്കൂ” ടാപ്പ് ചെയ്യൂ',
@@ -793,123 +790,95 @@ function ShopPicker({ lang, className = '' }: { lang: Lang; className?: string }
   );
 }
 
-/** The shop's counter screen, drawn small: tap "Add visit" and the stamps fill; the last visit asks for the reward. */
-function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
+/**
+ * The hero's one object: the customer's stamp card, as a paper ticket, with the shop's counter strip torn off the bottom.
+ * Tap "Add visit" and a rubber stamp thumps into the next box; the card goes out on WhatsApp; the last visit turns the
+ * card into the reward. The same thing the app does, without drawing a phone.
+ */
+function StampDemo({ c, lang }: { c: Copy; lang: Lang }) {
   const { ex } = useExample();
   const t = ex[lang];
-  const start = Math.max(1, ex.needed - 3);
-  const [stamps, setStamps] = useState(start);
-  const [shown, setShown] = useState<'keypad' | 'visit' | 'reward'>('keypad');
-  const [sent, setSent] = useState(false);
+  const [stamps, setStamps] = useState(Math.max(1, ex.needed - 3));
+  const [reward, setReward] = useState(false);
+  const [sent, setSent] = useState(0); // bumps on every visit, to replay the "sent" note
   useEffect(() => {
     setStamps(Math.max(1, ex.needed - 3));
-    setShown('keypad');
+    setReward(false);
+    setSent(0);
   }, [ex]);
   useEffect(() => {
-    if (shown !== 'visit') return;
-    setSent(true);
-    const a = setTimeout(() => setShown('keypad'), 1700);
-    const b = setTimeout(() => setSent(false), 2600);
-    return () => {
-      clearTimeout(a);
-      clearTimeout(b);
-    };
-  }, [shown, stamps]);
+    if (!sent) return;
+    const a = setTimeout(() => setSent(0), 2200);
+    return () => clearTimeout(a);
+  }, [sent]);
 
   const add = () => {
     const next = stamps + 1;
     setStamps(next);
-    setShown(next >= ex.needed ? 'reward' : 'visit');
+    setSent((n) => n + 1);
+    if (next >= ex.needed) setReward(true);
   };
-
-  // A gentle 3D tilt toward the pointer.
-  const reduce = useReducedMotion();
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const rx = useSpring(useTransform(py, [-0.5, 0.5], [7, -7]), { stiffness: 120, damping: 18 });
-  const ry = useSpring(useTransform(px, [-0.5, 0.5], [-9, 9]), { stiffness: 120, damping: 18 });
-  const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (reduce || e.pointerType !== 'mouse') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    px.set((e.clientX - r.left) / r.width - 0.5);
-    py.set((e.clientY - r.top) / r.height - 0.5);
+  const given = () => {
+    setStamps(0);
+    setReward(false);
   };
 
   return (
-    <div
-      className="lp-demo"
-      onPointerMove={move}
-      onPointerLeave={() => {
-        px.set(0);
-        py.set(0);
-      }}
-    >
-      <m.div className="lp-phone" style={{ rotateX: rx, rotateY: ry }}>
-        <div className="lp-phone-notch" />
-        <div className="lp-phone-screen">
-          <div className="lp-phone-head">
-            <span className="lp-phone-shop">{ex.shop}</span>
-            <span className="lp-phone-rule">{c.rule(ex.needed, t.short)}</span>
+    <div className="lp-demo lp-stampdemo">
+      <div className={`lp-ticket ${reward ? 'is-reward' : ''}`}>
+        <div className="lp-ticket-card">
+          <div className="lp-ticket-head">
+            <span className="lp-ticket-kicker">{c.paperCard}</span>
+            <span className="lp-ticket-count" aria-live="polite">
+              {c.demoVisit(stamps, ex.needed)}
+            </span>
           </div>
-          <AnimatePresence mode="wait" initial={false}>
-            {shown === 'reward' ? (
-              <m.div key="reward" className="lp-phone-result reward" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <Confetti />
-                <span className="lp-phone-icon">
-                  <Gift size={30} />
-                </span>
-                <strong>{c.demoGive(t.short)}</strong>
-                <Stamps on={ex.needed} of={ex.needed} size={ex.needed > 8 ? 18 : 24} />
-                <button
-                  className="lp-phone-btn orange"
-                  onClick={() => {
-                    setStamps(0);
-                    setShown('keypad');
-                  }}
-                  data-track="demo: Given"
+          <strong className="lp-ticket-shop">{ex.shop}</strong>
+          <span className="lp-ticket-rule">{c.rule(ex.needed, t.short)}</span>
+          <div className="lp-ticket-boxes" style={{ '--cols': ex.needed <= 6 ? ex.needed : Math.ceil(ex.needed / 2) } as CSSProperties}>
+            {Array.from({ length: ex.needed }, (_, i) => {
+              const last = i === ex.needed - 1;
+              const inked = i < stamps;
+              return (
+                <span
+                  key={`${ex.key}-${i}-${inked}`}
+                  className={`${inked ? 'inked' : ''} ${last ? 'last' : ''} ${inked && i === stamps - 1 ? 'fresh' : ''}`}
+                  style={{ '--r': `${((i * 53) % 28) - 14}deg` } as CSSProperties}
                 >
-                  <Check size={18} strokeWidth={3} /> {c.demoGiven}
-                </button>
-              </m.div>
-            ) : shown === 'visit' ? (
-              <m.div key="visit" className="lp-phone-result" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <span className="lp-phone-icon">
-                  <Check size={30} strokeWidth={3} />
+                  {inked ? <Check size={24} strokeWidth={3} /> : last ? <Gift size={22} /> : null}
                 </span>
-                <strong>{c.demoVisit(stamps, ex.needed)}</strong>
-                <Stamps on={stamps} of={ex.needed} size={ex.needed > 8 ? 18 : 24} pop={stamps - 1} />
-                <span className="lp-phone-small">{c.demoLeft(ex.needed - stamps, t.short)}</span>
-              </m.div>
-            ) : (
-              <m.div key="keypad" className="lp-phone-keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="lp-phone-number">{DEMO_NUMBER[lang]}</div>
-                <div className="lp-phone-keys" aria-hidden="true">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''].map((k, i) => (
-                    <span key={i}>{k || (i === 11 ? <Delete size={15} /> : '')}</span>
-                  ))}
-                </div>
-                <button className="lp-phone-btn" onClick={add} data-track="demo: Add visit">
-                  <Check size={18} strokeWidth={3} /> {c.demoAdd}
-                </button>
-              </m.div>
-            )}
-          </AnimatePresence>
+              );
+            })}
+          </div>
+          {reward && (
+            <m.div className="lp-ticket-reward" initial={{ scale: 1.8, opacity: 0, rotate: -18 }} animate={{ scale: 1, opacity: 1, rotate: -8 }} transition={{ type: 'spring', stiffness: 420, damping: 18 }}>
+              <span>{c.demoGive(t.short)}</span>
+            </m.div>
+          )}
         </div>
-      </m.div>
-
-      <AnimatePresence>
-        {sent && (
-          <m.div className="lp-float lp-float-wa" initial={{ opacity: 0, y: 16, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }}>
-            <MessageCircle size={16} /> {c.floatSent}
-          </m.div>
-        )}
-      </AnimatePresence>
-      <div className="lp-float lp-float-visit" aria-hidden="true">
-        <Sparkles size={15} /> {c.floatVisit}
+        <div className="lp-ticket-counter">
+          <span className="lp-ticket-number">{DEMO_NUMBER[lang]}</span>
+          {reward ? (
+            <button className="lp-ticket-btn orange" onClick={given} data-track="demo: Given">
+              <Check size={18} strokeWidth={3} /> {c.demoGiven}
+            </button>
+          ) : (
+            <button className="lp-ticket-btn" onClick={add} data-track="demo: Add visit">
+              <Check size={18} strokeWidth={3} /> {c.demoAdd}
+            </button>
+          )}
+        </div>
+        <AnimatePresence>
+          {sent > 0 && (
+            <m.div key={sent} className="lp-ticket-sent" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+              <MessageCircle size={15} /> {c.floatSent}
+            </m.div>
+          )}
+        </AnimatePresence>
       </div>
       <p className="lp-demo-hint">
-        {shown === 'reward' ? (
-          <button className="lp-link" onClick={() => setShown('keypad')}>
+        {reward ? (
+          <button className="lp-link" onClick={given}>
             <RotateCcw size={14} /> {c.demoAgain}
           </button>
         ) : (
@@ -917,44 +886,6 @@ function DemoPhone({ c, lang }: { c: Copy; lang: Lang }) {
         )}
       </p>
     </div>
-  );
-}
-
-/** The old way, tucked behind the phone: a paper stamp card, inked a few times, for the picked shop. */
-function PaperCard({ c, lang }: { c: Copy; lang: Lang }) {
-  const { ex } = useExample();
-  const inked = Math.max(1, ex.needed - 4);
-  return (
-    <div className="lp-paper" aria-hidden="true">
-      <span className="lp-paper-kicker">{c.paperCard}</span>
-      <strong>{ex.shop}</strong>
-      <span className="lp-paper-rule">{c.rule(ex.needed, ex[lang].short)}</span>
-      <span className="lp-paper-boxes">
-        {Array.from({ length: Math.min(ex.needed, 10) }, (_, i) => (
-          <i key={i} className={i < inked ? 'inked' : ''} style={{ '--r': `${((i * 53) % 30) - 15}deg` } as CSSProperties} />
-        ))}
-      </span>
-    </div>
-  );
-}
-
-/** A round rubber stamp that slowly turns: what Regularhood doesn't need. */
-function StampRing({ text }: { text: string }) {
-  const id = 'lp-ring-path';
-  return (
-    <svg className="lp-ring" viewBox="0 0 200 200" aria-hidden="true">
-      <defs>
-        <path id={id} d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0" />
-      </defs>
-      <circle cx="100" cy="100" r="96" />
-      <circle cx="100" cy="100" r="60" />
-      <text>
-        <textPath href={`#${id}`} textLength="488">
-          {text.repeat(2)}
-        </textPath>
-      </text>
-      <path className="lp-ring-check" d="M80 101 l14 14 l27 -30" />
-    </svg>
   );
 }
 
@@ -988,11 +919,7 @@ function Hero({ c, lang }: { c: Copy; lang: Lang }) {
             <ShopPicker lang={lang} className="hero" />
           </div>
         </div>
-        <div className="lp-hero-art">
-          <PaperCard c={c} lang={lang} />
-          <StampRing text={c.ring} />
-          <DemoPhone c={c} lang={lang} />
-        </div>
+        <StampDemo c={c} lang={lang} />
         {/* phones: the picker sits under the phone it changes */}
         <div className="lp-pick-wrap lp-pick-narrow">
           <span className="lp-pick-label">{c.pickLabel}</span>
