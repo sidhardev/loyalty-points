@@ -195,15 +195,25 @@ export class LoyaltyController {
     };
   }
 
-  /** Fixes a mistyped number. */
+  /** Fixes a mistyped number, and sets or clears the customer's name (optional; '' clears it). Each field only if sent. */
   @Patch('customers/:id')
-  editCustomer(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { phone?: string }) {
+  editCustomer(@MerchantId() merchantId: number, @Param('id', ParseIntPipe) id: number, @Body() body: { phone?: string; name?: string }) {
     const c = this.loyalty.customer(merchantId, id);
-    const next = this.loyalty.customerPhone(merchantId, body?.phone);
-    const other = this.loyalty.byNumber(merchantId, next);
-    if (other && other.id !== c.id) throw new BadRequestException('Another customer already has this phone number');
-    this.db.sql.prepare('UPDATE customers SET phone = ? WHERE id = ?').run(next, c.id);
-    if (next !== c.phone) this.loyalty.log(merchantId, 'shop', 'edit_customer', `Changed phone ${c.phone} → ${next}`, this.loyalty.who({ ...c, phone: next }));
+    if (body?.phone !== undefined) {
+      const next = this.loyalty.customerPhone(merchantId, body.phone);
+      const other = this.loyalty.byNumber(merchantId, next);
+      if (other && other.id !== c.id) throw new BadRequestException('Another customer already has this phone number');
+      this.db.sql.prepare('UPDATE customers SET phone = ? WHERE id = ?').run(next, c.id);
+      if (next !== c.phone) this.loyalty.log(merchantId, 'shop', 'edit_customer', `Changed phone ${c.phone} → ${next}`, this.loyalty.who({ ...c, phone: next }));
+    }
+    if (body?.name !== undefined) {
+      const name = String(body.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (name !== c.name) {
+        this.db.sql.prepare('UPDATE customers SET name = ? WHERE id = ?').run(name, c.id);
+        const fresh = this.loyalty.customer(merchantId, c.id);
+        this.loyalty.log(merchantId, 'shop', 'edit_customer', name ? (c.name ? `Changed name ${c.name} → ${name}` : `Added name ${name}`) : `Removed name ${c.name}`, this.loyalty.who(fresh));
+      }
+    }
     return this.loyalty.view(this.loyalty.merchant(merchantId), this.loyalty.customer(merchantId, c.id));
   }
 

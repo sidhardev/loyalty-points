@@ -163,6 +163,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.name-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+}
+
+.name-field input {
+  min-width: 0;
+}
+
+.name-field .alert {
+  grid-column: 1 / -1;
+}
+
 .result-icon {
   display: grid;
   place-items: center;

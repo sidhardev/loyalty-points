@@ -89,6 +89,37 @@ export function CardSetup({ merchant, onSaved, compact }: { merchant: Merchant; 
 // `given`: the reward was just handed over.
 type Shown = { result: VisitResult; given?: boolean };
 
+/** Optional: the customer's name, asked right after a visit while it's still unknown. Skipping it is fine. */
+function NameField({ customer, onSaved, onFocus }: { customer: Customer; onSaved: (c: Customer) => void; onFocus: () => void }) {
+  const [name, setName] = useState('');
+  const { busy, error, run } = useAction();
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    void run(async () => {
+      onSaved(await api<Customer>(`customers/${customer.id}`, 'PATCH', { name }));
+      toast(t('Name saved'));
+    });
+  };
+  return (
+    <form className="name-field" onSubmit={save}>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onFocus={onFocus}
+        placeholder={t('Customer’s name (optional)')}
+        aria-label={t('Customer’s name (optional)')}
+        maxLength={60}
+        autoComplete="off"
+      />
+      <button className="btn btn-soft" disabled={busy || !name.trim()}>
+        {t('Save')}
+      </button>
+      <ErrorText text={error} />
+    </form>
+  );
+}
+
 export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m: Merchant) => void }) {
   useLang(); // re-render in the chosen language
   const [digits, setDigits] = useState('');
@@ -190,6 +221,9 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       setLeft(BACK_AFTER);
     });
 
+  const named = (customer: Customer) => setShown((s) => s && { ...s, result: { ...s.result, customer } });
+  const nameField = (c: Customer) => !c.name && <NameField key={c.id} customer={c} onSaved={named} onFocus={() => setHold(true)} />;
+
   const undo = (visitId: number) =>
     void run(async () => {
       await api(`transactions/${visitId}/undo`, 'POST');
@@ -228,12 +262,13 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
             <span className="result-icon">
               <Gift size={44} />
             </span>
-            <p className="result-phone">{phoneLabel(c.phone, merchant.country)}</p>
+            <p className="result-phone">{phoneLabel(c.phone, merchant.country)}{c.name ? ` · ${c.name}` : ''}</p>
             <h1>{t('Give {reward} now', { reward: merchant.rewardName })}</h1>
             <p>
               {result.already ? t('Visit already counted today.') : t('This is visit {n}.', { n })} {t('Their card is full.')}
             </p>
             <Stamps stamps={c.stamps} needed={n} size="lg" />
+            {nameField(c)}
             <ErrorText text={error} />
             <button className="btn btn-reward btn-xl" onClick={() => giveReward(c)} disabled={busy}>
               <Check size={24} strokeWidth={3} /> {t('Given')}
@@ -255,7 +290,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
       <div className="counter">
         <section className={`result ${result.already && !given ? 'result-already' : ''}`}>
           <span className="result-icon">{given ? <Gift size={44} /> : <Check size={48} strokeWidth={3} />}</span>
-          <p className="result-phone">{phoneLabel(c.phone, merchant.country)}</p>
+          <p className="result-phone">{phoneLabel(c.phone, merchant.country)}{c.name ? ` · ${c.name}` : ''}</p>
           {given ? (
             <>
               <h1>{t('Reward given 🎉')}</h1>
@@ -280,6 +315,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
           )}
           <Stamps stamps={c.stamps} needed={n} size="lg" />
           {result.isNew && !given && <LimitAfterVisit />}
+          {nameField(c)}
           <ErrorText text={error} />
           {send}
           <button className="btn btn-primary btn-xl" onClick={reset}>
@@ -310,6 +346,7 @@ export function Counter({ merchant, onSaved }: { merchant: Merchant; onSaved: (m
           <button key={c.id} className="suggestion" onClick={() => submit(c.phone.replace(/\D/g, '').slice(-place.nsn))} disabled={busy}>
             <strong>{phoneLabel(c.phone, merchant.country)}</strong>
             <span>
+              {c.name ? `${c.name} · ` : ''}
               {c.rewardDue ? t('🎁 reward due') : `${Math.min(c.stamps, merchant.visitsNeeded)}/${merchant.visitsNeeded}`}
             </span>
           </button>

@@ -9,24 +9,29 @@ import { Stamps, messageLang } from './Counter';
 type Entry = { id: number; kind: 'visit' | 'reward'; note: string | null; reversed: boolean; canUndo: boolean; createdAt: string };
 type Detail = { customer: Customer; visits: number; rewards: number; history: Entry[] };
 
-function PhoneSheet({ customer, onClose, onSaved }: { customer: Customer; onClose: () => void; onSaved: () => void }) {
+function EditSheet({ customer, onClose, onSaved }: { customer: Customer; onClose: () => void; onSaved: () => void }) {
   const [phone, setPhone] = useState(customer.phone);
+  const [name, setName] = useState(customer.name);
   const { busy, error, run } = useAction();
   const save = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      await api(`customers/${customer.id}`, 'PATCH', { phone });
-      toast(t('Number changed'));
+      await api(`customers/${customer.id}`, 'PATCH', { phone, name });
+      toast(t('Saved'));
       onSaved();
       onClose();
     });
   };
   return (
-    <Sheet title={t('Change number')} onClose={onClose}>
+    <Sheet title={t('Edit customer')} onClose={onClose}>
       <form onSubmit={save} style={{ display: 'grid', gap: 14 }}>
         <label>
+          {t('Name (optional)')}
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} autoComplete="off" autoFocus />
+        </label>
+        <label>
           {t('Phone number')}
-          <input value={phone} inputMode="tel" onChange={(e) => setPhone(e.target.value)} required autoFocus />
+          <input value={phone} inputMode="tel" onChange={(e) => setPhone(e.target.value)} required />
         </label>
         <ErrorText text={error} />
         <button className="btn btn-primary btn-lg" disabled={busy}>
@@ -142,7 +147,7 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
                 <ExternalLink size={15} /> {t('See their card')}
               </a>
               <button className="btn btn-sm btn-soft" onClick={() => setEditing(true)}>
-                <Pencil size={15} /> {t('Change number')}
+                <Pencil size={15} /> {t('Edit')}
               </button>
               <button className="btn btn-sm btn-ghost danger" onClick={remove}>
                 <Trash2 size={15} /> {t('Delete')}
@@ -187,7 +192,7 @@ export function CustomerPage({ id, merchant }: { id: number; merchant: Merchant 
         </section>
       </div>
 
-      {editing && <PhoneSheet customer={customer} onClose={() => setEditing(false)} onSaved={load} />}
+      {editing && <EditSheet customer={customer} onClose={() => setEditing(false)} onSaved={load} />}
     </>
   );
 }

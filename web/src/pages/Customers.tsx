@@ -77,7 +77,7 @@ export function Customers({ merchant, hash, onSaved }: { merchant: Merchant; has
       <section className="card">
         <div className="input-icon">
           <Search size={18} />
-          <input placeholder={t('Search phone number')} inputMode="tel" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search customers" />
+          <input placeholder={t('Search number or name')} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search customers" />
         </div>
 
         {filter === 'inactive' && !!list?.length && <p className="small muted">{t('Tap Remind to open WhatsApp with a ready message.')}</p>}
