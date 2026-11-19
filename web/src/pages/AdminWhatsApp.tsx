@@ -155,6 +155,20 @@ export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; w
     });
   };
   const checkPhone = () => void run(async () => setPhone(await api<PhoneInfo>('whatsapp/phone')));
+  const canCheck = !!s.phoneNumberId && !!wa.secrets.token.source;
+  // Free to ask Meta, and a name that isn't approved stops every send, so look as soon as the settings open.
+  useEffect(() => {
+    if (canCheck) api<PhoneInfo>('whatsapp/phone').then(setPhone, () => {});
+  }, [api, canCheck]);
+  const [pin, setPin] = useState('');
+  const register = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      setPhone(await api<PhoneInfo>('whatsapp/phone/register', 'POST', { pin }));
+      setPin('');
+      toast('Number registered again');
+    });
+  };
   const loadTemplates = () => void run(async () => setTemplates(await api<Template[]>('whatsapp/templates')));
   const pick = (t: Template) => save({ templateName: t.name, templateLang: t.language, templateParams: t.params, templateBody: t.body }, `Using “${t.name}”`);
   const create = () =>
@@ -194,7 +208,7 @@ export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; w
         <button className="btn btn-soft btn-sm" disabled={busy} onClick={() => save({ phoneNumberId: form.phoneNumberId, wabaId: form.wabaId, graphVersion: form.graphVersion })}>
           Save IDs
         </button>
-        <button className="btn btn-soft btn-sm" disabled={busy || !s.phoneNumberId || !wa.secrets.token.source} onClick={checkPhone}>
+        <button className="btn btn-soft btn-sm" disabled={busy || !canCheck} onClick={checkPhone}>
           <ShieldCheck size={15} /> Check number
         </button>
       </div>
@@ -203,6 +217,24 @@ export function WhatsAppSettings({ api, wa, inr, onChanged }: { api: AdminApi; w
           <strong>{phone.verified_name}</strong> {phone.display_phone_number} · quality <strong>{phone.quality_rating ?? '–'}</strong> · limit {phone.messaging_limit_tier ?? '–'}
           {phone.name_status && phone.name_status !== 'APPROVED' ? ` · name ${phone.name_status}` : ''}
         </p>
+      )}
+      {phone?.name_status && nameNote(phone.name_status) && <p className="alert alert-error small">{nameNote(phone.name_status)}</p>}
+      {canCheck && (
+        <form className="actions" onSubmit={register}>
+          <input
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="6-digit PIN"
+            aria-label="Two-step verification PIN"
+            style={{ width: '9em' }}
+          />
+          <button className="btn btn-soft btn-sm" disabled={busy || pin.length !== 6}>
+            <RefreshCw size={15} /> Re-register number
+          </button>
+          <span className="muted small">After Meta approves or changes the display name. The PIN is the number’s two-step verification PIN (sets one if there’s none).</span>
+        </form>
       )}
 
       <h3 className="wa-step">2. Access token</h3>
@@ -465,7 +497,24 @@ function failReason(error: string | null) {
   if (/131026/.test(error)) return 'not on WhatsApp (or an old WhatsApp version)';
   if (/131047/.test(error)) return 'more than 24 hours since their last reply: send the template instead';
   if (/132001/.test(error)) return 'template not found or not approved in this language';
+  if (/131037/.test(error))
+    return 'Meta stopped it: the number’s display name isn’t approved. Check it in Settings → Number, and re-register once it’s approved.';
   return error;
+}
+
+/** What to do about a display name that isn't approved; Meta blocks sends (131037) until it is. */
+function nameNote(status: string) {
+  switch (status) {
+    case 'PENDING_REVIEW':
+      return 'Display name is under Meta’s review (usually 1–2 days). Sends can fail until it’s approved. Don’t edit the name meanwhile: that restarts the review. Once approved, re-register below.';
+    case 'DECLINED':
+      return 'Meta declined the display name, so sends fail (131037). In WhatsApp Manager → Phone numbers, edit it to the exact brand name your website shows (Regularhood), wait for approval, then re-register below.';
+    case 'EXPIRED':
+    case 'NONE':
+      return 'The number has no valid name certificate. Set the display name in WhatsApp Manager → Phone numbers, then re-register below once it’s approved.';
+    default:
+      return '';
+  }
 }
 
 export const fileSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);

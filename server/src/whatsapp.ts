@@ -268,6 +268,18 @@ export class WhatsApp {
     );
   }
 
+  /**
+   * Registers the number for Cloud API sending again. Meta wants this after a display name is approved (or changed):
+   * until then sends fail with 131037. The PIN is the number's two-step verification PIN; if none is set yet, this sets
+   * it. Re-registering before the name is approved does nothing.
+   */
+  register(pin: string) {
+    const s = this.settings();
+    if (!s.phoneNumberId) throw new BadRequestException('Add the phone number ID first');
+    if (!/^\d{6}$/.test(pin)) throw new BadRequestException('The PIN is 6 digits');
+    return this.graph<{ success?: boolean }>(`${s.phoneNumberId}/register`, { method: 'POST', body: { messaging_product: 'whatsapp', pin } });
+  }
+
   async templates() {
     const s = this.settings();
     if (!s.wabaId) throw new BadRequestException('Add the WhatsApp Business Account ID first');
@@ -752,7 +764,7 @@ export class WhatsApp {
         sent++;
       } catch (e) {
         error = (e as Error).message;
-        if (/limit|budget|token|Set up|\(190\)|\(131031\)/i.test(error)) break; // won't get better for the next lead
+        if (/limit|budget|token|Set up|\(190\)|\(131031\)|\(131037\)/i.test(error)) break; // won't get better for the next lead
       }
     }
     return { sent, tried: ids.length, error };
@@ -1070,6 +1082,15 @@ export class WhatsAppAdminController {
   /** The number's name, quality rating and messaging tier, straight from Meta. */
   @Get('phone')
   phone() {
+    return this.wa.phoneInfo();
+  }
+
+  /** Re-registers the number after Meta approves its display name. The PIN isn't kept. */
+  @Post('phone/register')
+  @HttpCode(200)
+  async register(@AdminId() adminId: number, @Body() body: { pin?: string }) {
+    await this.wa.register(String(body?.pin ?? '').trim());
+    this.audit(adminId, 'Re-registered the WhatsApp number');
     return this.wa.phoneInfo();
   }
 
