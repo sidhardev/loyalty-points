@@ -291,7 +291,12 @@ export function AuthPage({ onAuthed }: { onAuthed: (m: Merchant) => void }) {
  * has the code. Then the code and a new password log the shop in.
  */
 function ForgotPassword({ login: start, onBack, onAuthed }: { login: string; onBack: () => void; onAuthed: (m: Merchant) => void }) {
-  const [login, setLogin] = useState(start);
+  // Reset on WhatsApp is switched on in Admin → Emails; while it's off, only an email works.
+  const [viaWhatsApp, setViaWhatsApp] = useState(false);
+  useEffect(() => {
+    api<{ whatsapp: boolean }>('auth/forgot').then((o) => setViaWhatsApp(o.whatsapp), () => {});
+  }, []);
+  const [login, setLogin] = useState(start.includes('@') ? start : '');
   const [sent, setSent] = useState<{ channel: 'email' } | { channel: 'whatsapp'; link: string } | null>(null);
   const [form, setForm] = useState({ code: '', password: '', again: '' });
   const { busy, error, setError, run } = useAction();
@@ -319,7 +324,9 @@ function ForgotPassword({ login: start, onBack, onAuthed }: { login: string; onB
         <h2 style={{ fontSize: 22 }}>Reset your password</h2>
         <p className="muted small">
           {!sent
-            ? 'Enter the WhatsApp number or email of your shop account.'
+            ? viaWhatsApp
+              ? 'Enter the WhatsApp number or email of your shop account.'
+              : 'Enter the email of your shop account. We’ll send you a 6-digit code.'
             : sent.channel === 'email'
               ? `We emailed a 6-digit code to ${login}. Check spam too.`
               : 'Send RESET to our WhatsApp. The reply has your 6-digit code.'}
@@ -327,8 +334,16 @@ function ForgotPassword({ login: start, onBack, onAuthed }: { login: string; onB
       </div>
       {!sent ? (
         <label>
-          WhatsApp number or email
-          <input autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required autoFocus />
+          {viaWhatsApp ? 'WhatsApp number or email' : 'Email'}
+          <input
+            type={viaWhatsApp ? 'text' : 'email'}
+            autoComplete={viaWhatsApp ? 'username' : 'email'}
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
+            required
+            autoFocus
+          />
+          {!viaWhatsApp && <span className="hint">No email on your account? Contact support to reset your password.</span>}
         </label>
       ) : (
         <>

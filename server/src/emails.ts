@@ -22,6 +22,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AdminGuard, AdminId } from './admin';
 import { Db } from './db';
 import { EMAIL_DEFAULTS, emailSettings, Mailer, nudgeEmail, SITE_URL, testEmail, welcomeEmail, winbackEmail, type EmailSettings } from './mail';
+import { ResetCodes } from './reset-codes';
 import { seal, unseal } from './secret';
 
 // Admin → Emails: every email sent (mail.ts) and what became of it, every "Forgot password" request, and the automatic
@@ -223,6 +224,7 @@ export class EmailsAdminController {
     private readonly db: Db,
     private readonly mailer: Mailer,
     private readonly jobs: EmailJobs,
+    private readonly codes: ResetCodes,
   ) {}
 
   @Get()
@@ -281,6 +283,7 @@ export class EmailsAdminController {
       settings: emailSettings(this.db),
       due: { winback: due.winback.map((m) => m.name), nudge: due.nudge.map((m) => m.name) },
       optedOut: optedOut.n,
+      resetWhatsApp: this.codes.whatsappOn,
       webhook: { url: `${SITE_URL}/api/resend/webhook`, source: w.source, last4: w.value.slice(-4) },
       // What each automatic email says, for a made-up shop.
       previews: {
@@ -328,6 +331,15 @@ export class EmailsAdminController {
       throw new BadRequestException((e as Error).message);
     }
     return { to: admin.email };
+  }
+
+  /** Reset by WhatsApp on or off. Off, the login page asks for the account's email only. */
+  @Put('reset-whatsapp')
+  setResetWhatsApp(@AdminId() adminId: number, @Body() body: { on?: boolean }) {
+    const on = Boolean(body?.on);
+    this.codes.setWhatsapp(on);
+    this.audit(adminId, 'reset_whatsapp', `Password reset by WhatsApp turned ${on ? 'on' : 'off'}`);
+    return { on };
   }
 
   @Put('webhook-secret')

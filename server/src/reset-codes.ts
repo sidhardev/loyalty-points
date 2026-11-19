@@ -18,6 +18,18 @@ export class ResetCodes {
   /** Our WhatsApp number as digits, for the wa.me link; whatsapp.ts sets it (importing it here would make a cycle). */
   whatsappNumber?: () => Promise<string>;
 
+  /** Reset by WhatsApp (RESET to our number). Off until switched on in Admin → Emails → Password resets. */
+  get whatsappOn() {
+    const row = this.db.sql.prepare("SELECT value FROM app_settings WHERE key = 'reset_whatsapp'").get() as { value: string } | undefined;
+    return row?.value === '1';
+  }
+
+  setWhatsapp(on: boolean) {
+    this.db.sql
+      .prepare("INSERT INTO app_settings (key, value) VALUES ('reset_whatsapp', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(on ? '1' : '0');
+  }
+
   /** A new code for this shop, or null when it asked too often (once a minute, 5 an hour). Older codes stop working. */
   create(merchantId: number, channel: 'email' | 'whatsapp') {
     const recent = this.db.sql

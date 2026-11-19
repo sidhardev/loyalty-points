@@ -285,15 +285,23 @@ export class AuthController {
    * theirs and costs nothing, because they wrote first. Sign-up already tells whether an account exists, so these
    * messages can too.
    */
+  /** Which ways of resetting are on, so the page asks for an email only, or an email or WhatsApp number. */
+  @Get('auth/forgot')
+  forgotOptions() {
+    return { email: this.mailer.ready, whatsapp: this.codes.whatsappOn };
+  }
+
   @Post('auth/forgot')
   @HttpCode(200)
   async forgot(@Body() body: { login?: string }) {
     const login = String(body?.login ?? '').trim();
-    if (!login) throw new BadRequestException('Enter your WhatsApp number or email');
+    const wa = this.codes.whatsappOn;
+    const orWa = wa ? ' Try your WhatsApp number.' : ' Contact support if you can’t get in.';
+    if (!login) throw new BadRequestException(wa ? 'Enter your WhatsApp number or email' : 'Enter the email of your shop account');
     if (login.includes('@')) {
-      if (!this.mailer.ready) throw new ServiceUnavailableException('Reset by email isn’t on yet. Use your WhatsApp number instead.');
+      if (!this.mailer.ready) throw new ServiceUnavailableException(`Reset by email isn’t on yet.${orWa}`);
       const m = this.accountsFor(login).find((a) => !a.suspended_at);
-      if (!m) throw new NotFoundException('No shop account uses this email. Try your WhatsApp number.');
+      if (!m) throw new NotFoundException(`No shop account uses this email.${orWa}`);
       const code = this.codes.create(m.id, 'email');
       if (!code) throw new BadRequestException('We just sent a code. Check your inbox (and spam), or try again in a minute.');
       try {
@@ -301,11 +309,12 @@ export class AuthController {
       } catch (e) {
         if (e instanceof MailError) this.codes.attachEmail(m.id, e.emailId);
         console.error('Reset email failed:', (e as Error).message);
-        throw new ServiceUnavailableException('Could not send the email right now. Try your WhatsApp number instead.');
+        throw new ServiceUnavailableException(`Could not send the email right now. Try again in a minute.${wa ? ' Or use your WhatsApp number.' : ''}`);
       }
       this.loyalty.log(m.id, 'shop', 'password', 'Asked for a password reset code by email');
       return { channel: 'email' as const };
     }
+    if (!wa) throw new BadRequestException('Enter the email of your shop account. If your account has no email, contact support.');
     if (!loginPhones(login).length) throw new BadRequestException('Enter a valid WhatsApp number or email');
     if (!this.accountsFor(login).length) throw new NotFoundException('No shop account uses this WhatsApp number. Check it, or try your email.');
     const number = (await this.codes.whatsappNumber?.()) ?? '';

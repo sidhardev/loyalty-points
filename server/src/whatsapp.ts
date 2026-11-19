@@ -985,7 +985,7 @@ export class WhatsApp {
             this.db.sql.prepare('DELETE FROM wa_optouts WHERE phone = ?').run(phone);
             if (lead) this.db.sql.prepare('UPDATE leads SET wa_opted_out = 0 WHERE id = ?').run(lead.id);
           }
-          if (/^reset$/i.test(said)) {
+          if (/^reset$/i.test(said) && this.resetCodes.whatsappOn) {
             await this.resetReply(phone).catch((e) => console.error(`WhatsApp reset reply to ${phone} failed:`, (e as Error).message));
             continue; // not a lead conversation: the bot stays out of it
           }

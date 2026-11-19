@@ -49,6 +49,7 @@ type Data = {
   settings: Settings;
   due: { winback: string[]; nudge: string[] };
   optedOut: number;
+  resetWhatsApp: boolean;
   webhook: { url: string; source: 'panel' | 'env' | null; last4: string };
   previews: { welcome: Preview; winback: Preview; nudge: Preview };
 };
@@ -200,6 +201,7 @@ export function EmailsPage({ api }: { api: AdminApi }) {
       </Sub>
 
       <Sub id="resets">
+        <ResetWaysCard api={api} data={data} onSaved={load} />
         <section className="card">
           <div className="card-head">
             <h2>
@@ -259,6 +261,35 @@ export function EmailsPage({ api }: { api: AdminApi }) {
         <PreviewCard data={data} />
       </Sub>
     </>
+  );
+}
+
+/** Which ways "Forgot password" offers: email always (with a Resend key); WhatsApp only when switched on here. */
+function ResetWaysCard({ api, data, onSaved }: { api: AdminApi; data: Data; onSaved: () => void }) {
+  const { busy, error, run } = useAction();
+  const toggle = (on: boolean) =>
+    void run(async () => {
+      if (on && !(await confirmDialog({ title: 'Turn on reset by WhatsApp?', body: 'Only if the WhatsApp number receives messages: the owner sends RESET and the webhook must answer with the code.', confirm: 'Turn on' }))) return;
+      await api('emails/reset-whatsapp', 'PUT', { on });
+      toast(on ? 'Shops can now reset by WhatsApp too' : 'Reset is by email only');
+      onSaved();
+    });
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>
+          <KeyRound size={18} /> How shops can reset
+        </h2>
+      </div>
+      <p className="small" style={{ margin: 0 }}>
+        <strong>Email:</strong> {data.ready ? 'on' : 'off (no Resend key)'} · <strong>WhatsApp:</strong> {data.resetWhatsApp ? 'on' : 'off'}
+      </p>
+      <label className="poster-check">
+        <input type="checkbox" checked={data.resetWhatsApp} disabled={busy} onChange={(e) => toggle(e.target.checked)} /> Let shops reset by WhatsApp too (they send RESET to
+        our number and get the code back). Off: the login page asks for the account’s email only.
+      </label>
+      {error && <ErrorText text={error} />}
+    </section>
   );
 }
 
